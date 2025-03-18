@@ -1,0 +1,36 @@
+/*
+Caches semantically-versioned assets from CDNs. Useful for offline development.
+Normally, browsers do cache external assets, but unload them periodically, like
+once every few hours, which can be inconvenient when working without internet
+access. This also bypasses "disable cache". In production this is unnecessary
+but should be harmless.
+*/
+
+self.onfetch = onFetch
+
+function onFetch(event) {
+  const {request: req} = event
+  if (shouldCache(req.url)) {
+    event.respondWith(fetchWithCache(req))
+  }
+}
+
+async function fetchWithCache(req) {
+  const cache = await caches.open(`main`)
+
+  let res = await cache.match(req)
+  if (!res) {
+    res = await fetch(req)
+    if (res.ok) cache.put(req, res.clone())
+  }
+
+  return res
+}
+
+/*
+We cache URLs which seem to contain a version modifier similar to what is
+supported in NPM, and various CDNs that allow to import NPM modules by URL.
+*/
+function shouldCache(url) {
+  return /[@/][\^~>=]?v?(?:\d+|\*|x)[.](?:\d+|\*|x)[.](?:\d+|\*|x)/.test(url)
+}

@@ -1,0 +1,94 @@
+<!doctype html>
+<html class="font-mono">
+
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" href="data:base64,=">
+  <title>Tabularius — book-keeper for Tower Dominion</title>
+
+  <style>
+    /* Monospace fonts tend to be larger than regular ones. */
+    :root {font-size: 16px}
+
+    /*
+    Make `[hidden]` actually work. Take priority over Tailwind classes.
+
+    The attribute `[hidden]` and its effect are built-in. We reproduce it with a higher specificity. See: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity
+    */
+    [hidden]:not(:root) {display: none !important}
+  </style>
+
+  <style id="loading_style">
+    @media (prefers-color-scheme: dark) {
+      :root {
+        background-color: hsl(0deg 0% 10%);
+        color: hsl(0deg 0% 60%);
+      }
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        background-color: white;
+        color: hsl(0deg 0% 40%);
+      }
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-center;
+      text-align: center;
+    }
+    .font-mono {
+      font-family: SF Mono, Menlo, Monaco, DejaVu Sans Mono, Consolas, monospace;
+    }
+  </style>
+
+  <!--
+  Showing initialization errors may help both users and developers.
+
+  TODO: add a link where to report problems.
+
+  Known problem: the logged error points to the wrong place (here instead of the
+  original site), AND the browser does not pause on caught/uncaught exceptions
+  if that debugging option is enabled, making it hard to identify the causes.
+  -->
+  <script type="module">
+    try {
+      await import(`./js/main.mjs`)
+    }
+    catch (err) {
+      console.error(err)
+
+      document.body.style.color = `red`
+
+      document.body.innerHTML = `
+<pre style="color: red; white-space: break-spaces; text-align: left">
+  <p style="text-align: center">Sorry! Something went wrong.</p>
+  <p style="padding: 1rem">${err?.stack || err}</p>
+</pre>
+`
+    }
+  </script>
+
+  <!--
+  Alternative: just use normal module loading and hope for the best.
+  <script type="module" src="/js/main.mjs"></script>
+  -->
+
+  <!-- <script type="module" src="/js/main.mjs"></script> -->
+</head>
+
+<body>
+  <noscript>
+    The app requires JavaScript.
+    <br>
+    Please enable JS in your browser settings.
+    <style>#loading_msg {display: none}</style>
+  </noscript>
+
+  <div id="loading_msg">Loading...</div>
+
+  <script src="/sw.mjs"></script>
+</body>
+</html>

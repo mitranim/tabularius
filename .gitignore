@@ -1,0 +1,9 @@
+.*
+/*
+!/.*ignore
+!/*.md
+!/*.mjs
+!/*.html
+!/makefile
+!/js
+!/doc
