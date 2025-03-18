@@ -140,7 +140,7 @@ function percDecode(val) {return a.isStr(val) ? a.onlyFin(parseFloat(val)) : und
 function percEncode(val) {return a.isFin(val) ? val + `%` : ``}
 
 const LOG_WIDTH_KEY = `tabularius_log_width`
-const LOG_WIDTH_DEFAULT = 25 // % of parent width
+const LOG_WIDTH_DEFAULT = 50 // % of parent width
 const LOG_WIDTH_MIN = 10 // % of parent width
 const LOG_WIDTH_MAX = 90 // % of parent width
 const LOG_MAX_MSGS = 1024
@@ -437,8 +437,10 @@ export function isElemInput(val) {
 
 export function joinSpaced(src) {return a.joinOptLax(src, ` `)}
 
-// A monotonic random id. Considered ULID, but seemed too complicated.
-// The length will change on 2527-04-16 according to a bot.
+/*
+A monotonic random id. Considered using ULID, but seemed too complicated.
+The length will change on 2527-04-16 according to a bot.
+*/
 export function rid() {
   return (
     Date.now().toString(16) + `_` +

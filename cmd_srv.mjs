@@ -25,10 +25,6 @@ Deno.serve({
   },
 })
 
-for await (const val of dirs.watchLive()) {
-  bro.writeEventJson(val)
-}
-
 async function respond(req) {
   const rou = h.toReqRou(req)
 
@@ -41,4 +37,14 @@ async function respond(req) {
     (await dirs.resolveSiteFileWithNotFound(rou.url))?.res() ||
     rou.notFound()
   ))
+}
+
+/*
+Causes our "live client" to reload the page on changes. See `live.mjs` and
+`live.mjs`>`withLiveClient`. Also note that the directories we watch here could
+be different from the directories from which we serve files, depending on how
+our app works. For a SPA, the correspondence tends to be one-to-one.
+*/
+for await (const val of dirs.watchLive()) {
+  bro.writeEventJson(val)
 }

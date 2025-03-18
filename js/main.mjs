@@ -79,17 +79,21 @@ const TITLEBAR = E(
 
   // Right side with links
   E(`div`, {class: `flex gap-4`},
-    E(`a`, {href: `https://github.com/username/tabularius`, target: `_blank`, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `GitHub`),
-    E(`a`, {href: `https://discord.gg/example`, target: `_blank`, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `Discord`)
+    E(`a`, {href: `https://github.com/mitranim/tabularius`, target: `_blank`, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `GitHub`),
+    E(`a`, {href: `https://discord.gg/vYNuXDfJ`, target: `_blank`, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `Discord`)
   ),
 )
 
 // A reactive element that shows running processes.
 const PROCESS_LIST = new class ProcessList extends u.ReacElem {
   run() {
-    const len = a.len(os.PROCS)
+    const vals = a.values(os.PROCS)
+    const len = vals.length
 
-    // Ensure we're monitoring the observable; `a.len` doesn't do that.
+    /*
+    Ensure we're monitoring the observable; `a.values` doesn't do that
+    when the dict is empty.
+    */
     os.PROCS[``]
 
     E(
@@ -99,7 +103,7 @@ const PROCESS_LIST = new class ProcessList extends u.ReacElem {
         len
         ? [
           E(`div`, {}, `active processes (${len}):`),
-          a.map(os.PROCS, Process),
+          a.map(vals, Process),
         ]
         : E(`div`, {class: `text-gray-500`}, `no active processes`)
       )
@@ -326,7 +330,7 @@ async function cmdMockProcess(sig, args) {
 }
 
 function showProcs() {
-  if (a.isEmpty(os.PROCS)) return `No active processes`
+  if (!a.len(os.PROCS)) return `No active processes`
   return a.joinLines([
     `Active processes (pid, name, status):`,
     ...a.map(os.PROCS, procToStatus),

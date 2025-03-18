@@ -22,11 +22,11 @@
 
 ## Function Design
 - Small, focused functions (3 or fewer arguments)
-- Each function should do one thing well
+- Each function does one thing well
 - Named functions over anonymous inline closures
 - Move functions as close to root scope as possible
 - Use function hoisting for better code organization
-- Prefer single-line arrow functions for simple operations
+- Single-line arrow functions for very simple callbacks
 - Avoid parameter destructuring and complex default values
 - Validate inputs immediately
 - Fail early and loudly
@@ -36,7 +36,7 @@
 - Make state changes explicit and traceable
 - Avoid invalid states; make zero values useful
 - Prefer immutability: create-once, assign-once, use-once
-- Use observables for UI reactivity; avoid observables for non-UI data
+- Use observables for UI reactivity when necessary, but avoid observables for non-UI data
 
 ## Data & Type Safety
 - Runtime validation functions:
@@ -48,9 +48,9 @@
   - `a.reqInst` - Returns same value if instance of given class, throws `TypeError` otherwise
   - `a.optInst` - Returns nil or same value if instance of given class, throws `TypeError` otherwise
 - Create domain-specific validators following library patterns
-- Use null-prototype (`a.Emp()`) instead of `{}` for dictionaries with dynamic/unknown keys
-- Avoid `.find`, prefer dictionaries for easy lookup
-- In UI code, do not assume collection class (array/map/set), prefer generic functions over methods: `a.map(coll, fun)`, `a.len(coll)`
+- Use null-prototype (`a.Emp()`) instead of `{}` for dictionaries
+- Minimize `.find` and `.filter`, prefer dictionaries for easy lookup
+- In UI code, don't assume collection type (array/map/set), prefer generic functions over methods: `a.map(coll, fun)`, `a.len(coll)`
 - `const` by default, `let` when needed, never `var`
 
 ## Error Handling
@@ -257,6 +257,7 @@ Deconstruct imports for the function `E`; avoid import deconstruction in other c
 
 ```js
 import {E} from './util.mjs'
+import * as u from './util.mjs'
 ```
 
 When hiding an element, use the property `.hidden`; avoid `.style.display`.
@@ -276,6 +277,7 @@ Whitespace:
 * Always space with `flex gap-*`.
 * Never use margins.
 * Padding is always all-around: `p-*`, never `pb-*`, `pt-*`, etc.
+  * The existing counter-examples in the code are legacy; ignore.
 * In inline text, space-out with regular space characters.
 * The default unit of spacing is `1rem`, corresponding to 4 units in Tailwind classes.
 

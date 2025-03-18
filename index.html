@@ -12,8 +12,9 @@
 
     /*
     Make `[hidden]` actually work. Take priority over Tailwind classes.
-
-    The attribute `[hidden]` and its effect are built-in. We reproduce it with a higher specificity. See: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity
+    The attribute `[hidden]` and its effect are built-in.
+    We reproduce it with a higher specificity. See:
+    https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity
     */
     [hidden]:not(:root) {display: none !important}
   </style>
@@ -89,6 +90,6 @@
 
   <div id="loading_msg">Loading...</div>
 
-  <script src="/sw.mjs"></script>
+  <script src="./sw.mjs"></script>
 </body>
 </html>

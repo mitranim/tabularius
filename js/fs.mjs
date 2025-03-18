@@ -377,11 +377,11 @@ async function checkProgressFile(sig) {
 
     try {
       const success = await processProgressFile(sig, file)
-      
+
       // Reset failure counts on success
       WATCH_STATE.failureCount = 0
       WATCH_STATE.sleepTime = WATCH_INTERVAL_MS
-      
+
       // No need for additional logging here as processProgressFile already logs appropriate messages
     }
     catch (err) {
@@ -419,15 +419,15 @@ async function processProgressFile(sig, file) {
   const fileContent = await u.wait(sig, file.text())
   const data = await u.wait(sig, decodeObfuscatedFile(fileContent))
   const nextRoundIndex = a.onlyFin(data?.RoundIndex)
-  
+
   // Log the round index
   if (a.isFin(nextRoundIndex)) {
     u.log.inf(`[watch] Round index:`, nextRoundIndex)
   }
-  
+
   // Create backup in history directory
   let backupCreated = await createBackup(sig, file, fileContent, data)
-  
+
   // Handle special cases for retry on failure
   if (!backupCreated && !a.isNil(nextRoundIndex)) {
     const prevRoundIndex = WATCH_STATE.prevRoundIndex
@@ -445,7 +445,7 @@ async function processProgressFile(sig, file) {
       }
     }
   }
-  
+
   return backupCreated
 }
 
@@ -554,30 +554,30 @@ function shouldCreateBackup(nextTimestamp) {
 
 // Handle different backup scenarios based on round index comparison
 async function handleBackupScenario(sig, nextRoundIndex, content) {
-  let success = false
-  
   try {
     if (a.isNil(WATCH_STATE.prevRoundIndex)) {
-      success = await handleFirstBackup(sig, nextRoundIndex, content)
-      if (success) u.log.inf(`[watch] Created first backup for round ${nextRoundIndex}`)
+      const done = await handleFirstBackup(sig, nextRoundIndex, content)
+      if (done) u.log.inf(`[watch] Created first backup for round ${nextRoundIndex}`)
+      return done
     }
-    else if (WATCH_STATE.prevRoundIndex === nextRoundIndex) {
-      success = await handleSameRoundBackup(sig, nextRoundIndex, content)
-      if (success) u.log.inf(`[watch] Updated backup for round ${nextRoundIndex}`)
+    if (WATCH_STATE.prevRoundIndex === nextRoundIndex) {
+      const done = await handleSameRoundBackup(sig, nextRoundIndex, content)
+      if (done) u.log.inf(`[watch] Updated backup for round ${nextRoundIndex}`)
+      return done
     }
-    else if (WATCH_STATE.prevRoundIndex < nextRoundIndex) {
-      success = await handleNewRoundBackup(sig, nextRoundIndex, content)
-      if (success) u.log.inf(`[watch] Created backup for new round ${nextRoundIndex} (previous: ${WATCH_STATE.prevRoundIndex})`)
+    if (WATCH_STATE.prevRoundIndex < nextRoundIndex) {
+      const done = await handleNewRoundBackup(sig, nextRoundIndex, content)
+      if (done) u.log.inf(`[watch] Created backup for new round ${nextRoundIndex} (previous: ${WATCH_STATE.prevRoundIndex})`)
+      return done
     }
-    else if (WATCH_STATE.prevRoundIndex > nextRoundIndex) {
-      success = await handleNewRunBackup(sig, nextRoundIndex, content)
-      if (success) u.log.inf(`[watch] Created backup for new run with round ${nextRoundIndex}`)
+    if (WATCH_STATE.prevRoundIndex > nextRoundIndex) {
+      const done = await handleNewRunBackup(sig, nextRoundIndex, content)
+      if (done) u.log.inf(`[watch] Created backup for new run with round ${nextRoundIndex}`)
+      return done
     }
-    else {
-      throw Error(`Internal error: unhandled round index comparison`)
-    }
-    return success
-  } catch (err) {
+    throw Error(`Internal error: unhandled round index comparison`)
+  }
+  catch (err) {
     u.log.err(`[watch] Error in handleBackupScenario:`, err)
     return false
   }
@@ -621,7 +621,7 @@ async function handleSameRoundBackup(sig, nextRoundIndex, content) {
 // Handle backup for new round in the same run
 async function handleNewRoundBackup(sig, nextRoundIndex, content) {
   if (!WATCH_STATE.prevRunId) return false
-  
+
   // Update round index but keep same run ID
   WATCH_STATE.prevRoundIndex = nextRoundIndex
   return await createOrUpdateBackup(sig, WATCH_STATE.prevRunId, nextRoundIndex, content)
@@ -632,11 +632,11 @@ async function handleNewRunBackup(sig, nextRoundIndex, content) {
   // Create new run with new ID
   const newRunId = u.rid()
   if (!await createRunDir(sig, newRunId)) return false
-  
+
   // Update state with new run ID and round index
   WATCH_STATE.prevRunId = newRunId
   WATCH_STATE.prevRoundIndex = nextRoundIndex
-  
+
   return await createOrUpdateBackup(sig, WATCH_STATE.prevRunId, nextRoundIndex, content)
 }
 

@@ -1,6 +1,6 @@
 ## Setup
 
-Serve with GitHub Pages. If build/deploy is necessary, use GitHub Actions.
+<!-- (Done) Serve with GitHub Pages. If build/deploy is necessary, use GitHub Actions. -->
 
 Firebase: maybe DB-side aggregations for clients, for analytics.
 
@@ -10,7 +10,7 @@ Snapshots include run ID (auto-generate it).
 
 In case of defeat, last snapshot indicates defeat.
 
-The SPA asks for permissions for the save directory (or just progress file), and for the run history directory. The SPA watches the progress file by periodically checking timestamps. On changes, it also checks the round index or run ID. On changes, it cleans up the data and stores it in the run history directory.
+<!-- (Done) The SPA asks for permissions for the save directory (or just progress file), and for the run history directory. The SPA watches the progress file by periodically checking timestamps. On changes, it also checks the round index or run ID. On changes, it cleans up the data and stores it in the run history directory. -->
 
 The SPA lets you view run history, per round, per run.
 
@@ -234,3 +234,16 @@ Log: only scroll to bottom if already scrolled to bottom. Meaning, if scrolled u
 
 ---
 
+Less vertical spacing in `u.log`.
+
+---
+
+Consistently prefix command logging with current command name. Find places in the code where we currently don't, and fix. Note that the last returned string, or the last error thrown, is auto-prefixed by `runCommand`. Consider consolidating.
+
+---
+
+When round index is increased in `handleBackupScenario`, when we log "Created backup for new round", the next and prev rounds are logged the same. Expected behavior: correctly log the prev round. Avoid doing math.
+
+---
+
+<!-- Initial log width should be 2/3rd of the screen. -->
