@@ -515,3 +515,18 @@ On round increase, a backup does get successfully created for that run. However,
 Consider if the code is too verbose. Look for duplications. Look for redundancies. Look for code that simply does nothing useful.
 
 ------
+
+In `./js/fs.mjs`, we watch a source file and make backups of it. Instead of hardcoding a file extension for the backups (`BACKUP_EXT`), use the extension of the source file:
+- Get file name from file handle.
+- Call the following function (define it at the bottom of `fs.mjs`):
+
+```js
+// Must be called ONLY on the file name, without the directory path.
+function fileExt(name) {
+  a.reqStr(name)
+  const ind = name.lastIndexOf(`.`)
+  return ind > 0 ? name.slice(ind) : ``
+}
+```
+
+------

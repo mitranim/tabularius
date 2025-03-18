@@ -243,7 +243,7 @@ async function getDirectoryStats(sig, dirHandle) {
   let bytesTotal = 0
 
   for await (const handle of dirIter) {
-    if (handle.kind === `file`) {
+    if (isFile(handle)) {
       const file = await u.wait(sig, handle.getFile())
       bytesTotal += file.size
       fileCount++
@@ -359,7 +359,7 @@ async function getLatestBackupTimestamp(sig, runId, roundIndex) {
 
   try {
     const runDirHandle = await u.wait(sig, HISTORY_DIR.handle.getDirectoryHandle(runId))
-    const fileName = padRoundIndex(roundIndex) + BACKUP_EXT
+    const fileName = padRoundIndex(roundIndex) + fileExt(PROGRESS_FILE.handle.name)
     const fileHandle = await u.wait(sig, runDirHandle.getFileHandle(fileName))
     const file = await u.wait(sig, fileHandle.getFile())
     return file.lastModified
@@ -501,7 +501,7 @@ function ungzip(src) {
 function charCode(val) {return val.charCodeAt(0)}
 
 // Utility functions for backup management
-const BACKUP_EXT = `.json`
+// Get backup extension from source file when needed
 const MIN_BACKUP_DIGITS = 4
 
 function padRoundIndex(val) {
@@ -641,16 +641,15 @@ async function handleNewRunBackup(sig, nextRoundIndex, content) {
 }
 
 // Generic function to collect entries from a directory
-async function collectEntries(sig, dirHandle, filterFn) {
-
+async function collectEntries(sig, dirHandle, filterFun) {
+  a.reqInst(dirHandle, FileSystemHandle)
+  a.reqFun(filterFun)
   const dirIter = await u.wait(sig, dirHandle.values())
   const entries = []
 
   for await (const entry of dirIter) {
-    if (sig.aborted) return []
-    if (filterFn(entry)) {
-      entries.push(entry.name)
-    }
+    if (sig.aborted) break
+    if (filterFun(entry)) entries.push(entry.name)
   }
 
   // Sort entries alphabetically
@@ -663,10 +662,8 @@ async function findLatestRunId(sig) {
   if (!HISTORY_DIR.handle) return undefined
 
   try {
-    // Collect all run directories
-    const runDirs = await collectEntries(sig, HISTORY_DIR.handle, entry => entry.kind === 'directory')
-
-    // Return the last one
+    // TODO avoid allocating a collection since we only want the last one.
+    const runDirs = await collectEntries(sig, HISTORY_DIR.handle, isDir)
     return a.last(runDirs)
   }
   catch (err) {
@@ -675,23 +672,23 @@ async function findLatestRunId(sig) {
   }
 }
 
+function isFile(val) {return val.kind === `file`}
+function isDir(val) {return val.kind === `directory`}
+
 // Find the latest round index in a run directory
 async function findLatestRoundIndex(sig, runId) {
-  if (!HISTORY_DIR.handle || !runId) return undefined
+  a.optStr(runId)
+  if (!HISTORY_DIR.handle || !PROGRESS_FILE.handle || !runId) return undefined
 
   try {
-    // Get the run directory
     const runDirHandle = await u.wait(sig, HISTORY_DIR.handle.getDirectoryHandle(runId))
-
-    // Collect all backup files
-    const backupFiles = await collectEntries(
+    const sourceExt = fileExt(PROGRESS_FILE.handle.name)
+    const backupFileNames = await collectEntries(
       sig,
       runDirHandle,
-      entry => entry.kind === 'file' && entry.name.endsWith(BACKUP_EXT)
+      entry => isFile(entry) && entry.name.endsWith(sourceExt)
     )
-
-    // Parse and return the round index from the latest file
-    return extractRoundIndexFromLastBackup(backupFiles)
+    return extractRoundIndexFromLastBackup(backupFileNames, sourceExt)
   }
   catch (err) {
     u.log.err(`[watch] Failed to find latest round index:`, err)
@@ -699,17 +696,8 @@ async function findLatestRoundIndex(sig, runId) {
   }
 }
 
-// Extract round index from the last backup filename
-function extractRoundIndexFromLastBackup(backupFiles) {
-  // Get the last one
-  const lastBackup = a.last(backupFiles)
-  if (!lastBackup) return undefined
-
-  // Get base name without extension
-  const baseName = lastBackup.slice(0, -BACKUP_EXT.length)
-
-  // Parse and return the round index
-  return a.intOpt(baseName)
+function extractRoundIndexFromLastBackup(names, ext) {
+  return a.intOpt(a.stripSuf(a.last(names), ext))
 }
 
 // Create a new run directory
@@ -729,7 +717,6 @@ async function createRunDir(sig, runId) {
 
 // Write content to a file in the run directory
 async function writeBackupFile(sig, runDirHandle, fileName, content) {
-
   const fileHandle = await u.wait(sig, runDirHandle.getFileHandle(fileName, {create: true}))
   const writable = await u.wait(sig, fileHandle.createWritable())
   await u.wait(sig, writable.write(content))
@@ -742,7 +729,7 @@ async function createOrUpdateBackup(sig, runId, roundIndex, content) {
   if (!HISTORY_DIR.handle || !runId) return false
 
   try {
-    const fileName = padRoundIndex(roundIndex) + BACKUP_EXT
+    const fileName = padRoundIndex(roundIndex) + fileExt(PROGRESS_FILE.handle.name)
     return await attemptBackupCreation(sig, runId, fileName, content)
   }
   catch (err) {
@@ -782,6 +769,13 @@ async function handleNotFoundError(sig, runId, fileName, content) {
   const runDirHandle = await u.wait(sig, HISTORY_DIR.handle.getDirectoryHandle(runId, {create: true}))
   await writeBackupFile(sig, runDirHandle, fileName, content)
   u.log.inf(`[watch] Created backup after dir recreation: ${runId}/${fileName}`)
+}
+
+// Must be called ONLY on the file name, without the directory path.
+function fileExt(name) {
+  name = a.laxStr(name)
+  const ind = name.lastIndexOf(`.`)
+  return ind > 0 ? name.slice(ind) : ``
 }
 
 // Must always be at the very end of this file.

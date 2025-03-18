@@ -247,3 +247,9 @@ When round index is increased in `handleBackupScenario`, when we log "Created ba
 ---
 
 <!-- Initial log width should be 2/3rd of the screen. -->
+
+---
+
+<!-- Since we store `.gd` data, backed up files should use the extension `.gd`. -->
+
+---
