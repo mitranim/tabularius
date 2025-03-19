@@ -54,62 +54,6 @@ class FunReacElem extends ReacElem {
   run() {this.fun(this)}
 }
 
-/*
-An observable that wraps a promise and represents its progress. Reactive UI
-components can use it to track the promise's progress and synchronously access
-its state, error, and value.
-
-Replacing a current task:
-
-  someTask.idle?.set(someAsyncFun())
-*/
-export class Task extends a.Emp {
-  constructor(src) {
-    super()
-    const obs = o.obs(this)
-    this.idle = obs
-    return obs.set(src)
-  }
-
-  set(src) {
-    if (!this.idle) throw Error(`overlapping tasks`)
-    const obs = this
-    const obj = o.self(obs)
-
-    if (a.isNil(src)) {
-      obj.idle = obs
-      obs.src = undefined
-      return obs
-    }
-
-    obj.idle = undefined
-    obs.src = src.then(obs.onVal.bind(obs), obs.onErr.bind(obs))
-    return obs
-  }
-
-  onVal(val) {
-    o.self(this).idle = this
-    this.val = val
-  }
-
-  onErr(err) {
-    o.self(this).idle = this
-    this.err = err
-  }
-}
-
-export class LogTask extends Task {
-  onVal(val) {
-    super.onVal(val)
-    if (a.vac(val)) log.inf(val)
-  }
-
-  onErr(err) {
-    super.onErr(err)
-    if (a.vac(err)) log.err(err)
-  }
-}
-
 class DateTimeFormat extends Intl.DateTimeFormat {
   /*
   Workaround for an issue in Chrome/V8. When formatting 24-hour time, instead of
@@ -326,9 +270,10 @@ function LogMsg(src, isErr) {
   )
 }
 
-function fmtMsg(src) {return a.map(src, logFmtVal).join(` `)}
+function fmtMsg(src) {return a.map(src, logShow).join(` `)}
 
-function logFmtVal(val) {
+// TODO: support error chains.
+function logShow(val) {
   if (a.isStr(val) || a.isNode(val)) return val
   return a.show(val)
 }
@@ -358,6 +303,10 @@ export function formatSize(bytes) {
 export function isArrOfStr(val) {return a.isArrOf(val, a.isStr)}
 export function reqArrOfStr(val) {return a.reqArrOf(val, a.isStr)}
 export function optArrOfStr(val) {return a.optArrOf(val, a.isStr)}
+
+export function isArrOfValidStr(val) {return a.isArrOf(val, a.isValidStr)}
+export function reqArrOfValidStr(val) {return a.reqArrOf(val, a.isValidStr)}
+export function optArrOfValidStr(val) {return a.optArrOf(val, a.isValidStr)}
 
 /*
 Special version of `AbortController`. The signal behaves like a promise, which
@@ -410,14 +359,16 @@ export function wait(sig, ...src) {
   return Promise.race(src)
 }
 
-export function logCmdDone(val, text) {
-  if (a.isNil(val)) return
-  log.inf(`${a.show(text)} done: ${a.show(val)}`)
+export function logCmdDone(name, out) {
+  a.reqValidStr(name)
+  if (!a.vac(out)) return
+  log.inf(`[${name}] done: ${logShow(out)}`)
 }
 
-export function logCmdFail(err, text) {
-  if (a.isNil(err)) return
-  log.err(`${a.show(text)} error: ${err}`)
+export function logCmdFail(name, err) {
+  a.reqValidStr(name)
+  if (!a.vac(err)) return
+  log.inf(`[${name}] error: ${err}`)
 }
 
 /*
@@ -446,6 +397,53 @@ export function rid() {
     Date.now().toString(16) + `_` +
     a.arrHex(crypto.getRandomValues(new Uint8Array(8)))
   )
+}
+
+export async function decodeObfuscated(src) {
+  src = a.trim(src)
+
+  // Try direct JSON decoding first.
+  const out = jsonDecodeOpt(src)
+  if (out) return out
+
+  // Try un-base64 -> un-gzip -> un-JSON as fallback.
+  try {
+    return a.jsonDecode(await ungzip(atob(src)))
+  }
+  catch (err) {
+    throw Error(`All decoding methods failed: ${err}`, {cause: err})
+  }
+}
+
+export function jsonDecodeOpt(src) {
+  if (isJsonColl(src)) return a.jsonDecode(src)
+  return undefined
+}
+
+/*
+We only deal with data collections. Covering other JSON cases, particularly
+numbers, could produce false positives for some base64 text. We're avoiding
+try/catch parsing because it interferes with debugging.
+*/
+function isJsonColl(src) {
+  src = a.trim(src)[0]
+  return src === `{` || src === `[`
+}
+
+export function ungzip(src) {
+  const bytes = Uint8Array.from(src, charCode)
+  const stream = new Response(bytes).body.pipeThrough(new DecompressionStream(`gzip`))
+  return new Response(stream).text()
+}
+
+function charCode(val) {return val.charCodeAt(0)}
+
+// Utility functions for backup management
+// Get backup extension from source file when needed
+const MIN_BACKUP_DIGITS = 4
+
+export function padRoundIndex(val) {
+  return String(a.reqNat(val)).padStart(MIN_BACKUP_DIGITS, `0`)
 }
 
 // Must always be at the very end of this file.

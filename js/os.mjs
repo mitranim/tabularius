@@ -104,7 +104,7 @@ export async function runCommand(srcText) {
   if (a.isNil(out)) return
 
   if (!a.isPromise(out)) {
-    if (a.vac(out)) u.log.inf(`[${name}]`, out)
+    u.logCmdDone(name, out)
     return
   }
 
@@ -112,10 +112,10 @@ export async function runCommand(srcText) {
   PROCS[proc.id] = proc
   try {
     out = await out
-    if (a.vac(out)) u.log.inf(`[${name}]`, out)
+    u.logCmdDone(name, out)
   }
   catch (err) {
-    if (a.vac(err)) u.log.err(`[${name}]`, err)
+    u.logCmdFail(name, out)
   }
   finally {
     delete PROCS[proc.id]

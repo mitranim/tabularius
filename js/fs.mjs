@@ -359,7 +359,7 @@ async function getLatestBackupTimestamp(sig, runId, roundIndex) {
 
   try {
     const runDirHandle = await u.wait(sig, HISTORY_DIR.handle.getDirectoryHandle(runId))
-    const fileName = padRoundIndex(roundIndex) + fileExt(PROGRESS_FILE.handle.name)
+    const fileName = u.padRoundIndex(roundIndex) + fileExt(PROGRESS_FILE.handle.name)
     const fileHandle = await u.wait(sig, runDirHandle.getFileHandle(fileName))
     const file = await u.wait(sig, fileHandle.getFile())
     return file.lastModified
@@ -417,7 +417,7 @@ async function validateProgressFile(sig) {
 // Process the progress file content
 async function processProgressFile(sig, file) {
   const fileContent = await u.wait(sig, file.text())
-  const data = await u.wait(sig, decodeObfuscatedFile(fileContent))
+  const data = await u.wait(sig, u.decodeObfuscated(fileContent))
   const nextRoundIndex = a.onlyFin(data?.RoundIndex)
 
   // Log the round index
@@ -460,52 +460,6 @@ function handleProgressFileError(err) {
 
   // Reduce sleep time on failure
   WATCH_STATE.sleepTime = WATCH_QUICK_INTERVAL_MS
-}
-
-async function decodeObfuscatedFile(src) {
-  src = a.reqStr(src).trim()
-
-  // Try direct JSON decoding first
-  const jsonResult = await tryDirectJsonDecoding(src)
-  if (jsonResult) return jsonResult
-
-  // Try base64 -> ungzip -> JSON as fallback
-  try {
-    return JSON.parse(await ungzip(atob(src)))
-  }
-  catch (err) {
-    throw Error(`All decoding methods failed. Last error: ${err}`, {cause: err})
-  }
-}
-
-// Try to decode JSON directly
-async function tryDirectJsonDecoding(src) {
-  if (src.startsWith(`{`)) {
-    try {
-      return JSON.parse(src)
-    }
-    catch (err) {
-      u.log.err(`JSON decoding failed:`, err)
-      return null
-    }
-  }
-  return null
-}
-
-function ungzip(src) {
-  const bytes = Uint8Array.from(src, charCode)
-  const stream = new Response(bytes).body.pipeThrough(new DecompressionStream(`gzip`))
-  return new Response(stream).text()
-}
-
-function charCode(val) {return val.charCodeAt(0)}
-
-// Utility functions for backup management
-// Get backup extension from source file when needed
-const MIN_BACKUP_DIGITS = 4
-
-function padRoundIndex(val) {
-  return a.isFin(val) ? String(val).padStart(MIN_BACKUP_DIGITS, `0`) : undefined
 }
 
 // Create a backup of the progress file in the history directory
@@ -729,7 +683,7 @@ async function createOrUpdateBackup(sig, runId, roundIndex, content) {
   if (!HISTORY_DIR.handle || !runId) return false
 
   try {
-    const fileName = padRoundIndex(roundIndex) + fileExt(PROGRESS_FILE.handle.name)
+    const fileName = u.padRoundIndex(roundIndex) + fileExt(PROGRESS_FILE.handle.name)
     return await attemptBackupCreation(sig, runId, fileName, content)
   }
   catch (err) {

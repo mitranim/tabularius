@@ -156,7 +156,8 @@ const MEDIA_PANEL_DEFAULT_CHI = [
 ]
 
 const MEDIA_PANEL = new class MediaPanel extends u.Elem {
-  connectedCallback() {
+  constructor() {
+    super()
     E(
       this,
       {class: `flex flex-col gap-4 flex-1 min-w-0 bg-white dark:bg-gray-900 p-4 overflow-y-auto`},
