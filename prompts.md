@@ -530,3 +530,256 @@ function fileExt(name) {
 ```
 
 ------
+
+We have data that looks like this (see below). The keys are ids. The types repeat, the ids don't. We suspect that the encoded representation of ids does not exactly correspond to their original in-memory types. The data was generated and encoded by a C# program (context: Unity game engine). We want to figure out the original algorithm for generating the ids, and their in-memory data type. Analyze the scenario and the data, and provide suggestions.
+
+```json
+{
+  "-64960": {"type": "HQ03"},
+  "-113446": {"type": "SB06"},
+  "-114274": {"type": "SB04"},
+  "-143152": {"type": "NB06"},
+  "-158696": {"type": "CB15"},
+  "-160618": {"type": "F302"},
+  "-161228": {"type": "F302"},
+  "-172768": {"type": "F302"},
+  "-197536": {"type": "F302"},
+  "-235538": {"type": "NB07"},
+  "-235932": {"type": "CB04"},
+  "-285534": {"type": "SB06"},
+  "-286846": {"type": "CB01"},
+  "-311340": {"type": "CB17"},
+  "-344718": {"type": "F302"},
+  "-382724": {"type": "CB17"},
+  "-393246": {"type": "NB14"},
+  "-502914": {"type": "CB03"},
+  "-525690": {"type": "NB04"},
+  "-226212": {"type": "CB19"},
+  "-244590": {"type": "SB06"},
+  "-244676": {"type": "SB06"},
+  "-245236": {"type": "CB01"},
+  "-259350": {"type": "CB15"},
+  "-297664": {"type": "NB08"},
+  "-306072": {"type": "CB04"},
+  "-309086": {"type": "F302"},
+  "-358226": {"type": "CB07"},
+  "-383136": {"type": "NB08"},
+  "-388948": {"type": "CB04"},
+  "-416238": {"type": "SB02"},
+  "-420818": {"type": "SB02A"},
+  "-458966": {"type": "SB06"},
+  "-459778": {"type": "SB04"},
+  "-637660": {"type": "SB06"},
+  "-518796": {"type": "CB15"},
+  "-639206": {"type": "CB01"},
+  "-673240": {"type": "CB14"},
+  "-755172": {"type": "CB01"},
+  "-782656": {"type": "F302"},
+  "-829622": {"type": "NB19"},
+  "-838036": {"type": "CB01"},
+  "-903482": {"type": "CB01"},
+  "-909104": {"type": "F301"},
+  "-923054": {"type": "SB06"},
+  "-924118": {"type": "CB02"},
+  "-973732": {"type": "NB09"},
+  "-981390": {"type": "CB09"},
+  "-991498": {"type": "CB15"},
+  "-1028768": {"type": "CB05"},
+  "-1104990": {"type": "NB05"},
+  "-1115236": {"type": "CB15"},
+  "-1196114": {"type": "CB04"}
+}
+```
+
+<!--
+Bot response:
+
+  https://docs.unity3d.com/ScriptReference/Object.GetInstanceID.html
+
+Unity uses negative integers for many object ids.
+-->
+
+------
+
+## Overview
+
+We have JSON data and want to analyze it in various ways. See the attached JSON file for a sample document (a subset of data); there will be many more such documents, per round, per run, per player. Because the data is large and deeply nested, we want to simplify and flatten it. Below, we describe the fields we plan to analyze and the various strategies.
+
+### Fields
+
+Not everything from the source data is of interest to us. Considering using the following:
+
+* `Version` (if we fail to parse, look at the version and report the difference; at the time of writing, only version 1 exists)
+* `RoundIndex`
+* `MarkAsExpired` (detect end of run)
+* `HeroType` (detect when a commander skews some stats)
+* `Skills` (doctrines)
+* `OwnedExpertSkills` (Frontier modifiers)
+* `DifficultyLevel`
+* `CurrentExpertScore` (Frontier heat level)
+* `CurrentNeutralOdds` (in combination with neutral buildings, for analyzing Discovery)
+
+And by far the biggest: `Buildings`.
+
+From buildings:
+
+* id (building's key in the dictionary)
+* `EntityID` (building type)
+* `PurchasedUpgrades`
+* `SellPrice`
+* `SellCurrencyType`
+* `LiveStats.stats.DamageDone`
+* `LiveStats.stats.DamageDone.valueThisGame`
+* `LiveStats.stats.DamageDone.valueThisWave`
+* `LiveStats.stats.DamageOverkill.valueThisGame` (untrustworthy?)
+* `LiveStats.stats.DamageOverkill.valueThisWave` (untrustworthy?)
+* Weapon stats, via one of the following (choose one):
+  * `ChildLiveStats`
+    * Requires deduplication, stats for some weapons are repeated; for example, in a fully upgraded `SB04`, this repeats stats for `Defender_M5` and `Defender_M5_slug`
+  * `Weapons` + `WeaponStats`
+    * `WeaponStats` don't have weapon types; we have to match them by indexes to `Weapons` which do; both are lists
+    * `WeaponStats[index].stats.DamageDone.valueThisGame`
+    * `WeaponStats[index].stats.DamageDone.valueThisWave`
+    * `WeaponStats[index].stats.DamageOverkill.valueThisGame` (untrustworthy?)
+    * `WeaponStats[index].stats.DamageOverkill.valueThisWave` (untrustworthy?)
+
+Other stats for consideration:
+* `Currencies` (to see when players are sitting on too much cash, and also for Grenadier production)
+* `LiveStats.stats.DamageDone.countThisGame`
+* `LiveStats.stats.DamageDone.countThisWave`
+* `LiveStats.stats.DamageOverkill.countThisGame` (untrustworthy?)
+* `LiveStats.stats.DamageOverkill.countThisWave` (untrustworthy?)
+
+Building ids: see the Unity docs for object ID generation: https://docs.unity3d.com/ScriptReference/Object.GetInstanceID.html. According to the docs, instance ids may change between sessions, like when repeatedly loading, saving, exiting. This means building ids _may_ change between rounds in such cases. We probably can't rely on them staying consistent. Needs confirmation.
+
+Building ids: when converting them from keys to values, consider parsing as integers, falling back on the original string representation. Motive: they're sequential (newer objects have larger ids), and this would allow us to sort them. The string representations would not be properly sorted by string-sorting algorithms due to varying lengths.
+
+When looking at `DamageDone` or `DamageOverkill` for buildings and weapons, sometimes we should skip it for that round. The game pre-creates them for a lot of objects, even when it's useless. Examples:
+
+* Stats are often preallocated for non-existent weapons. Particularly egregious for buildings with many swappable weapons. We'd be polluting our data with stats for a weapon which does not exist, skewing the results.
+  * Every HQ has a Cruiser Cannon (`Cruiser_canon`), even without the corresponding doctrine.
+  * Every faction 1 HQ has even more weapons.
+  * In `.WeaponStats`, non-existent weapons may have `"stats": {}` (not preallocated), but we shouldn't rely on that.
+* All neutral buildings have damage stats, which are usually zero because the building does not actually have weapons. At the very least, we should check for the presence of weapons, or skip all neutrals via `.BuildingType === "Neutral"`.
+
+Note that when a weapon does exist and is enabled, then we _do_ want to count its stats even if they're all zero. Which means when looking at `.WeaponStats[index]` for a particular round, we should check `.Weapons[index].Enabled`. When a weapon is enabled, we count its stats for that round, and vice versa. This should give us stats for situations where a building is not shooting because of bad placement.
+
+Weapon stats could be per building instance, or per building type.
+
+Why bother with weapon stats instead of just building stats? Because upgrades change weapons, and it's very useful to know which perform when, for both players and developers.
+
+### Querying
+
+We want many options for filtering, grouping, aggregating.
+
+* Group by user
+* Group by run
+* Group by round
+* Group by building id
+* Group by building type
+* Group by building type + upgrades (Mirador AA <> Mirador AAA)
+  * May precompute keys: `.EntityID + encodeUpgrade(.PurchasedUpgrades)`
+* Group by building kind (Mirador = Advanced Mirador)
+* Filter by any of the above
+* Aggregate cost
+* Aggregate damage done
+* Aggregate damage overkill
+* Aggregate damage efficiency (damage per cost)
+
+### Flatting
+
+Considering flatting the data to a much flatter, simpler format. Various considerations:
+* Could be a list of atomic facts (datoms).
+* Could be an event log (similar to the above).
+* Probably want to pre-compute some aggregates for later ease.
+
+## Further requirements
+
+What we're missing is how to actually structure the data to make our queries simple and efficient. After careful consideration, provide various structuring strategies, with examples.
+
+------
+
+### Flatting
+
+We're going down to the smallest size: datoms, inspired by Datomic and event sourcing. Example under consideration:
+
+```
+// General:
+
+[entId, key, val]
+
+// More specific:
+
+[<run_id_0>, `userId`, <current_user_id>]
+
+[<round_id_0>, `runId`, <run_id_0>]
+[<round_id_0>, `index`, 0]
+[<building_id_0>, `roundId`, <round_id_0>]
+[<building_id_0>, `damageDone`, <some_number>]
+[<building_id_1>, `roundId`, <round_id_0>]
+[<building_id_1>, `damageDone`, <some_number>]
+// ... more data
+
+[<round_id_1>, `runId`, <run_id_0>]
+[<round_id_1>, `index`, 1]
+[<building_id_0>, `roundId`, <round_id_1>]
+[<building_id_0>, `damageDone`, <some_number>]
+[<building_id_1>, `roundId`, <round_id_1>]
+[<building_id_1>, `damageDone`, <some_number>]
+// ... more data
+```
+
+Consider if this structure (or very similar) fits our needs. If so, provide more substantual examples of this data as JS data structures, and JS functions for some of the aggregate queries mentioned above.
+
+------
+
+We're writing a serverless web app which is going to insert data into a cloud database. We're going to generate some entity ids locally. They're monotonic, with a time-based prefix; the millisecond precision of `Date.now` is sufficient for our needs. They also need a random or pseudo-random suffix with enough entropy to ensure that collisions between two ids in the same millisecond are extremely unlikely. That's easy to achieve by using a large prefix. But we want a good balance of entropy vs brevity, to keep the ids short.
+
+Review the current implementation:
+
+```js
+export function rid() {
+  return (
+    Date.now().toString(16) + `_` +
+    a.arrHex(crypto.getRandomValues(new Uint8Array(8)))
+  )
+}
+```
+
+Assumptions:
+* We have 1k users.
+* Each user periodically (once per 30m) generates 1k ids.
+* We'd like to avoid any collisions in the next 100 years.
+
+What's the smallest entropy needed for the random suffix to make a collision extremely unlikely?
+
+------
+
+We'd like to also order ids within the same millisecond, at least for the same user, which is sufficient for us. How do we achieve that without resorting to more precise timers?
+
+------
+
+Explain Firebase ids and compare to ours.
+
+------
+
+Minor correction: our `rid` is client-side, we're a serverless browser app.
+
+------
+
+Compare the entropy of Firebase push ids to the entropy of our `rid` (with the sub-ms counter). We're considering impact of random ids on the size of compressed data, suspecting that their entropy significantly bloats the size even under compression.
+
+------
+
+In JS, we're generating monotonic ids with a time-based component, and a random component:
+
+```js
+function rid() {
+  return (
+    Date.now().toString(16) + `_` +
+    a.arrHex(crypto.getRandomValues(new Uint8Array(8)))
+  )
+}
+```
+
+We'd like to reduce the size of the time component by using a more recent epoch rather than the Unix epoch. We also want to choose the epoch in such a way, that the length of the time-based component of the id doesn't change until at least 100 years into the future. Suggest several most suitable epochs.
