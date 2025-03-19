@@ -10,20 +10,19 @@ self.onfetch = onFetch
 
 function onFetch(event) {
   const {request: req} = event
-  if (shouldCache(req.url)) {
-    event.respondWith(fetchWithCache(req))
-  }
+  if (!shouldCache(req.url)) return
+  event.respondWith(fetchWithCache(req))
 }
 
+let cache
 async function fetchWithCache(req) {
-  const cache = await caches.open(`main`)
+  cache ??= await caches.open(`main`)
 
   let res = await cache.match(req)
-  if (!res) {
-    res = await fetch(req)
-    if (res.ok) cache.put(req, res.clone())
-  }
+  if (res) return res
 
+  res = await fetch(req)
+  if (res.ok) cache.put(req, res.clone())
   return res
 }
 
