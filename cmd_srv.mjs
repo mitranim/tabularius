@@ -11,7 +11,7 @@ const bro = new ld.LiveBroad()
 
 const dirs = ld.LiveDirs.of(
   hd.dirRel(Deno.env.get(`TAR`) || `.`),
-  hd.dirRel(`.`, /(?:^index.html$|^js[/]|sw[.]mjs)/),
+  hd.dirRel(`.`, /(?:^index[.]html$|^sw[.]mjs$|^js[/]|^data[/]|^local[/])/),
 )
 
 const dirAbs = hd.dirAbs()

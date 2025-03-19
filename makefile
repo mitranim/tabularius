@@ -1,10 +1,13 @@
 MAKEFLAGS := --silent --always-make
-TAR := .tar
-DENO_RUN := deno run -A --no-check
+MAKE_CONC := $(MAKE) -j 128 clear=$(or $(clear),false)
+TAR ?= .tar
+CLEAR ?= $(if $(filter false,$(clear)),, )
+DENO_RUN ?= deno run -A --no-check --node-modules-dir=false
+DENO_WATCH ?= $(DENO_RUN) --watch $(if $(CLEAR),,--no-clear-screen)
 
 help:
 	echo "Select one of the following commands."
-	echo "Definition: \`make -n <command_name>\`."
+	echo "To view a definition: make -n <command_name>"
 	echo
 	for val in "$(MAKEFILE_LIST)"; do grep -E '^\S+:' $$val; done | sed 's/:.*//' | sort | uniq
 
@@ -14,6 +17,12 @@ clean:
 srv: export TAR := $(TAR)
 srv:
 	$(DENO_RUN) cmd_srv.mjs
+
+run.w:
+	$(DENO_WATCH) $(run)
+
+run:
+	$(DENO_RUN) $(run)
 
 # Trims trailing whitespace from all tracked files.
 # The `-i ''` is required on MacOS, do not remove.
