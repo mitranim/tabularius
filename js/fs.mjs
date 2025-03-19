@@ -1,8 +1,6 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
-import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs.mjs'
 import * as idb from 'https://esm.sh/idb@7.1.1'
 import * as u from './util.mjs'
-import {E} from './util.mjs'
 import * as os from './os.mjs'
 
 // Initialize IndexedDB for persistence of file handles and other values.
@@ -39,6 +37,17 @@ export async function dbDel(store, key) {
   a.reqValidStr(key)
   return (await dbPromise).delete(store, key)
 }
+
+/*
+The File System API throws non-descriptive instances of `DOMException`, without
+file names or paths. We need clearer error messages for users. It seems that we
+need to try/catch all FS operations and wrap them into our errors, with clearer
+messages and easier detection by class.
+*/
+export function isErrFs(err) {return a.isInst(err, ErrFs)}
+
+class ErrFs extends u.Err {}
+class ErrFsPerm extends ErrFs {}
 
 export const PROGRESS_FILE = {
   handle: undefined,
@@ -109,7 +118,7 @@ async function tryLoadHandle(store, key, conf) {
       a.reqInst(handle, FileSystemHandle)
 
       // Check permission
-      const permission = await handle.queryPermission({mode: conf.mode})
+      const permission = await queryPermission(handle, {mode: conf.mode})
       if (permission !== `granted`) {
         u.log.inf(`${conf.desc}: permission needed. Use the "init" command to grant access.`)
       }
@@ -120,19 +129,17 @@ async function tryLoadHandle(store, key, conf) {
   return handle
 }
 
-// Generic function to initialize a file handle
-async function initFileConfig(sig, conf) {
-  await initFileHandle(sig, conf)
-  maybeStartWatch()
-  return `Initialized ${conf.desc}`
-}
-
 export async function initProgressFile(sig) {
   return initFileConfig(sig, PROGRESS_FILE)
 }
 
 export async function initHistoryDir(sig) {
   return initFileConfig(sig, HISTORY_DIR)
+}
+
+async function initFileConfig(sig, conf) {
+  await initFileHandle(sig, conf)
+  return `Initialized ${conf.desc}`
 }
 
 async function pickProgressFile() {
@@ -150,7 +157,6 @@ async function pickHistoryDir() {
 }
 
 async function initFileHandle(sig, conf) {
-
   const {desc, help, mode, key, pick} = conf
   a.reqValidStr(desc)
   a.reqValidStr(mode)
@@ -179,14 +185,14 @@ async function initFileHandle(sig, conf) {
     }
   }
 
-  let permission = await u.wait(sig, conf.handle.queryPermission({mode}))
+  let permission = await u.wait(sig, queryPermission(conf.handle, {mode}))
   if (permission !== `granted`) {
     u.log.inf(`Permission for ${desc}: ${permission}, requesting permission`)
     /*
     Note: browsers allow `.requestPermission` only as a result of a user action.
     We can't trigger it automatically on app startup, for example.
     */
-    permission = await u.wait(sig, conf.handle.requestPermission({mode}))
+    permission = await requestPermission(sig, conf.handle, {mode})
   }
   if (permission !== `granted`) {
     throw Error(`Please grant permission for ${desc}`)
@@ -195,10 +201,11 @@ async function initFileHandle(sig, conf) {
 
 // Generic function to check status of a file handle
 async function getHandleStatus(sig, conf, getSpecificStatus) {
+  const {handle, mode} = conf
   if (!conf.handle) return `${conf.desc}: not initialized`
 
   try {
-    const permission = await checkFilePermission(sig, conf)
+    const permission = await u.wait(sig, queryPermission(handle, {mode}))
     if (permission !== `granted`) return `${conf.desc}: permission needed`
 
     // Get specific status information
@@ -210,14 +217,9 @@ async function getHandleStatus(sig, conf, getSpecificStatus) {
   }
 }
 
-// Check permission for a file handle
-async function checkFilePermission(sig, fileConf) {
-  return await u.wait(sig, fileConf.handle.queryPermission({mode: fileConf.mode}))
-}
-
 // Get formatted status of progress file
 async function getProgressFileStatus(sig) {
-  const file = await u.wait(sig, PROGRESS_FILE.handle.getFile())
+  const file = await getFile(sig, PROGRESS_FILE.handle)
   return `Progress file: ${file.name} (${u.formatSize(file.size)})`
 }
 
@@ -236,7 +238,6 @@ export async function statusHistoryDir(sig) {
 
 // Get statistics about a directory (file count and total size)
 async function getDirectoryStats(sig, dirHandle) {
-
   // Count all files to get accurate stats
   const dirIter = await u.wait(sig, dirHandle.values())
   let fileCount = 0
@@ -244,7 +245,7 @@ async function getDirectoryStats(sig, dirHandle) {
 
   for await (const handle of dirIter) {
     if (isFile(handle)) {
-      const file = await u.wait(sig, handle.getFile())
+      const file = await getFile(sig, handle)
       bytesTotal += file.size
       fileCount++
     }
@@ -260,476 +261,134 @@ function formatHistoryDirStatus(stats) {
 }
 
 // Check if handle has the required permission
-async function handleHasPermission(conf) {
+export async function handleHasPermission(conf) {
   const {handle, mode} = conf
-  return (await handle?.queryPermission({mode})) === `granted`
+  return (await queryPermission(handle, {mode})) === `granted`
 }
 
-// Checks if both file handles are available and starts the watch command
-export async function maybeStartWatch() {
-  if (!(await handleHasPermission(PROGRESS_FILE))) return
-  if (!(await handleHasPermission(HISTORY_DIR))) return
-  if (os.hasProcByName(`watch`)) return
-  os.runCommand(`watch`)
-}
+/*
+TODO: detection should be across all browser tabs.
+Possibly via `localStorage`.
+*/
+function isWatching() {return os.hasProcByName(`watch`)}
 
-// Constants for the watch command
+// Constants for the watch command.
 export const WATCH_INTERVAL_MS = a.secToMs(10)
-export const WATCH_QUICK_INTERVAL_MS = a.secToMs(1)
-export const WATCH_MAX_DECODE_FAILURES = 3
+export const WATCH_INTERVAL_MS_SHORT = a.secToMs(1)
+export const WATCH_INTERVAL_MS_LONG = a.secToMs(30)
+export const WATCH_MAX_ERRS = 3
 
-os.COMMANDS.add(new os.Cmd({
-  name: `watch`,
-  desc: `watch progress file for changes and create backups`,
-  fun: cmdWatch,
-}))
+class WatchState extends a.Emp {
+  progressFileHandle = a.optInst(undefined, FileSystemFileHandle)
+  historyDirHandle = a.optInst(undefined, FileSystemDirectoryHandle)
+  runDirName = undefined
+  roundFileName = undefined
 
-export const WATCH_STATE = a.Emp()
-resetWatchState()
-
-// Reset the watch state to default values
-function resetWatchState() {
-  WATCH_STATE.failureCount = 0
-  WATCH_STATE.sleepTime = WATCH_INTERVAL_MS
-  WATCH_STATE.prevRunId = undefined
-  WATCH_STATE.prevRoundIndex = undefined
-  WATCH_STATE.prevTimestamp = undefined
-}
-
-async function cmdWatch(sig) {
-  if (os.hasProcByName(`watch`)) {
-    return `A watch process is already running`
+  setRunDir(val) {
+    this.runDirName = a.optValidStr(val)
+    this.setRoundFile()
   }
 
-  u.log.inf(`Watching progress file`)
-
-  // Reset state at start of command
-  resetWatchState()
-
-  // Initialize backup state
-  await initBackupState(sig)
-
-  do {
-    await checkProgressFile(sig)
-    await u.wait(sig, a.after(WATCH_STATE.sleepTime))
-  }
-  while (!sig.aborted)
+  setRoundFile(val) {this.roundFileName = a.optValidStr(val)}
 }
 
-// Initialize backup state by inspecting history directory
-async function initBackupState(sig) {
+// Too specialized, TODO generalize if needed.
+export async function getSubFile(sig, dir, subDirName, fileName) {
+  u.reqSig(sig)
+  a.reqInst(dir, FileSystemDirectoryHandle)
+  a.optValidStr(subDirName)
+  a.optValidStr(fileName)
+  if (!subDirName) return undefined
+  if (!fileName) return undefined
+  const subDir = await getDirectoryHandle(sig, dir, subDirName)
+  if (!subDir) return undefined
+  return await getFileHandle(sig, subDir, fileName)
+}
+
+export async function writeFile(sig, dir, name, body) {
+  a.reqValidStr(name)
+  a.reqValidStr(body)
+  const file = await getFileHandle(sig, dir, name, {create: true})
+  const wri = await u.wait(sig, file.createWritable())
   try {
-    // Check if history dir handle is available
-    if (!HISTORY_DIR.handle) {
-      u.log.inf(`[watch] History directory not initialized.`)
-      return
-    }
-
-    // Get the latest run ID
-    const latestRunId = await findLatestRunId(sig)
-    if (!latestRunId) {
-      u.log.inf(`[watch] No previous run found.`)
-      return
-    }
-
-    // Get the latest round index
-    const latestRoundIndex = await findLatestRoundIndex(sig, latestRunId)
-
-    // Get timestamp of latest file
-    const latestTimestamp = await getLatestBackupTimestamp(sig, latestRunId, latestRoundIndex)
-
-    // Store the values from the latest run
-    WATCH_STATE.prevRunId = latestRunId
-    WATCH_STATE.prevRoundIndex = latestRoundIndex
-    WATCH_STATE.prevTimestamp = latestTimestamp
-
-    u.log.inf(`[watch] Initialized from latest run:`, {
-      runId: WATCH_STATE.prevRunId,
-      roundIndex: WATCH_STATE.prevRoundIndex,
-      timestamp: WATCH_STATE.prevTimestamp ? new Date(WATCH_STATE.prevTimestamp).toISOString() : undefined,
-    })
-  } catch (err) {
-    u.log.err(`[watch] Failed to initialize backup state:`, err)
-  }
-}
-
-// Get timestamp of the latest backup file
-async function getLatestBackupTimestamp(sig, runId, roundIndex) {
-  if (!runId || !a.isFin(roundIndex)) return undefined
-
-  try {
-    const runDirHandle = await u.wait(sig, HISTORY_DIR.handle.getDirectoryHandle(runId))
-    const fileName = u.padRoundIndex(roundIndex) + fileExt(PROGRESS_FILE.handle.name)
-    const fileHandle = await u.wait(sig, runDirHandle.getFileHandle(fileName))
-    const file = await u.wait(sig, fileHandle.getFile())
-    return file.lastModified
-  } catch (err) {
-    u.log.err(`[watch] Failed to get timestamp of latest backup:`, err)
-    return undefined
-  }
-}
-
-// Main file checking function
-async function checkProgressFile(sig) {
-  try {
-    await validateProgressFile(sig)
-    const file = await u.wait(sig, PROGRESS_FILE.handle.getFile())
-
-    try {
-      const success = await processProgressFile(sig, file)
-
-      // Reset failure counts on success
-      WATCH_STATE.failureCount = 0
-      WATCH_STATE.sleepTime = WATCH_INTERVAL_MS
-
-      // No need for additional logging here as processProgressFile already logs appropriate messages
-    }
-    catch (err) {
-      handleProgressFileError(err)
-    }
-  } catch (err) {
-    u.log.err(`[watch] Error accessing progress file:`, err)
-    WATCH_STATE.failureCount++
-    WATCH_STATE.sleepTime = WATCH_QUICK_INTERVAL_MS
-  }
-}
-
-// Generic function to validate file handle and permissions
-async function validateFileHandleAccess(sig, conf) {
-
-  // Skip if file handle is not available
-  if (!conf.handle) {
-    throw Error(`${conf.desc} not initialized. Run the "init" command.`)
-  }
-
-  // Check permission
-  const permission = await u.wait(sig, conf.handle.queryPermission({mode: conf.mode}))
-  if (permission !== `granted`) {
-    throw Error(`Permission needed for ${conf.desc}. Run the "init" command to grant access.`)
-  }
-}
-
-// Validate that progress file is available and accessible
-async function validateProgressFile(sig) {
-  return validateFileHandleAccess(sig, PROGRESS_FILE)
-}
-
-// Process the progress file content
-async function processProgressFile(sig, file) {
-  const fileContent = await u.wait(sig, file.text())
-  const data = await u.wait(sig, u.decodeObfuscated(fileContent))
-  const nextRoundIndex = a.onlyFin(data?.RoundIndex)
-
-  // Log the round index
-  if (a.isFin(nextRoundIndex)) {
-    u.log.inf(`[watch] Round index:`, nextRoundIndex)
-  }
-
-  // Create backup in history directory
-  let backupCreated = await createBackup(sig, file, fileContent, data)
-
-  // Handle special cases for retry on failure
-  if (!backupCreated && !a.isNil(nextRoundIndex)) {
-    const prevRoundIndex = WATCH_STATE.prevRoundIndex
-    if (!a.isNil(prevRoundIndex)) {
-      // Round increase failure
-      if (prevRoundIndex < nextRoundIndex) {
-        u.log.inf(`[watch] Retry after failed round increase backup`)
-        WATCH_STATE.prevRoundIndex = nextRoundIndex - 1
-        backupCreated = await createBackup(sig, file, fileContent, data)
-      }
-      // Round decrease failure
-      else if (prevRoundIndex > nextRoundIndex) {
-        u.log.inf(`[watch] Retry with new run after failed round decrease backup`)
-        backupCreated = await handleNewRunBackup(sig, nextRoundIndex, fileContent)
-      }
-    }
-  }
-
-  return backupCreated
-}
-
-// Handle errors in progress file processing
-function handleProgressFileError(err) {
-  u.log.err(err)
-  WATCH_STATE.failureCount++
-
-  if (WATCH_STATE.failureCount >= WATCH_MAX_DECODE_FAILURES) {
-    throw Error(`Failed to decode progress file ${WATCH_STATE.failureCount} times: ${err}`)
-  }
-
-  // Reduce sleep time on failure
-  WATCH_STATE.sleepTime = WATCH_QUICK_INTERVAL_MS
-}
-
-// Create a backup of the progress file in the history directory
-async function createBackup(sig, file, content, data) {
-  if (!HISTORY_DIR.handle) {
-    u.log.err(`[watch] History directory handle not available`)
-    return false
-  }
-
-  const nextTimestamp = a.reqFin(file.lastModified)
-  if (!shouldCreateBackup(nextTimestamp)) return false
-
-  const nextRoundIndex = a.onlyFin(data?.RoundIndex)
-  if (a.isNil(nextRoundIndex)) return false
-
-  // Log round index change type
-  const prevRoundIndex = WATCH_STATE.prevRoundIndex
-  if (a.isFin(prevRoundIndex)) {
-    if (prevRoundIndex > nextRoundIndex) {
-      u.log.inf(`[watch] Round decrease: ${prevRoundIndex} → ${nextRoundIndex}`)
-    } else if (prevRoundIndex < nextRoundIndex) {
-      u.log.inf(`[watch] Round increase: ${prevRoundIndex} → ${nextRoundIndex}`)
-    }
-  }
-
-  try {
-    const success = await handleBackupScenario(sig, nextRoundIndex, content)
-    if (success) {
-      WATCH_STATE.prevTimestamp = nextTimestamp
-      return true
-    }
-    return false
+    await u.wait(sig, wri.write(body))
+    return file
   }
   catch (err) {
-    u.log.err(`[watch] Failed to create backup:`, err)
-    return false
+    throw new ErrFs(`unable to write to ${dir.name}/${name}: ${err}`, {cause: err})
   }
+  finally {await wri.close()}
 }
 
-// Determine if we should create a backup based on timestamp
-function shouldCreateBackup(nextTimestamp) {
-  if (a.isFin(WATCH_STATE.prevTimestamp) && WATCH_STATE.prevTimestamp >= nextTimestamp) return false
-  // Store temporarily but don't update state yet - will update after successful backup
-  return true
-}
+export function isFile(val) {return val.kind === `file`}
+export function isDir(val) {return val.kind === `directory`}
 
-// Handle different backup scenarios based on round index comparison
-async function handleBackupScenario(sig, nextRoundIndex, content) {
-  try {
-    if (a.isNil(WATCH_STATE.prevRoundIndex)) {
-      const done = await handleFirstBackup(sig, nextRoundIndex, content)
-      if (done) u.log.inf(`[watch] Created first backup for round ${nextRoundIndex}`)
-      return done
-    }
-    if (WATCH_STATE.prevRoundIndex === nextRoundIndex) {
-      const done = await handleSameRoundBackup(sig, nextRoundIndex, content)
-      if (done) u.log.inf(`[watch] Updated backup for round ${nextRoundIndex}`)
-      return done
-    }
-    if (WATCH_STATE.prevRoundIndex < nextRoundIndex) {
-      const done = await handleNewRoundBackup(sig, nextRoundIndex, content)
-      if (done) u.log.inf(`[watch] Created backup for new round ${nextRoundIndex} (previous: ${WATCH_STATE.prevRoundIndex})`)
-      return done
-    }
-    if (WATCH_STATE.prevRoundIndex > nextRoundIndex) {
-      const done = await handleNewRunBackup(sig, nextRoundIndex, content)
-      if (done) u.log.inf(`[watch] Created backup for new run with round ${nextRoundIndex}`)
-      return done
-    }
-    throw Error(`Internal error: unhandled round index comparison`)
-  }
-  catch (err) {
-    u.log.err(`[watch] Error in handleBackupScenario:`, err)
-    return false
-  }
-}
-
-// Update round index and optionally update run ID
-async function updateBackupState(sig, nextRoundIndex, updateOpts = {}) {
-  WATCH_STATE.prevRoundIndex = nextRoundIndex
-
-  if (updateOpts.newRunId) {
-    WATCH_STATE.prevRunId = u.rid()
-    await createRunDir(sig, WATCH_STATE.prevRunId)
-  } else if (updateOpts.findRunId) {
-    WATCH_STATE.prevRunId = await findLatestRunId(sig)
-  }
-
-  return WATCH_STATE.prevRunId
-}
-
-// Handle first backup in a run
-async function handleFirstBackup(sig, nextRoundIndex, content) {
-  let runId = await updateBackupState(sig, nextRoundIndex, {findRunId: true})
-  if (!runId) {
-    // No existing run, create a new one
-    runId = u.rid()
-    if (await createRunDir(sig, runId)) {
-      WATCH_STATE.prevRunId = runId
-    } else {
-      return false
-    }
-  }
-  return await createOrUpdateBackup(sig, WATCH_STATE.prevRunId, nextRoundIndex, content)
-}
-
-// Handle backup for the same round (overwrite)
-async function handleSameRoundBackup(sig, nextRoundIndex, content) {
-  if (!WATCH_STATE.prevRunId) return false
-  return await createOrUpdateBackup(sig, WATCH_STATE.prevRunId, nextRoundIndex, content)
-}
-
-// Handle backup for new round in the same run
-async function handleNewRoundBackup(sig, nextRoundIndex, content) {
-  if (!WATCH_STATE.prevRunId) return false
-
-  // Update round index but keep same run ID
-  WATCH_STATE.prevRoundIndex = nextRoundIndex
-  return await createOrUpdateBackup(sig, WATCH_STATE.prevRunId, nextRoundIndex, content)
-}
-
-// Handle backup for a new run
-async function handleNewRunBackup(sig, nextRoundIndex, content) {
-  // Create new run with new ID
-  const newRunId = u.rid()
-  if (!await createRunDir(sig, newRunId)) return false
-
-  // Update state with new run ID and round index
-  WATCH_STATE.prevRunId = newRunId
-  WATCH_STATE.prevRoundIndex = nextRoundIndex
-
-  return await createOrUpdateBackup(sig, WATCH_STATE.prevRunId, nextRoundIndex, content)
-}
-
-// Generic function to collect entries from a directory
-async function collectEntries(sig, dirHandle, filterFun) {
-  a.reqInst(dirHandle, FileSystemHandle)
-  a.reqFun(filterFun)
-  const dirIter = await u.wait(sig, dirHandle.values())
-  const entries = []
-
-  for await (const entry of dirIter) {
+export async function* readDir(sig, src) {
+  a.optInst(src, FileSystemDirectoryHandle)
+  if (!src) return
+  for await (const val of await u.wait(sig, src.values())) {
     if (sig.aborted) break
-    if (filterFun(entry)) entries.push(entry.name)
+    yield val
   }
-
-  // Sort entries alphabetically
-  entries.sort()
-  return entries
 }
 
-// Find the latest run ID by inspecting the history directory
-async function findLatestRunId(sig) {
-  if (!HISTORY_DIR.handle) return undefined
-
+export async function queryPermission(src, opt) {
+  if (!a.optInst(src, FileSystemHandle)) return undefined
   try {
-    // TODO avoid allocating a collection since we only want the last one.
-    const runDirs = await collectEntries(sig, HISTORY_DIR.handle, isDir)
-    return a.last(runDirs)
+    return await src.queryPermission(opt)
   }
   catch (err) {
-    u.log.err(`[watch] Failed to find latest run ID:`, err)
-    return undefined
+    throw new ErrFsPerm(`unable to query permission for ${src.name}: ${err}`, {cause: err})
   }
 }
 
-function isFile(val) {return val.kind === `file`}
-function isDir(val) {return val.kind === `directory`}
-
-// Find the latest round index in a run directory
-async function findLatestRoundIndex(sig, runId) {
-  a.optStr(runId)
-  if (!HISTORY_DIR.handle || !PROGRESS_FILE.handle || !runId) return undefined
+export async function requestPermission(sig, src, opt) {
+  u.reqSig(sig)
+  a.reqInst(src, FileSystemHandle)
 
   try {
-    const runDirHandle = await u.wait(sig, HISTORY_DIR.handle.getDirectoryHandle(runId))
-    const sourceExt = fileExt(PROGRESS_FILE.handle.name)
-    const backupFileNames = await collectEntries(
-      sig,
-      runDirHandle,
-      entry => isFile(entry) && entry.name.endsWith(sourceExt)
-    )
-    return extractRoundIndexFromLastBackup(backupFileNames, sourceExt)
+    return await u.wait(sig, src.requestPermission(opt))
   }
   catch (err) {
-    u.log.err(`[watch] Failed to find latest round index:`, err)
-    return undefined
+    throw new ErrFsPerm(`unable to request permission for ${src.name}: ${err}`, {cause: err})
   }
 }
 
-function extractRoundIndexFromLastBackup(names, ext) {
-  return a.intOpt(a.stripSuf(a.last(names), ext))
-}
-
-// Create a new run directory
-async function createRunDir(sig, runId) {
-  if (!HISTORY_DIR.handle || !runId) return false
-
+export async function getFile(sig, src, opt) {
+  u.reqSig(sig)
+  a.reqInst(src, FileSystemHandle)
   try {
-    await u.wait(sig, HISTORY_DIR.handle.getDirectoryHandle(runId, {create: true}))
-    u.log.inf(`[watch] Created run dir: ${runId}`)
-    return true
+    return await u.wait(sig, src.getFile(opt))
   }
   catch (err) {
-    u.log.err(`[watch] Failed to create run directory:`, err)
-    return false
+    throw new ErrFsPerm(`unable to get file for handle ${src.name}: ${err}`, {cause: err})
   }
 }
 
-// Write content to a file in the run directory
-async function writeBackupFile(sig, runDirHandle, fileName, content) {
-  const fileHandle = await u.wait(sig, runDirHandle.getFileHandle(fileName, {create: true}))
-  const writable = await u.wait(sig, fileHandle.createWritable())
-  await u.wait(sig, writable.write(content))
-  await u.wait(sig, writable.close())
-  return fileHandle
-}
-
-// Create or update a backup file
-async function createOrUpdateBackup(sig, runId, roundIndex, content) {
-  if (!HISTORY_DIR.handle || !runId) return false
+export async function getFileHandle(sig, src, name, opt) {
+  u.reqSig(sig)
+  a.reqInst(src, FileSystemDirectoryHandle)
+  a.reqValidStr(name)
 
   try {
-    const fileName = u.padRoundIndex(roundIndex) + fileExt(PROGRESS_FILE.handle.name)
-    return await attemptBackupCreation(sig, runId, fileName, content)
+    return await u.wait(sig, src.getFileHandle(name, opt))
   }
   catch (err) {
-    u.log.err(`[watch] Failed to create/update backup:`, err)
-    return false
+    throw new ErrFsPerm(`unable to get file handle ${src.name}/${name}: ${err}`, {cause: err})
   }
 }
 
-// Attempt to create a backup, handling potential errors
-async function attemptBackupCreation(sig, runId, fileName, content) {
+export async function getDirectoryHandle(sig, src, name, opt) {
+  u.reqSig(sig)
+  a.reqInst(src, FileSystemDirectoryHandle)
+  a.reqValidStr(name)
+
   try {
-    const runDirHandle = await u.wait(sig, HISTORY_DIR.handle.getDirectoryHandle(runId, {create: true}))
-    await writeBackupFile(sig, runDirHandle, fileName, content)
-    u.log.inf(`[watch] Created backup: ${runId}/${fileName}`)
-    return true
-  } catch (err) {
-    if (err.name === 'NotFoundError') {
-      try {
-        await handleNotFoundError(sig, runId, fileName, content)
-        return true
-      } catch (recoverErr) {
-        u.log.err(`[watch] Failed to recover from NotFoundError`)
-        return false
-      }
-    } else {
-      u.log.err(`[watch] Backup creation failed:`, err)
-      return false
-    }
+    return await u.wait(sig, src.getDirectoryHandle(name, opt))
   }
-}
-
-// Handle NotFoundError when creating backup
-async function handleNotFoundError(sig, runId, fileName, content) {
-  u.log.inf(`[watch] Recreating missing run directory: ${runId}`)
-  if (!await createRunDir(sig, runId)) throw Error('Failed to create run directory')
-
-  const runDirHandle = await u.wait(sig, HISTORY_DIR.handle.getDirectoryHandle(runId, {create: true}))
-  await writeBackupFile(sig, runDirHandle, fileName, content)
-  u.log.inf(`[watch] Created backup after dir recreation: ${runId}/${fileName}`)
-}
-
-// Must be called ONLY on the file name, without the directory path.
-function fileExt(name) {
-  name = a.laxStr(name)
-  const ind = name.lastIndexOf(`.`)
-  return ind > 0 ? name.slice(ind) : ``
+  catch (err) {
+    throw new ErrFsPerm(`unable to get directory handle ${src.name}/${name}: ${err}`, {cause: err})
+  }
 }
 
 // Must always be at the very end of this file.

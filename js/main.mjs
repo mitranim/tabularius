@@ -8,6 +8,7 @@ import * as u from './util.mjs'
 import {E} from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
+import * as w from './watch.mjs'
 
 os.COMMANDS.add(new os.Cmd({
   name: `help`,
@@ -68,6 +69,12 @@ os.COMMANDS.add(new os.Cmd({
   name: `analyze`,
   desc: `analyze data (mock process)`,
   fun: cmdMockProcess,
+}))
+
+os.COMMANDS.add(new os.Cmd({
+  name: `test`,
+  desc: `toggle test mode`,
+  fun: cmdTest,
 }))
 
 const TITLEBAR = E(
@@ -338,11 +345,11 @@ function showProcs() {
   ])
 }
 
-
 // Initialize features that require user action.
 async function cmdInit(sig) {
   await fs.initProgressFile(sig)
   await fs.initHistoryDir(sig)
+  await w.maybeStartWatch()
   return `all features initialized`
 }
 
@@ -371,6 +378,19 @@ async function cmdStatus(sig) {
   ])
 }
 
+const STORAGE_KEY_TEST_MODE = `tabularius_test_mode`
+const TEST_MODE = a.isSome(sessionStorage.getItem(STORAGE_KEY_TEST_MODE))
+
+// Toggles test mode.
+function cmdTest() {
+  if (TEST_MODE) {
+    sessionStorage.removeItem(STORAGE_KEY_TEST_MODE)
+  }
+  else {
+    sessionStorage.setItem(STORAGE_KEY_TEST_MODE, ``)
+  }
+  window.location.reload()
+}
 
 /*
 We render the top-level elements exactly once. Any further UI updates must be
@@ -403,15 +423,25 @@ document.addEventListener(`keydown`, function focusPromptOnSlash(eve) {
 })
 
 // Add some initial log messages.
-u.log.inf(`welcome to Tabularius`)
-u.log.inf(`type "help" for a list of commands`)
+u.log.inf(`Welcome to Tabularius`)
+u.log.inf(`Type "help" for a list of commands`)
 
-os.runCommand(`sync`)
-os.runCommand(`analyze`)
-os.runCommand(`help`)
+if (TEST_MODE) {
+  u.log.inf(`Test mode enabled`)
+  await import(`./test.mjs`).catch(u.logErr)
+}
+else {
+  os.runCommand(`help`)
+  os.runCommand(`sync`)
+  os.runCommand(`analyze`)
+  await fs.loadHandles().catch(u.logErr)
+  w.maybeStartWatch().catch(u.logErr)
+}
 
-await fs.loadHandles().catch(u.logErr)
-await fs.maybeStartWatch().catch(u.logErr)
+// Can plug-in arbitrary modules via URL query param.
+for (const val of new URLSearchParams(window.location.search).getAll(`import`)) {
+  import(new URL(val, new URL(`..`, import.meta.url)))
+}
 
 // Must always be at the very end of this file.
 import * as module from './main.mjs'

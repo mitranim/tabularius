@@ -699,6 +699,14 @@ What we're missing is how to actually structure the data to make our queries sim
 
 ------
 
+<!-- When a bot offers a star schema: -->
+
+How to decide if dimensions should be per-run, per-round, or global?
+
+How to decide which datums belong in facts, and which belong in dimensions?
+
+------
+
 ### Flatting
 
 We're going down to the smallest size: datoms, inspired by Datomic and event sourcing. Example under consideration:
@@ -783,3 +791,5 @@ function rid() {
 ```
 
 We'd like to reduce the size of the time component by using a more recent epoch rather than the Unix epoch. We also want to choose the epoch in such a way, that the length of the time-based component of the id doesn't change until at least 100 years into the future. Suggest several most suitable epochs.
+
+---

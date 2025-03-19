@@ -47,6 +47,8 @@ We have terminal commands for initializing the FS access, and showing the curren
 
 ## Backups
 
+Status: done. The description below is somewhat outdated.
+
 Goals:
 - Watch the save/progress file.
 - Detect file modifications.
@@ -89,7 +91,7 @@ Details:
     - If prev < next: backup to a new file in the target directory for that run. Round index is file name. Pad the file name by zeroes up to length 4 to ensure predictable sorting.
     - If prev > next:
       - New run detected.
-      - Generate new run id (`rid` function).
+      - Generate new run id.
       - Create new run dir.
       - Write next backup to new run dir (name according to round index).
     - Otherwise: throw an internal error / unreachable / programmer error.

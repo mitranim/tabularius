@@ -14,6 +14,10 @@ const dirs = ld.LiveDirs.of(
   hd.dirRel(`.`, /(?:^index[.]html$|^sw[.]mjs$|^js[/]|^data[/]|^local[/])/),
 )
 
+const liveDirs = ld.LiveDirs.of(
+  hd.dirRel(`.`, /(?:^index[.]html$|^sw[.]mjs$|^js[/])/),
+)
+
 const dirAbs = hd.dirAbs()
 
 Deno.serve({
@@ -45,6 +49,6 @@ Causes our "live client" to reload the page on changes. See `live.mjs` and
 be different from the directories from which we serve files, depending on how
 our app works. For a SPA, the correspondence tends to be one-to-one.
 */
-for await (const val of dirs.watchLive()) {
+for await (const val of liveDirs.watchLive()) {
   bro.writeEventJson(val)
 }

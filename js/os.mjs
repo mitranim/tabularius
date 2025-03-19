@@ -46,7 +46,7 @@ export class Proc extends a.Emp {
 
   pk() {return this.id}
   cmd() {return this.args.join(` `)}
-  deinit() {return this.control.abort()}
+  deinit() {return this.control.abort(new u.ErrAbort(`deinit`))}
 
   // Incremented for each new instance.
   static id = 0
@@ -115,7 +115,7 @@ export async function runCommand(srcText) {
     u.logCmdDone(name, out)
   }
   catch (err) {
-    u.logCmdFail(name, out)
+    u.logCmdFail(name, err)
   }
   finally {
     delete PROCS[proc.id]

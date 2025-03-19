@@ -90,8 +90,8 @@ const LOG_WIDTH_MAX = 90 // % of parent width
 const LOG_MAX_MSGS = 1024
 
 // Should be used with `.catch` on promises.
-// Logs the error and suppresses the rejection.
-export function logErr(err) {if (a.isSome(err)) log.err(err)}
+// Logs the error and suppresses rejection, returning `undefined`.
+export function logErr(err) {log.err(err)}
 
 export const log = new class Log extends Elem {
   // Must be used for all info logging.
@@ -103,6 +103,7 @@ export const log = new class Log extends Elem {
   // Must be used for all error logging.
   err(...msg) {
     if (!a.vac(msg)) return
+    if (a.some(msg, isErrAbort)) return
     console.error(...msg)
     this.addMsg(msg, true)
   }
@@ -320,19 +321,15 @@ export function abortController() {
   const sig = out.signal
 
   sig.promise = new Promise(function initAbortSignalPromise(_, fail) {
-    /*
-    Reject the promise with `undefined`.
-    This is our cancelation indicator.
-    Our logger ignores nil errors.
-    */
-    function onAbort() {fail()}
+    function onAbort() {fail(sig.reason)}
     sig.addEventListener(`abort`, onAbort, {once: true})
   })
 
-  // No unhandled rejection on cancelation.
+  // No unhandled rejection on cancelation, even if no other code ever tries to
+  // `await` on the signal.
   sig.promise.catch(a.nop)
 
-  // Makes the signal await-able.
+  // Make the signal await-able.
   sig.then = abortSignalThen
 
   return out
@@ -362,13 +359,13 @@ export function wait(sig, ...src) {
 export function logCmdDone(name, out) {
   a.reqValidStr(name)
   if (!a.vac(out)) return
-  log.inf(`[${name}] done: ${logShow(out)}`)
+  log.inf(`[${name}] done:`, out)
 }
 
 export function logCmdFail(name, err) {
   a.reqValidStr(name)
   if (!a.vac(err)) return
-  log.inf(`[${name}] error: ${err}`)
+  log.err(`[${name}] error:`, err)
 }
 
 /*
@@ -387,37 +384,116 @@ export function isElemInput(val) {
 }
 
 export function joinSpaced(src) {return a.joinOptLax(src, ` `)}
+export function joinKeys(...src) {return a.joinOptLax(src, `_`)}
 
 /*
-A monotonic random id. Considered using ULID, but seemed too complicated.
-The length will change on 2527-04-16 according to a bot.
+How many digits to use for local ordinal ids for runs and rounds.
+
+999999 rounds = unreal
+
+999999 runs = if 10 min per run, then 19 years
+*/
+const ORD_STR_LEN = 6
+
+export function intToOrdStr(val) {
+  return String(a.reqInt(val)).padStart(ORD_STR_LEN, `0`)
+}
+
+/*
+Very permissive parsing. Works for strings like:
+
+  123
+  123_<id>
+  123.<ext>
+  123_<id>.<ext>
+
+Returns nil when parsing doesn't produce an integer.
+*/
+export function strToInt(src) {
+  return a.onlyInt(parseInt(a.laxStr(src)))
+}
+
+export function fileNameBase(name) {
+  name = a.laxStr(name)
+  const ind = name.lastIndexOf(`.`)
+  return ind > 0 ? name.slice(0, ind) : ``
+}
+
+export function fileNameExt(name) {
+  name = a.laxStr(name)
+  const ind = name.lastIndexOf(`.`)
+  return ind > 0 ? name.slice(ind) : ``
+}
+
+/*
+Random id, or rather a random hex string. One half of a UUIDv4, without the bit
+twiddling. Shorter and should be enough for our perps.
+
+We're not using "monotonic" ids, such as Firebase push IDs, because they're time
+bombs, using client clocks, with low precision. All 3 factors are pertinent.
+Time is an integer, and encoding it as a string causes wrong sorting on length
+mismatch. The default "lexographic" sorting algorithm could have been designed
+to respect integer sorting better, but hasn't been.
+
+For file and directory names, whenever we want to combine sort order with
+uniqueness, we do use a combination of a local sequence with a random id, but
+we localize the sequence to a "table", instead of relying on the local clock.
 */
 export function rid() {
-  return (
-    Date.now().toString(16) + `_` +
-    a.arrHex(crypto.getRandomValues(new Uint8Array(8)))
-  )
+  return a.arrHex(crypto.getRandomValues(new Uint8Array(8)))
 }
 
 export async function decodeObfuscated(src) {
   src = a.trim(src)
 
   // Try direct JSON decoding first.
-  const out = jsonDecodeOpt(src)
-  if (out) return out
+  // This is not supposed to throw unless JSON is corrupted.
+  try {
+    const out = jsonDecodeOpt(src)
+    if (out) return out
+  }
+  catch (err) {
+    throw new ErrDecoding(`unexpected JSON decoding error: ${err}`, {cause: err})
+  }
 
   // Try un-base64 -> un-gzip -> un-JSON as fallback.
   try {
     return a.jsonDecode(await ungzip(atob(src)))
   }
   catch (err) {
-    throw Error(`All decoding methods failed: ${err}`, {cause: err})
+    throw new ErrDecoding(`all decoding methods failed: ${err}`, {cause: err})
   }
 }
 
 export function jsonDecodeOpt(src) {
   if (isJsonColl(src)) return a.jsonDecode(src)
   return undefined
+}
+
+// Similar to Go's `errors.Is`.
+// TODO move to `@mitranim/js`.
+export function errIs(err, fun) {
+  a.reqFun(fun)
+  while (a.isSome(err)) {
+    if (fun(err)) return true
+    err = err?.cause
+  }
+  return false
+}
+
+
+export class Err extends Error {get name() {return this.constructor.name}}
+
+export class ErrDecoding extends Err {}
+
+export function isErrDecoding(err) {return a.isInst(err, ErrDecoding)}
+
+export class ErrAbort extends Err {}
+
+export function isErrAbort(err) {return errIs(err, isErrAbortAny)}
+
+function isErrAbortAny(val) {
+  return a.isInst(val, ErrAbort) || a.isErrAbort(val)
 }
 
 /*
@@ -431,20 +507,24 @@ function isJsonColl(src) {
 }
 
 export function ungzip(src) {
-  const bytes = Uint8Array.from(src, charCode)
-  const stream = new Response(bytes).body.pipeThrough(new DecompressionStream(`gzip`))
-  return new Response(stream).text()
+  src = Uint8Array.from(src, charCode)
+  src = new Response(src).body.pipeThrough(new DecompressionStream(`gzip`))
+  return new Response(src).text()
+}
+
+export async function gzipStr(src) {
+  return String.fromCharCode(...(await gzipBytes(src)))
+}
+
+export async function gzipBytes(src) {return (await gzipRes(src)).bytes()}
+
+export async function gzipRes(src) {
+  src = new Response(a.reqValidStr(src)).body
+  src = src.pipeThrough(new CompressionStream(`gzip`))
+  return new Response(src)
 }
 
 function charCode(val) {return val.charCodeAt(0)}
-
-// Utility functions for backup management
-// Get backup extension from source file when needed
-const MIN_BACKUP_DIGITS = 4
-
-export function padRoundIndex(val) {
-  return String(a.reqNat(val)).padStart(MIN_BACKUP_DIGITS, `0`)
-}
 
 // Must always be at the very end of this file.
 import * as module from './util.mjs'

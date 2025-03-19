@@ -1,0 +1,1879 @@
+{
+  "RoundIndex": 1,
+  "Buildings": {
+    "-291752": {
+      "EntityID": "HQ01",
+      "PurchasedUpgrades": [
+        {
+          "Index": 0
+        },
+        {
+          "Index": 0
+        },
+        {
+          "Index": 0
+        }
+      ],
+      "SellPrice": 0,
+      "SellCurrencyType": "Supply",
+      "BuildingType": "HQ",
+      "LiveStats": {
+        "stats": {
+          "DamageDone": {
+            "countThisGame": 9604,
+            "countThisWave": 347,
+            "valueThisGame": 653651.6,
+            "valueThisWave": 71797.74,
+            "timeSpentThisGame": 950.0758,
+            "timeSpentThisWave": 43.36328,
+            "lastValue": 1302.50012,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          },
+          "DamageOverkill": {
+            "countThisGame": 9604,
+            "countThisWave": 347,
+            "valueThisGame": 1804657.0,
+            "valueThisWave": 105418.039,
+            "timeSpentThisGame": 950.0758,
+            "timeSpentThisWave": 43.36328,
+            "lastValue": 249.999756,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          }
+        }
+      },
+      "ChildLiveStats": {
+        "F1T_ProtectorM2_Grenadier": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 0,
+              "countThisWave": 0,
+              "valueThisGame": 16334.7617,
+              "valueThisWave": 1031.46753,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 0.0,
+              "currentValue": 16334.7617,
+              "entityInstances": 25
+            },
+            "DamageOverkill": {
+              "countThisGame": 0,
+              "countThisWave": 0,
+              "valueThisGame": 3728.9292,
+              "valueThisWave": 459.5022,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 0.0,
+              "currentValue": 3728.9292,
+              "entityInstances": 25
+            }
+          }
+        },
+        "Cruiser_canon": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 1117,
+              "countThisWave": 113,
+              "valueThisGame": 489063.938,
+              "valueThisWave": 67163.5859,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 1302.50012,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 1117,
+              "countThisWave": 113,
+              "valueThisGame": 960810.6,
+              "valueThisWave": 96374.18,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 249.999756,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      },
+      "WeaponStats": [
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 1117,
+              "countThisWave": 113,
+              "valueThisGame": 489063.938,
+              "valueThisWave": 67163.5859,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 1302.50012,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 1117,
+              "countThisWave": 113,
+              "valueThisGame": 960810.6,
+              "valueThisWave": 96374.18,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 249.999756,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 1858,
+              "countThisWave": 79,
+              "valueThisGame": 97313.39,
+              "valueThisWave": 3842.17969,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 35.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 1858,
+              "countThisWave": 79,
+              "valueThisGame": 68748.74,
+              "valueThisWave": 4638.51953,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 86.49999,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      ],
+      "Weapons": [
+        {
+          "EntityID": "Cruiser_canon",
+          "Enabled": true,
+          "DistanceRangeMin": 0.0,
+          "DistanceRangeMax": 53.0,
+          "MagazineSize": 3,
+          "ReloadTime": {
+            "baseValue": 2.0,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "RateOfFire": {
+            "baseValue": 0.25,
+            "rawModifier": 0.0,
+            "pctModifier": 140.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": true,
+          "TargetingPriorities": [
+            "MostHealth"
+          ],
+          "DummyBullet": {
+            "EntityID": "Cruiser_canon_charge",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 575.0,
+                "rawModifier": 0.0,
+                "pctModifier": 170.0
+              },
+              "Size": 2.2,
+              "MaxTarget": 10
+            }
+          }
+        },
+        {
+          "EntityID": "Durendal_cannon",
+          "Enabled": true,
+          "DistanceRangeMin": 2.0,
+          "DistanceRangeMax": 8.0,
+          "MagazineSize": 5,
+          "ReloadTime": {
+            "baseValue": 1.7,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "RateOfFire": {
+            "baseValue": 1.7,
+            "rawModifier": 0.0,
+            "pctModifier": 140.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": true,
+          "TargetingPriorities": [
+            "MostHealth"
+          ],
+          "DummyBullet": {
+            "EntityID": "Durendal_shell",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 45.0,
+                "rawModifier": 0.0,
+                "pctModifier": 170.0
+              },
+              "Size": 0.8,
+              "MaxTarget": 3
+            }
+          }
+        }
+      ]
+    },
+    "-313876": {
+      "EntityID": "CB20",
+      "PurchasedUpgrades": [
+        {
+          "Index": 1
+        },
+        {
+          "Index": 1
+        },
+        {
+          "Index": 1
+        }
+      ],
+      "SellPrice": 400,
+      "SellCurrencyType": "Supply",
+      "BuildingType": "Regular",
+      "LiveStats": {
+        "stats": {
+          "DamageDone": {
+            "countThisGame": 2747,
+            "countThisWave": 139,
+            "valueThisGame": 281033.0,
+            "valueThisWave": 20115.83,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 324.0,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          },
+          "DamageOverkill": {
+            "countThisGame": 2747,
+            "countThisWave": 139,
+            "valueThisGame": 423860.531,
+            "valueThisWave": 18180.98,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 324.0,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          }
+        }
+      },
+      "ChildLiveStats": {
+        "Medium_mortar_B3": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 2747,
+              "countThisWave": 139,
+              "valueThisGame": 281033.0,
+              "valueThisWave": 20115.83,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 324.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 2747,
+              "countThisWave": 139,
+              "valueThisGame": 423860.531,
+              "valueThisWave": 18180.98,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 324.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        "Medium_mortar_B3_bomb": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 2747,
+              "countThisWave": 139,
+              "valueThisGame": 281033.0,
+              "valueThisWave": 20115.83,
+              "timeSpentThisGame": 907.750732,
+              "timeSpentThisWave": 43.57422,
+              "lastValue": 324.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 2747,
+              "countThisWave": 139,
+              "valueThisGame": 423860.531,
+              "valueThisWave": 18180.98,
+              "timeSpentThisGame": 907.750732,
+              "timeSpentThisWave": 43.57422,
+              "lastValue": 324.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      },
+      "WeaponStats": [
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 2747,
+              "countThisWave": 139,
+              "valueThisGame": 281033.0,
+              "valueThisWave": 20115.83,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 324.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 2747,
+              "countThisWave": 139,
+              "valueThisGame": 423860.531,
+              "valueThisWave": 18180.98,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 324.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      ],
+      "Weapons": [
+        {
+          "EntityID": "Medium_mortar_B3",
+          "Enabled": true,
+          "DistanceRangeMin": 5.0,
+          "DistanceRangeMax": 20.0,
+          "MagazineSize": 4,
+          "ReloadTime": {
+            "baseValue": 1.2,
+            "rawModifier": 0.0,
+            "pctModifier": -50.0
+          },
+          "RateOfFire": {
+            "baseValue": 0.5,
+            "rawModifier": 0.0,
+            "pctModifier": 235.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": false,
+          "TargetingPriorities": [
+            "PreviousTarget",
+            "MostHealth",
+            "MostFar"
+          ],
+          "DummyBullet": {
+            "EntityID": "Medium_mortar_B3_bomb",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 90.0,
+                "rawModifier": 0.0,
+                "pctModifier": 260.0
+              },
+              "Size": 1.7,
+              "MaxTarget": 8
+            }
+          }
+        }
+      ]
+    },
+    "-487162": {
+      "EntityID": "CB15",
+      "PurchasedUpgrades": [
+        {
+          "Index": 1
+        },
+        {
+          "Index": 0
+        },
+        {
+          "Index": 0
+        }
+      ],
+      "SellPrice": 200,
+      "SellCurrencyType": "Supply",
+      "BuildingType": "Regular",
+      "LiveStats": {
+        "stats": {
+          "DamageDone": {
+            "countThisGame": 2706,
+            "countThisWave": 117,
+            "valueThisGame": 43964.7969,
+            "valueThisWave": 2072.69849,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 5.74887276,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          },
+          "DamageOverkill": {
+            "countThisGame": 2706,
+            "countThisWave": 117,
+            "valueThisGame": 51445.2422,
+            "valueThisWave": 2618.61157,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 44.8500023,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          }
+        }
+      },
+      "ChildLiveStats": {
+        "Defender_M5": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 2706,
+              "countThisWave": 117,
+              "valueThisGame": 43964.7969,
+              "valueThisWave": 2072.69849,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 5.74887276,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 2706,
+              "countThisWave": 117,
+              "valueThisGame": 51445.2422,
+              "valueThisWave": 2618.61157,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 44.8500023,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        "Defender_M5_slug": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 2706,
+              "countThisWave": 117,
+              "valueThisGame": 43964.7969,
+              "valueThisWave": 2072.69849,
+              "timeSpentThisGame": 855.4116,
+              "timeSpentThisWave": 37.95703,
+              "lastValue": 5.74887276,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 2706,
+              "countThisWave": 117,
+              "valueThisGame": 51445.2422,
+              "valueThisWave": 2618.61157,
+              "timeSpentThisGame": 855.4116,
+              "timeSpentThisWave": 37.95703,
+              "lastValue": 44.8500023,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      },
+      "WeaponStats": [
+        {
+          "stats": {
+            "DamageOverkill": {
+              "countThisGame": 911,
+              "countThisWave": 39,
+              "valueThisGame": 17801.6113,
+              "valueThisWave": 935.381,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 44.8500023,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageDone": {
+              "countThisGame": 911,
+              "countThisWave": 39,
+              "valueThisGame": 14317.8438,
+              "valueThisWave": 634.368835,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 5.74887276,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 899,
+              "countThisWave": 39,
+              "valueThisGame": 15487.8887,
+              "valueThisWave": 804.7499,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 26.9100018,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 899,
+              "countThisWave": 39,
+              "valueThisGame": 16455.6211,
+              "valueThisWave": 764.999939,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 44.8500023,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      ],
+      "Weapons": [
+        {
+          "EntityID": "Defender_M5",
+          "Enabled": true,
+          "DistanceRangeMin": 0.0,
+          "DistanceRangeMax": 5.0,
+          "MagazineSize": 5,
+          "ReloadTime": {
+            "baseValue": 0.6,
+            "rawModifier": 0.0,
+            "pctModifier": -55.0
+          },
+          "RateOfFire": {
+            "baseValue": 1.7,
+            "rawModifier": 0.0,
+            "pctModifier": 135.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": false,
+          "TargetingPriorities": [
+            "PreviousTarget",
+            "ClosestToHQ"
+          ],
+          "DummyBullet": {
+            "EntityID": "Defender_M5_slug",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 23.0,
+                "rawModifier": 0.0,
+                "pctModifier": 95.0
+              },
+              "Size": 0.1,
+              "MaxTarget": 1
+            }
+          }
+        },
+        {
+          "EntityID": "Defender_M5",
+          "Enabled": true,
+          "DistanceRangeMin": 0.0,
+          "DistanceRangeMax": 5.0,
+          "MagazineSize": 5,
+          "ReloadTime": {
+            "baseValue": 0.6,
+            "rawModifier": 0.0,
+            "pctModifier": -55.0
+          },
+          "RateOfFire": {
+            "baseValue": 1.7,
+            "rawModifier": 0.0,
+            "pctModifier": 135.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": false,
+          "TargetingPriorities": [
+            "PreviousTarget",
+            "ClosestToHQ"
+          ],
+          "DummyBullet": {
+            "EntityID": "Defender_M5_slug",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 23.0,
+                "rawModifier": 0.0,
+                "pctModifier": 95.0
+              },
+              "Size": 0.1,
+              "MaxTarget": 1
+            }
+          }
+        }
+      ]
+    },
+    "-558174": {
+      "EntityID": "CB12A",
+      "PurchasedUpgrades": [],
+      "SellPrice": 5,
+      "SellCurrencyType": "Supply",
+      "BuildingType": "Regular",
+      "LiveStats": {
+        "stats": {
+          "DamageDone": {
+            "countThisGame": 1597,
+            "countThisWave": 146,
+            "valueThisGame": 172178.953,
+            "valueThisWave": 17550.9551,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 172.5,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          },
+          "DamageOverkill": {
+            "countThisGame": 1597,
+            "countThisWave": 146,
+            "valueThisGame": 219703.75,
+            "valueThisWave": 20974.041,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 233.0,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          }
+        }
+      },
+      "ChildLiveStats": {
+        "T8_Bomber": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 1597,
+              "countThisWave": 146,
+              "valueThisGame": 172178.953,
+              "valueThisWave": 17550.9551,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 172.5,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 1597,
+              "countThisWave": 146,
+              "valueThisGame": 219703.75,
+              "valueThisWave": 20974.041,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 233.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        "T8_bomb": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 1597,
+              "countThisWave": 146,
+              "valueThisGame": 172178.953,
+              "valueThisWave": 17550.9551,
+              "timeSpentThisGame": 6039.449,
+              "timeSpentThisWave": 689.40625,
+              "lastValue": 172.5,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 1597,
+              "countThisWave": 146,
+              "valueThisGame": 219703.75,
+              "valueThisWave": 20974.041,
+              "timeSpentThisGame": 6039.449,
+              "timeSpentThisWave": 689.40625,
+              "lastValue": 233.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      },
+      "WeaponStats": [
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 1597,
+              "countThisWave": 146,
+              "valueThisGame": 172178.953,
+              "valueThisWave": 17550.9551,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 172.5,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 1597,
+              "countThisWave": 146,
+              "valueThisGame": 219703.75,
+              "valueThisWave": 20974.041,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 233.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      ],
+      "Weapons": [
+        {
+          "EntityID": "T8_Bomber",
+          "Enabled": true,
+          "DistanceRangeMin": 0.0,
+          "DistanceRangeMax": 10000.0,
+          "MagazineSize": 10000,
+          "ReloadTime": {
+            "baseValue": 6.0,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "RateOfFire": {
+            "baseValue": 30.0,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": true,
+          "TargetingPriorities": [
+            "FullHealth"
+          ],
+          "DummyBullet": {
+            "EntityID": "T8_bomb",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 250.0,
+                "rawModifier": 0.0,
+                "pctModifier": 15.0
+              },
+              "Size": 0.9,
+              "MaxTarget": 4
+            }
+          }
+        }
+      ]
+    },
+    "-607184": {
+      "EntityID": "CB03R",
+      "PurchasedUpgrades": [
+        {
+          "Index": 0
+        },
+        {
+          "Index": 0
+        },
+        {
+          "Index": 0
+        }
+      ],
+      "SellPrice": 375,
+      "SellCurrencyType": "Supply",
+      "BuildingType": "Regular",
+      "LiveStats": {
+        "stats": {
+          "DamageDone": {
+            "countThisGame": 1112,
+            "countThisWave": 65,
+            "valueThisGame": 89190.58,
+            "valueThisWave": 9018.5,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 159.75,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          },
+          "DamageOverkill": {
+            "countThisGame": 1112,
+            "countThisWave": 65,
+            "valueThisGame": 9695.601,
+            "valueThisWave": 854.05,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 99.25,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          }
+        }
+      },
+      "ChildLiveStats": {
+        "Durendal_blessed_canon": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 586,
+              "countThisWave": 65,
+              "valueThisGame": 67724.19,
+              "valueThisWave": 9018.5,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 159.75,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 586,
+              "countThisWave": 65,
+              "valueThisGame": 6757.252,
+              "valueThisWave": 854.05,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 99.25,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        "Durendal_blessed_shell": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 586,
+              "countThisWave": 65,
+              "valueThisGame": 67724.19,
+              "valueThisWave": 9018.5,
+              "timeSpentThisGame": 84.02344,
+              "timeSpentThisWave": 9.4765625,
+              "lastValue": 159.75,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 586,
+              "countThisWave": 65,
+              "valueThisGame": 6757.252,
+              "valueThisWave": 854.05,
+              "timeSpentThisGame": 84.02344,
+              "timeSpentThisWave": 9.4765625,
+              "lastValue": 99.25,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      },
+      "WeaponStats": [
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 526,
+              "countThisWave": 0,
+              "valueThisGame": 21466.58,
+              "valueThisWave": 0.0,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 12.4502792,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 526,
+              "countThisWave": 0,
+              "valueThisGame": 2938.34961,
+              "valueThisWave": 0.0,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 26.6997223,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 586,
+              "countThisWave": 65,
+              "valueThisGame": 67724.19,
+              "valueThisWave": 9018.5,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 159.75,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 586,
+              "countThisWave": 65,
+              "valueThisGame": 6757.252,
+              "valueThisWave": 854.05,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 99.25,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      ],
+      "Weapons": [
+        {
+          "EntityID": "Durendal_cannon",
+          "Enabled": false,
+          "DistanceRangeMin": 2.0,
+          "DistanceRangeMax": 7.0,
+          "MagazineSize": 5,
+          "ReloadTime": {
+            "baseValue": 1.7,
+            "rawModifier": 0.0,
+            "pctModifier": -50.0
+          },
+          "RateOfFire": {
+            "baseValue": 1.7,
+            "rawModifier": 0.0,
+            "pctModifier": 80.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": true,
+          "TargetingPriorities": [
+            "MostHealth"
+          ],
+          "DummyBullet": {
+            "EntityID": "Durendal_shell",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 45.0,
+                "rawModifier": 0.0,
+                "pctModifier": 255.0
+              },
+              "Size": 0.0,
+              "MaxTarget": 5
+            }
+          }
+        },
+        {
+          "EntityID": "Durendal_blessed_canon",
+          "Enabled": true,
+          "DistanceRangeMin": 2.0,
+          "DistanceRangeMax": 7.0,
+          "MagazineSize": 5,
+          "ReloadTime": {
+            "baseValue": 1.7,
+            "rawModifier": 0.0,
+            "pctModifier": -50.0
+          },
+          "RateOfFire": {
+            "baseValue": 1.7,
+            "rawModifier": 0.0,
+            "pctModifier": 80.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": true,
+          "TargetingPriorities": [
+            "MostHealth"
+          ],
+          "DummyBullet": {
+            "EntityID": "Durendal_blessed_shell",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 45.0,
+                "rawModifier": 0.0,
+                "pctModifier": 255.0
+              },
+              "Size": 0.0,
+              "MaxTarget": 5
+            }
+          }
+        }
+      ]
+    },
+    "-718526": {
+      "EntityID": "CB01",
+      "PurchasedUpgrades": [
+        {
+          "Index": 1
+        },
+        {
+          "Index": 0
+        },
+        {
+          "Index": 0
+        }
+      ],
+      "SellPrice": 200,
+      "SellCurrencyType": "Supply",
+      "BuildingType": "Regular",
+      "LiveStats": {
+        "stats": {
+          "DamageDone": {
+            "countThisGame": 2112,
+            "countThisWave": 300,
+            "valueThisGame": 72706.2344,
+            "valueThisWave": 14905.1357,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 57.9203339,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          },
+          "DamageOverkill": {
+            "countThisGame": 2112,
+            "countThisWave": 300,
+            "valueThisGame": 17261.9453,
+            "valueThisWave": 3204.97266,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 45.0500031,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          }
+        }
+      },
+      "ChildLiveStats": {
+        "Heavy_vencedor": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 2112,
+              "countThisWave": 300,
+              "valueThisGame": 72706.2344,
+              "valueThisWave": 14905.1357,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 57.9203339,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 2112,
+              "countThisWave": 300,
+              "valueThisGame": 17261.9453,
+              "valueThisWave": 3204.97266,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 45.0500031,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        "Heavy_vencedor_slug": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 2112,
+              "countThisWave": 300,
+              "valueThisGame": 72706.2344,
+              "valueThisWave": 14905.1357,
+              "timeSpentThisGame": 702.0034,
+              "timeSpentThisWave": 87.43359,
+              "lastValue": 57.9203339,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 2112,
+              "countThisWave": 300,
+              "valueThisGame": 17261.9453,
+              "valueThisWave": 3204.97266,
+              "timeSpentThisGame": 702.0034,
+              "timeSpentThisWave": 87.43359,
+              "lastValue": 45.0500031,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      },
+      "WeaponStats": [
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 1233,
+              "countThisWave": 150,
+              "valueThisGame": 40203.51,
+              "valueThisWave": 7407.47,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 57.9203339,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 1233,
+              "countThisWave": 150,
+              "valueThisGame": 8809.46,
+              "valueThisWave": 1539.46045,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 45.0500031,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 879,
+              "countThisWave": 150,
+              "valueThisGame": 32503.459,
+              "valueThisWave": 7497.662,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 72.08,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 879,
+              "countThisWave": 150,
+              "valueThisGame": 8452.486,
+              "valueThisWave": 1665.51086,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 45.0500031,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      ],
+      "Weapons": [
+        {
+          "EntityID": "Heavy_vencedor",
+          "Enabled": true,
+          "DistanceRangeMin": 0.0,
+          "DistanceRangeMax": 3.0,
+          "MagazineSize": 10,
+          "ReloadTime": {
+            "baseValue": 1.4,
+            "rawModifier": 0.0,
+            "pctModifier": -15.0
+          },
+          "RateOfFire": {
+            "baseValue": 5.0,
+            "rawModifier": 0.0,
+            "pctModifier": 105.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": false,
+          "TargetingPriorities": [
+            "PreviousTarget",
+            "Air",
+            "ClosestToHQ"
+          ],
+          "DummyBullet": {
+            "EntityID": "Heavy_vencedor_slug",
+            "IsAntiAircraft": true,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 17.0,
+                "rawModifier": 0.0,
+                "pctModifier": 165.0
+              },
+              "Size": 0.1,
+              "MaxTarget": 1
+            }
+          }
+        },
+        {
+          "EntityID": "Heavy_vencedor",
+          "Enabled": true,
+          "DistanceRangeMin": 0.0,
+          "DistanceRangeMax": 3.0,
+          "MagazineSize": 10,
+          "ReloadTime": {
+            "baseValue": 1.4,
+            "rawModifier": 0.0,
+            "pctModifier": -15.0
+          },
+          "RateOfFire": {
+            "baseValue": 5.0,
+            "rawModifier": 0.0,
+            "pctModifier": 105.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": false,
+          "TargetingPriorities": [
+            "PreviousTarget",
+            "Air",
+            "ClosestToHQ"
+          ],
+          "DummyBullet": {
+            "EntityID": "Heavy_vencedor_slug",
+            "IsAntiAircraft": true,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 17.0,
+                "rawModifier": 0.0,
+                "pctModifier": 165.0
+              },
+              "Size": 0.1,
+              "MaxTarget": 1
+            }
+          }
+        }
+      ]
+    },
+    "-1005456": {
+      "EntityID": "SB02",
+      "PurchasedUpgrades": [
+        {
+          "Index": 0
+        },
+        {
+          "Index": 1
+        },
+        {
+          "Index": 1
+        }
+      ],
+      "SellPrice": 350,
+      "SellCurrencyType": "Supply",
+      "BuildingType": "Regular",
+      "LiveStats": {
+        "stats": {
+          "DamageDone": {
+            "countThisGame": 259,
+            "countThisWave": 13,
+            "valueThisGame": 3614.484,
+            "valueThisWave": 156.340027,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 20.0100021,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          },
+          "DamageOverkill": {
+            "countThisGame": 267,
+            "countThisWave": 13,
+            "valueThisGame": 18154.6035,
+            "valueThisWave": 676.249939,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 33.3500023,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          }
+        }
+      },
+      "ChildLiveStats": {
+        "Pulse_cannon": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 29,
+              "countThisWave": 1,
+              "valueThisGame": 1045.98486,
+              "valueThisWave": 0.0,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 67.32001,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 37,
+              "countThisWave": 1,
+              "valueThisGame": 14662.166,
+              "valueThisWave": 485.750031,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 485.750031,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        "Defender_M5": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 224,
+              "countThisWave": 12,
+              "valueThisGame": 2568.50073,
+              "valueThisWave": 156.340027,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 20.0100021,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 230,
+              "countThisWave": 12,
+              "valueThisGame": 3492.465,
+              "valueThisWave": 190.500015,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 33.3500023,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      },
+      "WeaponStats": [
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 67,
+              "countThisWave": 6,
+              "valueThisGame": 776.68,
+              "valueThisWave": 61.170002,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 20.0100021,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 68,
+              "countThisWave": 6,
+              "valueThisGame": 1036.17981,
+              "valueThisWave": 112.250015,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 33.3500023,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 29,
+              "countThisWave": 1,
+              "valueThisGame": 1045.98486,
+              "valueThisWave": 0.0,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 67.32001,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 37,
+              "countThisWave": 1,
+              "valueThisGame": 14662.166,
+              "valueThisWave": 485.750031,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 485.750031,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      ],
+      "Weapons": [
+        {
+          "EntityID": "Defender_M5",
+          "Enabled": true,
+          "DistanceRangeMin": 0.0,
+          "DistanceRangeMax": 4.0,
+          "MagazineSize": 5,
+          "ReloadTime": {
+            "baseValue": 0.6,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "RateOfFire": {
+            "baseValue": 1.7,
+            "rawModifier": 0.0,
+            "pctModifier": 20.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": false,
+          "TargetingPriorities": [
+            "PreviousTarget",
+            "ClosestToHQ"
+          ],
+          "DummyBullet": {
+            "EntityID": "Defender_M5_slug",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 23.0,
+                "rawModifier": 0.0,
+                "pctModifier": 45.0
+              },
+              "Size": 0.1,
+              "MaxTarget": 1
+            }
+          }
+        },
+        {
+          "EntityID": "Pulse_cannon",
+          "Enabled": true,
+          "DistanceRangeMin": 0.0,
+          "DistanceRangeMax": 4.0,
+          "MagazineSize": 3,
+          "ReloadTime": {
+            "baseValue": 2.0,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "RateOfFire": {
+            "baseValue": 1.0,
+            "rawModifier": 0.0,
+            "pctModifier": 20.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": false,
+          "TargetingPriorities": [
+            "MostShield",
+            "MostHealth"
+          ],
+          "DummyBullet": {
+            "EntityID": "Pulse_charge",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 335.0,
+                "rawModifier": 0.0,
+                "pctModifier": 45.0
+              },
+              "Size": 0.1,
+              "MaxTarget": 1
+            }
+          }
+        }
+      ]
+    },
+    "-1178842": {
+      "EntityID": "CB05",
+      "PurchasedUpgrades": [
+        {
+          "Index": 1
+        },
+        {
+          "Index": 1
+        },
+        {
+          "Index": 0
+        }
+      ],
+      "SellPrice": 1250,
+      "SellCurrencyType": "Supply",
+      "BuildingType": "Regular",
+      "LiveStats": {
+        "stats": {
+          "DamageDone": {
+            "countThisGame": 640,
+            "countThisWave": 121,
+            "valueThisGame": 268758.656,
+            "valueThisWave": 61860.3,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 482.104675,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          },
+          "DamageOverkill": {
+            "countThisGame": 640,
+            "countThisWave": 121,
+            "valueThisGame": 353531.438,
+            "valueThisWave": 70967.95,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 1226.25,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          }
+        }
+      },
+      "ChildLiveStats": {
+        "Sanction_cannon_B5": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 640,
+              "countThisWave": 121,
+              "valueThisGame": 268758.656,
+              "valueThisWave": 61860.3,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 482.104675,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 640,
+              "countThisWave": 121,
+              "valueThisGame": 353531.438,
+              "valueThisWave": 70967.95,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 1226.25,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        "Sanction_cannon_B5_bomb": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 640,
+              "countThisWave": 121,
+              "valueThisGame": 268758.656,
+              "valueThisWave": 61860.3,
+              "timeSpentThisGame": 172.109375,
+              "timeSpentThisWave": 32.4453125,
+              "lastValue": 482.104675,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 640,
+              "countThisWave": 121,
+              "valueThisGame": 353531.438,
+              "valueThisWave": 70967.95,
+              "timeSpentThisGame": 172.109375,
+              "timeSpentThisWave": 32.4453125,
+              "lastValue": 1226.25,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      },
+      "WeaponStats": [
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 640,
+              "countThisWave": 121,
+              "valueThisGame": 268758.656,
+              "valueThisWave": 61860.3,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 482.104675,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 640,
+              "countThisWave": 121,
+              "valueThisGame": 353531.438,
+              "valueThisWave": 70967.95,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 1226.25,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      ],
+      "Weapons": [
+        {
+          "EntityID": "Sanction_cannon_B5",
+          "Enabled": true,
+          "DistanceRangeMin": 11.0,
+          "DistanceRangeMax": 31.0,
+          "MagazineSize": 2,
+          "ReloadTime": {
+            "baseValue": 1.8,
+            "rawModifier": 0.0,
+            "pctModifier": -50.0
+          },
+          "RateOfFire": {
+            "baseValue": 0.5,
+            "rawModifier": 0.0,
+            "pctModifier": 35.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": true,
+          "TargetingPriorities": [
+            "MostHealth"
+          ],
+          "DummyBullet": {
+            "EntityID": "Sanction_cannon_B5_bomb",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": true,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 225.0,
+                "rawModifier": 0.0,
+                "pctModifier": 445.0
+              },
+              "Size": 2.0,
+              "MaxTarget": 9
+            }
+          }
+        }
+      ]
+    },
+    "-1481528": {
+      "EntityID": "CB21",
+      "PurchasedUpgrades": [
+        {
+          "Index": 1
+        }
+      ],
+      "SellPrice": 850,
+      "SellCurrencyType": "Supply",
+      "BuildingType": "Regular",
+      "LiveStats": {
+        "stats": {
+          "DamageDone": {
+            "countThisGame": 878,
+            "countThisWave": 502,
+            "valueThisGame": 20733.1582,
+            "valueThisWave": 12331.0176,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 23.0,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          },
+          "DamageOverkill": {
+            "countThisGame": 878,
+            "countThisWave": 502,
+            "valueThisGame": 1720.12354,
+            "valueThisWave": 584.0236,
+            "timeSpentThisGame": 0.0,
+            "timeSpentThisWave": 0.0,
+            "lastValue": 8.5,
+            "currentValue": 0.0,
+            "entityInstances": 0
+          }
+        }
+      },
+      "ChildLiveStats": {
+        "Heavy_flamer": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 878,
+              "countThisWave": 502,
+              "valueThisGame": 20733.1582,
+              "valueThisWave": 12331.0176,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 23.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 878,
+              "countThisWave": 502,
+              "valueThisGame": 1720.12354,
+              "valueThisWave": 584.0236,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 8.5,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        },
+        "Heavy_flamer_flame": {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 878,
+              "countThisWave": 502,
+              "valueThisGame": 20733.1582,
+              "valueThisWave": 12331.0176,
+              "timeSpentThisGame": 28.38086,
+              "timeSpentThisWave": 12.9316406,
+              "lastValue": 23.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 878,
+              "countThisWave": 502,
+              "valueThisGame": 1720.12354,
+              "valueThisWave": 584.0236,
+              "timeSpentThisGame": 28.38086,
+              "timeSpentThisWave": 12.9316406,
+              "lastValue": 8.5,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      },
+      "WeaponStats": [
+        {
+          "stats": {
+            "DamageDone": {
+              "countThisGame": 878,
+              "countThisWave": 502,
+              "valueThisGame": 20733.1582,
+              "valueThisWave": 12331.0176,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 23.0,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            },
+            "DamageOverkill": {
+              "countThisGame": 878,
+              "countThisWave": 502,
+              "valueThisGame": 1720.12354,
+              "valueThisWave": 584.0236,
+              "timeSpentThisGame": 0.0,
+              "timeSpentThisWave": 0.0,
+              "lastValue": 8.5,
+              "currentValue": 0.0,
+              "entityInstances": 0
+            }
+          }
+        }
+      ],
+      "Weapons": [
+        {
+          "EntityID": "Heavy_flamer",
+          "Enabled": true,
+          "DistanceRangeMin": 0.0,
+          "DistanceRangeMax": 3.0,
+          "MagazineSize": 40,
+          "ReloadTime": {
+            "baseValue": 2.0,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "RateOfFire": {
+            "baseValue": 12.0,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "MaximumExitPoint": 0,
+          "IsDetection": false,
+          "TargetingPriorities": [
+            "PreviousTarget",
+            "MostHealth"
+          ],
+          "DummyBullet": {
+            "EntityID": "Heavy_flamer_flame",
+            "IsAntiAircraft": false,
+            "AircraftModifier": -40.0,
+            "AntiAircraftModifier": 60.0,
+            "ShieldModifier": 0.0,
+            "AntiShieldModifier": 200.0,
+            "IsPinnedTrigger": false,
+            "PinnedSpeedModifier": -60.0,
+            "PinnedTimeLength": 1.5,
+            "AreaOfEffect": {
+              "EntityID": "SimpleAoE",
+              "Damage": {
+                "baseValue": 18.0,
+                "rawModifier": 0.0,
+                "pctModifier": 75.0
+              },
+              "Size": 1.0,
+              "MaxTarget": 10
+            }
+          }
+        }
+      ]
+    }
+  },
+  "Skills": [
+    "D1_26",
+    "D1_16"
+  ]
+}

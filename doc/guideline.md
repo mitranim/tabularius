@@ -37,6 +37,7 @@
 - Avoid invalid states; make zero values useful
 - Prefer immutability: create-once, assign-once, use-once
 - Use observables for UI reactivity when necessary, but avoid observables for non-UI data
+- Inside functions, prefer to read object properties once rather than many times
 
 ## Data & Type Safety
 - Runtime validation functions:
