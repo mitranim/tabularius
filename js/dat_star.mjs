@@ -1,6 +1,6 @@
 /*
 Proposed schema for our resulting data. A variation of a "star schema".
-We would transforming the source data (progress file contents) into this.
+We would be transforming the source data (progress file contents) into this.
 */
 
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'

@@ -424,3 +424,7 @@ FS errors such as `NotFoundError` can be hard to debug.
 Support fetching additional modules, for plugin support. The addresses could be read from `localStorage` and set with a command. Could also be provided as URL query parameters.
 
 (Partially done: via URL query params only.)
+
+---
+
+Display app version in UI, for easier error reporting/debugging.

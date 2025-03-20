@@ -1,6 +1,6 @@
 /*
 Proposed schema for our resulting data. An extremely flat, atomic approach.
-We would transforming the source data (progress file contents) into this.
+We would be transforming the source data (progress file contents) into this.
 */
 
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
@@ -245,7 +245,7 @@ console.log(`JSON size:`, a.jsonEncode(FACTS).length)
 console.log(`JSON gzip size:`, (await u.gzipBytes(a.jsonEncode(FACTS))).length)
 // console.log(a.jsonEncode(SRC_ROUNDS))
 // console.log(a.jsonEncode(FACTS))
-// console.table(FACTS)
+console.log(`facts:`, FACTS)
 // console.log(factsToIndexes(FACTS, foldEnt))
 
 console.time(`agg`)
