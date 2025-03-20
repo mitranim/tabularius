@@ -44,13 +44,26 @@ file names or paths. We need clearer error messages for users. It seems that we
 need to try/catch all FS operations and wrap them into our errors, with clearer
 messages and easier detection by class.
 */
-export function isErrFs(err) {return a.isInst(err, ErrFs)}
-
 class ErrFs extends u.Err {}
 class ErrFsPerm extends ErrFs {}
+export function isErrFs(err) {return a.isInst(err, ErrFs)}
 
-export const PROGRESS_FILE = {
-  handle: undefined,
+export let PROGRESS_FILE = undefined
+export let HISTORY_DIR = undefined
+
+class FileConf extends a.Emp {
+  constructor(src) {
+    super()
+    this.key = a.reqValidStr(src.key)
+    this.desc = a.reqValidStr(src.desc)
+    this.help = a.reqValidStr(src.help)
+    this.mode = a.reqValidStr(src.mode)
+    this.pick = a.reqFun(src.pick)
+    return Object.freeze(this)
+  }
+}
+
+export const PROGRESS_FILE_CONF = new FileConf({
   key: `progress_file`,
   desc: `progress file`,
   help: a.joinLines([
@@ -60,10 +73,9 @@ export const PROGRESS_FILE = {
   ]),
   mode: `read`,
   pick: pickProgressFile,
-}
+})
 
-export const HISTORY_DIR = {
-  handle: undefined,
+export const HISTORY_DIR_CONF = new FileConf({
   key: `history_dir`,
   desc: `history directory`,
   help: a.joinLines([
@@ -72,224 +84,283 @@ export const HISTORY_DIR = {
   ]),
   mode: `readwrite`,
   pick: pickHistoryDir,
-}
-
-// Deinitialize progress file: delete handle from DB and reset variable
-export function deinitProgressFile(sig) {
-  return deinitFileConf(sig, PROGRESS_FILE)
-}
-
-// Deinitialize history directory: delete handle from DB and reset variable
-export function deinitHistoryDir(sig) {
-  return deinitFileConf(sig, HISTORY_DIR)
-}
-
-async function deinitFileConf(sig, conf) {
-  if (!conf.handle) return `Already deinitialized: ${conf.desc}`
-
-  try {
-    await u.wait(sig, dbDel(DB_STORE_HANDLES, conf.key))
-    conf.handle = undefined
-    return `Deinitialized ${conf.desc}`
-  }
-  catch (err) {
-    u.log.err(`Error deinitializing ${conf.desc}:`, err)
-    return undefined
-  }
-}
+})
 
 // Try to load file handles from IDB on app startup.
-export async function loadHandles() {
-  try {
-    PROGRESS_FILE.handle = await tryLoadHandle(DB_STORE_HANDLES, PROGRESS_FILE.key, PROGRESS_FILE)
-    HISTORY_DIR.handle = await tryLoadHandle(DB_STORE_HANDLES, HISTORY_DIR.key, HISTORY_DIR)
-  } catch (err) {
-    u.log.err(`Error loading file handles:`, err)
-  }
+export async function loadedFileHandles() {
+  PROGRESS_FILE = await loadFileHandleWithPerm(PROGRESS_FILE_CONF)
+  HISTORY_DIR = await loadFileHandleWithPerm(HISTORY_DIR_CONF)
+  return !!(PROGRESS_FILE && HISTORY_DIR)
 }
 
 // Try to load a handle and check its permission
-async function tryLoadHandle(store, key, conf) {
-  let handle
-  try {
-    handle = await dbGet(store, key)
-    if (handle) {
-      u.log.inf(`Loaded handle for ${conf.desc}`)
-      a.reqInst(handle, FileSystemHandle)
-
-      // Check permission
-      const permission = await queryPermission(handle, {mode: conf.mode})
-      if (permission !== `granted`) {
-        u.log.inf(`${conf.desc}: permission needed. Use the "init" command to grant access.`)
-      }
-    }
-  } catch (err) {
-    u.log.err(`Error loading handle for ${conf.desc}:`, err)
+async function loadFileHandleWithPerm(conf) {
+  const {desc, mode} = a.reqInst(conf, FileConf)
+  const out = await loadFileHandle(conf)
+  const perm = await queryPermission(out, {mode})
+  if (perm !== `granted`) {
+    u.log.inf(`${desc}: permission needed; run the "init" command`)
   }
+  return out
+}
+
+async function loadFileHandle(conf) {
+  const store = DB_STORE_HANDLES
+  const {key, desc, mode} = a.reqInst(conf, FileConf)
+  let out
+
+  try {
+    out = await dbGet(store, key)
+    if (a.isNil(out)) return undefined
+  }
+  catch (err) {
+    u.log.err(`${desc}: error loading handle from DB:`, err)
+    return undefined
+  }
+
+  u.log.inf(`${desc}: loaded handle from DB: ${a.show(out)}`)
+
+  if (!a.isInst(out, FileSystemHandle)) {
+    u.log.inf(`${desc}: expected FileSystemHandle; deleting corrupted DB entry`)
+    await dbDel(store, key)
+    return undefined
+  }
+
+  return out
+}
+
+export async function initedFileHandles(sig) {
+  return !!(
+    await initedProgressFile(sig) &&
+    await initedHistoryDir(sig)
+  )
+}
+
+export async function initedProgressFile(sig) {
+  return !!(PROGRESS_FILE = await initFileHandle(sig, PROGRESS_FILE, PROGRESS_FILE_CONF))
+}
+
+export async function initedHistoryDir(sig) {
+  return !!(HISTORY_DIR = await initFileHandle(sig, HISTORY_DIR, HISTORY_DIR_CONF))
+}
+
+async function initFileHandle(sig, handle, conf) {
+  u.reqSig(sig)
+  a.optInst(handle, FileSystemHandle)
+  const {desc, help, mode, key, pick} = a.reqInst(conf, FileConf)
+
+  handle ??= await loadFileHandle(conf)
+  if (!handle) {
+    u.log.inf(help)
+    handle = a.reqInst(await u.wait(sig, pick()), FileSystemHandle)
+    try {
+      await u.wait(sig, dbPut(DB_STORE_HANDLES, key, handle))
+      u.log.inf(`${desc}: stored handle to DB`)
+    }
+    catch (err) {
+      u.log.err(`${desc}: error storing handle to DB:`, err)
+    }
+  }
+
+  await requirePermission(sig, handle, conf)
   return handle
 }
 
-export async function initProgressFile(sig) {
-  return initFileConfig(sig, PROGRESS_FILE)
+export async function deinitFileHandles(sig) {
+  return a.compact([
+    await deinitProgressFile(sig),
+    await deinitHistoryDir(sig),
+  ])
 }
 
-export async function initHistoryDir(sig) {
-  return initFileConfig(sig, HISTORY_DIR)
+// Deinitialize progress file: delete handle from DB and reset variable
+export async function deinitProgressFile(sig) {
+  const msg = await deinitFileConf(sig, PROGRESS_FILE, PROGRESS_FILE_CONF)
+  PROGRESS_FILE = undefined
+  return msg
 }
 
-async function initFileConfig(sig, conf) {
-  await initFileHandle(sig, conf)
-  return `Initialized ${conf.desc}`
+// Deinitialize history directory: delete handle from DB and reset variable
+export async function deinitHistoryDir(sig) {
+  const msg = await deinitFileConf(sig, PROGRESS_FILE, HISTORY_DIR_CONF)
+  HISTORY_DIR = undefined
+  return msg
+}
+
+async function deinitFileConf(sig, handle, conf) {
+  u.reqSig(sig)
+  a.optInst(handle, FileSystemHandle)
+  const {key, desc} = a.reqInst(conf, FileConf)
+  if (!handle) return `${desc}: not initialized`
+
+  try {
+    await u.wait(sig, dbDel(DB_STORE_HANDLES, key))
+    return `${desc}: deinitialized`
+  }
+  catch (err) {
+    return `${desc}: error deleting from DB: ${err}`
+  }
+}
+
+// Returns a string indicating status of progress file.
+export function statusProgressFile(sig) {
+  return getHandleStatus(sig, PROGRESS_FILE, PROGRESS_FILE_CONF)
+}
+
+export function statusHistoryDir(sig) {
+  return getHandleStatus(sig, HISTORY_DIR, HISTORY_DIR_CONF)
+}
+
+async function getHandleStatus(sig, handle, conf) {
+  const {desc} = a.reqInst(conf, FileConf)
+  const msg = await getHandleStatusProblem(sig, handle, conf)
+  if (msg) return msg
+
+  if (isDir(handle)) return getHandleStatusForDir(sig, handle, conf)
+  if (isFile(handle)) return getHandleStatusForFile(sig, handle, conf)
+  return `${desc}: unknown handle kind: ${handle.kind}`
+}
+
+async function getHandleStatusForDir(sig, handle, conf) {
+  const {desc} = a.reqInst(conf, FileConf)
+  const {fileCount, dirCount, byteCount} = await getDirectoryStats(sig, handle)
+  const details = a.compact([
+    fileCount ? `${fileCount} files` : ``,
+    dirCount ? `${dirCount} dirs` : ``,
+    byteCount ? `${u.formatSize(byteCount)}` : ``,
+  ]).join(`, `)
+  return `${desc}: ${handle.name}` + (details && `: `) + details
+}
+
+async function getHandleStatusForFile(sig, handle, conf) {
+  const {desc} = a.reqInst(conf, FileConf)
+  const file = await getFile(sig, handle)
+  return `${desc}: ${file.name} (${u.formatSize(file.size)})`
+}
+
+async function getHandleStatusProblem(sig, handle, conf) {
+  u.reqSig(sig)
+  a.optInst(handle, FileSystemHandle)
+
+  const {desc, mode} = a.reqInst(conf, FileConf)
+  if (!handle) return `${desc}: not initialized`
+
+  const perm = await u.wait(sig, queryPermission(handle, {mode}))
+  if (perm !== `granted`) return `${desc}: permission needed`
+  return undefined
+}
+
+// Get statistics about a directory (file count and total size)
+async function getDirectoryStats(sig, src, out) {
+  out ??= a.Emp()
+  out.fileCount = a.laxInt(out.fileCount)
+  out.dirCount = a.laxInt(out.dirCount)
+  out.byteCount = a.laxInt(out.byteCount)
+
+  for await (const val of readDir(sig, src)) {
+    if (isDir(val)) {
+      await getDirectoryStats(sig, val, out)
+      out.dirCount++
+      continue
+    }
+
+    if (isFile(val)) {
+      const file = await getFile(sig, val)
+      out.byteCount += file.size
+      out.fileCount++
+    }
+  }
+  return out
 }
 
 async function pickProgressFile() {
   return a.head(await window.showOpenFilePicker({
-    types: [{description: `Game Save/Progress File`}],
+    types: [{description: `Game [save / progress] file`}],
     multiple: false
   }))
 }
 
-// TODO pass description in options.
 async function pickHistoryDir() {
   return window.showDirectoryPicker({
-    types: [{description: `Directory for run history / backups`}],
+    types: [{description: `Directory for [run history / backups]`}],
   })
 }
 
-async function initFileHandle(sig, conf) {
-  const {desc, help, mode, key, pick} = conf
-  a.reqValidStr(desc)
-  a.reqValidStr(mode)
-  a.reqValidStr(key)
-  a.reqValidStr(help)
+const CMD_LS_HELP = a.joinLines([
+  `usage: "ls" or "ls <path>"`,
+  `list the directories and files; examples:`,
+  `  ls .`,
+  `  ls some_dir/`,
+  `  ls some_dir/some_file`,
+])
 
-  try {
-    const handle = await u.wait(sig, dbGet(DB_STORE_HANDLES, key))
-    if (handle) {
-      u.log.inf(`Loaded handle for ${desc}`)
-      a.reqInst(handle, FileSystemHandle)
-      conf.handle = handle
+export async function cmdLs(sig, args) {
+  switch (a.len(u.reqArrOfValidStr(args))) {
+    case 0:
+    case 1: return CMD_LS_HELP
+    case 2: break
+    default: return CMD_LS_HELP
+  }
+
+  const src = a.stripPre(args[1], `/`)
+  const path = src ? a.laxStr(args[1]).split(`/`) : []
+  const dirs = a.init(path)
+  const name = a.last(path)
+  const root = await reqHandlePermissionConf(HISTORY_DIR, HISTORY_DIR_CONF)
+  let handle = await chdir(sig, root, dirs)
+  if (name) handle = await getFileHandle(sig, handle, name)
+
+  const suf = `: `
+  if (!isDir(handle)) return val.kind + suf + val.name
+
+  let len = 0
+  const buf = []
+  for await (const val of readDir(sig, handle)) {
+    len = Math.max(len, val.kind.length)
+    buf.push([val.kind, val.name])
+  }
+  len += suf.length
+  const line = ([kind, name]) => (kind + suf).padEnd(len, ` `) + name
+  return a.joinLines(a.map(buf, line))
+}
+
+// TODO implement.
+// export function cmdTree(sig, args) {}
+
+export async function chdir(sig, handle, path) {
+  u.reqSig(sig)
+  a.reqInst(handle, FileSystemHandle)
+  u.optArrOfValidStr(path)
+  for (const name of a.laxArr(path)) {
+    if (!a.isInst(handle, FileSystemDirectoryHandle)) {
+      throw new ErrFs(`unable to chdir from ${a.show(handle.name)}, which is not a directory, to ${a.show(name)}`)
     }
+    handle = await getDirectoryHandle(sig, handle, name)
   }
-  catch (err) {u.log.err(err)}
-
-  if (!conf.handle) {
-    u.log.inf(help)
-    conf.handle = await u.wait(sig, pick())
-    try {
-      await u.wait(sig, dbPut(DB_STORE_HANDLES, key, conf.handle))
-      u.log.inf(`Handle for ${desc} stored`)
-    }
-    catch (err) {
-      u.log.err(`Error storing handle for ${desc}:`, err)
-    }
-  }
-
-  let permission = await u.wait(sig, queryPermission(conf.handle, {mode}))
-  if (permission !== `granted`) {
-    u.log.inf(`Permission for ${desc}: ${permission}, requesting permission`)
-    /*
-    Note: browsers allow `.requestPermission` only as a result of a user action.
-    We can't trigger it automatically on app startup, for example.
-    */
-    permission = await requestPermission(sig, conf.handle, {mode})
-  }
-  if (permission !== `granted`) {
-    throw Error(`Please grant permission for ${desc}`)
-  }
+  return handle
 }
 
-// Generic function to check status of a file handle
-async function getHandleStatus(sig, conf, getSpecificStatus) {
-  const {handle, mode} = conf
-  if (!conf.handle) return `${conf.desc}: not initialized`
-
-  try {
-    const permission = await u.wait(sig, queryPermission(handle, {mode}))
-    if (permission !== `granted`) return `${conf.desc}: permission needed`
-
-    // Get specific status information
-    return await getSpecificStatus(sig)
-  }
-  catch (err) {
-    u.log.err(`Error checking ${conf.desc}:`, err)
-    return undefined
-  }
+export async function reqHandlePermissionConf(handle, conf) {
+  const msg = await statusPermissionConf(handle, conf)
+  if (msg) throw new ErrFsPerm(msg)
+  return handle
 }
 
-// Get formatted status of progress file
-async function getProgressFileStatus(sig) {
-  const file = await getFile(sig, PROGRESS_FILE.handle)
-  return `Progress file: ${file.name} (${u.formatSize(file.size)})`
+export async function statusPermissionConf(handle, conf) {
+  const {desc, mode} = a.reqInst(conf, FileConf)
+  if (!handle) return `${desc}: not initialized`
+  const perm = await queryPermission(handle, {mode})
+  if (perm !== `granted`) return `${desc}: permission needed`
+  return undefined
 }
 
-// Returns a string indicating status of progress file.
-export async function statusProgressFile(sig) {
-  return getHandleStatus(sig, PROGRESS_FILE, getProgressFileStatus)
+export function hasPermissionConf(handle, conf) {
+  const {mode} = a.reqInst(conf, FileConf)
+  return hasPermission(handle, {mode})
 }
 
-// Returns a string indicating status of history dir.
-export async function statusHistoryDir(sig) {
-  return getHandleStatus(sig, HISTORY_DIR, async (sig) => {
-    const stats = await getDirectoryStats(sig, HISTORY_DIR.handle)
-    return formatHistoryDirStatus(stats)
-  })
-}
-
-// Get statistics about a directory (file count and total size)
-async function getDirectoryStats(sig, dirHandle) {
-  // Count all files to get accurate stats
-  const dirIter = await u.wait(sig, dirHandle.values())
-  let fileCount = 0
-  let bytesTotal = 0
-
-  for await (const handle of dirIter) {
-    if (isFile(handle)) {
-      const file = await getFile(sig, handle)
-      bytesTotal += file.size
-      fileCount++
-    }
-  }
-
-  return {dirName: dirHandle.name, fileCount, bytesTotal}
-}
-
-// Format history directory status string
-function formatHistoryDirStatus(stats) {
-  const {dirName, fileCount, bytesTotal} = stats
-  return `History directory: ${dirName}${fileCount ? ` (${fileCount} files, ${u.formatSize(bytesTotal)})` : ``}`
-}
-
-// Check if handle has the required permission
-export async function handleHasPermission(conf) {
-  const {handle, mode} = conf
-  return (await queryPermission(handle, {mode})) === `granted`
-}
-
-/*
-TODO: detection should be across all browser tabs.
-Possibly via `localStorage`.
-*/
-function isWatching() {return os.hasProcByName(`watch`)}
-
-// Constants for the watch command.
-export const WATCH_INTERVAL_MS = a.secToMs(10)
-export const WATCH_INTERVAL_MS_SHORT = a.secToMs(1)
-export const WATCH_INTERVAL_MS_LONG = a.secToMs(30)
-export const WATCH_MAX_ERRS = 3
-
-class WatchState extends a.Emp {
-  progressFileHandle = a.optInst(undefined, FileSystemFileHandle)
-  historyDirHandle = a.optInst(undefined, FileSystemDirectoryHandle)
-  runDirName = undefined
-  roundFileName = undefined
-
-  setRunDir(val) {
-    this.runDirName = a.optValidStr(val)
-    this.setRoundFile()
-  }
-
-  setRoundFile(val) {this.roundFileName = a.optValidStr(val)}
+export async function hasPermission(handle, opt) {
+  return (await queryPermission(handle, opt)) === `granted`
 }
 
 // Too specialized, TODO generalize if needed.
@@ -320,8 +391,8 @@ export async function writeFile(sig, dir, name, body) {
   finally {await wri.close()}
 }
 
-export function isFile(val) {return val.kind === `file`}
 export function isDir(val) {return val.kind === `directory`}
+export function isFile(val) {return val.kind === `file`}
 
 export async function* readDir(sig, src) {
   a.optInst(src, FileSystemDirectoryHandle)
@@ -342,15 +413,32 @@ export async function queryPermission(src, opt) {
   }
 }
 
-export async function requestPermission(sig, src, opt) {
-  u.reqSig(sig)
-  a.reqInst(src, FileSystemHandle)
+async function requirePermission(sig, handle, conf) {
+  const {desc, mode} = a.reqInst(conf, FileConf)
 
+  let perm = await u.wait(sig, queryPermission(handle, {mode}))
+  if (perm === `granted`) return
+  u.log.inf(`${desc}: permission: ${perm}, requesting permission`)
+
+  perm = await requestPermission(sig, handle, {mode})
+  if (perm === `granted`) return
+  throw new ErrFsPerm(`please grant permission for ${desc}`)
+}
+
+/*
+Note: browsers allow `.requestPermission` only as a result of a user action.
+We can't trigger it automatically on app startup, for example. This can only
+be run as a result of manually invoking a command, or clicking something in
+the UI, etc.
+*/
+export async function requestPermission(sig, handle, opt) {
+  u.reqSig(sig)
+  a.reqInst(handle, FileSystemHandle)
   try {
-    return await u.wait(sig, src.requestPermission(opt))
+    return await u.wait(sig, handle.requestPermission(opt))
   }
   catch (err) {
-    throw new ErrFsPerm(`unable to request permission for ${src.name}: ${err}`, {cause: err})
+    throw new ErrFsPerm(`unable to request permission for ${handle.name}: ${err}`, {cause: err})
   }
 }
 
@@ -358,10 +446,13 @@ export async function getFile(sig, src, opt) {
   u.reqSig(sig)
   a.reqInst(src, FileSystemHandle)
   try {
+    if (!a.hasMeth(src, `getFile`)) {
+      throw new ErrFs(`missing ".getFile" on object ${a.show(src)}`)
+    }
     return await u.wait(sig, src.getFile(opt))
   }
   catch (err) {
-    throw new ErrFsPerm(`unable to get file for handle ${src.name}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to get file for handle ${src.name}: ${err}`, {cause: err})
   }
 }
 
@@ -374,7 +465,7 @@ export async function getFileHandle(sig, src, name, opt) {
     return await u.wait(sig, src.getFileHandle(name, opt))
   }
   catch (err) {
-    throw new ErrFsPerm(`unable to get file handle ${src.name}/${name}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to get file handle ${src.name}/${name}: ${err}`, {cause: err})
   }
 }
 
@@ -387,7 +478,7 @@ export async function getDirectoryHandle(sig, src, name, opt) {
     return await u.wait(sig, src.getDirectoryHandle(name, opt))
   }
   catch (err) {
-    throw new ErrFsPerm(`unable to get directory handle ${src.name}/${name}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to get directory handle ${src.name}/${name}: ${err}`, {cause: err})
   }
 }
 

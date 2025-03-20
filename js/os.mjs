@@ -36,12 +36,12 @@ export class Proc extends a.Emp {
   constructor(src) {
     a.reqObj(src)
     super()
-    this.id = String(++new.target.id)    // Process id (pid). Must be unique.
-    this.args = u.reqArrOfStr(src.args)  // Command name and CLI args.
+    this.id = String(++new.target.id)         // Process id (pid). Must be unique.
+    this.args = u.reqArrOfValidStr(src.args)  // Command name and CLI args.
     this.startAt = Date.now()
-    this.control = u.abortController()   // For cancelation.
-    this.promise = undefined             // Assigned after starting.
-    this.status = src.status             // What it's currently doing.
+    this.control = u.abortController()        // For cancelation.
+    this.promise = undefined                  // Assigned after starting.
+    this.status = src.status                  // What it's currently doing.
   }
 
   pk() {return this.id}
@@ -68,18 +68,24 @@ export const CMD_HISTORY = [`init`, `ps`, `help`]
 // Position in `CMD_HISTORY`. Must be either nil or an integer.
 export const CMD_HISTORY_INDEX = a.Emp()
 
-// Main command entry point.
-// Takes the user's CLI input and runs a command.
-export async function runCommand(srcText) {
-  // Trim and bail if empty
-  srcText = srcText.trim()
-  if (!srcText) return
-  if (srcText !== a.last(CMD_HISTORY)) CMD_HISTORY.push(srcText)
+export async function runScript(src) {
+  src = a.trim(src)
+  if (src !== a.last(CMD_HISTORY)) CMD_HISTORY.push(src)
   CMD_HISTORY_INDEX.index = undefined
+  return src ? runCmd(...src.split(/\s+/)) : undefined
+}
 
-  // CLI-style cmd name and args.
-  const args = srcText.split(/\s+/)
+export async function runCmd(...args) {
+  if (!u.isArrOfValidStr(args)) {
+    u.log.err(`"runCmd" expects CLI-style arguments, got ${a.show(args)}`)
+    return
+  }
+
   const name = args[0]
+  if (!name) {
+    u.log.err(`missing command name in ${a.show(args)}`)
+  }
+
   const cmd = COMMANDS.get(name)
   if (!cmd) {
     u.log.err(`unknown command: ${name}`)
@@ -97,7 +103,7 @@ export async function runCommand(srcText) {
   let out
   try {out = fun(proc.control.signal, args)}
   catch (err) {
-    u.logCmdFail(err, srcText)
+    u.logCmdFail(name, err)
     return
   }
 
@@ -120,4 +126,66 @@ export async function runCommand(srcText) {
   finally {
     delete PROCS[proc.id]
   }
+}
+
+export function cmdPs() {return showProcs()}
+
+export function procToStatus(src) {
+  a.reqInst(src, Proc)
+  return a.spaced(src.id + `:`, a.show(src.cmd()) + `:`, src.status)
+}
+
+export function showProcs() {
+  if (!a.len(PROCS)) return `No active processes`
+  return a.joinLines([
+    `Active processes (pid, name, status):`,
+    ...a.map(PROCS, procToStatus),
+  ])
+}
+
+export function cmdKill(sig, args) {
+  u.reqArrOfValidStr(args)
+  switch (a.len(args)) {
+    case 0:
+    case 1:
+      return a.joinLines([
+        `missing process id or name; usage: kill <id|name>;`,
+        `alternatively, "kill -a" to kill all`
+      ])
+    case 2:
+      if (args[1] === `-a`) return procKillAll()
+      return procKill(sig, args[1])
+    default: return `too many args; usage: kill <id|name>`
+  }
+}
+
+export async function procKill(sig, key) {
+  u.reqSig(sig)
+  a.reqStr(key)
+  if (!key) return undefined
+
+  const proc = PROCS[key] || a.find(PROCS, val => val.args[0] === key)
+  if (!proc) return `no process with id or name ${a.show(key)}`
+
+  try {
+    proc.deinit()
+    await u.wait(sig, proc.promise)
+  }
+  finally {
+    if (proc.control.signal.aborted) {
+      delete PROCS[proc.id]
+    }
+  }
+}
+
+export async function procKillAll() {
+  const procs = PROCS
+  let len = 0
+
+  for (const key in procs) {
+    len++
+    procs[key].deinit()
+    delete procs[key]
+  }
+  return len ? `sent kill signal to ${len} processes` : `no processes running`
 }

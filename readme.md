@@ -11,4 +11,4 @@ Planned features. Some already implemented:
   * Analysis should be available for both local and cloud logs.
 * Easy rollback option.
 
-Much of the code is written via Claude Code.
+Some of the code is written with the help of Claude Code. (And then rewritten...)

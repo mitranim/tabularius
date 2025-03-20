@@ -83,6 +83,22 @@ export const timeFormat = new DateTimeFormat(`sv-SE`, {
 function percDecode(val) {return a.isStr(val) ? a.onlyFin(parseFloat(val)) : undefined}
 function percEncode(val) {return a.isFin(val) ? val + `%` : ``}
 
+const STORAGE_KEY_VERBOSE = `tabularius.verbose`
+
+export let LOG_VERBOSE = a.boolOpt(
+  sessionStorage.getItem(STORAGE_KEY_VERBOSE) ??
+  localStorage.getItem(STORAGE_KEY_VERBOSE)
+)
+
+export function cmdVerbose() {
+  LOG_VERBOSE = !LOG_VERBOSE
+  sessionStorage.setItem(STORAGE_KEY_VERBOSE, LOG_VERBOSE)
+  localStorage.setItem(STORAGE_KEY_VERBOSE, LOG_VERBOSE)
+  return `logging is now ` + (LOG_VERBOSE ? `verbose` : `selective`)
+}
+
+export function cmdClear() {log.clear()}
+
 const LOG_WIDTH_KEY = `tabularius_log_width`
 const LOG_WIDTH_DEFAULT = 50 // % of parent width
 const LOG_WIDTH_MIN = 10 // % of parent width
@@ -106,6 +122,12 @@ export const log = new class Log extends Elem {
     if (a.some(msg, isErrAbort)) return
     console.error(...msg)
     this.addMsg(msg, true)
+  }
+
+  verb(...msg) {
+    if (!LOG_VERBOSE) return
+    if (!a.vac(msg)) return
+    this.addMsg(msg)
   }
 
   clear() {
@@ -319,19 +341,18 @@ some browsers.
 export function abortController() {
   const out = new AbortController()
   const sig = out.signal
+  const {promise, reject} = Promise.withResolvers()
+  function onAbort() {reject(sig.reason)}
 
-  sig.promise = new Promise(function initAbortSignalPromise(_, fail) {
-    function onAbort() {fail(sig.reason)}
-    sig.addEventListener(`abort`, onAbort, {once: true})
-  })
+  sig.addEventListener(`abort`, onAbort, {once: true})
+  sig.promise = promise
 
   // No unhandled rejection on cancelation, even if no other code ever tries to
   // `await` on the signal.
-  sig.promise.catch(a.nop)
+  promise.catch(a.nop)
 
   // Make the signal await-able.
   sig.then = abortSignalThen
-
   return out
 }
 
@@ -358,13 +379,12 @@ export function wait(sig, ...src) {
 
 export function logCmdDone(name, out) {
   a.reqValidStr(name)
-  if (!a.vac(out)) return
-  log.inf(`[${name}] done:`, out)
+  if (a.vac(out)) log.inf(`[${name}]:`, out)
+  else log.inf(`[${name}] done`)
 }
 
 export function logCmdFail(name, err) {
   a.reqValidStr(name)
-  if (!a.vac(err)) return
   log.err(`[${name}] error:`, err)
 }
 
@@ -423,24 +443,6 @@ export function fileNameExt(name) {
   name = a.laxStr(name)
   const ind = name.lastIndexOf(`.`)
   return ind > 0 ? name.slice(ind) : ``
-}
-
-/*
-Random id, or rather a random hex string. One half of a UUIDv4, without the bit
-twiddling. Shorter and should be enough for our perps.
-
-We're not using "monotonic" ids, such as Firebase push IDs, because they're time
-bombs, using client clocks, with low precision. All 3 factors are pertinent.
-Time is an integer, and encoding it as a string causes wrong sorting on length
-mismatch. The default "lexographic" sorting algorithm could have been designed
-to respect integer sorting better, but hasn't been.
-
-For file and directory names, whenever we want to combine sort order with
-uniqueness, we do use a combination of a local sequence with a random id, but
-we localize the sequence to a "table", instead of relying on the local clock.
-*/
-export function rid() {
-  return a.arrHex(crypto.getRandomValues(new Uint8Array(8)))
 }
 
 export async function decodeObfuscated(src) {

@@ -138,17 +138,17 @@ console.timeEnd(`build`)
 
 function factsToDamagePerRoundPerBuildingType(src) {
   src = a.values(src)
-  const kinds = factsToIndexByKey(src, KEY_KIND)
+  const entIdToEntKind = factsToIndexByKey(src, KEY_KIND)
   const roundIdToRoundIndex = a.Emp()
   const buildingIdToBuilding = a.Emp()
 
   for (const [id, key, val] of src) {
-    if (kinds[id] === KIND_ROUND) {
+    if (entIdToEntKind[id] === KIND_ROUND) {
       if (key === KEY_INDEX) roundIdToRoundIndex[id] = val
       continue
     }
 
-    if (kinds[id] === KIND_BUILDING) {
+    if (entIdToEntKind[id] === KIND_BUILDING) {
       // Select only what we need.
       if (
         key === KEY_WAVE_ID ||
@@ -175,9 +175,10 @@ function factsToDamagePerRoundPerBuildingType(src) {
     tar.eff = tar.dmg ? a.laxFin(tar.dmg) / a.laxFin(src.cost) : 0
   }
 
-  console.log(roundIdToRoundIndex)
-  console.log(buildingIdToBuilding)
-  console.log(buildingPerRoundPerTypeToStat)
+  console.log(`entIdToEntKind:`, entIdToEntKind)
+  console.log(`roundIdToRoundIndex:`, roundIdToRoundIndex)
+  console.log(`buildingIdToBuilding:`, buildingIdToBuilding)
+  console.log(`buildingPerRoundPerTypeToStat:`, buildingPerRoundPerTypeToStat)
 
   /*
   The source data for a line chart is 3-dimensional:
@@ -246,7 +247,7 @@ console.log(`JSON gzip size:`, (await u.gzipBytes(a.jsonEncode(FACTS))).length)
 // console.log(a.jsonEncode(SRC_ROUNDS))
 // console.log(a.jsonEncode(FACTS))
 console.log(`facts:`, FACTS)
-// console.log(factsToIndexes(FACTS, foldEnt))
+console.log(`ents:`, factsToIndexes(FACTS, foldEnt)[0])
 
 console.time(`agg`)
 console.log(factsToDamagePerRoundPerBuildingType(FACTS))

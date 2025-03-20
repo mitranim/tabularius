@@ -1,5 +1,4 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
-import * as d from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/dom.mjs'
 import * as p from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/prax.mjs'
 import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs.mjs'
 import * as od from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs_dom.mjs'
@@ -9,6 +8,12 @@ import {E} from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
 import * as w from './watch.mjs'
+import * as d from './dat.mjs'
+
+/*
+All commands should be added here so that we can control the ordering.
+`os.COMMANDS` is an ordered map.
+*/
 
 os.COMMANDS.add(new os.Cmd({
   name: `help`,
@@ -19,19 +24,20 @@ os.COMMANDS.add(new os.Cmd({
 os.COMMANDS.add(new os.Cmd({
   name: `clear`,
   desc: `clear the log`,
-  fun: cmdClear,
+  fun: u.cmdClear,
 }))
 
 os.COMMANDS.add(new os.Cmd({
   name: `ps`,
   desc: `list running processes`,
-  fun: cmdPs,
+  fun: os.cmdPs,
 }))
 
 os.COMMANDS.add(new os.Cmd({
-  name: `status`,
-  desc: `show status of app features and processes`,
-  fun: cmdStatus,
+  name: `kill`,
+  desc: `kill a process`,
+  help: `kill <id>`,
+  fun: os.cmdKill,
 }))
 
 os.COMMANDS.add(new os.Cmd({
@@ -47,11 +53,28 @@ os.COMMANDS.add(new os.Cmd({
 }))
 
 os.COMMANDS.add(new os.Cmd({
-  name: `kill`,
-  desc: `kill a process`,
-  help: `kill <id>`,
-  fun: cmdKill,
+  name: `status`,
+  desc: `show status of app features and processes`,
+  fun: cmdStatus,
 }))
+
+os.COMMANDS.add(new os.Cmd({
+  name: `watch`,
+  desc: `watch the progress file for changes and create backups`,
+  fun: w.cmdWatch,
+}))
+
+os.COMMANDS.add(new os.Cmd({
+  name: `ls`,
+  desc: `list dirs and files; usage: "ls" or "ls <path>"`,
+  fun: fs.cmdLs,
+}))
+
+// os.COMMANDS.add(new os.Cmd({
+//   name: `tree`,
+//   desc: `print a tree of dirs and files`,
+//   fun: fs.cmdTree,
+// }))
 
 os.COMMANDS.add(new os.Cmd({
   name: `media`,
@@ -60,15 +83,15 @@ os.COMMANDS.add(new os.Cmd({
 }))
 
 os.COMMANDS.add(new os.Cmd({
-  name: `sync`,
-  desc: `sync files (mock process)`,
-  fun: cmdMockProcess,
+  name: `analyze`,
+  desc: `analyze data`,
+  fun: d.cmdAnalyze,
 }))
 
 os.COMMANDS.add(new os.Cmd({
-  name: `analyze`,
-  desc: `analyze data (mock process)`,
-  fun: cmdMockProcess,
+  name: `verbose`,
+  desc: `toggle between quiet and verbose mode`,
+  fun: u.cmdVerbose,
 }))
 
 os.COMMANDS.add(new os.Cmd({
@@ -131,7 +154,7 @@ function Process(src) {
       type: `button`,
       class: `bg-red-500 text-white rounded hover:bg-red-600`,
       style: STYLE_BTN_CEN,
-      onclick() {os.runCommand(`kill ` + src.id)},
+      onclick: a.vac(src.id) && function onclick() {os.runCmd(`kill`, src.id)},
     }, `✕`),
   )
 }
@@ -257,7 +280,7 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
     u.log.inf(`> ${src}`)
     this.value = ``
     os.CMD_HISTORY_INDEX.index = undefined
-    os.runCommand(src).catch(u.logErr)
+    os.runScript(src).catch(u.logErr)
   }
 }
 
@@ -287,86 +310,25 @@ function cmdToHelp(val) {
   return val.name + `: ` + val.desc
 }
 
-function cmdClear() {u.log.clear()}
-
-function cmdPs() {return showProcs()}
-
-function procToStatus(src) {
-  a.reqInst(src, os.Proc)
-  return a.spaced(src.id + `:`, a.show(src.cmd()) + `:`, src.status)
-}
-
-function cmdKill(sig, args) {
-  u.reqArrOfStr(args)
-  switch (a.len(args)) {
-    case 0:
-    case 1: return `missing process id or name; usage: kill <id|name>`
-    case 2: return procKill(sig, args[1])
-    default: return `too many args; usage: kill <id|name>`
-  }
-}
-
-async function procKill(sig, key) {
-  u.reqSig(sig)
-  a.reqStr(key)
-  if (!key) return undefined
-
-  const proc = os.PROCS[key] || a.find(os.PROCS, val => val.args[0] === key)
-  if (!proc) return `no process with id or name ${a.show(key)}`
-
-  try {
-    proc.deinit()
-    await u.wait(sig, proc.promise)
-  }
-  finally {
-    if (proc.control.signal.aborted) {
-      delete os.PROCS[proc.id]
-    }
-  }
-}
-
 function cmdMedia() {
   MEDIA_PANEL.toggle()
   return `panel toggled`
 }
 
-async function cmdMockProcess(sig, args) {
-  u.reqArrOfStr(args)
-  u.log.inf(`running`, a.show(args))
-  await u.wait(sig, a.after(4096))
-  return `done (mock)`
-}
-
-function showProcs() {
-  if (!a.len(os.PROCS)) return `No active processes`
-  return a.joinLines([
-    `Active processes (pid, name, status):`,
-    ...a.map(os.PROCS, procToStatus),
-  ])
-}
-
 // Initialize features that require user action.
 async function cmdInit(sig) {
-  await fs.initProgressFile(sig)
-  await fs.initHistoryDir(sig)
-  await w.maybeStartWatch()
+  if (!await fs.initedFileHandles(sig)) return `FS access not initialized`
+  if (!await w.watchStarted()) return `FS watch not initialized`
   return `all features initialized`
 }
 
 // Deinitialize features and stop all processes.
 async function cmdDeinit(sig) {
-  const procs = os.PROCS
-
-  for (const key in procs) {
-    procs[key].deinit()
-    delete procs[key]
-  }
-
+  const killed = await os.procKillAll()
   return a.joinLinesLax([
-    `All processes stopped`,
-    await fs.deinitProgressFile(sig),
-    await fs.deinitHistoryDir(sig),
-  ])
+    killed,
+    await fs.deinitFileHandles(sig)
+  ].flat())
 }
 
 // Show status of features and processes.
@@ -374,7 +336,7 @@ async function cmdStatus(sig) {
   return a.joinLinesLax([
     await fs.statusProgressFile(sig),
     await fs.statusHistoryDir(sig),
-    showProcs(),
+    os.showProcs(),
   ])
 }
 
@@ -431,11 +393,10 @@ if (TEST_MODE) {
   await import(`./test.mjs`).catch(u.logErr)
 }
 else {
-  os.runCommand(`help`)
-  os.runCommand(`sync`)
-  os.runCommand(`analyze`)
-  await fs.loadHandles().catch(u.logErr)
-  w.maybeStartWatch().catch(u.logErr)
+  os.runCmd(`help`)
+  if (await fs.loadedFileHandles().catch(u.logErr)) {
+    w.watchStarted().catch(u.logErr)
+  }
 }
 
 // Can plug-in arbitrary modules via URL query param.

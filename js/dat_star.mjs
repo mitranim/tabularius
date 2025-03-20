@@ -132,7 +132,6 @@ for (const round of SRC_ROUNDS) {
       roundId,
       roundIndex,
       buildingByRunId,
-      buildingType,
     }
 
     const buildingStatsDmgDone = building.LiveStats?.stats?.DamageDone
@@ -229,8 +228,8 @@ function factsToDamagePerRoundPerBuildingType() {
     const label = a.reqValidStr(building.buildingEntTypeUpg)
     const round = a.reqInt(fact.roundIndex)
     const key = u.joinKeys(label, round)
-
     const tar = agg[key] ??= a.Emp()
+
     tar.label = label
     tar.round = round
     tar.dmg = a.laxFin(tar.dmg) + a.laxFin(fact.statValue)

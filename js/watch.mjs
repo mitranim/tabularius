@@ -4,17 +4,13 @@ import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
 
-os.COMMANDS.add(new os.Cmd({
-  name: `watch`,
-  desc: `watch the progress file for changes and create backups`,
-  fun: cmdWatch,
-}))
-
-export async function maybeStartWatch() {
-  if (!(await fs.handleHasPermission(fs.PROGRESS_FILE))) return
-  if (!(await fs.handleHasPermission(fs.HISTORY_DIR))) return
-  if (isWatching()) return
-  os.runCommand(`watch`)
+export async function watchStarted() {
+  return (
+    (await fs.hasPermissionConf(fs.PROGRESS_FILE, fs.PROGRESS_FILE_CONF)) &&
+    (await fs.hasPermissionConf(fs.HISTORY_DIR, fs.HISTORY_DIR_CONF)) &&
+    !isWatching() &&
+    (os.runCmd(`watch`), true)
+  )
 }
 
 /*
@@ -42,7 +38,7 @@ const WATCH_INTERVAL_MS_SHORT = a.secToMs(1)
 const WATCH_INTERVAL_MS_LONG = a.minToMs(1)
 const WATCH_MAX_ERRS = 3
 
-async function cmdWatch(sig) {
+export async function cmdWatch(sig) {
   if (isWatching()) return `already running`
   u.log.inf(`[watch] running`)
 
@@ -81,8 +77,8 @@ async function cmdWatch(sig) {
 
 // Initialize backup state by inspecting history directory.
 async function watchInit(sig, state) {
-  a.final(state, `progressFileHandle`, fs.PROGRESS_FILE.handle)
-  a.final(state, `historyDirHandle`, fs.HISTORY_DIR.handle)
+  a.final(state, `progressFileHandle`, fs.PROGRESS_FILE)
+  a.final(state, `historyDirHandle`, fs.HISTORY_DIR)
 
   if (!state.progressFileHandle) {
     throw Error(`missing progress file handle, run "init" to initialize`)
@@ -146,7 +142,7 @@ async function watchStep(sig, state) {
   const roundFileName = state.roundFileName
   const prevTime = (await fs.getSubFile(sig, state.historyDirHandle, runDirName, roundFileName))?.lastModified
   if (prevTime >= nextTime) {
-    u.log.inf(`[watch] skipping: progress file unmodified`)
+    u.log.verb(`[watch] skipping: progress file unmodified`)
     return
   }
 
@@ -157,7 +153,7 @@ async function watchStep(sig, state) {
 
   const prevRoundOrd = u.strToInt(roundFileName)
   if (prevRoundOrd === nextRoundOrd) {
-    u.log.inf(`[watch] skipping: round is still ${prevRoundOrd}`)
+    u.log.verb(`[watch] skipping: round is still ${prevRoundOrd}`)
     return
   }
 

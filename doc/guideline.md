@@ -106,6 +106,7 @@
 - Ultra-short names for import aliases
 - Initialization and deinitialization methods are called `init` and `deinit`
 - `onX` over `handleX` for callbacks
+- Names must match entity types / roles / concepts
 
 ## Logging
 - Silence by default

@@ -213,7 +213,7 @@ When reading and decoding files:
 
 UI: have logs of operations. Maybe segregated. Each log may have info msgs and errors. (Ordering: new-to-old? Not sure.)
 
-Add `log.verb` and a UI toggle for verbose logging.
+<!-- Add `log.verb` and a UI toggle for verbose logging. -->
 
 Add log filters.
 
@@ -279,25 +279,23 @@ When the app loads, it looks for the history in `sessionStorage`. If there is no
 
 ---
 
-Command `kill` should take a process id (`pid`) and use `.deinit()`, similar to the above. It should also support command names; killing by name kills the first matching process, unless `-a` is passed, then it kills all matching by name. `kill` without arguments produces help for that command. `kill -a` without any other arguments kills all processes.
-
-(Partially done: deinit is supported, `-a` is not.)
+<!-- Command `kill` should take a process id (`pid`) and use `.deinit()`, similar to the above. It should also support command names; killing by name kills the first matching process, unless `-a` is passed, then it kills all matching by name. `kill` without arguments produces help for that command. `kill -a` without any other arguments kills all processes. -->
 
 ---
 
-The default state of the media area should include the list of active processes, reactive and always up to date. This should be placed at the bottom of the area. The code for rendering this must be shared with the command `ps`.
+<!-- The default state of the media area should include the list of active processes, reactive and always up to date. This should be placed at the bottom of the area. The code for rendering this must be shared with the command `ps`. -->
 
 ---
 
-In the actual commands, support cancelation via `sig.aborted` from the signal passed when starting the process.
+<!-- In the actual commands, support cancelation via `sig.aborted` from the signal passed when starting the process. -->
 
 ---
 
-For each command, before invoking, create an `AbortController` via `new a.Ctx()` (this is a subclass with support for Go-style context chaining), and pass its `.signal` to the command (the argument is called `sig`). This is intended for Go-style cancelation.
+<!-- For each command, before invoking, create an `AbortController` via `new a.Ctx()` (this is a subclass with support for Go-style context chaining), and pass its `.signal` to the command (the argument is called `sig`). This is intended for Go-style cancelation. -->
 
 ---
 
-Maybe convert prompt textarea to input, so we don't have to think about newlines.
+<!-- Maybe convert prompt textarea to input, so we don't have to think about newlines. -->
 
 ---
 
@@ -309,7 +307,7 @@ Limit length of command history.
 
 ---
 
-`help <cmd>` should show help for specific command.
+`help <cmd>` should show help for specific command. But only if we can be bothered to define detailed help for each command. May eventually.
 
 ---
 
@@ -317,7 +315,7 @@ Export our modules into global scope, under a single namespace (`tabularius`).
 
 ---
 
-When printing a command's output synchronously, skip the time.
+When printing a command's output synchronously, skip the log timestamp.
 
 ---
 
@@ -357,7 +355,7 @@ Log: only scroll to bottom if already scrolled to bottom. Meaning, if scrolled u
 
 ---
 
-`runCommand` currently adds a history entry even when invoked programmatically. Gotcha? Useful? Unsure.
+`runCmd` currently adds a history entry even when invoked programmatically. Gotcha? Useful? Unsure.
 
 ---
 
@@ -365,7 +363,7 @@ Less vertical spacing in `u.log`.
 
 ---
 
-Consistently prefix command logging with current command name. Find places in the code where we currently don't, and fix. Note that the last returned string, or the last error thrown, is auto-prefixed by `runCommand`. Consider consolidating.
+Consistently prefix command logging with current command name. Find places in the code where we currently don't, and fix. Note that the last returned string, or the last error thrown, is auto-prefixed by `runCmd`. Consider consolidating.
 
 ---
 

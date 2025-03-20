@@ -355,7 +355,7 @@ Deduplicate with existing code as much as possible.
 
 In `./js/fs.mjs`, we're going to watch the progress file for changes, and make backups into the history directory.
 
-When both handles are available (for ANY reason; check existing places where we update handles), we're going to idempotently start the new command `watch` (defined below) via `os.runCommand`. If already running, we don't start it.
+When both handles are available (for ANY reason; check existing places where we update handles), we're going to idempotently start the new command `watch` (defined below) via `os.runCmd`. If already running, we don't start it.
 
 The `watch` command:
 - Runs in a loop.
