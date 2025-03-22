@@ -1,8 +1,11 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
-import * as idb from 'https://esm.sh/idb@7.1.1'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
+
+import * as self from './watch.mjs'
+window.tabularius ??= a.Emp()
+window.tabularius.w = self
 
 export async function watchStarted() {
   return (
@@ -189,8 +192,3 @@ async function watchStep(sig, state) {
   state.setRoundFile(nextFileName)
   u.log.inf(`[watch] backed up run ${dir.name} > file ${nextFileName}`)
 }
-
-// Must always be at the very end of this file.
-export {idb}
-import * as module from './watch.mjs'
-window.tabularius.watch = module

@@ -3,6 +3,11 @@ import * as idb from 'https://esm.sh/idb@7.1.1'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 
+export {idb}
+import * as self from './fs.mjs'
+window.tabularius ??= a.Emp()
+window.tabularius.fs = self
+
 // Initialize IndexedDB for persistence of file handles and other values.
 export const DB_NAME = `tabularius`
 export const DB_VERSION = 1
@@ -286,10 +291,15 @@ async function pickHistoryDir() {
   })
 }
 
+export async function reqHistoryDir(sig) {
+  await initedHistoryDir(sig)
+  return reqHandlePermissionConf(HISTORY_DIR, HISTORY_DIR_CONF)
+}
+
 const CMD_LS_HELP = a.joinLines([
   `usage: "ls" or "ls <path>"`,
   `list the directories and files; examples:`,
-  `  ls .`,
+  `  ls /`,
   `  ls some_dir/`,
   `  ls some_dir/some_file`,
 ])
@@ -306,7 +316,7 @@ export async function cmdLs(sig, args) {
   const path = src ? a.laxStr(args[1]).split(`/`) : []
   const dirs = a.init(path)
   const name = a.last(path)
-  const root = await reqHandlePermissionConf(HISTORY_DIR, HISTORY_DIR_CONF)
+  const root = await reqHistoryDir(sig)
   let handle = await chdir(sig, root, dirs)
   if (name) handle = await getFileHandle(sig, handle, name)
 
@@ -326,6 +336,26 @@ export async function cmdLs(sig, args) {
 
 // TODO implement.
 // export function cmdTree(sig, args) {}
+
+export async function* readRunRounds(sig, dir) {
+  for await (const file of readDir(sig, dir)) {
+    if (!isHandleProgressFile(file)) continue
+    let val = await getFile(sig, file)
+    val = await u.wait(sig, val.text())
+    val = await u.decodeObfuscated(val)
+    if (!a.isDict(val)) {
+      throw Error(`expected to decode a progress backup from ${dir.name}/${file.name}, got ${a.show(val)}`)
+    }
+    yield val
+  }
+}
+
+export function isHandleProgressFile(handle) {
+  a.reqInst(handle, FileSystemHandle)
+  if (!isFile(handle)) return false
+  const ext = u.fileNameExt(handle.name)
+  return ext === `.gd` || ext === `.json`
+}
 
 export async function chdir(sig, handle, path) {
   u.reqSig(sig)
@@ -481,8 +511,3 @@ export async function getDirectoryHandle(sig, src, name, opt) {
     throw new ErrFs(`unable to get directory handle ${src.name}/${name}: ${err}`, {cause: err})
   }
 }
-
-// Must always be at the very end of this file.
-export {idb}
-import * as module from './fs.mjs'
-window.tabularius.fs = module

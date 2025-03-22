@@ -426,3 +426,58 @@ Support fetching additional modules, for plugin support. The addresses could be 
 ---
 
 Display app version in UI, for easier error reporting/debugging.
+
+---
+
+Charts.
+
+Considered many bot suggestions, tried d3, `@observablehq/plot` (which is d3-based), `uplot`. Settled on `uplot`: _much_ smaller, way fewer files, advertizes better performance.
+
+TODO:
+- Finish styling.
+- Add `analyze` command.
+  - Implement reading run data.
+  - Settle on one schema already.
+- Integrate with media panel.
+
+---
+
+Polyfill for customized built-in elements: https://github.com/ungap/custom-elements.
+
+---
+
+When the File System API is not available, give the users a descriptive error.
+
+---
+
+<!-- `Plotter` should use `ResizeObserver` on its parent, instead of a `resize` event listener. -->
+
+---
+
+After we settle down with our usage of `uplot`, it might be pertinent to comment in various issues related to dark mode, and provide code samples of how we support dark/light modes, with dynamic detection and switching:
+
+https://github.com/leeoniya/uPlot/issues?q=dark%20
+
+---
+
+Plot: order series by value (desc). Requires dynamic reorder on hover.
+
+---
+
+Plot/analyze: totals.
+
+---
+
+Plot auto-updating. First from local data, then from Firebase. Demos:
+
+https://leeoniya.github.io/uPlot/demos/stream-data.html
+https://leeoniya.github.io/uPlot/demos/pixel-align.html
+https://leeoniya.github.io/uPlot/demos/sine-stream.html
+
+---
+
+Plot: button to toggle all series.
+
+---
+
+Plot: when the cursor is near many near-overlapping data points (within a certain proximity threshold), we should group them up, and include all in a tooltip.

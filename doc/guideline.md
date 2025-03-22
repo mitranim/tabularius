@@ -26,7 +26,6 @@
 - Named functions over anonymous inline closures
 - Move functions as close to root scope as possible
 - Use function hoisting for better code organization
-- Single-line arrow functions for very simple callbacks
 - Avoid parameter destructuring and complex default values
 - Validate inputs immediately
 - Fail early and loudly
@@ -83,6 +82,7 @@
 - No semicolons
 - Use backticks for string literals (except in imports)
 - 2-space indentation
+- Avoid nesting the code as much as possible
 - Early returns over nested conditionals
 - Ternary expressions for simple conditionals
 - Avoid extra spacing in parentheses, brackets, and braces

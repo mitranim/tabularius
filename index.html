@@ -7,7 +7,12 @@
   <title>Tabularius — book-keeper for Tower Dominion</title>
 
   <style>
-    /* Monospace fonts tend to be larger than regular ones. */
+    /*
+    Monospace fonts tend to be larger than regular ones. TODO: instead of
+    forcing a specific default value, it might be ideal to specify that the
+    font size should be reduced from the default, but no less than X. We might
+    be able to do that with the CSS `clamp` property.
+    */
     :root {font-size: 16px}
 
     /*
@@ -17,6 +22,13 @@
     https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity
     */
     [hidden]:not(:root) {display: none !important}
+
+    /* Overrides for the chart-rendering library Uplot. */
+    .uplot {font-family: inherit !important}
+    .u-title {padding: 0.5rem}
+    @media(prefers-color-scheme: dark) {
+      .u-select:not(:root) {background: rgba(255, 255, 255, 0.07)}
+    }
   </style>
 
   <style id="loading_style">
@@ -33,6 +45,7 @@
       }
     }
     body {
+      min-width: 100vw;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -50,9 +63,10 @@
 
   TODO: add a link where to report problems.
 
-  Known problem: the logged error points to the wrong place (here instead of the
-  original site), AND the browser does not pause on caught/uncaught exceptions
-  if that debugging option is enabled, making it hard to identify the causes.
+  Known problem: the logged error points to the wrong place (to this script
+  instead of the original throw site), AND the browser does not pause on
+  caught / uncaught exceptions if you click those checkboxes in the debugger,
+  making it hard to identify the causes.
   -->
   <script type="module">
     try {
@@ -74,10 +88,9 @@
 
   <!--
   Alternative: just use normal module loading and hope for the best.
-  <script type="module" src="/js/main.mjs"></script>
-  -->
 
-  <!-- <script type="module" src="/js/main.mjs"></script> -->
+  <script type="module" src="./js/main.mjs"></script>
+  -->
 </head>
 
 <body>
@@ -90,6 +103,6 @@
 
   <div id="loading_msg">Loading...</div>
 
-  <script src="./sw.mjs"></script>
+  <script>navigator.serviceWorker.register(`./sw.mjs`)</script>
 </body>
 </html>

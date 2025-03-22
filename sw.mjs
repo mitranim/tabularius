@@ -10,7 +10,7 @@ self.onfetch = onFetch
 
 function onFetch(event) {
   const {request: req} = event
-  if (!shouldCache(req.url)) return
+  if (!shouldCache(decodeURI(req.url))) return
   event.respondWith(fetchWithCache(req))
 }
 

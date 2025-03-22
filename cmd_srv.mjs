@@ -11,11 +11,11 @@ const bro = new ld.LiveBroad()
 
 const dirs = ld.LiveDirs.of(
   hd.dirRel(Deno.env.get(`TAR`) || `.`),
-  hd.dirRel(`.`, /(?:^index[.]html$|^sw[.]mjs$|^js[/]|^data[/]|^local[/])/),
+  hd.dirRel(`.`, /(?:^\w+[.]html$|^sw[.]mjs$|^js[/]|^data[/]|^local[/])/),
 )
 
 const liveDirs = ld.LiveDirs.of(
-  hd.dirRel(`.`, /(?:^index[.]html$|^sw[.]mjs$|^js[/])/),
+  hd.dirRel(`.`, /(?:^\w+[.]html$|^sw[.]mjs$|^js[/])/),
 )
 
 const dirAbs = hd.dirAbs()

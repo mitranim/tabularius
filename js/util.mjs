@@ -8,6 +8,10 @@ import * as tw from 'https://esm.sh/@twind/core@1.1.3'
 import tp from 'https://esm.sh/@twind/preset-autoprefix@1.0.7'
 import tt from 'https://esm.sh/@twind/preset-tailwind@1.1.4'
 
+import * as self from './util.mjs'
+window.tabularius ??= a.Emp()
+window.tabularius.u = self
+
 /*
 This library hacks into the DOM, detects changes in the `.className` of any
 element, and dynamically generates Tailwind-compliant styles for the classes
@@ -169,7 +173,7 @@ export const log = new class Log extends Elem {
     E(
       this,
       {
-        class: `flex items-stretch min-w-0 bg-gray-100 dark:bg-gray-800`,
+        class: `flex items-stretch min-w-0 bg-gray-100 text-black dark:bg-gray-800 dark:text-white`,
         style: {
           width: percEncode(this.currentWidth),
           // The following properties are needed for reliable resizing.
@@ -266,8 +270,8 @@ function LogMsg(src, isErr) {
       class: a.spaced(
         `border-l-4 p-2`,
         isErr
-          ? `text-red-600 dark:text-red-400 border-red-500`
-          : `text-gray-800 dark:text-gray-300 border-transparent`,
+          ? `text-red-500 dark:text-red-400 border-red-500`
+          : `border-transparent`,
       ),
     },
     E(
@@ -528,7 +532,25 @@ export async function gzipRes(src) {
 
 function charCode(val) {return val.charCodeAt(0)}
 
-// Must always be at the very end of this file.
-import * as module from './util.mjs'
-window.tabularius = a.Emp()
-window.tabularius.u = module
+export async function fetchJson(...src) {
+  return (await a.resOk(fetch(...src))).json()
+}
+
+/*
+Usage:
+
+  u.darkModeMediaQuery.matches
+  u.darkModeMediaQuery.addEventListener(`change`, someListener)
+  function someListener(eve) {console.log(eve.matches)}
+*/
+export const darkModeMediaQuery = window.matchMedia(`(prefers-color-scheme: dark)`)
+
+export function roundDefault(val) {return roundTo(val, 2)}
+
+// Rounds the number to N decimal places.
+export function roundTo(num, decimalPlaces) {
+  a.reqNat(decimalPlaces)
+  if (a.isNil(a.optFin(num))) return undefined
+  const coeff = Math.pow(10, decimalPlaces)
+  return Math.round(num * coeff) / coeff
+}

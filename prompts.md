@@ -793,3 +793,83 @@ function rid() {
 We'd like to reduce the size of the time component by using a more recent epoch rather than the Unix epoch. We also want to choose the epoch in such a way, that the length of the time-based component of the id doesn't change until at least 100 years into the future. Suggest several most suitable epochs.
 
 ---
+
+We're writing a JS app with visual analytics. We build datasets which need to be visualized as charts (X + Y + lines, or similar). We're free to import arbitrary JS libraries, but we _only_ use native JS URL imports without NPM or importmaps.
+
+Example dataset we're going to visualize:
+
+```json
+[/* ... */]
+```
+
+Considering the above, suggest how to visualize the data in JS, as line charts or similar. If using libraries, import via URL (from a CDN). Provide code samples for bulding the charts. Provide multiple different / competing options.
+
+---
+
+Out of all the options, `d3.js` website is the only one that didn't flashbang me in a dark room. We're discouraged from the other options as a result. Focus on d3, and provide code samples for how to visualize our data.
+
+---
+
+Suggest more JS data visualization tools, well-understood by OpenAI LLMs, which do not flashbang me upon website visit.
+
+---
+
+Suggest more JS data visualization tools, well-understood by Google LLMs, which do not flashbang me upon website visit.
+
+---
+
+Focus on `https://observablehq.com/plot/`. Provide example code for visualizing our data, provided earlier, as a line chart.
+
+---
+
+We're making a serverless web app which is going to use Firebase for its data storage. We're considering formulating our data as atomic triplets:
+
+```json
+[
+  ["<ent_id>", "<key>", "<val>"],
+  ["<ent_id>", "<key>", "<val>"],
+  ["<ent_id>", "<key>", "<val>"]
+]
+```
+
+Does Firebase have any kind of support for such data storage? Is it suitable for this?
+
+---
+
+In JS, when using the library `uplot` to make charts, how to instruct it to show every datapoint on the X axis (below the chart) instead of grouping them?
+
+---
+
+In JS, in a browser app, we have an element which needs to detect when its parent's width or height chanages. Currently it uses a `resize` event listener, which does work when the viewport is resized. But it does not detect when other elements are resized. (It has a sibling with a draggable handle.) We'd like a more general solution for detecting geometry changes on the parent. We really don't want to have to coordinate with that other element; an ideal solution would be localized.
+
+---
+
+In `js/ui.mjs`>`MEDIA`, review the logic of setting and toggling. Look for potential bugs and fix them. Then review the code and simplify if possible.
+
+---
+
+In `js/plot.mjs`, `Plotter` uses a global `resize` event listener. Convert that to a `ResizeObserver` on its parent.
+
+---
+
+In `js/dat.mjs`>`plotOptsDamagePerRoundPerBuiTypeUpg`, we create options for rendering a chart with the JS library `uplot`. It works. Consider implementing the following additional features:
+- We want to support both light and dark modes, via CSS `@media`. Our own UI code relies on Tailwind classes for light/dark modes, and this works. Consider how we could support light/dark when configuring `uplot`.
+- When hovering a line or a datapoint, we want a tooltip indicating the current X Y Z (Z is the "series" for that line).
+- When hovering a line or a datapoint, the other, unrelated lines should be grayed-out in the set of labels displayed below the chart.
+- Currently in `serie`, the color is hardcoded. We would like for colors for different series to be differentiated. If the plotting library supports that, we want to use that. Otherwise, we may need to implement own color differentiation, and if we do, we want stable colors for serie labels; same labels should get same colors across different datasets. If we need to make our own colors, we should consider how many can be easily differentiated by most humans, and stop at that number.
+
+Prefer very simple solutions. Prefer solutions that use built-in `uplot` options rather than custom code. Prefer brevity.
+
+<!-- Bot output: some worked, much was garbage. -->
+
+---
+
+In `js/dat.mjs`>`plotOptsDamagePerRoundPerBuiTypeUpg`, we create options for rendering a chart with the JS library `uplot`. Our datapoints on the X axis are integers, very limited in number (from 0 to 60 max). Currently, when we zoom in, the library invents intermediary values, non-integers, for the X axis, showing them below the chart. We'd like instead to show only the X values for the datapoints that strictly do exist.
+
+---
+
+In browser JS, when using Uplot to render a chart, how to detect when a cursor is close to a data point, and render a tooltip for that particular data point?
+
+---
+
+In JS, we have floats with a reaaallllly long fractional part which we want to truncate to a particular number of digits (like 2), either before converting to a string, or during the string conversion. We'd prefer to convert to a string just once, and avoid modifying the resulting string. Suggest solutions.
