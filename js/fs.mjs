@@ -187,7 +187,7 @@ export async function deinitProgressFile(sig) {
 
 // Deinitialize history directory: delete handle from DB and reset variable
 export async function deinitHistoryDir(sig) {
-  const msg = await deinitFileConf(sig, PROGRESS_FILE, HISTORY_DIR_CONF)
+  const msg = await deinitFileConf(sig, HISTORY_DIR, HISTORY_DIR_CONF)
   HISTORY_DIR = undefined
   return msg
 }

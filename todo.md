@@ -265,6 +265,10 @@ When the app loads, it looks for the history in `sessionStorage`. If there is no
 
 ---
 
+Log width: store in both `sessionStorage` and `localStorage`, like `LOG_VERBOSE`.
+
+---
+
 <!-- Add the command `status` which displays the current status of the features supported by `init`, and also a short list of active processes. -->
 
 ---
@@ -460,11 +464,11 @@ https://github.com/leeoniya/uPlot/issues?q=dark%20
 
 ---
 
-Plot: order series by value (desc). Requires dynamic reorder on hover.
+Plot/analyze: totals; should be shown on labels instead of `--` placeholders when nothing is hovered.
 
 ---
 
-Plot/analyze: totals; should be shown on labels instead of `--` placeholders when nothing is hovered. (Also: order series by totals.)
+Plot: order series by total value. When hovering an X point, reorder the legend labels by the value in that current X.
 
 ---
 
@@ -489,3 +493,19 @@ Plot: compact the numbers by using `k`/`m` suffixes, like in the game proper. (D
 ---
 
 Media: always show processes under custom media, such as plots.
+
+---
+
+Plot: when grouping multiple sources, such as buildings or weapons, into one series, indicate the count of grouped entries in the label. Might be WONTFIX because the count _changes_ between rounds.
+
+---
+
+Plot: when analyzing building damage, exclude series where every value is zero or missing.
+
+---
+
+Plot: consider if even in damage per round charts, it's not useful to have a chart where values just go up as the rounds progress. Perhaps we should normalize the values per round in such a way that comparisons between rounds are meaningful.
+
+---
+
+Consistently prefer lowercase msgs in log, errors, etc.

@@ -116,9 +116,6 @@ export function datAddRound(dat, runId, round) {
       buiType,
       buiName,
       buiKind,
-      sellPrice: bui.SellPrice,
-      sellCurr: bui.SellCurrencyType,
-      // sellSupply: TODO precalculate by converting other currencies.
     }
     if (!dat.dimBuiInRun.has(buiInRunId)) {
       dat.dimBuiInRun.set(buiInRunId, buiInRun)
@@ -137,6 +134,9 @@ export function datAddRound(dat, runId, round) {
       buiUpg,
       buiTypeUpg,
       buiTypeUpgName,
+      sellPrice: bui.SellPrice,
+      sellCurr: bui.SellCurrencyType,
+      // sellSupply: TODO precalculate by converting other currencies.
     }
     dat.dimBuiInRound.set(buiInRoundId, buiInRound)
 
