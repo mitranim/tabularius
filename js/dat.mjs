@@ -249,7 +249,7 @@ export async function plotOptsDamagePerRoundPerBuiTypeUpg(dat) {
   }
 
   const Z_labels = a.keys(Z_X_Y).sort()
-  const X_row = a.arr(X_set).sort()
+  const X_row = a.arr(X_set).sort(a.compareFin)
   const Y_rows = a.map(Z_labels, Z => a.map(X_row, X => u.roundDefault(Z_X_Y[Z][X])))
   const rows = [X_row, ...Y_rows]
   const pl = await import(`./plot.mjs`)

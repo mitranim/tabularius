@@ -456,7 +456,7 @@ export async function decodeObfuscated(src) {
   // This is not supposed to throw unless JSON is corrupted.
   try {
     const out = jsonDecodeOpt(src)
-    if (out) return out
+    if (a.isSome(out)) return out
   }
   catch (err) {
     throw new ErrDecoding(`unexpected JSON decoding error: ${err}`, {cause: err})

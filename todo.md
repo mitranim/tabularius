@@ -464,7 +464,7 @@ Plot: order series by value (desc). Requires dynamic reorder on hover.
 
 ---
 
-Plot/analyze: totals.
+Plot/analyze: totals; should be shown on labels instead of `--` placeholders when nothing is hovered. (Also: order series by totals.)
 
 ---
 
@@ -481,3 +481,11 @@ Plot: button to toggle all series.
 ---
 
 Plot: when the cursor is near many near-overlapping data points (within a certain proximity threshold), we should group them up, and include all in a tooltip.
+
+---
+
+Plot: compact the numbers by using `k`/`m` suffixes, like in the game proper. (Do that on the labels _and_ in the tooltip.)
+
+---
+
+Media: always show processes under custom media, such as plots.

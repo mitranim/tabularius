@@ -873,3 +873,7 @@ In browser JS, when using Uplot to render a chart, how to detect when a cursor i
 ---
 
 In JS, we have floats with a reaaallllly long fractional part which we want to truncate to a particular number of digits (like 2), either before converting to a string, or during the string conversion. We'd prefer to convert to a string just once, and avoid modifying the resulting string. Suggest solutions.
+
+---
+
+We're making a JS in-browser app which is serverless. It makes periodic backups of certain JSON files (via the File System API). Then we want to upload them to Firebase and analyze the data. From the data, we want to derive a "star schema" which makes analytics queries more convenient. We want that schema to be stored in Firebase. We also want the actual source data stored as-is; this would allow us to change the schema later. It would be best if the star schema was derived from the source data server-side (FB-side), automatically, and incrementally. Simply uploading another source file should trigger that. Suggest various ways how this can be done.
