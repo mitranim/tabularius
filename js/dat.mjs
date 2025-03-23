@@ -140,29 +140,6 @@ export function datAddRound(dat, runId, round) {
     }
     dat.dimBuiInRound.set(buiInRoundId, buiInRound)
 
-    const buiStatsDmgDone = bui.LiveStats?.stats?.DamageDone
-    if (buiStatsDmgDone) {
-      const {valueThisGame, valueThisWave} = buiStatsDmgDone
-
-      if (valueThisGame) {
-        dat.facts.push({
-          ...buiInRoundIds,
-          statType: STAT_TYPE_DMG_DONE,
-          statScope: STAT_SCOPE_RUN_ACC,
-          statValue: valueThisGame,
-        })
-      }
-
-      if (valueThisWave) {
-        dat.facts.push({
-          ...buiInRoundIds,
-          statType: STAT_TYPE_DMG_DONE,
-          statScope: STAT_SCOPE_ROUND,
-          statValue: valueThisWave,
-        })
-      }
-    }
-
     const dmgDone = bui.LiveStats?.stats?.DamageDone
     dat.facts.push(...damageFacts(buiInRoundIds, dmgDone, STAT_TYPE_DMG_DONE, buiKind === BUILDING_KIND_NEUTRAL))
 
@@ -237,7 +214,7 @@ export async function plotOptsDamagePerRoundPerBuiTypeUpg(dat) {
   for (const fact of dat.facts) {
     if (fact.statType !== STAT_TYPE_DMG_DONE) continue
     if (fact.statScope !== STAT_SCOPE_ROUND) continue
-    if (fact.weaponEntType) continue
+    if (fact.wepType) continue
 
     const bui = dat.dimBuiInRound.get(fact.buiInRoundId)
     const Z = a.reqValidStr(bui.buiTypeUpgName || bui.buiTypeUpg)
