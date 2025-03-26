@@ -509,3 +509,11 @@ Plot: consider if even in damage per round charts, it's not useful to have a cha
 ---
 
 Consistently prefer lowercase msgs in log, errors, etc.
+
+---
+
+Option to analyze latest run without having to type its ID.
+
+---
+
+Ship with mock data and render a chart right away, for demonstration.

@@ -877,3 +877,22 @@ In JS, we have floats with a reaaallllly long fractional part which we want to t
 ---
 
 We're making a JS in-browser app which is serverless. It makes periodic backups of certain JSON files (via the File System API). Then we want to upload them to Firebase and analyze the data. From the data, we want to derive a "star schema" which makes analytics queries more convenient. We want that schema to be stored in Firebase. We also want the actual source data stored as-is; this would allow us to change the schema later. It would be best if the star schema was derived from the source data server-side (FB-side), automatically, and incrementally. Simply uploading another source file should trigger that. Suggest various ways how this can be done.
+
+---
+
+<!-- Read `doc/app.md` for app overview.
+
+Our command `analyze` (invoked as `analyze <run_id>`) now works and renders a plot. We want to add more plots, with different data. We're unsure about the CLI interface for that. Every command should be really short. We _could_ add subcommands and ... -->
+
+---
+
+Read `js/ui.mjs`. Implement the missing methods `CMD_HIST..prev` and `CMD_HIST..next`. Functionality is similar to arrow up/down respectively, in any regular terminal.
+
+---
+
+Current issues:
+- When pressing arrow up and repeating a command, the two last commands alternate.
+- To get a different command to repeat, it takes two cases of arrow up plus enter.
+- Seems inconsistent with proper terminals.
+
+---

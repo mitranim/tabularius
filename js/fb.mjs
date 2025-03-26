@@ -12,16 +12,17 @@ const db = fs.getFirestore(app)
 const state = o.obs({user: undefined})
 
 fa.onAuthStateChanged(auth, function onAuthChange(user) {
-  u.log.inf(`Auth state changed:`, user)
+  u.log.inf(`auth state changed:`, user)
   state.user = user
 })
 
 async function loginAnon() {
   try {
     await fa.signInAnonymously(auth)
-    u.log.inf(`Logged in anonymously`)
-  } catch (err) {
-    u.log.err(`Error logging in anonymously:`, err)
+    u.log.inf(`logged in anonymously`)
+  }
+  catch (err) {
+    u.log.err(`unable to login anonymously:`, err)
   }
 }
 
@@ -29,17 +30,19 @@ async function loginGoogle() {
   try {
     const provider = new fa.GoogleAuthProvider()
     await fa.signInWithPopup(auth, provider)
-    u.log.inf(`Logged in with Google`)
-  } catch (err) {
-    u.log.err(`Error logging in with Google:`, err)
+    u.log.inf(`logged in with Google`)
+  }
+  catch (err) {
+    u.log.err(`unable to login with Google:`, err)
   }
 }
 
 async function logout() {
   try {
     await fa.signOut(auth)
-    u.log.inf(`Logged out`)
-  } catch (err) {
-    u.log.err(`Error logging out:`, err)
+    u.log.inf(`logged out`)
+  }
+  catch (err) {
+    u.log.err(`unable to logout:`, err)
   }
 }

@@ -172,6 +172,8 @@ export const MEDIA = new class MediaPanel extends u.Elem {
 export const MIDDLE = E(`div`, {class: `flex flex-1 min-h-0`}, u.log, MEDIA)
 
 export const PROMPT_FOCUS_KEY = `/`
+export const PROMPT_HIST_KEY = `tabularius.prompt_hist`
+export const PROMPT_HIST_MAX = 256
 
 /*
 Subclassing a built-in element class which is NOT `HTMLElement` requires a
@@ -192,25 +194,25 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
 
   // When unfocused, mention the shortcut
   onBlur() {
-    this.placeholder = `type a command (try "help") (press ${a.show(PROMPT_FOCUS_KEY)} to focus)`
+    this.placeholder = `type a command (try "help"; press ${a.show(PROMPT_FOCUS_KEY)} to focus)`
   }
 
   onKeydown(eve) {
     if (eve.key === `ArrowUp`) {
       a.eventKill(eve)
-      this.historyPrev()
+      this.histPrev()
       return
     }
 
     if (eve.key === `ArrowDown`) {
       a.eventKill(eve)
-      this.historyNext()
+      this.histNext()
       return
     }
 
     if (eve.key === `Enter`) {
       a.eventKill(eve)
-      this.commandSubmit()
+      this.cmdSubmit()
       return
     }
 
@@ -220,42 +222,77 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
     }
   }
 
-  // Navigate to the previous entry in the command history
-  historyPrev() {
-    if (!os.CMD_HISTORY.length) return
-
-    if (a.isNil(os.CMD_HISTORY_INDEX.index)) {
-      os.CMD_HISTORY_INDEX.index = os.CMD_HISTORY.length - 1
-    } else if (os.CMD_HISTORY_INDEX.index > 0) {
-      os.CMD_HISTORY_INDEX.index--
-    }
-
-    this.value = os.CMD_HISTORY[os.CMD_HISTORY_INDEX.index]
-  }
-
-  // Navigate to the next entry in the command history
-  historyNext() {
-    if (!os.CMD_HISTORY.length || a.isNil(os.CMD_HISTORY_INDEX.index)) return
-
-    if (os.CMD_HISTORY_INDEX.index < os.CMD_HISTORY.length - 1) {
-      os.CMD_HISTORY_INDEX.index++
-      this.value = os.CMD_HISTORY[os.CMD_HISTORY_INDEX.index]
-    } else {
-      os.CMD_HISTORY_INDEX.index = undefined
-      this.value = ``
-    }
-  }
-
-  // Command submission (on Enter)
-  commandSubmit() {
+  // Command submission (on Enter).
+  cmdSubmit() {
     const src = this.value.trim()
     if (!src) return
     u.log.inf(`> ${src}`)
-    this.value = ``
-    os.CMD_HISTORY_INDEX.index = undefined
+    this.histPush(src)
     os.runScript(src).catch(u.logErr)
   }
+
+  hist = a.laxArr(
+    histDecode(sessionStorage.getItem(PROMPT_HIST_KEY)) ??
+    histDecode(localStorage.getItem(PROMPT_HIST_KEY))
+  )
+  histInd = this.hist.length
+  histPrompt = ``
+
+  histPush(val) {
+    val = a.trim(val)
+    if (!val) return
+    histStore(sessionStorage, this.hist, val)
+    histStore(localStorage, histDecode(localStorage.getItem(PROMPT_HIST_KEY)), val)
+    this.histInd = this.hist.length
+    this.value = this.histPrompt = ``
+  }
+
+  histPrev() {
+    a.reqArr(this.hist)
+    a.reqNat(this.histInd)
+    if (!this.hist.length) return
+    if (!this.histInd) return
+    if (this.histInd === this.hist.length) this.histPrompt = this.value
+    this.value = this.hist[--this.histInd]
+  }
+
+  histNext() {
+    a.reqArr(this.hist)
+    a.reqNat(this.histInd)
+    if (!(this.histInd < this.hist.length)) return
+    this.value = this.hist[++this.histInd] ?? this.histPrompt
+  }
+
+  histClear() {
+    this.hist = []
+    this.histInd = 0
+    this.value = ``
+    u.storageSet(sessionStorage, PROMPT_HIST_KEY)
+  }
 }
+
+function histStore(store, hist, val) {
+  a.reqValidStr(val)
+  if (val === a.last(hist)) return
+  hist = a.laxArr(hist)
+  hist.push(val)
+  hist = validPromptHist(hist)
+  u.storageSet(store, PROMPT_HIST_KEY, histEncode(hist))
+}
+
+function validPromptHist(src) {
+  src = a.onlyArr(src) ?? []
+  const ind = src.length - PROMPT_HIST_MAX
+  return ind > 0 ? src.slice(ind) : src
+}
+
+function histDecode(src) {return a.isNil(src) ? src : a.lines(src)}
+function histEncode(src) {return a.joinLines(src)}
+
+export const PROMPT_INPUT = E(new PromptInput(), {
+  class: `w-full bg-transparent resize-none overflow-hidden dark:text-gray-200 outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded p-2 transition-all duration-150 ease-in-out`,
+  autofocus: true,
+})
 
 function focusPromptOnSlash(eve) {
   if (eve.key !== PROMPT_FOCUS_KEY) return
@@ -264,11 +301,6 @@ function focusPromptOnSlash(eve) {
   a.eventKill(eve)
   PROMPT_INPUT.focus()
 }
-
-export const PROMPT_INPUT = E(new PromptInput(), {
-  class: `w-full bg-transparent resize-none overflow-hidden dark:text-gray-200 outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded p-2 transition-all duration-150 ease-in-out`,
-  autofocus: true,
-})
 
 export const PROMPT = E(
   `div`,

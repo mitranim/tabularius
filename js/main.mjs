@@ -27,25 +27,6 @@ os.COMMANDS.add(new os.Cmd({
 }))
 
 os.COMMANDS.add(new os.Cmd({
-  name: `clear`,
-  desc: `clear the log`,
-  fun: u.cmdClear,
-}))
-
-os.COMMANDS.add(new os.Cmd({
-  name: `ps`,
-  desc: `list running processes`,
-  fun: os.cmdPs,
-}))
-
-os.COMMANDS.add(new os.Cmd({
-  name: `kill`,
-  desc: `kill a process`,
-  help: `kill <id>`,
-  fun: os.cmdKill,
-}))
-
-os.COMMANDS.add(new os.Cmd({
   name: `init`,
   desc: `initialize features requiring user action`,
   fun: cmdInit,
@@ -61,6 +42,19 @@ os.COMMANDS.add(new os.Cmd({
   name: `status`,
   desc: `show status of app features and processes`,
   fun: cmdStatus,
+}))
+
+os.COMMANDS.add(new os.Cmd({
+  name: `ps`,
+  desc: `list running processes`,
+  fun: os.cmdPs,
+}))
+
+os.COMMANDS.add(new os.Cmd({
+  name: `kill`,
+  desc: `kill a process`,
+  help: `kill <id>`,
+  fun: os.cmdKill,
 }))
 
 os.COMMANDS.add(new os.Cmd({
@@ -82,15 +76,15 @@ os.COMMANDS.add(new os.Cmd({
 // }))
 
 os.COMMANDS.add(new os.Cmd({
-  name: `media`,
-  desc: `toggle media panel`,
-  fun: ui.cmdMedia
-}))
-
-os.COMMANDS.add(new os.Cmd({
   name: `analyze`,
   desc: `analyze data`,
   fun: d.cmdAnalyze,
+}))
+
+os.COMMANDS.add(new os.Cmd({
+  name: `media`,
+  desc: `toggle media panel`,
+  fun: ui.cmdMedia,
 }))
 
 os.COMMANDS.add(new os.Cmd({
@@ -105,10 +99,19 @@ os.COMMANDS.add(new os.Cmd({
   fun: cmdTest,
 }))
 
+os.COMMANDS.add(new os.Cmd({
+  name: `clear`,
+  desc: `clear the log`,
+  fun: u.cmdClear,
+}))
+
 function cmdHelp() {
   return a.joinLines([
     `available commands:`,
+    ``,
     ...a.map(os.COMMANDS, cmdToHelp),
+    ``,
+    `pro tip: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=analyze 000000"`,
   ])
 }
 
@@ -159,11 +162,11 @@ function cmdTest() {
 ui.init()
 
 // Initial log messages.
-u.log.inf(`Welcome to Tabularius`)
-u.log.inf(`Type "help" for a list of commands`)
+u.log.inf(`welcome to Tabularius`)
+u.log.inf(`type "help" for a list of commands`)
 
 if (TEST_MODE) {
-  u.log.inf(`Test mode enabled`)
+  u.log.inf(`test mode enabled`)
   await import(`./test.mjs`).catch(u.logErr)
 }
 else {

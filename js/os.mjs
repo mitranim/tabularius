@@ -62,17 +62,10 @@ export function hasProcByName(name) {
   return a.some(PROCS, val => val.args[0] === name)
 }
 
-// Mock command history (oldest to newest).
-export const CMD_HISTORY = [`init`, `ps`, `help`]
-
-// Position in `CMD_HISTORY`. Must be either nil or an integer.
-export const CMD_HISTORY_INDEX = a.Emp()
-
 export async function runScript(src) {
   src = a.trim(src)
-  if (src !== a.last(CMD_HISTORY)) CMD_HISTORY.push(src)
-  CMD_HISTORY_INDEX.index = undefined
-  return src ? runCmd(...src.split(/\s+/)) : undefined
+  if (!src) return
+  runCmd(...src.split(/\s+/))
 }
 
 export async function runCmd(...args) {

@@ -87,6 +87,41 @@ export const timeFormat = new DateTimeFormat(`sv-SE`, {
 function percDecode(val) {return a.isStr(val) ? a.onlyFin(parseFloat(val)) : undefined}
 function percEncode(val) {return a.isFin(val) ? val + `%` : ``}
 
+/*
+export function storageGetJson(store, key) {
+  const src = store.getItem(key)
+  if (!src) return undefined
+
+  try {return a.jsonDecode(src)}
+  catch (err) {
+    log.err(`unable to decode ${a.show(src)}, deleting ${a.show(key)} from storage`)
+    store.removeItem(key)
+    return undefined
+  }
+}*/
+
+export function storageSet(store, key, val) {
+  a.reqValidStr(key)
+
+  if (a.isNil(val)) {
+    store.removeItem(key)
+    return
+  }
+
+  try {val = a.render(val)}
+  catch (err) {
+    log.err(`unable to store ${a.show(key)} in ${a.show(store)}:`, err)
+    return
+  }
+
+  try {
+    store.setItem(key, val)
+  }
+  catch (err) {
+    log.err(`unable to store ${a.show(key)} = ${a.show(val)} in ${a.show(store)}:`, err)
+  }
+}
+
 const STORAGE_KEY_VERBOSE = `tabularius.verbose`
 
 export let LOG_VERBOSE = a.boolOpt(
@@ -96,8 +131,8 @@ export let LOG_VERBOSE = a.boolOpt(
 
 export function cmdVerbose() {
   LOG_VERBOSE = !LOG_VERBOSE
-  sessionStorage.setItem(STORAGE_KEY_VERBOSE, LOG_VERBOSE)
-  localStorage.setItem(STORAGE_KEY_VERBOSE, LOG_VERBOSE)
+  storageSet(sessionStorage, STORAGE_KEY_VERBOSE, LOG_VERBOSE)
+  storageSet(localStorage, STORAGE_KEY_VERBOSE, LOG_VERBOSE)
   return `logging is now ` + (LOG_VERBOSE ? `verbose` : `selective`)
 }
 
@@ -164,6 +199,7 @@ export const log = new class Log extends Elem {
 
   currentWidth = (
     percDecode(sessionStorage.getItem(LOG_WIDTH_KEY)) ??
+    percDecode(localStorage.getItem(LOG_WIDTH_KEY)) ??
     LOG_WIDTH_DEFAULT
   )
 
@@ -239,7 +275,8 @@ export const log = new class Log extends Elem {
   resizePointerup(eve) {
     document.removeEventListener(`pointermove`, this.resizePointermove)
     document.removeEventListener(`pointerup`, this.resizePointerup)
-    sessionStorage.setItem(LOG_WIDTH_KEY, this.style.width)
+    storageSet(sessionStorage, LOG_WIDTH_KEY, this.style.width)
+    storageSet(localStorage, LOG_WIDTH_KEY, this.style.width)
     this.resizeIndicator?.remove()
   }
 
@@ -553,4 +590,11 @@ export function roundTo(num, decimalPlaces) {
   if (a.isNil(a.optFin(num))) return undefined
   const coeff = Math.pow(10, decimalPlaces)
   return Math.round(num * coeff) / coeff
+}
+
+export function boundInd(ind, len) {
+  a.reqInt(ind)
+  a.reqInt(len)
+  if (ind >= 0 && ind <= len) return ind
+  return len
 }
