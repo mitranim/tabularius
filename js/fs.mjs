@@ -102,6 +102,7 @@ export async function loadedFileHandles() {
 async function loadFileHandleWithPerm(conf) {
   const {desc, mode} = a.reqInst(conf, FileConf)
   const out = await loadFileHandle(conf)
+  if (!out) return out
   const perm = await queryPermission(out, {mode})
   if (perm !== `granted`) {
     u.log.inf(`${desc}: permission needed; run the "init" command`)
@@ -127,7 +128,7 @@ async function loadFileHandle(conf) {
 
   if (!a.isInst(out, FileSystemHandle)) {
     u.log.inf(`${desc}: expected FileSystemHandle; deleting corrupted DB entry`)
-    await dbDel(store, key)
+    dbDel(store, key).catch(u.logErr)
     return undefined
   }
 
@@ -196,15 +197,10 @@ async function deinitFileConf(sig, handle, conf) {
   u.reqSig(sig)
   a.optInst(handle, FileSystemHandle)
   const {key, desc} = a.reqInst(conf, FileConf)
-  if (!handle) return `${desc}: not initialized`
-
-  try {
-    await u.wait(sig, dbDel(DB_STORE_HANDLES, key))
-    return `${desc}: deinitialized`
-  }
-  catch (err) {
-    return `${desc}: error deleting from DB: ${err}`
-  }
+  try {await u.wait(sig, dbDel(DB_STORE_HANDLES, key))}
+  catch (err) {u.log.err(`${desc}: error deleting from DB:`, err)}
+  if (handle) return `${desc}: deinitialized`
+  return `${desc}: not initialized`
 }
 
 // Returns a string indicating status of progress file.

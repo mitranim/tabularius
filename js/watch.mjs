@@ -11,8 +11,7 @@ export async function watchStarted() {
   return (
     (await fs.hasPermissionConf(fs.PROGRESS_FILE, fs.PROGRESS_FILE_CONF)) &&
     (await fs.hasPermissionConf(fs.HISTORY_DIR, fs.HISTORY_DIR_CONF)) &&
-    !isWatching() &&
-    (os.runCmd(`watch`), true)
+    (isWatching() || (os.runCmd(`watch`), true))
   )
 }
 

@@ -50,6 +50,7 @@ export const TITLEBAR = E(
 
   // Right side with links
   E(`div`, {class: `flex gap-4`},
+    E(`span`, {class: `text-gray-600 dark:text-gray-400`}, `v1`),
     E(`a`, {href: `https://github.com/mitranim/tabularius`, target: `_blank`, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `GitHub`),
     E(`a`, {href: `https://discord.gg/vYNuXDfJ`, target: `_blank`, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `Discord`)
   ),

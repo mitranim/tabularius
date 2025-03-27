@@ -429,7 +429,9 @@ Support fetching additional modules, for plugin support. The addresses could be 
 
 ---
 
-Display app version in UI, for easier error reporting/debugging.
+<!-- Display app version in UI, for easier error reporting/debugging. -->
+
+Added (hardcoded), TODO auto-increment.
 
 ---
 
