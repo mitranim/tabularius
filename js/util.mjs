@@ -4,23 +4,30 @@ import * as p from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/prax.mjs'
 import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs.mjs'
 import * as od from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs_dom.mjs'
 import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/dom_reg.mjs'
+// import * as cl from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/cli.mjs'
 import * as tw from 'https://esm.sh/@twind/core@1.1.3'
 import tp from 'https://esm.sh/@twind/preset-autoprefix@1.0.7'
 import tt from 'https://esm.sh/@twind/preset-tailwind@1.1.4'
 
 import * as self from './util.mjs'
-window.tabularius ??= a.Emp()
-window.tabularius.u = self
+const tar = window.tabularius ??= a.Emp()
+tar.u = self
+tar.lib ??= a.Emp()
+tar.lib.a = a
+tar.lib.d = d
+tar.lib.p = p
+tar.lib.o = o
+tar.lib.od = od
+tar.lib.dr = dr
+// tar.lib.cl = cl
+a.patch(window, tar)
 
 /*
 This library hacks into the DOM, detects changes in the `.className` of any
 element, and dynamically generates Tailwind-compliant styles for the classes
 we actually use.
 */
-tw.install({
-  presets: [tp(), tt()],
-  hash: false,
-})
+tw.install({presets: [tp(), tt()], hash: false})
 
 /*
 Needed for `dr.MixReg`, which enables automatic registration of any custom
@@ -273,6 +280,7 @@ export const log = new class Log extends Elem {
   }
 
   resizePointerup(eve) {
+    a.eventKill(eve)
     document.removeEventListener(`pointermove`, this.resizePointermove)
     document.removeEventListener(`pointerup`, this.resizePointerup)
     storageSet(sessionStorage, LOG_WIDTH_KEY, this.style.width)
@@ -420,7 +428,7 @@ export function wait(sig, ...src) {
 
 export function logCmdDone(name, out) {
   a.reqValidStr(name)
-  if (a.vac(out)) log.inf(`[${name}]:`, out)
+  if (a.vac(out)) log.inf(`[${name}]`, out)
   else log.inf(`[${name}] done`)
 }
 
@@ -508,6 +516,17 @@ export async function decodeObfuscated(src) {
   }
 }
 
+/*
+Similar to `decodeObfuscated` but does not JSON-decode. The output is expected
+to be either empty or a JSON string, but we don't validate it thoroughly.
+*/
+export async function deObfuscate(src) {
+  src = a.trim(src)
+  if (!src) return src
+  if (isJsonColl(src)) return src
+  return await ungzip(atob(src))
+}
+
 export function jsonDecodeOpt(src) {
   if (isJsonColl(src)) return a.jsonDecode(src)
   return undefined
@@ -563,8 +582,9 @@ export async function gzipBytes(src) {return (await gzipRes(src)).bytes()}
 
 export async function gzipRes(src) {
   src = new Response(a.reqValidStr(src)).body
-  src = src.pipeThrough(new CompressionStream(`gzip`))
-  return new Response(src)
+  src = await src.pipeThrough(new CompressionStream(`gzip`))
+  src = await a.resOk(new Response(src))
+  return src // Let the caller read the body.
 }
 
 function charCode(val) {return val.charCodeAt(0)}
@@ -597,4 +617,8 @@ export function boundInd(ind, len) {
   a.reqInt(len)
   if (ind >= 0 && ind <= len) return ind
   return len
+}
+
+export function copyToClipboard(src) {
+  return navigator.clipboard.writeText(a.render(src))
 }

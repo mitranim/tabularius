@@ -3,20 +3,46 @@ import * as u from './util.mjs'
 import {E} from './util.mjs'
 
 import * as self from './dat.mjs'
-window.tabularius ??= a.Emp()
-window.tabularius.d = self
+const tar = window.tabularius ??= a.Emp()
+tar.d = self
+a.patch(window, tar)
 
-const CMD_ANALYZE_HELP = a.spaced(
-  `usage: "analyze <run_id>", where "run_id"`,
-  `is the name of an existing run directory,`,
-  `containing per-round backups of run progress;`,
-  `run "ls /" to see existing run ids`,
-)
+/*
+Placeholder for below.
 
+export const CMD_ANALYZE_SUB_CMDS = a.Emp()
+CMD_ANALYZE_SUB_CMDS.dpbu = plotOptsDamagePerRoundPerBuiTypeUpg
+CMD_ANALYZE_SUB_CMDS.dpbt = plotOptsDamagePerRoundPerBuiType
+CMD_ANALYZE_SUB_CMDS.dpb = plotOptsDamagePerRoundPerBui
+*/
+
+/*
+TODO:
+- Tell about sub-commands
+- List the sub-commands
+*/
+function cmdAnalyzeHelp() {
+  return a.spaced(
+    `usage: "analyze <run_id>", where "run_id"`,
+    `is the name of an existing run directory,`,
+    `containing per-round backups of run progress;`,
+    `run "ls /" to see existing run ids`,
+  )
+}
+
+/*
+TODO:
+- Use sub-cmds
+- If no sub-cmd name is provided, use the first one by default
+- The analysis type might be a flag, not an arg
+- Support specifying multiple types at once
+- Displaying multiple: either one under another, or as tabs
+- Media pane: consider supporting tabs natively
+*/
 export async function cmdAnalyze(sig, args) {
   u.reqArrOfValidStr(args)
   const runId = args[1]
-  if (!runId || a.len(args) !== 2) return CMD_ANALYZE_HELP
+  if (!runId || a.len(args) !== 2) return cmdAnalyzeHelp()
 
   const fs = await import(`./fs.mjs`)
   const root = await fs.reqHistoryDir(sig)

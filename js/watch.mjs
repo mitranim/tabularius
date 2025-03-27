@@ -4,8 +4,9 @@ import * as os from './os.mjs'
 import * as fs from './fs.mjs'
 
 import * as self from './watch.mjs'
-window.tabularius ??= a.Emp()
-window.tabularius.w = self
+const tar = window.tabularius ??= a.Emp()
+tar.w = self
+a.patch(window, tar)
 
 export async function watchStarted() {
   return (
@@ -167,7 +168,7 @@ async function watchStep(sig, state) {
       runDirName,
       {create: true},
     ))
-    const file = await fs.writeFile(sig, dir, nextFileName, content)
+    await fs.writeFile(sig, dir, nextFileName, content)
     await state.setRoundFile(nextFileName)
     return
   }
@@ -187,7 +188,7 @@ async function watchStep(sig, state) {
     {create: true},
   ))
   state.setRunDir(nextDirName)
-  const file = await fs.writeFile(sig, dir, nextFileName, content)
+  await fs.writeFile(sig, dir, nextFileName, content)
   state.setRoundFile(nextFileName)
   u.log.inf(`[watch] backed up run ${dir.name} > file ${nextFileName}`)
 }

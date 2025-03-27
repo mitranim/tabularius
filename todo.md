@@ -387,7 +387,9 @@ An option to backup all save files, not just the progress file.
 
 ---
 
-An option to view the contents of a `.gd` file.
+An option to view the decoded contents of a `.gd` file.
+
+An option to copy the decoded contents to the clipboard.
 
 ---
 
@@ -519,3 +521,45 @@ Option to analyze latest run without having to type its ID.
 ---
 
 Ship with mock data and render a chart right away, for demonstration.
+
+---
+
+Media pane: support adding any number of custom contents, which can be closed separately. Maybe vertically as blocks with close buttons, maybe as tabs. If using tabs, the tab headers should be grid-like, reflowing (maybe `position: float`).
+
+---
+
+Building damages need to use `.ChildLiveStats` to include troop damage, similar to what the game UI does.
+
+---
+
+Support importing arbitrary local plugin scripts like so:
+- Get access to plugin dir (probably separate command).
+- The auto-import feature (currently only via URL query params) looks for matching files in plugin dir, reads them, then imports via `Blob`, which is the modern equivalent of eval, but as a module.
+
+```js
+import(URL.createObjectURL(new Blob(src, {type: `application/javascript`})))
+```
+
+Specifics:
+- Create new command `init_plugins` which picks a directory for JS plugin files.
+  - Has its own dir handle; may need new code very similar for conf/load/init/deinit code for the run history dir. The handles may overlap, but generally they won't, so we don't care.
+- When loading URL-query-imported modules on start, we also look in the plugin dir, if initialized.
+
+Sample code:
+
+```js
+import(URL.createObjectURL(new Blob([`
+import * as fs from 'tabularius/fs.mjs'
+console.log(fs)
+`], {type: `application/javascript`})))
+```
+
+---
+
+Consider supporting non-string run and round indexes. For example, run `000000` should be considered same as `0` locally.
+
+Consider supporting relative run and round indexes. For example, a user's first run fetched from cloud storage should be indexed as `0`, and so on.
+
+---
+
+When analyze one run, or group by commander: show commander name (add to code file, rename it). When analyze one faction, or group by faction: show faction name.

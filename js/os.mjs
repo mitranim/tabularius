@@ -1,10 +1,11 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
-import * as d from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/dom.mjs'
-import * as p from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/prax.mjs'
 import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs.mjs'
-import * as od from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs_dom.mjs'
-import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/dom_reg.mjs'
 import * as u from './util.mjs'
+
+import * as self from './os.mjs'
+const tar = window.tabularius ??= a.Emp()
+tar.os = self
+a.patch(window, tar)
 
 /*
 Represents a CLI-style command.
@@ -171,7 +172,7 @@ export async function procKill(sig, key) {
   }
 }
 
-export async function procKillAll() {
+export function procKillAll() {
   const procs = PROCS
   let len = 0
 

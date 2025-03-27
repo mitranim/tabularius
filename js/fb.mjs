@@ -2,7 +2,6 @@ import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
 import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs.mjs'
 import * as f from 'https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js'
 import * as fa from 'https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js'
-import * as fs from 'https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js'
 import * as u from './util.mjs'
 
 const conf = await (await a.resOk(fetch(`/js/firebase.json`))).json()

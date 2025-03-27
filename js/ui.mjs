@@ -5,12 +5,15 @@ import {E} from './util.mjs'
 import * as os from './os.mjs'
 
 import * as self from './ui.mjs'
-window.tabularius ??= a.Emp()
-window.tabularius.ui = self
+const tar = window.tabularius ??= a.Emp()
+tar.ui = self
+a.patch(window, tar)
 
 export function cmdMedia() {MEDIA.toggle()}
 
-let inited
+// Increment by 1 when publishing an update.
+const VERSION = 2
+let INITED
 
 /*
 Should be called exactly once.
@@ -20,7 +23,7 @@ such as `u.reac`/`u.ReacElem`, or via `u.E`/`u.ren`, or by manual manipulation
 in very simple cases.
 */
 export function init() {
-  if (inited) return
+  if (INITED) return
 
   E(
     document.body,
@@ -39,6 +42,7 @@ export function init() {
   in an input field.
   */
   document.addEventListener(`keydown`, focusPromptOnSlash)
+  INITED = true
 }
 
 export const TITLEBAR = E(
@@ -50,7 +54,7 @@ export const TITLEBAR = E(
 
   // Right side with links
   E(`div`, {class: `flex gap-4`},
-    E(`span`, {class: `text-gray-600 dark:text-gray-400`}, `v1`),
+    E(`span`, {class: `text-gray-600 dark:text-gray-400`}, `v` + VERSION),
     E(`a`, {href: `https://github.com/mitranim/tabularius`, target: `_blank`, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `GitHub`),
     E(`a`, {href: `https://discord.gg/vYNuXDfJ`, target: `_blank`, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `Discord`)
   ),

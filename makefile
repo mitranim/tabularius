@@ -2,7 +2,8 @@ MAKEFLAGS := --silent --always-make
 MAKE_CONC := $(MAKE) -j 128 clear=$(or $(clear),false)
 TAR ?= .tar
 CLEAR ?= $(if $(filter false,$(clear)),, )
-DENO_RUN ?= deno run -A --no-check --node-modules-dir=false
+DENO_FLAGS ?= --node-modules-dir=false
+DENO_RUN ?= deno run -A --no-check $(DENO_FLAGS)
 DENO_WATCH ?= $(DENO_RUN) --watch $(if $(CLEAR),,--no-clear-screen)
 
 help:
@@ -23,6 +24,9 @@ run.w:
 
 run:
 	$(DENO_RUN) $(run)
+
+lint:
+	deno lint
 
 # Trims trailing whitespace from all tracked files.
 # The `-i ''` is required on MacOS, do not remove.

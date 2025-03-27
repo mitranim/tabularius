@@ -1,12 +1,12 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
 import * as idb from 'https://esm.sh/idb@7.1.1'
 import * as u from './util.mjs'
-import * as os from './os.mjs'
 
 export {idb}
 import * as self from './fs.mjs'
-window.tabularius ??= a.Emp()
-window.tabularius.fs = self
+const tar = window.tabularius ??= a.Emp()
+tar.fs = self
+a.patch(window, tar)
 
 // Initialize IndexedDB for persistence of file handles and other values.
 export const DB_NAME = `tabularius`
@@ -98,7 +98,7 @@ export async function loadedFileHandles() {
   return !!(PROGRESS_FILE && HISTORY_DIR)
 }
 
-// Try to load a handle and check its permission
+// Try to load a handle and check its permission.
 async function loadFileHandleWithPerm(conf) {
   const {desc, mode} = a.reqInst(conf, FileConf)
   const out = await loadFileHandle(conf)
@@ -112,7 +112,7 @@ async function loadFileHandleWithPerm(conf) {
 
 async function loadFileHandle(conf) {
   const store = DB_STORE_HANDLES
-  const {key, desc, mode} = a.reqInst(conf, FileConf)
+  const {key, desc} = a.reqInst(conf, FileConf)
   let out
 
   try {
@@ -153,7 +153,7 @@ export async function initedHistoryDir(sig) {
 async function initFileHandle(sig, handle, conf) {
   u.reqSig(sig)
   a.optInst(handle, FileSystemHandle)
-  const {desc, help, mode, key, pick} = a.reqInst(conf, FileConf)
+  const {desc, help, key, pick} = a.reqInst(conf, FileConf)
 
   handle ??= await loadFileHandle(conf)
   if (!handle) {
@@ -275,14 +275,14 @@ async function getDirectoryStats(sig, src, out) {
 }
 
 async function pickProgressFile() {
-  return a.head(await window.showOpenFilePicker({
+  return a.head(await showOpenFilePicker({
     types: [{description: `Game [save / progress] file`}],
     multiple: false
   }))
 }
 
-async function pickHistoryDir() {
-  return window.showDirectoryPicker({
+function pickHistoryDir() {
+  return showDirectoryPicker({
     types: [{description: `Directory for [run history / backups]`}],
   })
 }
@@ -308,16 +308,9 @@ export async function cmdLs(sig, args) {
     default: return CMD_LS_HELP
   }
 
-  const src = a.stripPre(args[1], `/`)
-  const path = src ? a.laxStr(args[1]).split(`/`) : []
-  const dirs = a.init(path)
-  const name = a.last(path)
-  const root = await reqHistoryDir(sig)
-  let handle = await chdir(sig, root, dirs)
-  if (name) handle = await getFileHandle(sig, handle, name)
-
+  const handle = await handleAtPath(sig, args[1])
   const suf = `: `
-  if (!isDir(handle)) return val.kind + suf + val.name
+  if (!isDir(handle)) return handle.kind + suf + handle.name
 
   let len = 0
   const buf = []
@@ -333,16 +326,50 @@ export async function cmdLs(sig, args) {
 // TODO implement.
 // export function cmdTree(sig, args) {}
 
+const CMD_SHOW_HELP = a.joinLines([
+  `usage: "show <path>"`,
+  `copy the decoded content of the given file to the clipboard; example:`,
+  `  show 000000/000001.gd`,
+  `optionally, log the data to the browser console via -l:`,
+  `  show -l 000000/000001.gd`,
+  `  show 000000/000001.gd -l`,
+])
+
+/*
+Ideally, we'd actually let the user browse the file. But some of our target
+files are so huge, that merely including their text in the DOM, as a
+`.textContent` of a single element, makes browser layout updates very slow. The
+performance issues might be style-related / CSS-related and fixable, but it's
+really an indicator that very large content should not be displayed all at
+once. For now we copy to the clipboard.
+*/
+export async function cmdShow(sig, args) {
+  const log = args.includes(`-l`)
+  args = a.remove(args, `-l`)
+
+  switch (a.len(u.reqArrOfValidStr(args))) {
+    case 2: break
+    default: return CMD_SHOW_HELP
+  }
+
+  const path = args[1]
+  const handle = await handleAtPath(sig, path)
+  if (!isFile(handle)) return `${a.show(path)} is not a file`
+  const body = await u.deObfuscate(await readFile(sig, handle))
+  await u.copyToClipboard(body)
+  if (log) console.log(body)
+  if (log) console.log(JSON.parse(body))
+  return `copied file content to clipboard`
+}
+
 export async function* readRunRounds(sig, dir) {
   for await (const file of readDir(sig, dir)) {
     if (!isHandleProgressFile(file)) continue
-    let val = await getFile(sig, file)
-    val = await u.wait(sig, val.text())
-    val = await u.decodeObfuscated(val)
-    if (!a.isDict(val)) {
-      throw Error(`expected to decode a progress backup from ${dir.name}/${file.name}, got ${a.show(val)}`)
+    const out = await decodeObfuscatedFile(sig, file)
+    if (!a.isDict(out)) {
+      throw Error(`expected to decode a progress backup from ${dir.name}/${file.name}, got ${a.show(out)}`)
     }
-    yield val
+    yield out
   }
 }
 
@@ -351,6 +378,26 @@ export function isHandleProgressFile(handle) {
   if (!isFile(handle)) return false
   const ext = u.fileNameExt(handle.name)
   return ext === `.gd` || ext === `.json`
+}
+
+export async function decodeObfuscatedFile(sig, src) {
+  src = await readFile(sig, src)
+  src = await u.decodeObfuscated(src)
+  return src
+}
+
+export async function readFile(sig, src) {
+  src = await getFile(sig, src)
+  src = await u.wait(sig, src.text())
+  return src
+}
+
+export async function handleAtPath(sig, src) {
+  const [dirs, name] = splitSplitPath(src)
+  const root = await reqHistoryDir(sig)
+  let handle = await chdir(sig, root, dirs)
+  if (name) handle = await getFileHandle(sig, handle, name)
+  return handle
 }
 
 export async function chdir(sig, handle, path) {
@@ -506,4 +553,14 @@ export async function getDirectoryHandle(sig, src, name, opt) {
   catch (err) {
     throw new ErrFs(`unable to get directory handle ${src.name}/${name}: ${err}`, {cause: err})
   }
+}
+
+export function splitPath(src) {
+  const sep = `/`
+  return a.split(a.stripPre(src, sep), sep)
+}
+
+export function splitSplitPath(src) {
+  src = splitPath(src)
+  return [a.init(src), a.last(src)]
 }

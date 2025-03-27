@@ -4,8 +4,9 @@ import {E} from './util.mjs'
 import * as u from './util.mjs'
 
 import * as self from './plot.mjs'
-window.tabularius ??= a.Emp()
-window.tabularius.pl = self
+const tar = window.tabularius ??= a.Emp()
+tar.pl = self
+a.patch(window, tar)
 
 document.head.append(E(`link`, {
   rel: `stylesheet`,

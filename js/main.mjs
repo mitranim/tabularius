@@ -1,10 +1,5 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
-import * as p from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/prax.mjs'
-import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs.mjs'
-import * as od from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs_dom.mjs'
-import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/dom_reg.mjs'
 import * as u from './util.mjs'
-import {E} from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
 import * as w from './watch.mjs'
@@ -12,8 +7,9 @@ import * as d from './dat.mjs'
 import * as ui from './ui.mjs'
 
 import * as self from './main.mjs'
-window.tabularius ??= a.Emp()
-window.tabularius.m = self
+const tar = window.tabularius ??= a.Emp()
+tar.m = self
+a.patch(window, tar)
 
 /*
 All commands should be added here so that we can control the ordering.
@@ -74,6 +70,12 @@ os.COMMANDS.add(new os.Cmd({
 //   desc: `print a tree of dirs and files`,
 //   fun: fs.cmdTree,
 // }))
+
+os.COMMANDS.add(new os.Cmd({
+  name: `show`,
+  desc: `clipboard the decoded content of a file; usage: "show <path>"`,
+  fun: fs.cmdShow,
+}))
 
 os.COMMANDS.add(new os.Cmd({
   name: `analyze`,
