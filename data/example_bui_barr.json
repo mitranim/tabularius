@@ -1,0 +1,39 @@
+{
+  "EntityID": "F302",
+  "NormalizedZonePos": {"x": -9.0, "y": 0.0},
+  "PurchasedUpgrades": [{"Index": 1}, {"Index": 0}, {"Index": 1}],
+  "RotationAngle": 180.0,
+  "SellPrice": 150,
+  "SellCurrencyType": "Supply",
+  "BuildingType": "Regular",
+  "LiveStats": {
+    "stats": {
+      "DamageDone": {
+        "countThisGame": 190,
+        "countThisWave": 2,
+        "valueThisGame": 38622.54,
+        "valueThisWave": 1616.40991,
+        "timeSpentThisGame": 0.0,
+        "timeSpentThisWave": 0.0,
+        "lastValue": 1178.59985,
+        "currentValue": 0.0,
+        "entityInstances": 0
+      },
+      "DamageOverkill": {
+        "countThisGame": 190,
+        "countThisWave": 2,
+        "valueThisGame": 259653.891,
+        "valueThisWave": 4645.78027,
+        "timeSpentThisGame": 0.0,
+        "timeSpentThisWave": 0.0,
+        "lastValue": 1733.59009,
+        "currentValue": 0.0,
+        "entityInstances": 0
+      }
+    }
+  },
+  "ChildLiveStats": {},
+  "WeaponStats": [],
+  "WeaponChildStats": [],
+  "Weapons": []
+}

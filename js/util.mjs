@@ -609,7 +609,13 @@ export function roundTo(num, decimalPlaces) {
   a.reqNat(decimalPlaces)
   if (a.isNil(a.optFin(num))) return undefined
   const coeff = Math.pow(10, decimalPlaces)
-  return Math.round(num * coeff) / coeff
+  return round(num * coeff) / coeff
+}
+
+// Non-insane variant of `Math.round`. Rounds away from 0, instead of up.
+export function round(val) {
+  a.reqNum(val)
+  return val < 0 ? -Math.round(-val) : Math.round(val)
 }
 
 export function boundInd(ind, len) {

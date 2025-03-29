@@ -244,6 +244,8 @@ The notice "N older messages removed" should just be a regular message (but grey
 
 In the log, timestamps waste too much space. Convert them to single-character indicators, with timestamp tooltips on hover.
 
+Or: each log entry has a prefix, like `[watch]` or `>`, and the prefix is hoverable, showing a timestamp.
+
 <!-- Unfuck msg printing, use functions from `@mitranim/js/lang.mjs`. -->
 
 Unfuck a lot of low-level stuff by using library functions.
@@ -563,3 +565,25 @@ Consider supporting relative run and round indexes. For example, a user's first 
 ---
 
 When analyze one run, or group by commander: show commander name (add to code file, rename it). When analyze one faction, or group by faction: show faction name.
+
+---
+
+Save editing features. Load a particular file (by default the progress file, but may select a backup). Show various editable stats. Edit, then store the file back.
+
+---
+
+`copy` to load into clipboard. `paste` or Ctrl+V in prompt to paste. `store` to write to progress file.
+
+---
+
+`store <path>` to overwrite progress file with content of `<path>`.
+
+---
+
+A way to "stick" a run id, round id, building id for subsequent commands. Persist to storage.
+
+---
+
+A command for viewing stats super zoomed-in, for a particular round > building > child / weapon.
+
+A media UI for showing building, child, weapon stats in a nice format. Flattening the data and printing JSON is an okay start, but we can do better.

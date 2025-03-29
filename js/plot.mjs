@@ -249,8 +249,8 @@ class TooltipPlugin extends a.Emp {
     tar.style.top = posY + `px`
     tar.textContent = a.joinLinesOptLax([
       series.label,
-      (axisNameX + nameSuf).padEnd(nameLen, ` `) + valX,
-      (axisNameY + nameSuf).padEnd(nameLen, ` `) + valY,
+      (axisNameX + nameSuf).padEnd(nameLen, ` `) + numFormat.format(valX),
+      (axisNameY + nameSuf).padEnd(nameLen, ` `) + numFormat.format(valY),
     ])
     plot.over.appendChild(tar)
   }
@@ -269,6 +269,9 @@ class TooltipPlugin extends a.Emp {
     })
   }
 }
+
+// Should match the number formatting used by Uplot.
+export const numFormat = new Intl.NumberFormat()
 
 export function plugins() {
   return [new TooltipPlugin().opts()]

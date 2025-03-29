@@ -308,6 +308,8 @@ export async function cmdLs(sig, args) {
     default: return CMD_LS_HELP
   }
 
+  // TODO: better error message on type mismatch due to lack or presence of
+  // trailing `/`.
   const handle = await handleAtPath(sig, args[1])
   const suf = `: `
   if (!isDir(handle)) return handle.kind + suf + handle.name
@@ -362,6 +364,7 @@ export async function cmdShow(sig, args) {
   return `copied file content to clipboard`
 }
 
+// Caution: files are iterated out-of-order.
 export async function* readRunRounds(sig, dir) {
   for await (const file of readDir(sig, dir)) {
     if (!isHandleProgressFile(file)) continue
@@ -467,6 +470,10 @@ export async function writeFile(sig, dir, name, body) {
 export function isDir(val) {return val.kind === `directory`}
 export function isFile(val) {return val.kind === `file`}
 
+/*
+Iterates all file handles in the directory.
+Order is arbitrary and unstable; browsers don't bother sorting.
+*/
 export async function* readDir(sig, src) {
   a.optInst(src, FileSystemDirectoryHandle)
   if (!src) return

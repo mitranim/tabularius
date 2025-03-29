@@ -1,0 +1,334 @@
+{
+  "EntityID": "CB13",
+  "NormalizedZonePos": {"x": -2.0, "y": -2.0},
+  "PurchasedUpgrades": [{"Index": 1}, {"Index": 0}, {"Index": 0}],
+  "RotationAngle": 0.0,
+  "SellPrice": 2200,
+  "SellCurrencyType": "Supply",
+  "BuildingType": "Regular",
+  "LiveStats": {
+    "stats": {
+      "DamageDone": {
+        "countThisGame": 11200,
+        "countThisWave": 1257,
+        "valueThisGame": 353384.156,
+        "valueThisWave": 3724.11133,
+        "timeSpentThisGame": 0.0,
+        "timeSpentThisWave": 0.0,
+        "lastValue": 3.83,
+        "currentValue": 0.0,
+        "entityInstances": 0
+      },
+      "DamageOverkill": {
+        "countThisGame": 11200,
+        "countThisWave": 1257,
+        "valueThisGame": 127137.047,
+        "valueThisWave": 5950.542,
+        "timeSpentThisGame": 0.0,
+        "timeSpentThisWave": 0.0,
+        "lastValue": 3.83,
+        "currentValue": 0.0,
+        "entityInstances": 0
+      }
+    }
+  },
+  "ChildLiveStats": {
+    "Electric_arc_generator": {
+      "stats": {
+        "DamageDone": {
+          "countThisGame": 11200,
+          "countThisWave": 1257,
+          "valueThisGame": 353384.156,
+          "valueThisWave": 3724.11133,
+          "timeSpentThisGame": 0.0,
+          "timeSpentThisWave": 0.0,
+          "lastValue": 3.83,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        },
+        "DamageOverkill": {
+          "countThisGame": 11200,
+          "countThisWave": 1257,
+          "valueThisGame": 127137.047,
+          "valueThisWave": 5950.542,
+          "timeSpentThisGame": 0.0,
+          "timeSpentThisWave": 0.0,
+          "lastValue": 3.83,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        }
+      }
+    },
+    "Electric_arc": {
+      "stats": {
+        "DamageDone": {
+          "countThisGame": 11200,
+          "countThisWave": 1257,
+          "valueThisGame": 353384.156,
+          "valueThisWave": 3724.11133,
+          "timeSpentThisGame": 4341.50537,
+          "timeSpentThisWave": 863.2186,
+          "lastValue": 3.83,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        },
+        "DamageOverkill": {
+          "countThisGame": 11200,
+          "countThisWave": 1257,
+          "valueThisGame": 127137.047,
+          "valueThisWave": 5950.542,
+          "timeSpentThisGame": 4341.50537,
+          "timeSpentThisWave": 863.2186,
+          "lastValue": 3.83,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        }
+      }
+    }
+  },
+  "WeaponStats": [
+    {
+      "stats": {
+        "DamageDone": {
+          "countThisGame": 1402,
+          "countThisWave": 13,
+          "valueThisGame": 93767.1,
+          "valueThisWave": 667.951965,
+          "timeSpentThisGame": 0.0,
+          "timeSpentThisWave": 0.0,
+          "lastValue": 6.128,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        },
+        "DamageOverkill": {
+          "countThisGame": 1402,
+          "countThisWave": 13,
+          "valueThisGame": 31341.2051,
+          "valueThisWave": 15.32,
+          "timeSpentThisGame": 0.0,
+          "timeSpentThisWave": 0.0,
+          "lastValue": 3.83,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        }
+      }
+    },
+    {
+      "stats": {
+        "DamageDone": {
+          "countThisGame": 8978,
+          "countThisWave": 1240,
+          "valueThisGame": 218389.563,
+          "valueThisWave": 3043.90356,
+          "timeSpentThisGame": 0.0,
+          "timeSpentThisWave": 0.0,
+          "lastValue": 3.83,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        },
+        "DamageOverkill": {
+          "countThisGame": 8978,
+          "countThisWave": 1240,
+          "valueThisGame": 72792.17,
+          "valueThisWave": 5927.561,
+          "timeSpentThisGame": 0.0,
+          "timeSpentThisWave": 0.0,
+          "lastValue": 3.83,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        }
+      }
+    },
+    {
+      "stats": {
+        "DamageDone": {
+          "countThisGame": 175,
+          "countThisWave": 0,
+          "valueThisGame": 8156.617,
+          "valueThisWave": 0.0,
+          "timeSpentThisGame": 0.0,
+          "timeSpentThisWave": 0.0,
+          "lastValue": 89.5621948,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        },
+        "DamageOverkill": {
+          "countThisGame": 175,
+          "countThisWave": 0,
+          "valueThisGame": 4317.538,
+          "valueThisWave": 0.0,
+          "timeSpentThisGame": 0.0,
+          "timeSpentThisWave": 0.0,
+          "lastValue": 526.1338,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        }
+      }
+    },
+    {
+      "stats": {
+        "DamageDone": {
+          "countThisGame": 645,
+          "countThisWave": 4,
+          "valueThisGame": 33072.0625,
+          "valueThisWave": 12.256,
+          "timeSpentThisGame": 0.0,
+          "timeSpentThisWave": 0.0,
+          "lastValue": 6.128,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        },
+        "DamageOverkill": {
+          "countThisGame": 645,
+          "countThisWave": 4,
+          "valueThisGame": 18691.3,
+          "valueThisWave": 7.66,
+          "timeSpentThisGame": 0.0,
+          "timeSpentThisWave": 0.0,
+          "lastValue": 3.83,
+          "currentValue": 0.0,
+          "entityInstances": 0
+        }
+      }
+    }
+  ],
+  "WeaponChildStats": [{}, {}, {}, {}],
+  "Weapons": [
+    {
+      "EntityID": "Electric_arc_generator",
+      "Enabled": true,
+      "DistanceRangeMin": 0.0,
+      "DistanceRangeMax": 10.0,
+      "MagazineSize": 20,
+      "ReloadTime": {"baseValue": 2.0, "rawModifier": 0.0, "pctModifier": -30.0},
+      "RateOfFire": {"baseValue": 5.0, "rawModifier": 0.0, "pctModifier": 65.0},
+      "MaximumExitPoint": 0,
+      "IsDetection": true,
+      "TargetingPriorities": ["PreviousTarget", "MostHealth"],
+      "DummyBullet": {
+        "EntityID": "Electric_arc",
+        "IsAntiAircraft": false,
+        "AircraftModifier": 60.0,
+        "AntiAircraftModifier": 160.0,
+        "ShieldModifier": 0.0,
+        "AntiShieldModifier": 200.0,
+        "IsPinnedTrigger": true,
+        "PinnedSpeedModifier": -60.0,
+        "PinnedTimeLength": 1.5,
+        "AreaOfEffect": {
+          "EntityID": "SimpleAoE",
+          "Damage": {"baseValue": 1.0, "rawModifier": 0.0, "pctModifier": 283.0},
+          "Size": 0.0,
+          "SizeValue": {
+            "baseValue": 0.1,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "MaxTarget": 1
+        }
+      }
+    },
+    {
+      "EntityID": "Electric_arc_generator",
+      "Enabled": true,
+      "DistanceRangeMin": 0.0,
+      "DistanceRangeMax": 10.0,
+      "MagazineSize": 20,
+      "ReloadTime": {"baseValue": 2.0, "rawModifier": 0.0, "pctModifier": -30.0},
+      "RateOfFire": {"baseValue": 5.0, "rawModifier": 0.0, "pctModifier": 65.0},
+      "MaximumExitPoint": 0,
+      "IsDetection": true,
+      "TargetingPriorities": ["PreviousTarget", "MostHealth"],
+      "DummyBullet": {
+        "EntityID": "Electric_arc",
+        "IsAntiAircraft": false,
+        "AircraftModifier": 60.0,
+        "AntiAircraftModifier": 160.0,
+        "ShieldModifier": 0.0,
+        "AntiShieldModifier": 200.0,
+        "IsPinnedTrigger": true,
+        "PinnedSpeedModifier": -60.0,
+        "PinnedTimeLength": 1.5,
+        "AreaOfEffect": {
+          "EntityID": "SimpleAoE",
+          "Damage": {"baseValue": 1.0, "rawModifier": 0.0, "pctModifier": 283.0},
+          "Size": 0.0,
+          "SizeValue": {
+            "baseValue": 0.1,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "MaxTarget": 1
+        }
+      }
+    },
+    {
+      "EntityID": "Electric_arc_generator",
+      "Enabled": true,
+      "DistanceRangeMin": 0.0,
+      "DistanceRangeMax": 10.0,
+      "MagazineSize": 20,
+      "ReloadTime": {"baseValue": 2.0, "rawModifier": 0.0, "pctModifier": -30.0},
+      "RateOfFire": {"baseValue": 5.0, "rawModifier": 0.0, "pctModifier": 65.0},
+      "MaximumExitPoint": 0,
+      "IsDetection": true,
+      "TargetingPriorities": ["PreviousTarget", "MostHealth"],
+      "DummyBullet": {
+        "EntityID": "Electric_arc",
+        "IsAntiAircraft": false,
+        "AircraftModifier": 60.0,
+        "AntiAircraftModifier": 160.0,
+        "ShieldModifier": 0.0,
+        "AntiShieldModifier": 200.0,
+        "IsPinnedTrigger": true,
+        "PinnedSpeedModifier": -60.0,
+        "PinnedTimeLength": 1.5,
+        "AreaOfEffect": {
+          "EntityID": "SimpleAoE",
+          "Damage": {"baseValue": 1.0, "rawModifier": 0.0, "pctModifier": 283.0},
+          "Size": 0.0,
+          "SizeValue": {
+            "baseValue": 0.1,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "MaxTarget": 1
+        }
+      }
+    },
+    {
+      "EntityID": "Electric_arc_generator",
+      "Enabled": true,
+      "DistanceRangeMin": 0.0,
+      "DistanceRangeMax": 10.0,
+      "MagazineSize": 20,
+      "ReloadTime": {"baseValue": 2.0, "rawModifier": 0.0, "pctModifier": -30.0},
+      "RateOfFire": {"baseValue": 5.0, "rawModifier": 0.0, "pctModifier": 65.0},
+      "MaximumExitPoint": 0,
+      "IsDetection": true,
+      "TargetingPriorities": ["PreviousTarget", "MostHealth"],
+      "DummyBullet": {
+        "EntityID": "Electric_arc",
+        "IsAntiAircraft": false,
+        "AircraftModifier": 60.0,
+        "AntiAircraftModifier": 160.0,
+        "ShieldModifier": 0.0,
+        "AntiShieldModifier": 200.0,
+        "IsPinnedTrigger": true,
+        "PinnedSpeedModifier": -60.0,
+        "PinnedTimeLength": 1.5,
+        "AreaOfEffect": {
+          "EntityID": "SimpleAoE",
+          "Damage": {"baseValue": 1.0, "rawModifier": 0.0, "pctModifier": 283.0},
+          "Size": 0.0,
+          "SizeValue": {
+            "baseValue": 0.1,
+            "rawModifier": 0.0,
+            "pctModifier": 0.0
+          },
+          "MaxTarget": 1
+        }
+      }
+    }
+  ]
+}

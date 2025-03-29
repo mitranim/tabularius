@@ -32,12 +32,13 @@ function cmdAnalyzeHelp() {
 
 /*
 TODO:
-- Use sub-cmds
-- If no sub-cmd name is provided, use the first one by default
-- The analysis type might be a flag, not an arg
-- Support specifying multiple types at once
-- Displaying multiple: either one under another, or as tabs
-- Media pane: consider supporting tabs natively
+- Use sub-cmds.
+- If no sub-cmd name is provided, use the first one by default.
+- The analysis type might be a flag, not an arg.
+- Support specifying multiple types at once.
+- Displaying multiple: either one under another, or as tabs.
+- Media pane: consider supporting tabs natively.
+- Allow to specify just the run id, rather than the full dir name.
 */
 export async function cmdAnalyze(sig, args) {
   u.reqArrOfValidStr(args)
@@ -59,6 +60,9 @@ export async function cmdAnalyze(sig, args) {
   const ui = await import(`./ui.mjs`)
   ui.MEDIA.set(E(new pl.Plotter(opts), {class: `block w-full h-full`}))
 }
+
+// TODO this should be a URL query parameter; default false in production.
+const DATA_DEBUG = false
 
 // Hardcoded until we integrate a cloud DB.
 const USER_ID = `local_user`
@@ -103,6 +107,7 @@ export function datAddRound(dat, runId, round) {
   a.reqValidStr(runId)
   a.reqDict(round)
 
+  let DEBUG_LOGGED = false
   const runIds = {userId: USER_ID, runId}
 
   if (!dat.dimRun.has(runId)) {
@@ -166,41 +171,192 @@ export function datAddRound(dat, runId, round) {
     }
     dat.dimBuiInRound.set(buiInRoundId, buiInRound)
 
-    const dmgDone = bui.LiveStats?.stats?.DamageDone
-    dat.facts.push(...damageFacts(buiInRoundIds, dmgDone, STAT_TYPE_DMG_DONE, buiKind === BUILDING_KIND_NEUTRAL))
+    /*
+    A building has `.LiveStats`, `.Weapons`, `.WeaponStats`, `.LiveChildStats`.
 
-    const dmgOver = bui.LiveStats?.stats?.DamageOverkill
-    dat.facts.push(...damageFacts(buiInRoundIds, dmgOver, STAT_TYPE_DMG_OVER, buiKind === BUILDING_KIND_NEUTRAL))
+    Damage from the building's own HP, such as for HQ, Barricade, Plasma Fence,
+    is only counted in `.LiveStats`.
+
+    Damage from the building's own weapons is counted redundantly in:
+    - `.LiveStats`
+    - `.WeaponStats`
+    - `.LiveChildStats`
+
+    Damage from the troops spawned by the building, such as JOC assault teams,
+    is counted only in `.LiveChildStats`.
+
+    `.LiveChildStats` include stats for weapons _and_ so-called "dummy bullets"
+    which are associated with weapons. Those stats are duplicated, redundantly.
+
+    As a result, it seems that to compute a building's damage, we must add up:
+    - Damage from `.LiveStats` (HP + weapons).
+    - Damage from `.LiveChildStats`, ONLY for non-weapons, non-dummy-bullets.
+
+    We also calculate damages from `.WeaponStats` to double-check ourselves.
+    */
+    let bui_dmgDone_runAcc = a.laxFin(bui.LiveStats?.DamageDone?.valueThisGame)
+    let bui_dmgDone_round = a.laxFin(bui.LiveStats?.DamageDone?.valueThisWave)
+    let bui_dmgOver_runAcc = a.laxFin(bui.LiveStats?.DamageOverkill?.valueThisGame)
+    let bui_dmgOver_round = a.laxFin(bui.LiveStats?.DamageOverkill?.valueThisWave)
+
+    let bui_dmgDone_runAcc_fromWep = 0
+    let bui_dmgDone_round_fromWep = 0
+    let bui_dmgOver_runAcc_fromWep = 0
+    let bui_dmgOver_round_fromWep = 0
+
+    let bui_dmgDone_runAcc_fromWepChi = 0
+    let bui_dmgDone_round_fromWepChi = 0
+    let bui_dmgOver_runAcc_fromWepChi = 0
+    let bui_dmgOver_round_fromWepChi = 0
+
+    let bui_dmgDone_runAcc_fromOtherChi = 0
+    let bui_dmgDone_round_fromOtherChi = 0
+    let bui_dmgOver_runAcc_fromOtherChi = 0
+    let bui_dmgOver_round_fromOtherChi = 0
+
+    const buiWepTypes = new Set()
+    const buiDumBulTypes = new Set()
 
     for (const [ind, wep] of a.entries(bui.Weapons)) {
-      const stats = bui.WeaponStats?.[ind]?.stats
+      buiWepTypes.add(a.reqValidStr(wep.EntityID))
+
+      const dumBulType = wep?.DummyBullet?.EntityID
+      if (dumBulType) buiDumBulTypes.add(a.reqStr(dumBulType))
+
+      if (DATA_DEBUG) {
+        const stats = bui.WeaponStats?.[ind]?.stats
+        bui_dmgDone_runAcc_fromWep += a.laxFin(stats?.DamageDone?.valueThisGame)
+        bui_dmgDone_round_fromWep += a.laxFin(stats?.DamageDone?.valueThisWave)
+        bui_dmgOver_runAcc_fromWep += a.laxFin(stats?.DamageOverkill?.valueThisGame)
+        bui_dmgOver_round_fromWep += a.laxFin(stats?.DamageOverkill?.valueThisWave)
+      }
+    }
+
+    for (const [chiType, src] of a.entries(bui.ChildLiveStats)) {
+      a.reqStr(chiType)
+      a.optObj(src)
+
+      if (buiDumBulTypes.has(chiType)) continue
+      const stats = src?.stats
       if (!stats) continue
 
       /*
-      Weapon entity type is certainly a viable dimension. We might want to query
-      damage facts per weapon entity type for specific buildings. However, for
-      now, we're not creating a table `DIM_WEAPON_TYPE` because it would only
-      have 1 column: its primary key. We simply "reference" this missing
-      dimension by weapon entity type in weapon facts.
+      Child facts are associated with a hypothetical "building child" dimension.
+      We might want to filter or group on specific child types. However, for
+      now, we're not creating a table `Dat..dimBuiChi` because it would only
+      have 1 field: its primary key. We simply reference this missing dimension
+      by child type in child facts.
       */
-      const wepType = a.reqValidStr(wep.EntityID)
-      const wepFact = {...buiInRoundIds, wepType}
+      const chiFact = {...buiInRoundIds, chiType}
 
+      if (stats.DamageDone) {
+        const dmgRunAcc = a.reqFin(stats.DamageDone.valueThisGame)
+        bui_dmgDone_runAcc_fromOtherChi += dmgRunAcc
+        if (buiWepTypes?.has(chiType)) bui_dmgDone_runAcc_fromWepChi += dmgRunAcc
+
+        dat.facts.push({
+          ...chiFact,
+          statType: STAT_TYPE_DMG_DONE,
+          statScope: STAT_SCOPE_RUN_ACC,
+          statValue: dmgRunAcc,
+        })
+
+        const dmgRound = a.reqFin(stats.DamageDone.valueThisWave)
+        bui_dmgDone_round_fromOtherChi += dmgRound
+        if (buiWepTypes?.has(chiType)) bui_dmgDone_round_fromWepChi += dmgRound
+
+        dat.facts.push({
+          ...chiFact,
+          statType: STAT_TYPE_DMG_DONE,
+          statScope: STAT_SCOPE_ROUND,
+          statValue: dmgRound,
+        })
+      }
+
+      if (stats.DamageOverkill) {
+        const dmgRunAcc = a.reqFin(stats.DamageOverkill.valueThisGame)
+        bui_dmgOver_runAcc_fromOtherChi += dmgRunAcc
+        if (buiWepTypes?.has(chiType)) bui_dmgOver_runAcc_fromWepChi += dmgRunAcc
+
+        dat.facts.push({
+          ...chiFact,
+          statType: STAT_TYPE_DMG_OVER,
+          statScope: STAT_SCOPE_RUN_ACC,
+          statValue: dmgRunAcc,
+        })
+
+        const dmgRound = a.reqFin(stats.DamageOverkill.valueThisWave)
+        bui_dmgOver_round_fromOtherChi += dmgRound
+        if (buiWepTypes?.has(chiType)) bui_dmgOver_round_fromWepChi += dmgRound
+
+        dat.facts.push({
+          ...chiFact,
+          statType: STAT_TYPE_DMG_OVER,
+          statScope: STAT_SCOPE_ROUND,
+          statValue: dmgRound,
+        })
+      }
+    }
+
+    const isNeutral = buiKind === BUILDING_KIND_NEUTRAL
+    if (bui_dmgDone_runAcc_fromOtherChi || !isNeutral) {
       dat.facts.push({
-        ...wepFact,
-        statScope: STAT_SCOPE_ROUND,
-        statType: STAT_TYPE_ENABLED,
-        statValue: a.reqBool(wep.Enabled),
+        ...buiInRoundIds,
+        statType: STAT_TYPE_DMG_DONE,
+        statScope: STAT_SCOPE_RUN_ACC,
+        statValue: bui_dmgDone_runAcc_fromOtherChi,
       })
+    }
+    if (bui_dmgDone_round_fromOtherChi || !isNeutral) {
+      dat.facts.push({
+        ...buiInRoundIds,
+        statType: STAT_TYPE_DMG_DONE,
+        statScope: STAT_SCOPE_ROUND,
+        statValue: bui_dmgDone_round_fromOtherChi,
+      })
+    }
+    if (bui_dmgOver_runAcc_fromOtherChi || !isNeutral) {
+      dat.facts.push({
+        ...buiInRoundIds,
+        statType: STAT_TYPE_DMG_OVER,
+        statScope: STAT_SCOPE_RUN_ACC,
+        statValue: bui_dmgOver_runAcc_fromOtherChi,
+      })
+    }
+    if (bui_dmgOver_round_fromOtherChi || !isNeutral) {
+      dat.facts.push({
+        ...buiInRoundIds,
+        statType: STAT_TYPE_DMG_OVER,
+        statScope: STAT_SCOPE_ROUND,
+        statValue: bui_dmgOver_round_fromOtherChi,
+      })
+    }
 
-      const dmgDone = stats.DamageDone
-      dat.facts.push(...damageFacts(wepFact, dmgDone, STAT_TYPE_DMG_DONE, false))
-
-      const dmgOver = stats.DamageOverkill
-      dat.facts.push(...damageFacts(wepFact, dmgOver, STAT_TYPE_DMG_OVER, false))
+    /*
+    Redundant data verification. Check if we correctly understand how weapon
+    stats are computed. This check is incomplete, as it doesn't verify that we
+    exclude "dummy bullets".
+    */
+    if (DATA_DEBUG && !DEBUG_LOGGED) {
+      const pre = `round ${roundIndex}: building ${buiGameEngineInstId} (${buiType}): unexpected mismatch between building`
+      if (!isDamageSimilar(bui_dmgDone_round_fromWep, bui_dmgDone_round_fromWepChi)) {
+        debugLog(`${pre} damage calculated from its weapon list vs from weapons in its child stats: ${bui_dmgDone_round_fromWep} vs ${bui_dmgDone_round_fromWepChi}`)
+      }
+      if (!isDamageSimilar(bui_dmgOver_round_fromWep, bui_dmgOver_round_fromWepChi)) {
+        debugLog(`${pre} damage overkill calculated from its weapon list vs from weapons in its child stats: ${bui_dmgOver_round_fromWep} vs ${bui_dmgOver_round_fromWepChi}`)
+      }
     }
   }
+
+  function debugLog(...src) {
+    console.debug(...src)
+    DEBUG_LOGGED = true
+  }
 }
+
+// Sums don't exactly match because of float imprecision.
+// Below 100, we don't really care.
+function isDamageSimilar(one, two) {return (a.laxNum(one) - a.laxNum(two)) < 100}
 
 function damageFacts(fact, stat, type, skipZero) {
   a.reqDict(fact)

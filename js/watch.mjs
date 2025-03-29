@@ -162,6 +162,7 @@ async function watchStep(sig, state) {
 
   const nextFileName = u.intToOrdStr(nextRoundOrd) + u.fileNameExt(state.progressFileHandle.name)
 
+  // TODO inc by 1 for display purposes (everywhere; maybe in file names too).
   if (prevRoundOrd < nextRoundOrd) {
     u.log.inf(`[watch] round increased from ${prevRoundOrd} to ${nextRoundOrd}, backing up`)
     const dir = await u.wait(sig, state.historyDirHandle.getDirectoryHandle(
