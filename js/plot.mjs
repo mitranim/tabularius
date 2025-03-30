@@ -82,6 +82,94 @@ export class Plotter extends u.Elem {
   }
 }
 
+export const SCALE_X = {time: false}
+export const SCALE_Y = SCALE_X
+export const SCALES = {x: SCALE_X, y: SCALE_Y}
+
+export const LINE_PLOT_OPTS = {
+  axes: axes(),
+  scales: SCALES,
+  legend: {
+    // Apply colors directly to serie labels instead of showing dedicated icons.
+    markers: {show: false},
+
+    // Clicking a label hides all other series.
+    // Select more via Cmd+click or Ctrl+click.
+    isolate: true,
+  },
+  focus: {alpha: 0.2},
+  cursor: {
+    // When hovering near a datapoint, apply the setting `../focus/alpha`
+    // to all other series.
+    focus: {prox: 8},
+  },
+}
+
+export function plugins() {
+  return [new TooltipPlugin().opts()]
+}
+
+export function axes(nameX, nameY) {
+  return [
+    // This one doesn't have a label, not even an empty string, because that
+    // causes the plot library to waste space.
+    {
+      scale: `x`,
+      stroke: axisStroke,
+      secretName: nameX,
+    },
+    // This one does have an empty label to prevent the numbers from clipping
+    // through the left side of the container.
+    {
+      scale: `y`,
+      label: ``,
+      stroke: axisStroke,
+      secretName: nameY,
+    },
+  ]
+}
+
+export function axisStroke() {
+  return u.darkModeMediaQuery.matches ? `white` : `black`
+}
+
+export function serie(label) {
+  a.reqValidStr(label)
+  return {
+    label,
+    stroke: nextFgColor(label),
+    width: 2,
+    value: serieFormatVal,
+  }
+}
+
+function serieFormatVal(plot, val, seriesInd) {
+  if (a.isNil(val) && a.isNum(seriesInd)) {
+    const dat = plot.data[seriesInd]
+    if (a.isArr(dat)) val = a.sum(dat)
+  }
+  return formatVal(val)
+}
+
+/*
+Our default value formatter, which should be used for displaying all plot
+values. Needs to be included in every serie.
+*/
+export function formatVal(val) {return a.isNum(val) ? numFormat.format(val) : val}
+
+export const numFormat = new Intl.NumberFormat(`en-US`, {
+  maximumFractionDigits: 2,
+  roundingMode: `halfExpand`,
+})
+
+export function nextFgColor() {
+  COLOR_INDEX++
+  COLOR_INDEX %= FG_COLORS.length
+  return FG_COLORS[COLOR_INDEX]
+}
+
+let COLOR_INDEX = -1
+
 /*
 Copy-paste of `*-500` color variants from:
   https://tailwindcss.com/docs/colors#default-color-palette-reference
@@ -110,51 +198,6 @@ const FG_COLORS = [
   `oklch(0.556 0 0)`,           // neutral
   `oklch(0.553 0.013 58.071)`,  // stone
 ]
-
-let COLOR_INDEX = -1
-
-export function nextFgColor() {
-  COLOR_INDEX++
-  COLOR_INDEX %= FG_COLORS.length
-  return FG_COLORS[COLOR_INDEX]
-}
-
-export function serie(label) {
-  a.reqValidStr(label)
-  return {
-    label,
-    stroke: nextFgColor(label),
-    width: 2,
-  }
-}
-
-export function axes(nameX, nameY) {
-  return [
-    // This one doesn't have a label, not even an empty string, because that
-    // causes the plot library to waste space.
-    {
-      scale: `x`,
-      stroke: axisStroke,
-      secretName: nameX,
-    },
-    // This one does have an empty label to prevent the numbers from clipping
-    // through the left side of the container.
-    {
-      scale: `y`,
-      label: ``,
-      stroke: axisStroke,
-      secretName: nameY,
-    },
-  ]
-}
-
-export const SCALE_X = {time: false}
-export const SCALE_Y = SCALE_X
-export const SCALES = {x: SCALE_X, y: SCALE_Y}
-
-export function axisStroke() {
-  return u.darkModeMediaQuery.matches ? `white` : `black`
-}
 
 /*
 Plugin interface:
@@ -249,8 +292,8 @@ class TooltipPlugin extends a.Emp {
     tar.style.top = posY + `px`
     tar.textContent = a.joinLinesOptLax([
       series.label,
-      (axisNameX + nameSuf).padEnd(nameLen, ` `) + numFormat.format(valX),
-      (axisNameY + nameSuf).padEnd(nameLen, ` `) + numFormat.format(valY),
+      (axisNameX + nameSuf).padEnd(nameLen, ` `) + formatVal(valX),
+      (axisNameY + nameSuf).padEnd(nameLen, ` `) + formatVal(valY),
     ])
     plot.over.appendChild(tar)
   }
@@ -262,36 +305,10 @@ class TooltipPlugin extends a.Emp {
         padding: `0.3rem`,
         pointerEvents: `none`,
         position: `absolute`,
-        background: `rgba(0, 0, 255, 0.1)`,
+        background: `oklch(0.45 0.31 264.05 / 0.1)`,
         transform: `translate(-100%, -100%)`,
         whiteSpace: `pre`,
       },
     })
   }
-}
-
-// Should match the number formatting used by Uplot.
-export const numFormat = new Intl.NumberFormat()
-
-export function plugins() {
-  return [new TooltipPlugin().opts()]
-}
-
-export const LINE_PLOT_OPTS = {
-  axes: axes(),
-  scales: SCALES,
-  legend: {
-    // Apply colors directly to serie labels instead of showing dedicated icons.
-    markers: {show: false},
-
-    // Clicking a label hides all other series.
-    // Select more via Cmd+click or Ctrl+click.
-    isolate: true,
-  },
-  focus: {alpha: 0.2},
-  cursor: {
-    // When hovering near a datapoint, apply the setting `../focus/alpha`
-    // to all other series.
-    focus: {prox: 8},
-  },
 }

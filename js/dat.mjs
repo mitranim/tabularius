@@ -407,19 +407,35 @@ export async function plotOptsDamagePerRoundPerBuiTypeUpg(dat) {
     X_set.add(X)
   }
 
-  const Z_labels = a.keys(Z_X_Y).sort()
-  const X_row = a.arr(X_set).sort(a.compareFin)
-  const Y_rows = a.map(Z_labels, Z => a.map(X_row, X => u.roundDefault(Z_X_Y[Z][X])))
-  const rows = [X_row, ...Y_rows]
   const pl = await import(`./plot.mjs`)
-  const series = [{label: `Round`}, ...a.map(Z_labels, pl.serie)]
+  const Z_labels = a.keys(Z_X_Y).sort() // Building types with upgrades.
+  const Z_rows = a.map(Z_labels, pl.serie)
+  const X_row = a.arr(X_set).sort(a.compareFin) // Rounds.
+
+  /*
+  Produces something like:
+
+    [
+      [10, 20, 30], // Building group.
+      [40, 50, 60], // Another building group.
+       ↑ dmg for round at index 0
+           ↑ dmg for round at index 1
+               ↑ dmg for round at index 2
+    ]
+
+  Each super-array index corresponds to an index in Z_rows (a serie).
+  Each sub-array index corresponds to an index in X_row.
+  Each sub-array value is the Y for that Z and X.
+  */
+  const Z_X_Y_arr = a.map(Z_labels, Z => a.map(X_row, X => Z_X_Y[Z][X]))
+  dropZeroRows(Z_rows, Z_X_Y_arr)
 
   return {
     ...pl.LINE_PLOT_OPTS,
     plugins: pl.plugins(),
     title: `Damage per round per building type (with upgrades)`,
-    series,
-    data: rows,
+    series: [{label: `Round`}, ...Z_rows],
+    data: [X_row, ...Z_X_Y_arr],
     axes: pl.axes(`Round`, `Damage`),
   }
 }
@@ -429,7 +445,27 @@ export function encodeUpgrades(src) {
   return a.map(src, encodeUpgrade).join(``)
 }
 
-function encodeUpgrade(src) {
+export function encodeUpgrade(src) {
   const ind = a.onlyNat(src?.Index)
   return ind >= 0 ? `ABCDEFGHIJKLMNOPQRSTUVWXYZ`[ind] : ``
+}
+
+export function dropZeroRows(Z, Z_X_Y) {
+  a.reqArr(Z)
+  a.reqArr(Z_X_Y)
+  if (Z.length !== Z_X_Y.length) {
+    throw Error(`internal error: length mismatch between Z (${Z.length}) and Z_X_Y (${Z_X_Y.length})`)
+  }
+
+  let Z_ind = -1
+  while (++Z_ind < Z.length) {
+    const X_Y = a.reqArr(Z_X_Y[Z_ind])
+
+    if (!X_Y.length) continue
+    if (a.some(X_Y, a.truthy)) continue
+
+    Z.splice(Z_ind, 1)
+    Z_X_Y.splice(Z_ind, 1)
+    Z_ind--
+  }
 }

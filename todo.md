@@ -484,6 +484,8 @@ https://leeoniya.github.io/uPlot/demos/stream-data.html
 https://leeoniya.github.io/uPlot/demos/pixel-align.html
 https://leeoniya.github.io/uPlot/demos/sine-stream.html
 
+The file watcher needs to send new data to the plot.
+
 ---
 
 Plot: button to toggle all series.

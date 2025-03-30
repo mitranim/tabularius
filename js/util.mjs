@@ -602,16 +602,6 @@ Usage:
 */
 export const darkModeMediaQuery = window.matchMedia(`(prefers-color-scheme: dark)`)
 
-export function roundDefault(val) {return roundTo(val, 2)}
-
-// Rounds the number to N decimal places.
-export function roundTo(num, decimalPlaces) {
-  a.reqNat(decimalPlaces)
-  if (a.isNil(a.optFin(num))) return undefined
-  const coeff = Math.pow(10, decimalPlaces)
-  return round(num * coeff) / coeff
-}
-
 // Non-insane variant of `Math.round`. Rounds away from 0, instead of up.
 export function round(val) {
   a.reqNum(val)
