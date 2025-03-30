@@ -4,7 +4,6 @@ import * as p from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/prax.mjs'
 import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs.mjs'
 import * as od from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs_dom.mjs'
 import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/dom_reg.mjs'
-// import * as cl from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/cli.mjs'
 import * as tw from 'https://esm.sh/@twind/core@1.1.3'
 import tp from 'https://esm.sh/@twind/preset-autoprefix@1.0.7'
 import tt from 'https://esm.sh/@twind/preset-tailwind@1.1.4'
@@ -19,7 +18,6 @@ tar.lib.p = p
 tar.lib.o = o
 tar.lib.od = od
 tar.lib.dr = dr
-// tar.lib.cl = cl
 a.patch(window, tar)
 
 /*
@@ -167,9 +165,10 @@ export const log = new class Log extends Elem {
     if (!a.vac(msg)) return
     if (a.some(msg, isErrAbort)) return
     console.error(...msg)
-    this.addMsg(msg, true)
+    this.addMsg(msg, `err`)
   }
 
+  // Should be used for optional verbose logging.
   verb(...msg) {
     if (!LOG_VERBOSE) return
     if (!a.vac(msg)) return
@@ -179,7 +178,9 @@ export const log = new class Log extends Elem {
   clear() {
     ren.clear(this.messageLog)
     this.removedCount = 0
-    this.removedMessageNotice.hidden = true
+    E(this.messageLog, {},
+      E(this.removedMessageNotice, {hidden: false}, `log cleared`)
+    )
   }
 
   removedCount = 0
@@ -230,8 +231,8 @@ export const log = new class Log extends Elem {
     )
   }
 
-  addMsg(msg, isErr) {
-    this.messageLog.append(LogMsg(msg, isErr))
+  addMsg(msg, type) {
+    this.messageLog.append(LogMsg(msg, type))
     this.scrollToBottom()
     this.enforceMessageLimit()
   }
@@ -289,32 +290,31 @@ export const log = new class Log extends Elem {
   }
 
   enforceMessageLimit() {
+    this.removedMessageNotice.remove()
+
     while (this.messageLog.childElementCount > LOG_MAX_MSGS) {
       this.messageLog.removeChild(this.messageLog.firstElementChild)
       this.removedCount++
     }
 
-    // Update the notice about removed messages
     E(
       this.removedMessageNotice,
       {hidden: !this.removedCount},
       this.removedCount, ` older messages removed`,
     )
 
-    // Move the notice to the top of the message log
-    if (this.removedCount && !this.removedMessageNotice.parentNode) {
-      this.messageLog.prepend(this.removedMessageNotice)
-    }
+    // Move the notice to the top of the message log.
+    if (this.removedCount) this.messageLog.prepend(this.removedMessageNotice)
   }
 }()
 
-function LogMsg(src, isErr) {
+function LogMsg(src, type) {
   return E(
     `div`,
     {
       class: a.spaced(
         `border-l-4 p-2`,
-        isErr
+        type === `err`
           ? `text-red-500 dark:text-red-400 border-red-500`
           : `border-transparent`,
       ),

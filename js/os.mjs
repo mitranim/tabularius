@@ -66,7 +66,7 @@ export function hasProcByName(name) {
 export async function runScript(src) {
   src = a.trim(src)
   if (!src) return
-  runCmd(...src.split(/\s+/))
+  await runCmd(...src.split(/\s+/))
 }
 
 export async function runCmd(...args) {

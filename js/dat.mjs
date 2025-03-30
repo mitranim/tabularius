@@ -215,10 +215,10 @@ export function datAddRound(dat, runId, round) {
 
     We also calculate damages from `.WeaponStats` to double-check ourselves.
     */
-    let bui_dmgDone_runAcc = a.laxFin(bui.LiveStats?.DamageDone?.valueThisGame)
-    let bui_dmgDone_round = a.laxFin(bui.LiveStats?.DamageDone?.valueThisWave)
-    let bui_dmgOver_runAcc = a.laxFin(bui.LiveStats?.DamageOverkill?.valueThisGame)
-    let bui_dmgOver_round = a.laxFin(bui.LiveStats?.DamageOverkill?.valueThisWave)
+    const bui_dmgDone_runAcc = a.laxFin(bui.LiveStats?.DamageDone?.valueThisGame)
+    const bui_dmgDone_round = a.laxFin(bui.LiveStats?.DamageDone?.valueThisWave)
+    const bui_dmgOver_runAcc = a.laxFin(bui.LiveStats?.DamageOverkill?.valueThisGame)
+    const bui_dmgOver_round = a.laxFin(bui.LiveStats?.DamageOverkill?.valueThisWave)
 
     let bui_dmgDone_runAcc_fromWep = 0
     let bui_dmgDone_round_fromWep = 0

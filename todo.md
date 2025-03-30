@@ -589,3 +589,13 @@ A way to "stick" a run id, round id, building id for subsequent commands. Persis
 A command for viewing stats super zoomed-in, for a particular round > building > child / weapon.
 
 A media UI for showing building, child, weapon stats in a nice format. Flattening the data and printing JSON is an okay start, but we can do better.
+
+---
+
+A media UI for showing a breakdown of the latest round and the run so far. (The stat screen that the players constantly ask for.)
+
+---
+
+<!-- Identify empty rounds with no run. Do not backup. -->
+
+---

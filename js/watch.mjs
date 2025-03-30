@@ -135,23 +135,45 @@ async function findLatestRoundFile(sig, runDir, progressFileHandle) {
   return out
 }
 
-// Main watch functionality, periodically executed by `cmdWatch`.
+/*
+Main watch functionality, periodically executed by `cmdWatch`.
+
+TODO: when a fork is detected, delete all rounds after the fork.
+
+TODO: when file deletion is detected, don't assume a new run, continue backups
+in the current dir.
+*/
 async function watchStep(sig, state) {
   const progressFile = await fs.getFile(sig, state.progressFileHandle)
   const content = await u.wait(sig, progressFile.text())
   const decoded = await u.wait(sig, u.decodeObfuscated(content))
-  const nextTime = progressFile.lastModified
-  const runDirName = state.runDirName
-  const roundFileName = state.roundFileName
-  const prevTime = (await fs.getSubFile(sig, state.historyDirHandle, runDirName, roundFileName))?.lastModified
-  if (prevTime >= nextTime) {
-    u.log.verb(`[watch] skipping: progress file unmodified`)
+  const nextRoundOrd = decoded?.RoundIndex
+
+  if (!a.isInt(nextRoundOrd)) {
+    throw Error(`[watch] unexpected round in source data: ${a.show(nextRoundOrd)}`)
+  }
+
+  if (!nextRoundOrd) {
+    u.log.verb(`[watch] current round is ${nextRoundOrd}, no current run, skipping backup`)
     return
   }
 
-  const nextRoundOrd = decoded?.RoundIndex
-  if (!a.isInt(nextRoundOrd)) {
-    throw Error(`[watch] unexpected round in source data: ${a.show(nextRoundOrd)}`)
+  const nextTime = progressFile.lastModified
+  const runDirName = state.runDirName
+  let roundFileName = state.roundFileName
+  let prevFile
+  try {
+    prevFile = await fs.getSubFile(sig, state.historyDirHandle, runDirName, roundFileName)
+  }
+  catch (err) {
+    u.log.err(`[watch] unable to get latest backup file; assuming it was deleted and continuing; error:`, err)
+    roundFileName = undefined
+  }
+
+  const prevTime = prevFile?.lastModified
+  if (prevTime >= nextTime) {
+    u.log.verb(`[watch] skipping: progress file unmodified`)
+    return
   }
 
   const prevRoundOrd = u.strToInt(roundFileName)
@@ -174,7 +196,7 @@ async function watchStep(sig, state) {
     return
   }
 
-  if (prevRoundOrd > nextRoundOrd) {
+  if (nextRoundOrd < prevRoundOrd) {
     u.log.inf(`[watch] round decreased from ${prevRoundOrd} to ${nextRoundOrd}, assuming new run`)
   }
   else {

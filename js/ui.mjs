@@ -12,7 +12,7 @@ a.patch(window, tar)
 export function cmdMedia() {MEDIA.toggle()}
 
 // Increment by 1 when publishing an update.
-const VERSION = 5
+const VERSION = 6
 let INITED
 
 /*
@@ -149,14 +149,14 @@ export const MEDIA = new class MediaPanel extends u.Elem {
 
   setDefault() {
     E(this, {}, MEDIA_CHI_DEFAULT)
-    this.isDefaultChi = true
+    this.isDefault = true
   }
 
   set(...chi) {
     if (a.vac(chi)) {
       E(this, {}, chi)
       this.lastChi = chi
-      this.isDefaultChi = false
+      this.isDefault = false
     }
     else {
       this.setDefault()
@@ -164,9 +164,9 @@ export const MEDIA = new class MediaPanel extends u.Elem {
   }
 
   toggle() {
-    if (this.isDefaultChi && a.vac(this.lastChi)) {
+    if (this.isDefault && a.vac(this.lastChi)) {
       E(this, {}, this.lastChi)
-      this.isDefaultChi = false
+      this.isDefault = false
     }
     else {
       this.setDefault()

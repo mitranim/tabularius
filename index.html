@@ -77,15 +77,15 @@
     }
     catch (err) {
       console.error(err)
-
-      document.body.style.color = `red`
-
-      document.body.innerHTML = `
+      if (document.getElementById(`loading_msg`)) {
+        document.body.style.color = `red`
+        document.body.innerHTML = `
 <pre style="color: red; white-space: break-spaces; text-align: left">
   <p style="text-align: center">Sorry! Something went wrong.</p>
   <p style="padding: 1rem">${err?.stack || err}</p>
 </pre>
 `
+      }
     }
   </script>
 
