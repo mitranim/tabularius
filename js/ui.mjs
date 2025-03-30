@@ -12,7 +12,7 @@ a.patch(window, tar)
 export function cmdMedia() {MEDIA.toggle()}
 
 // Increment by 1 when publishing an update.
-const VERSION = 6
+const VERSION = 8
 let INITED
 
 /*

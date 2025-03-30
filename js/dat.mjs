@@ -241,7 +241,7 @@ export function datAddRound(dat, runId, round) {
     for (const [ind, wep] of a.entries(bui.Weapons)) {
       buiWepTypes.add(a.reqValidStr(wep.EntityID))
 
-      const dumBulType = wep?.DummyBullet?.EntityID
+      const dumBulType = wep.DummyBullet?.EntityID
       if (dumBulType) buiDumBulTypes.add(a.reqStr(dumBulType))
 
       if (DATA_DEBUG) {
@@ -258,6 +258,8 @@ export function datAddRound(dat, runId, round) {
       a.optObj(src)
 
       if (buiDumBulTypes.has(chiType)) continue
+      if (!chiType) continue
+
       const stats = src?.stats
       if (!stats) continue
 
@@ -272,8 +274,8 @@ export function datAddRound(dat, runId, round) {
 
       if (stats.DamageDone) {
         const dmgRunAcc = a.reqFin(stats.DamageDone.valueThisGame)
-        bui_dmgDone_runAcc_fromOtherChi += dmgRunAcc
-        if (buiWepTypes?.has(chiType)) bui_dmgDone_runAcc_fromWepChi += dmgRunAcc
+        if (buiWepTypes.has(chiType)) bui_dmgDone_runAcc_fromWepChi += dmgRunAcc
+        else bui_dmgDone_runAcc_fromOtherChi += dmgRunAcc
 
         dat.facts.push({
           ...chiFact,
@@ -283,8 +285,8 @@ export function datAddRound(dat, runId, round) {
         })
 
         const dmgRound = a.reqFin(stats.DamageDone.valueThisWave)
-        bui_dmgDone_round_fromOtherChi += dmgRound
-        if (buiWepTypes?.has(chiType)) bui_dmgDone_round_fromWepChi += dmgRound
+        if (buiWepTypes.has(chiType)) bui_dmgDone_round_fromWepChi += dmgRound
+        else bui_dmgDone_round_fromOtherChi += dmgRound
 
         dat.facts.push({
           ...chiFact,
@@ -296,8 +298,8 @@ export function datAddRound(dat, runId, round) {
 
       if (stats.DamageOverkill) {
         const dmgRunAcc = a.reqFin(stats.DamageOverkill.valueThisGame)
-        bui_dmgOver_runAcc_fromOtherChi += dmgRunAcc
-        if (buiWepTypes?.has(chiType)) bui_dmgOver_runAcc_fromWepChi += dmgRunAcc
+        if (buiWepTypes.has(chiType)) bui_dmgOver_runAcc_fromWepChi += dmgRunAcc
+        else bui_dmgOver_runAcc_fromOtherChi += dmgRunAcc
 
         dat.facts.push({
           ...chiFact,
@@ -307,8 +309,8 @@ export function datAddRound(dat, runId, round) {
         })
 
         const dmgRound = a.reqFin(stats.DamageOverkill.valueThisWave)
-        bui_dmgOver_round_fromOtherChi += dmgRound
-        if (buiWepTypes?.has(chiType)) bui_dmgOver_round_fromWepChi += dmgRound
+        if (buiWepTypes.has(chiType)) bui_dmgOver_round_fromWepChi += dmgRound
+        else bui_dmgOver_round_fromOtherChi += dmgRound
 
         dat.facts.push({
           ...chiFact,
@@ -449,7 +451,7 @@ function aggPerRoundPerBuiTypeUpg(dat, statType) {
   for (const fact of dat.facts) {
     if (fact.statType !== statType) continue
     if (fact.statScope !== STAT_SCOPE_ROUND) continue
-    if (fact.wepType) continue
+    if (fact.chiType) continue
 
     const bui = dat.dimBuiInRound.get(fact.buiInRoundId)
     const Z = a.reqValidStr(bui.buiTypeUpgName || bui.buiTypeUpg)
