@@ -454,6 +454,7 @@ export function isElemInput(val) {
 
 export function joinSpaced(src) {return a.joinOptLax(src, ` `)}
 export function joinKeys(...src) {return a.joinOptLax(src, `_`)}
+export function joinParagraphs(...src) {return a.joinOptLax(src, `\n\n`)}
 
 /*
 How many digits to use for local ordinal ids for runs and rounds.

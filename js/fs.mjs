@@ -349,7 +349,7 @@ export async function cmdShow(sig, args) {
   const log = args.includes(`-l`)
   args = a.remove(args, `-l`)
 
-  switch (a.len(u.reqArrOfValidStr(args))) {
+  switch (a.len(u.reqArrOfStr(args))) {
     case 2: break
     default: return CMD_SHOW_HELP
   }

@@ -37,12 +37,12 @@ export class Proc extends a.Emp {
   constructor(src) {
     a.reqObj(src)
     super()
-    this.id = String(++new.target.id)         // Process id (pid). Must be unique.
-    this.args = u.reqArrOfValidStr(src.args)  // Command name and CLI args.
-    this.startAt = Date.now()
-    this.control = u.abortController()        // For cancelation.
-    this.promise = undefined                  // Assigned after starting.
-    this.status = src.status                  // What it's currently doing.
+    this.id = String(++new.target.id)   // Process id (pid). Must be unique.
+    this.args = u.reqArrOfStr(src.args) // Command name and CLI args.
+    this.startAt = Date.now()           // Shown in the UI.
+    this.control = u.abortController()  // For cancelation.
+    this.promise = undefined            // Assigned after starting.
+    this.status = src.status            // What it's currently doing.
   }
 
   pk() {return this.id}
@@ -138,8 +138,8 @@ export function showProcs() {
 }
 
 export function cmdKill(sig, args) {
-  u.reqArrOfValidStr(args)
-  switch (a.len(args)) {
+  u.reqArrOfStr(args)
+  switch (args.length) {
     case 0:
     case 1:
       return a.joinLines([

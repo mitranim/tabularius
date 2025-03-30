@@ -12,7 +12,7 @@ a.patch(window, tar)
 export function cmdMedia() {MEDIA.toggle()}
 
 // Increment by 1 when publishing an update.
-const VERSION = 4
+const VERSION = 5
 let INITED
 
 /*
@@ -50,7 +50,7 @@ export const TITLEBAR = E(
   {class: `flex justify-between items-center p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-800`},
 
   // Left side with title
-  E(`h1`, {}, `Tabularius`),
+  E(`h1`, {}, document.title),
 
   // Right side with links
   E(`div`, {class: `flex gap-4`},

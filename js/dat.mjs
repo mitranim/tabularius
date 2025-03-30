@@ -7,27 +7,40 @@ const tar = window.tabularius ??= a.Emp()
 tar.d = self
 a.patch(window, tar)
 
-/*
-Placeholder for below.
+const PLOT_DESC_plotOptsDamagePerRoundPerBuiTypeUpg = `damage per round per building type (with upgrade)`
+const PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg = `cost efficiency per round per building type (with upgrade)`
 
-export const CMD_ANALYZE_SUB_CMDS = a.Emp()
-CMD_ANALYZE_SUB_CMDS.dpbu = plotOptsDamagePerRoundPerBuiTypeUpg
-CMD_ANALYZE_SUB_CMDS.dpbt = plotOptsDamagePerRoundPerBuiType
-CMD_ANALYZE_SUB_CMDS.dpb = plotOptsDamagePerRoundPerBui
-*/
+export const ANALYSIS_MODES = {
+  cost: {
+    desc: PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg,
+    fun: plotOptsCostEffPerRoundPerBuiTypeUpg,
+  },
+  dmg: {
+    desc: PLOT_DESC_plotOptsDamagePerRoundPerBuiTypeUpg,
+    fun: plotOptsDamagePerRoundPerBuiTypeUpg,
+  },
+  /*
+  More planned:
 
-/*
-TODO:
-- Tell about sub-commands
-- List the sub-commands
-*/
+    plotOptsDamagePerRoundPerBuiType
+    plotOptsDamagePerRoundPerBui
+    ...
+  */
+}
+
 function cmdAnalyzeHelp() {
-  return a.spaced(
-    `usage: "analyze <run_id>", where "run_id"`,
-    `is the name of an existing run directory,`,
-    `containing per-round backups of run progress;`,
-    `run "ls /" to see existing run ids`,
+  return u.joinParagraphs(
+    `usage: "analyze <run_id>" or "analyze <run_id> <cmd>;`,
+    `<run_id> is the name of an existing run in the history directory (run "init" if you haven't created any; "ls /" to see existing runs)`,
+    a.joinLines([
+      `<cmd> chooses analysis mode; currently available modes:`,
+      ...a.entries(ANALYSIS_MODES).map(modeHelp),
+    ]),
   )
+}
+
+function modeHelp([name, {desc}], ind) {
+  return name + `: ` + desc + (ind ? `` : ` (default)`)
 }
 
 /*
@@ -41,9 +54,13 @@ TODO:
 - Allow to specify just the run id, rather than the full dir name.
 */
 export async function cmdAnalyze(sig, args) {
-  u.reqArrOfValidStr(args)
+  u.reqArrOfStr(args)
   const runId = args[1]
-  if (!runId || a.len(args) !== 2) return cmdAnalyzeHelp()
+  const modeName = args[2]
+  if (!runId || args.length > 3) return cmdAnalyzeHelp()
+
+  const sub = modeName && ANALYSIS_MODES[modeName] || a.head(ANALYSIS_MODES)
+  if (!sub) throw Error(modeName ? `unknown analysis mode ${modeName}` : `missing analysis mode`)
 
   const fs = await import(`./fs.mjs`)
   const root = await fs.reqHistoryDir(sig)
@@ -55,29 +72,28 @@ export async function cmdAnalyze(sig, args) {
     datAddRound(dat, runId, val)
   }
 
-  const opts = await plotOptsDamagePerRoundPerBuiTypeUpg(dat)
+  const fun = sub.fun
+  const opts = await fun(dat)
   const pl = await import(`./plot.mjs`)
   const ui = await import(`./ui.mjs`)
   ui.MEDIA.set(E(new pl.Plotter(opts), {class: `block w-full h-full`}))
 }
 
 // TODO this should be a URL query parameter; default false in production.
-const DATA_DEBUG = false
+export const DATA_DEBUG = false
+
+export const BUI_TYPE_SMOKE_SIGNAL = `CB12A`
+export const BUI_SELL_PRICE_AIR_COMMAND = 1500
 
 // Hardcoded until we integrate a cloud DB.
-const USER_ID = `local_user`
+export const USER_ID = `local_user`
 
-/*
-Missing fields and stats (TODO):
-- Game version.
-- Precalculate sell cost in Supply (converting other resources).
-- Precalculate cost efficiency.
-*/
+// TODO / missing: we need game versions in our stats.
 export const STAT_SCOPE_RUN_ACC = `run_acc`
 export const STAT_SCOPE_ROUND = `round`
 export const STAT_TYPE_DMG_DONE = `dmg_done`
 export const STAT_TYPE_DMG_OVER = `dmg_over`
-export const STAT_TYPE_ENABLED = `enabled`
+export const STAT_TYPE_COST_EFF = `cost_eff`
 export const BUILDING_KIND_NEUTRAL = `Neutral`
 
 export class Dim extends a.TypedMap {
@@ -102,6 +118,11 @@ export async function initBuiCodes() {
   BUI_CODES ??= await u.fetchJson(new URL(`../data/building_codes.json`, import.meta.url))
 }
 
+/*
+Decomposes a round into dimensions and facts, adding them to our `Dat`.
+If rounds are provided in an arbitrary order, then the resulting tables
+are unsorted.
+*/
 export function datAddRound(dat, runId, round) {
   a.reqInst(dat, Dat)
   a.reqValidStr(runId)
@@ -157,6 +178,7 @@ export function datAddRound(dat, runId, round) {
       ...buiInRunIds,
       buiInRoundId,
     }
+
     const buiUpg = encodeUpgrades(bui.PurchasedUpgrades)
     const buiTypeUpg = u.joinKeys(buiType, buiUpg)
     const buiTypeUpgName = buiName ? a.spaced(buiName, buiUpg) : buiTypeUpg
@@ -167,7 +189,6 @@ export function datAddRound(dat, runId, round) {
       buiTypeUpgName,
       sellPrice: bui.SellPrice,
       sellCurr: bui.SellCurrencyType,
-      // sellSupply: TODO precalculate by converting other currencies.
     }
     dat.dimBuiInRound.set(buiInRoundId, buiInRound)
 
@@ -298,37 +319,63 @@ export function datAddRound(dat, runId, round) {
       }
     }
 
+    const bui_dmgDone_runAcc_final = bui_dmgDone_runAcc + bui_dmgDone_runAcc_fromOtherChi
+    const bui_dmgDone_round_final = bui_dmgDone_round + bui_dmgDone_round_fromOtherChi
+    const bui_dmgOver_runAcc_final = bui_dmgOver_runAcc + bui_dmgOver_runAcc_fromOtherChi
+    const bui_dmgOver_round_final = bui_dmgOver_round + bui_dmgOver_round_fromOtherChi
     const isNeutral = buiKind === BUILDING_KIND_NEUTRAL
-    if (bui_dmgDone_runAcc_fromOtherChi || !isNeutral) {
+
+    const sellPrice = (
+      buiType === BUI_TYPE_SMOKE_SIGNAL
+      ? BUI_SELL_PRICE_AIR_COMMAND
+      : bui.SellPrice
+    )
+
+    if (bui_dmgDone_runAcc_final || !isNeutral) {
       dat.facts.push({
         ...buiInRoundIds,
         statType: STAT_TYPE_DMG_DONE,
         statScope: STAT_SCOPE_RUN_ACC,
-        statValue: bui_dmgDone_runAcc_fromOtherChi,
+        statValue: bui_dmgDone_runAcc_final,
+      })
+      dat.facts.push({
+        ...buiInRoundIds,
+        statType: STAT_TYPE_COST_EFF,
+        statScope: STAT_SCOPE_RUN_ACC,
+        statValue: sellPrice ? bui_dmgDone_runAcc_final / sellPrice : 0,
       })
     }
-    if (bui_dmgDone_round_fromOtherChi || !isNeutral) {
+
+    if (bui_dmgDone_round_final || !isNeutral) {
       dat.facts.push({
         ...buiInRoundIds,
         statType: STAT_TYPE_DMG_DONE,
         statScope: STAT_SCOPE_ROUND,
-        statValue: bui_dmgDone_round_fromOtherChi,
+        statValue: bui_dmgDone_round_final,
+      })
+      dat.facts.push({
+        ...buiInRoundIds,
+        statType: STAT_TYPE_COST_EFF,
+        statScope: STAT_SCOPE_ROUND,
+        statValue: sellPrice ? bui_dmgDone_round_final / sellPrice : 0,
       })
     }
-    if (bui_dmgOver_runAcc_fromOtherChi || !isNeutral) {
+
+    if (bui_dmgOver_runAcc_final || !isNeutral) {
       dat.facts.push({
         ...buiInRoundIds,
         statType: STAT_TYPE_DMG_OVER,
         statScope: STAT_SCOPE_RUN_ACC,
-        statValue: bui_dmgOver_runAcc_fromOtherChi,
+        statValue: bui_dmgOver_runAcc_final,
       })
     }
-    if (bui_dmgOver_round_fromOtherChi || !isNeutral) {
+
+    if (bui_dmgOver_round_final || !isNeutral) {
       dat.facts.push({
         ...buiInRoundIds,
         statType: STAT_TYPE_DMG_OVER,
         statScope: STAT_SCOPE_ROUND,
-        statValue: bui_dmgOver_round_fromOtherChi,
+        statValue: bui_dmgOver_round_final,
       })
     }
 
@@ -358,43 +405,49 @@ export function datAddRound(dat, runId, round) {
 // Below 100, we don't really care.
 function isDamageSimilar(one, two) {return (a.laxNum(one) - a.laxNum(two)) < 100}
 
-function damageFacts(fact, stat, type, skipZero) {
-  a.reqDict(fact)
-  a.optDict(stat)
-  a.reqValidStr(type)
-  a.optBool(skipZero)
+export async function plotOptsCostEffPerRoundPerBuiTypeUpg(dat) {
+  a.reqInst(dat, Dat)
 
-  const out = []
-  if (!stat) return out
-  const {valueThisGame, valueThisWave} = stat
+  const pl = await import(`./plot.mjs`)
+  const [X_row, Z_labels, Z_X_Y_arr] = aggPerRoundPerBuiTypeUpg(dat, STAT_TYPE_COST_EFF)
+  const Z_rows = a.map(Z_labels, pl.serie)
 
-  if (valueThisGame || !skipZero) {
-    out.push({
-      ...fact,
-      statType: type,
-      statScope: STAT_SCOPE_RUN_ACC,
-      statValue: valueThisGame,
-    })
+  return {
+    ...pl.LINE_PLOT_OPTS,
+    plugins: pl.plugins(),
+    title: PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg,
+    series: [{label: `Round`}, ...Z_rows],
+    data: [X_row, ...Z_X_Y_arr],
+    axes: pl.axes(`round`, `eff`),
   }
-
-  if (valueThisWave || !skipZero) {
-    out.push({
-      ...fact,
-      statType: type,
-      statScope: STAT_SCOPE_ROUND,
-      statValue: valueThisWave,
-    })
-  }
-  return out
 }
 
 export async function plotOptsDamagePerRoundPerBuiTypeUpg(dat) {
   a.reqInst(dat, Dat)
+
+  const pl = await import(`./plot.mjs`)
+  const [X_row, Z_labels, Z_X_Y_arr] = aggPerRoundPerBuiTypeUpg(dat, STAT_TYPE_DMG_DONE)
+  const Z_rows = a.map(Z_labels, pl.serie)
+
+  return {
+    ...pl.LINE_PLOT_OPTS,
+    plugins: pl.plugins(),
+    title: PLOT_DESC_plotOptsDamagePerRoundPerBuiTypeUpg,
+    series: [{label: `Round`}, ...Z_rows],
+    data: [X_row, ...Z_X_Y_arr],
+    axes: pl.axes(`round`, `damage`),
+  }
+}
+
+function aggPerRoundPerBuiTypeUpg(dat, statType) {
+  a.reqInst(dat, Dat)
+  a.reqValidStr(statType)
+
   const X_set = a.bset()
   const Z_X_Y = a.Emp()
 
   for (const fact of dat.facts) {
-    if (fact.statType !== STAT_TYPE_DMG_DONE) continue
+    if (fact.statType !== statType) continue
     if (fact.statScope !== STAT_SCOPE_ROUND) continue
     if (fact.wepType) continue
 
@@ -407,20 +460,18 @@ export async function plotOptsDamagePerRoundPerBuiTypeUpg(dat) {
     X_set.add(X)
   }
 
-  const pl = await import(`./plot.mjs`)
-  const Z_labels = a.keys(Z_X_Y).sort() // Building types with upgrades.
-  const Z_rows = a.map(Z_labels, pl.serie)
-  const X_row = a.arr(X_set).sort(a.compareFin) // Rounds.
+  const Z_labels = a.keys(Z_X_Y).sort()
+  const X_row = a.arr(X_set).sort(a.compareFin)
 
   /*
   Produces something like:
 
     [
-      [10, 20, 30], // Building group.
-      [40, 50, 60], // Another building group.
-       ↑ dmg for round at index 0
-           ↑ dmg for round at index 1
-               ↑ dmg for round at index 2
+      [10, 20, 30], ← Building group.
+      [40, 50, 60], ← Another building group.
+       ↑ ․․․․․․․ val for round at index 0
+           ↑ ․․․ val for round at index 1
+               ↑ val for round at index 2
     ]
 
   Each super-array index corresponds to an index in Z_rows (a serie).
@@ -428,16 +479,9 @@ export async function plotOptsDamagePerRoundPerBuiTypeUpg(dat) {
   Each sub-array value is the Y for that Z and X.
   */
   const Z_X_Y_arr = a.map(Z_labels, Z => a.map(X_row, X => Z_X_Y[Z][X]))
-  dropZeroRows(Z_rows, Z_X_Y_arr)
 
-  return {
-    ...pl.LINE_PLOT_OPTS,
-    plugins: pl.plugins(),
-    title: `Damage per round per building type (with upgrades)`,
-    series: [{label: `Round`}, ...Z_rows],
-    data: [X_row, ...Z_X_Y_arr],
-    axes: pl.axes(`Round`, `Damage`),
-  }
+  dropZeroRows(Z_labels, Z_X_Y_arr)
+  return [X_row, Z_labels, Z_X_Y_arr]
 }
 
 // See `test_encodeUpgrade`.

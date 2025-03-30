@@ -93,9 +93,18 @@ export const LINE_PLOT_OPTS = {
     // Apply colors directly to serie labels instead of showing dedicated icons.
     markers: {show: false},
 
-    // Clicking a label hides all other series.
-    // Select more via Cmd+click or Ctrl+click.
-    isolate: true,
+    /*
+    Inverts the default behavior of clicking legend labels. By default, clicking
+    a label disables it, and Ctrl+ or Cmd+clicking isolates it, disabling
+    others. With the inverted behavior, clicking a label isolates that series,
+    and Ctrl+ or Cmd+ clicking enables other series one by one. The default
+    behavior makes it easy to disable individual series. The inverted behavior
+    makes it easy to disable everything else and select a few. In our case,
+    it tends to be more useful to easily disable outliers who are spoiling the
+    chart, for one reason or another.
+
+      isolate: true,
+    */
   },
   focus: {alpha: 0.2},
   cursor: {
