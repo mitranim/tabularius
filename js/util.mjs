@@ -97,7 +97,7 @@ export function storageGetJson(store, key) {
   const src = store.getItem(key)
   if (!src) return undefined
 
-  try {return a.jsonDecode(src)}
+  try {return JSON.parse(src)}
   catch (err) {
     log.err(`unable to decode ${a.show(src)}, deleting ${a.show(key)} from storage`)
     store.removeItem(key)
@@ -495,7 +495,7 @@ export function fileNameExt(name) {
   return ind > 0 ? name.slice(ind) : ``
 }
 
-export async function decodeObfuscated(src) {
+export async function jsonDecompressDecode(src) {
   src = a.trim(src)
 
   // Try direct JSON decoding first.
@@ -510,7 +510,7 @@ export async function decodeObfuscated(src) {
 
   // Try un-base64 -> un-gzip -> un-JSON as fallback.
   try {
-    return a.jsonDecode(await ungzip(atob(src)))
+    return JSON.parse(await unGzip(atob(src)))
   }
   catch (err) {
     throw new ErrDecoding(`all decoding methods failed: ${err}`, {cause: err})
@@ -518,19 +518,39 @@ export async function decodeObfuscated(src) {
 }
 
 /*
-Similar to `decodeObfuscated` but does not JSON-decode. The output is expected
-to be either empty or a JSON string, but we don't validate it thoroughly.
+Similar to `jsonDecompressDecode` but does not JSON-decode. The output is expected
+to be either empty or a string containing valid JSON, but we don't validate it
+thoroughly.
 */
-export async function deObfuscate(src) {
+export async function jsonDecompress(src) {
   src = a.trim(src)
   if (!src) return src
   if (isJsonColl(src)) return src
-  return await ungzip(atob(src))
+  return await unGzip(atob(src))
+}
+
+export function jsonCompressEncode(src) {
+  return compressEncode(JSON.stringify(src))
+}
+
+export async function compressEncode(src) {
+  return toBase64(await (await gzip(src)).bytes())
+}
+
+/*
+Similar performance to using `FileReader` with a `Blob`, but synchronous and
+simpler. Using an integer-counting loop seems marginally faster, but within
+noise levels.
+*/
+export function toBase64(src) {
+  a.reqInst(src, Uint8Array)
+  let out = ``
+  for (src of src) out += String.fromCharCode(src)
+  return btoa(out)
 }
 
 export function jsonDecodeOpt(src) {
-  if (isJsonColl(src)) return a.jsonDecode(src)
-  return undefined
+  return isJsonColl(src) ? JSON.parse(src) : undefined
 }
 
 // Similar to Go's `errors.Is`.
@@ -569,29 +589,30 @@ function isJsonColl(src) {
   return src === `{` || src === `[`
 }
 
-export function ungzip(src) {
+export function unGzip(src) {
   src = Uint8Array.from(src, charCode)
   src = new Response(src).body.pipeThrough(new DecompressionStream(`gzip`))
   return new Response(src).text()
 }
 
-export async function gzipStr(src) {
-  return String.fromCharCode(...(await gzipBytes(src)))
-}
-
-export async function gzipBytes(src) {return (await gzipRes(src)).bytes()}
-
-export async function gzipRes(src) {
-  src = new Response(a.reqValidStr(src)).body
+/*
+Takes a source string to gzip and returns a `Response`.
+The caller is free to call `.arrayBuffer()` or `.bytes()`.
+*/
+export async function gzip(src) {
+  src = new Response(a.reqStr(src)).body
   src = await src.pipeThrough(new CompressionStream(`gzip`))
-  src = await a.resOk(new Response(src))
-  return src // Let the caller read the body.
+  return new Response(src)
 }
 
 function charCode(val) {return val.charCodeAt(0)}
 
 export async function fetchJson(...src) {
   return (await a.resOk(fetch(...src))).json()
+}
+
+export async function fetchText(...src) {
+  return (await a.resOk(fetch(...src))).text()
 }
 
 /*

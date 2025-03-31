@@ -11,13 +11,13 @@ const PLOT_DESC_plotOptsDamagePerRoundPerBuiTypeUpg = `damage per round per buil
 const PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg = `cost efficiency per round per building type (with upgrade)`
 
 export const ANALYSIS_MODES = {
-  cost: {
-    desc: PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg,
-    fun: plotOptsCostEffPerRoundPerBuiTypeUpg,
-  },
   dmg: {
     desc: PLOT_DESC_plotOptsDamagePerRoundPerBuiTypeUpg,
     fun: plotOptsDamagePerRoundPerBuiTypeUpg,
+  },
+  cost: {
+    desc: PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg,
+    fun: plotOptsCostEffPerRoundPerBuiTypeUpg,
   },
   /*
   More planned:
@@ -66,17 +66,12 @@ export async function cmdAnalyze(sig, args) {
   const root = await fs.reqHistoryDir(sig)
   const runDir = await fs.chdir(sig, root, [runId])
   const dat = new Dat()
-  await initBuiCodes()
 
+  await initBuiCodes()
   for await (const val of fs.readRunRounds(sig, runDir)) {
     datAddRound(dat, runId, val)
   }
-
-  const fun = sub.fun
-  const opts = await fun(dat)
-  const pl = await import(`./plot.mjs`)
-  const ui = await import(`./ui.mjs`)
-  ui.MEDIA.set(E(new pl.Plotter(opts), {class: `block w-full h-full`}))
+  await renderPlot(await sub.fun(dat))
 }
 
 // TODO this should be a URL query parameter; default false in production.
@@ -158,27 +153,14 @@ export function datAddRound(dat, runId, round) {
     const buiType = a.laxStr(bui.EntityID)
     const buiName = BUI_CODES[buiType]
     const buiInRunId = u.joinKeys(runId, buiGameEngineInstId)
-    const buiInRunIds = {
-      ...roundIds,
-      buiInRunId,
-    }
+    const buiInRunIds = {...roundIds, buiInRunId}
     const buiKind = bui.BuildingType
-    const buiInRun = {
-      ...buiInRunIds,
-      buiType,
-      buiName,
-      buiKind,
-    }
+    const buiInRun = {...buiInRunIds, buiType, buiName, buiKind}
     if (!dat.dimBuiInRun.has(buiInRunId)) {
       dat.dimBuiInRun.set(buiInRunId, buiInRun)
     }
-
     const buiInRoundId = u.joinKeys(buiInRunId, roundIndex)
-    const buiInRoundIds = {
-      ...buiInRunIds,
-      buiInRoundId,
-    }
-
+    const buiInRoundIds = {...buiInRunIds,buiInRoundId}
     const buiUpg = encodeUpgrades(bui.PurchasedUpgrades)
     const buiTypeUpg = u.joinKeys(buiType, buiUpg)
     const buiTypeUpgName = buiName ? a.spaced(buiName, buiUpg) : buiTypeUpg
@@ -215,10 +197,10 @@ export function datAddRound(dat, runId, round) {
 
     We also calculate damages from `.WeaponStats` to double-check ourselves.
     */
-    const bui_dmgDone_runAcc = a.laxFin(bui.LiveStats?.DamageDone?.valueThisGame)
-    const bui_dmgDone_round = a.laxFin(bui.LiveStats?.DamageDone?.valueThisWave)
-    const bui_dmgOver_runAcc = a.laxFin(bui.LiveStats?.DamageOverkill?.valueThisGame)
-    const bui_dmgOver_round = a.laxFin(bui.LiveStats?.DamageOverkill?.valueThisWave)
+    const bui_dmgDone_runAcc = a.laxFin(bui.LiveStats?.stats?.DamageDone?.valueThisGame)
+    const bui_dmgDone_round = a.laxFin(bui.LiveStats?.stats?.DamageDone?.valueThisWave)
+    const bui_dmgOver_runAcc = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisGame)
+    const bui_dmgOver_round = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisWave)
 
     let bui_dmgDone_runAcc_fromWep = 0
     let bui_dmgDone_round_fromWep = 0
@@ -257,18 +239,18 @@ export function datAddRound(dat, runId, round) {
       a.reqStr(chiType)
       a.optObj(src)
 
-      if (buiDumBulTypes.has(chiType)) continue
       if (!chiType) continue
+      if (buiDumBulTypes.has(chiType)) continue
 
       const stats = src?.stats
       if (!stats) continue
 
       /*
-      Child facts are associated with a hypothetical "building child" dimension.
-      We might want to filter or group on specific child types. However, for
-      now, we're not creating a table `Dat..dimBuiChi` because it would only
-      have 1 field: its primary key. We simply reference this missing dimension
-      by child type in child facts.
+      Child facts are associated with a hypothetical "building child type"
+      dimension. We might want to filter or group on specific child types.
+      However, for now, we're not creating a table `Dat..dimBuiChi` because
+      it would only have 1 field: its primary key. We simply reference this
+      missing dimension by child type in child facts.
       */
       const chiFact = {...buiInRoundIds, chiType}
 
@@ -327,6 +309,10 @@ export function datAddRound(dat, runId, round) {
     const bui_dmgOver_round_final = bui_dmgOver_round + bui_dmgOver_round_fromOtherChi
     const isNeutral = buiKind === BUILDING_KIND_NEUTRAL
 
+    /*
+    TODO: HQ deals damage but can't be sold, no sell price, so it doesn't appear
+    in the cost efficiency chart!
+    */
     const sellPrice = (
       buiType === BUI_TYPE_SMOKE_SIGNAL
       ? BUI_SELL_PRICE_AIR_COMMAND
@@ -407,23 +393,6 @@ export function datAddRound(dat, runId, round) {
 // Below 100, we don't really care.
 function isDamageSimilar(one, two) {return (a.laxNum(one) - a.laxNum(two)) < 100}
 
-export async function plotOptsCostEffPerRoundPerBuiTypeUpg(dat) {
-  a.reqInst(dat, Dat)
-
-  const pl = await import(`./plot.mjs`)
-  const [X_row, Z_labels, Z_X_Y_arr] = aggPerRoundPerBuiTypeUpg(dat, STAT_TYPE_COST_EFF)
-  const Z_rows = a.map(Z_labels, pl.serie)
-
-  return {
-    ...pl.LINE_PLOT_OPTS,
-    plugins: pl.plugins(),
-    title: PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg,
-    series: [{label: `Round`}, ...Z_rows],
-    data: [X_row, ...Z_X_Y_arr],
-    axes: pl.axes(`round`, `eff`),
-  }
-}
-
 export async function plotOptsDamagePerRoundPerBuiTypeUpg(dat) {
   a.reqInst(dat, Dat)
 
@@ -438,6 +407,23 @@ export async function plotOptsDamagePerRoundPerBuiTypeUpg(dat) {
     series: [{label: `Round`}, ...Z_rows],
     data: [X_row, ...Z_X_Y_arr],
     axes: pl.axes(`round`, `damage`),
+  }
+}
+
+export async function plotOptsCostEffPerRoundPerBuiTypeUpg(dat) {
+  a.reqInst(dat, Dat)
+
+  const pl = await import(`./plot.mjs`)
+  const [X_row, Z_labels, Z_X_Y_arr] = aggPerRoundPerBuiTypeUpg(dat, STAT_TYPE_COST_EFF)
+  const Z_rows = a.map(Z_labels, pl.serie)
+
+  return {
+    ...pl.LINE_PLOT_OPTS,
+    plugins: pl.plugins(),
+    title: PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg,
+    series: [{label: `Round`}, ...Z_rows],
+    data: [X_row, ...Z_X_Y_arr],
+    axes: pl.axes(`round`, `eff`),
   }
 }
 
@@ -514,4 +500,9 @@ export function dropZeroRows(Z, Z_X_Y) {
     Z_X_Y.splice(Z_ind, 1)
     Z_ind--
   }
+}
+
+async function renderPlot(opts) {
+  const [pl, ui] = await Promise.all([import(`./plot.mjs`), import(`./ui.mjs`)])
+  ui.MEDIA.set(E(new pl.Plotter(opts), {class: `block w-full h-full`}))
 }

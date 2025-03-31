@@ -599,3 +599,5 @@ A media UI for showing a breakdown of the latest round and the run so far. (The 
 <!-- Identify empty rounds with no run. Do not backup. -->
 
 ---
+
+The `show` command should print the object to the browser console, so the user can browse it. Instruct the user about the console.

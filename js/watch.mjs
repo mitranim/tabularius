@@ -146,7 +146,7 @@ in the current dir.
 async function watchStep(sig, state) {
   const progressFile = await fs.getFile(sig, state.progressFileHandle)
   const content = await u.wait(sig, progressFile.text())
-  const decoded = await u.wait(sig, u.decodeObfuscated(content))
+  const decoded = await u.wait(sig, u.jsonDecompressDecode(content))
   const nextRoundOrd = decoded?.RoundIndex
 
   if (!a.isInt(nextRoundOrd)) {

@@ -86,13 +86,23 @@ export async function runCmd(...args) {
     return
   }
 
+  await runProc(cmd.fun, name, args, cmd.desc)
+}
+
+export async function runCmdHidden(fun, name, status) {
+  await runProc(fun, name, [name], status)
+}
+
+export async function runProc(fun, name, args, status) {
+  a.reqFun(fun)
+  a.reqValidStr(name)
+
   /*
   We're not adding this to `PROCS` yet. If the function is done synchronously,
   the process is immediately done. If the function is asynchronous and returns
   a promise, then we'll register the process.
   */
-  const proc = new Proc({args, status: cmd.desc})
-  const fun = cmd.fun
+  const proc = new Proc({args, status})
 
   let out
   try {out = fun(proc.control.signal, args)}

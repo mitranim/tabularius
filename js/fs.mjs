@@ -357,7 +357,7 @@ export async function cmdShow(sig, args) {
   const path = args[1]
   const handle = await handleAtPath(sig, path)
   if (!isFile(handle)) return `${a.show(path)} is not a file`
-  const body = await u.deObfuscate(await readFile(sig, handle))
+  const body = await u.jsonDecompress(await readFile(sig, handle))
   await u.copyToClipboard(body)
   if (log) console.log(body)
   if (log) console.log(JSON.parse(body))
@@ -368,7 +368,7 @@ export async function cmdShow(sig, args) {
 export async function* readRunRounds(sig, dir) {
   for await (const file of readDir(sig, dir)) {
     if (!isHandleProgressFile(file)) continue
-    const out = await decodeObfuscatedFile(sig, file)
+    const out = await jsonDecompressDecodeFile(sig, file)
     if (!a.isDict(out)) {
       throw Error(`expected to decode a progress backup from ${dir.name}/${file.name}, got ${a.show(out)}`)
     }
@@ -383,9 +383,9 @@ export function isHandleProgressFile(handle) {
   return ext === `.gd` || ext === `.json`
 }
 
-export async function decodeObfuscatedFile(sig, src) {
+export async function jsonDecompressDecodeFile(sig, src) {
   src = await readFile(sig, src)
-  src = await u.decodeObfuscated(src)
+  src = await u.jsonDecompressDecode(src)
   return src
 }
 
