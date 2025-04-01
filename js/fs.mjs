@@ -1,4 +1,4 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
+import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
 import * as idb from 'https://esm.sh/idb@7.1.1'
 import * as u from './util.mjs'
 
@@ -104,10 +104,9 @@ async function loadFileHandleWithPerm(conf) {
   const out = await loadFileHandle(conf)
   if (!out) return out
   const perm = await queryPermission(out, {mode})
-  if (perm !== `granted`) {
-    u.log.inf(`${desc}: permission needed; run the "init" command`)
-  }
-  return out
+  if (perm === `granted`) return out
+  u.log.inf(`${desc}: permission needed; run the "init" command`)
+  return undefined
 }
 
 async function loadFileHandle(conf) {
@@ -251,7 +250,7 @@ async function getHandleStatusProblem(sig, handle, conf) {
   return undefined
 }
 
-// Get statistics about a directory (file count and total size)
+// Get statistics about a directory (file count, dir count, total size).
 async function getDirectoryStats(sig, src, out) {
   out ??= a.Emp()
   out.fileCount = a.laxInt(out.fileCount)
@@ -300,6 +299,7 @@ const CMD_LS_HELP = a.joinLines([
   `  ls some_dir/some_file`,
 ])
 
+// TODO: order the output via either `u.compareAsc` or `fs.compareHandlesAsc`.
 export async function cmdLs(sig, args) {
   switch (a.len(u.reqArrOfValidStr(args))) {
     case 0:
@@ -364,10 +364,10 @@ export async function cmdShow(sig, args) {
   return `copied file content to clipboard`
 }
 
-// Caution: files are iterated out-of-order.
+// Caution: the iteration order is undefined and unstable.
 export async function* readRunRounds(sig, dir) {
   for await (const file of readDir(sig, dir)) {
-    if (!isHandleProgressFile(file)) continue
+    if (!isHandleGameFile(file)) continue
     const out = await jsonDecompressDecodeFile(sig, file)
     if (!a.isDict(out)) {
       throw Error(`expected to decode a progress backup from ${dir.name}/${file.name}, got ${a.show(out)}`)
@@ -376,11 +376,42 @@ export async function* readRunRounds(sig, dir) {
   }
 }
 
-export function isHandleProgressFile(handle) {
+// Requires either `loadedFileHandles` or `initedFileHandles` to be run first.
+export async function readLatestRunWithRounds(sig) {
+  let src = HISTORY_DIR
+  if (!src) return undefined
+
+  src = await u.asyncIterCollect(sig, readDir(sig, src))
+  src = a.filter(src, isDir)
+  src.sort(compareHandlesDesc)
+
+  for (src of src) {
+    const out = await u.asyncIterCollect(sig, readRunRounds(sig, src))
+    if (!a.reqArr(out).length) continue
+    return {runId: src.name, rounds: out}
+  }
+  return undefined
+}
+
+export function isHandleGameFile(handle) {
   a.reqInst(handle, FileSystemHandle)
   if (!isFile(handle)) return false
   const ext = u.fileNameExt(handle.name)
   return ext === `.gd` || ext === `.json`
+}
+
+function compareHandlesAsc(one, two) {
+  return compareHandles(one, two, u.compareAsc)
+}
+
+function compareHandlesDesc(one, two) {
+  return compareHandles(one, two, u.compareDesc)
+}
+
+function compareHandles(one, two, fun) {
+  a.reqInst(one, FileSystemHandle)
+  a.reqInst(two, FileSystemHandle)
+  return fun(one.name, two.name)
 }
 
 export async function jsonDecompressDecodeFile(sig, src) {

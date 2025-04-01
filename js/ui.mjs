@@ -1,5 +1,5 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
-import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/dom_reg.mjs'
+import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
+import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/dom_reg.mjs'
 import * as u from './util.mjs'
 import {E} from './util.mjs'
 import * as os from './os.mjs'
@@ -12,7 +12,7 @@ a.patch(window, tar)
 export function cmdMedia() {MEDIA.toggle()}
 
 // Increment by 1 when publishing an update.
-const VERSION = 9
+const VERSION = 10
 let INITED
 
 /*
@@ -231,7 +231,7 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
   cmdSubmit() {
     const src = this.value.trim()
     if (!src) return
-    u.log.inf(`> ${src}`)
+    u.log.inf(src)
     this.histPush(src)
     os.runScript(src).catch(u.logErr)
   }
@@ -294,11 +294,6 @@ function validPromptHist(src) {
 function histDecode(src) {return a.isNil(src) ? src : a.lines(src)}
 function histEncode(src) {return a.joinLines(src)}
 
-export const PROMPT_INPUT = E(new PromptInput(), {
-  class: `w-full bg-transparent resize-none overflow-hidden dark:text-gray-200 outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded p-2 transition-all duration-150 ease-in-out`,
-  autofocus: true,
-})
-
 function focusPromptOnSlash(eve) {
   if (eve.key !== PROMPT_FOCUS_KEY) return
   if (a.findAncestor(eve.target, u.isElemInput)) return
@@ -306,6 +301,11 @@ function focusPromptOnSlash(eve) {
   a.eventKill(eve)
   PROMPT_INPUT.focus()
 }
+
+export const PROMPT_INPUT = E(new PromptInput(), {
+  class: `w-full bg-transparent resize-none overflow-hidden dark:text-gray-200 outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded p-2 transition-all duration-150 ease-in-out`,
+  autofocus: true,
+})
 
 export const PROMPT = E(
   `div`,

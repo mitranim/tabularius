@@ -10,7 +10,7 @@ self.onfetch = onFetch
 
 function onFetch(event) {
   const {request: req} = event
-  if (!shouldCache(decodeURI(req.url))) return
+  if (!shouldCache(req)) return
   event.respondWith(fetchWithCache(req))
 }
 
@@ -30,6 +30,9 @@ async function fetchWithCache(req) {
 We cache URLs which seem to contain a version modifier similar to what is
 supported in NPM, and various CDNs that allow to import NPM modules by URL.
 */
-function shouldCache(url) {
-  return /[@/][\^~>=]?v?(?:\d+|\*|x)[.](?:\d+|\*|x)[.](?:\d+|\*|x)/.test(url)
+function shouldCache(req) {
+  return (
+    req.method.toLowerCase() === `GET` &&
+    /[@/][\^~>=]?v?(?:\d+|\*|x)[.](?:\d+|\*|x)[.](?:\d+|\*|x)/.test(decodeURI(req.url))
+  )
 }

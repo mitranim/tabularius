@@ -242,9 +242,9 @@ The notice "N older messages removed" should just be a regular message (but grey
 
 <!-- In the log, when logging something multi-line, align the lines. (Seems already done.) -->
 
-In the log, timestamps waste too much space. Convert them to single-character indicators, with timestamp tooltips on hover.
+<!-- In the log, timestamps waste too much space. Convert them to single-character indicators, with timestamp tooltips on hover. -->
 
-Or: each log entry has a prefix, like `[watch]` or `>`, and the prefix is hoverable, showing a timestamp.
+<!-- Or: each log entry has a prefix, like `[watch]` or `>`, and the prefix is hoverable, showing a timestamp. -->
 
 <!-- Unfuck msg printing, use functions from `@mitranim/js/lang.mjs`. -->
 
@@ -601,3 +601,7 @@ A media UI for showing a breakdown of the latest round and the run so far. (The 
 ---
 
 The `show` command should print the object to the browser console, so the user can browse it. Instruct the user about the console.
+
+---
+
+In the terminal, differentiate user inputs from other log entries. Maybe by their prefix.

@@ -1,4 +1,4 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
+import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
 import Plot from 'https://esm.sh/uplot@1.6.27'
 import {E} from './util.mjs'
 import * as u from './util.mjs'
@@ -142,20 +142,38 @@ export function axisStroke() {
   return u.darkModeMediaQuery.matches ? `white` : `black`
 }
 
-export function serie(label) {
-  a.reqValidStr(label)
+export function serieWithSum(label) {
   return {
-    label,
-    stroke: nextFgColor(label),
-    width: 2,
-    value: serieFormatVal,
+    ...serie(label),
+    value: serieFormatValWithSum,
   }
 }
 
-function serieFormatVal(plot, val, seriesInd) {
+export function serieWithAvg(label) {
+  return {
+    ...serie(label),
+    value: serieFormatValWithAvg,
+  }
+}
+
+export function serie(label) {
+  a.reqValidStr(label)
+  return {label, stroke: nextFgColor(label), width: 2, value: formatVal}
+}
+
+export function serieFormatValWithSum(plot, val, ind) {
+  return serieFormatVal(plot, val, ind, a.sum)
+}
+
+export function serieFormatValWithAvg(plot, val, ind) {
+  return serieFormatVal(plot, val, ind, u.avg)
+}
+
+export function serieFormatVal(plot, val, seriesInd, fun) {
+  a.reqFun(fun)
   if (a.isNil(val) && a.isNum(seriesInd)) {
     const dat = plot.data[seriesInd]
-    if (a.isArr(dat)) val = a.sum(dat)
+    if (a.isArr(dat)) val = fun(dat)
   }
   return formatVal(val)
 }

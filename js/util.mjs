@@ -1,9 +1,9 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
-import * as d from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/dom.mjs'
-import * as p from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/prax.mjs'
-import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs.mjs'
-import * as od from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/obs_dom.mjs'
-import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/dom_reg.mjs'
+import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
+import * as d from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/dom.mjs'
+import * as p from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/prax.mjs'
+import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs.mjs'
+import * as od from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs_dom.mjs'
+import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/dom_reg.mjs'
 import * as tw from 'https://esm.sh/@twind/core@1.1.3'
 import tp from 'https://esm.sh/@twind/preset-autoprefix@1.0.7'
 import tt from 'https://esm.sh/@twind/preset-tailwind@1.1.4'
@@ -35,7 +35,7 @@ dr.Reg.main.setDefiner(customElements)
 
 // Initialize renderer.
 export const ren = new p.Ren()
-export const E = ren.elemHtml.bind(ren)
+export const E = ren.E.bind(ren)
 
 // Base class for UI components with custom behaviors.
 export class Elem extends dr.MixReg(HTMLElement) {}
@@ -309,6 +309,7 @@ export const log = new class Log extends Elem {
 }()
 
 function LogMsg(src, type) {
+  const timestamp = timeFormat.format(new Date())
   return E(
     `div`,
     {
@@ -316,29 +317,22 @@ function LogMsg(src, type) {
         `border-l-4 p-2`,
         type === `err`
           ? `text-red-500 dark:text-red-400 border-red-500`
-          : `border-transparent`,
+          : `border-transparent`, // Same geometry as errors.
       ),
     },
     E(
-      `div`,
-      {class: `flex items-baseline gap-2`},
+      `pre`,
+      {class: `font-mono whitespace-pre-wrap break-words overflow-wrap-anywhere`},
       E(
         `span`,
-        {class: `text-gray-500 dark:text-gray-400 shrink-0`},
-        timeFormat.format(new Date())
-      ),
-      E(
-        `pre`,
         {
-          class: `font-mono whitespace-pre-wrap break-words overflow-wrap-anywhere inline`,
-          style: {
-            // Ensure long words break if they're too long
-            wordBreak: `break-word`,
-          }
+          class: `text-gray-500 dark:text-gray-400`,
+          'data-tooltip': timestamp,
         },
-        fmtMsg(src)
-      )
-    ),
+        `> `
+      ),
+      fmtMsg(src)
+    )
   )
 }
 
@@ -481,6 +475,34 @@ Returns nil when parsing doesn't produce an integer.
 */
 export function strToInt(src) {
   return a.onlyInt(parseInt(a.laxStr(src)))
+}
+
+export function toIntOpt(val) {
+  return a.isNum(val) ? val | 0 : a.isStr(val) ? strToInt(val) : val
+}
+
+export function hasIntPrefix(val) {
+  return a.isStr(val) && a.isSome(strToInt(val))
+}
+
+export function compareAsc(one, two) {return compareByIntPrefix(one, two, false)}
+export function compareDesc(one, two) {return compareByIntPrefix(one, two, true)}
+
+/*
+Similar to regular JS sorting, but prefers to sort by an integer prefix.
+Integers always come before other values. Falls back on regular JS sorting.
+Does not support fractional syntax.
+*/
+export function compareByIntPrefix(prev, next, desc) {
+  a.reqBool(desc)
+  const one = strToInt(prev)
+  const two = strToInt(next)
+  if (a.isNil(one) && a.isNil(two)) return a.compare(prev, next)
+  if (a.isNil(one)) return 1
+  if (a.isNil(two)) return -1
+  if (one < two) return desc ? 1 : -1
+  if (one > two) return desc ? -1 : 1
+  return 0
 }
 
 export function fileNameBase(name) {
@@ -639,4 +661,22 @@ export function boundInd(ind, len) {
 
 export function copyToClipboard(src) {
   return navigator.clipboard.writeText(a.render(src))
+}
+
+export async function asyncIterCollect(sig, src) {
+  reqSig(sig)
+  const out = []
+  if (a.isSome(src)) {
+    for await (src of await src) {
+      if (sig.aborted) break
+      out.push(src)
+    }
+  }
+  return out
+}
+
+export function avg(src) {return a.values(src).reduce(avgAdd, 0)}
+
+function avgAdd(acc, num, ind) {
+  return !a.isFin(num) ? acc : (acc + ((num - acc) / (ind + 1)))
 }

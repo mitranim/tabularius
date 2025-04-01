@@ -1,6 +1,6 @@
-import * as hd from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/http_deno.mjs'
-import * as ld from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/live_deno.mjs'
-import * as h from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/http.mjs'
+import * as hd from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/http_deno.mjs'
+import * as ld from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/live_deno.mjs'
+import * as h from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/http.mjs'
 
 const PORT = 9834
 

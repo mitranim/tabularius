@@ -1,4 +1,4 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
+import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
@@ -57,7 +57,7 @@ export async function cmdWatch(sig) {
       sleep = WATCH_INTERVAL_MS
     }
     catch (err) {
-      if (u.errIs(err, a.isErrAbort)) return
+      if (u.errIs(err, u.isErrAbort)) return
       errs++
       if (u.errIs(err, fs.isErrFs)) {
         u.log.err(`[watch] filesystem error, may need to run "deinit" and "init":`, err)

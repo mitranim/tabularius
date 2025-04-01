@@ -17,11 +17,43 @@
 
     /*
     Make `[hidden]` actually work. Take priority over Tailwind classes.
-    The attribute `[hidden]` and its effect are built-in.
-    We reproduce it with a higher specificity. See:
-    https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity
+    The attribute `[hidden]` and its effect are built-in. We reproduce it
+    with a higher specificity. Reference:
+
+      https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity
     */
     [hidden]:not(:root) {display: none !important}
+
+    /*
+    CSS tooltip. We could have used `aria-label`, which is a common approach,
+    but for our current use cases, we wouldn't want them read aloud anyway.
+
+    Missing feature: controlling tooltip alignment.
+    */
+    [data-tooltip]:hover {
+      cursor: help;
+      position: relative;
+
+      &::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        padding: 0.5rem;
+        line-height: 1;
+        text-decoration: unset;
+        white-space: pre;
+        background-color: oklch(0.278 0.033 256.848); /* --color-gray-800 */
+        color: white;
+        left: 0;
+        bottom: calc(100% + 0.5rem);
+        border-radius: 5px;
+        border: 1px solid;
+
+        @media(prefers-color-scheme: dark) {
+          background-color: oklch(0.928 0.006 264.531); /* --color-gray-200 */
+          color: black;
+        }
+      }
+    }
 
     /* Overrides for the chart-rendering library Uplot. */
     .uplot {font-family: inherit !important}
@@ -58,7 +90,7 @@
     }
   </style>
 
-  <!-- Should allow dynamically evaluated modules (if any) to import ours. -->
+  <!-- Should allow dynamically evaluated modules, if any, to import ours. -->
   <script type="importmap">{"imports": {"tabularius/": "./js/"}}</script>
 
   <!--

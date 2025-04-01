@@ -1,4 +1,4 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
+import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
@@ -167,17 +167,6 @@ ui.init()
 u.log.inf(`welcome to Tabularius`)
 u.log.inf(`type "help" for a list of commands`)
 
-if (TEST_MODE) {
-  u.log.inf(`test mode enabled`)
-  await import(`./test.mjs`).catch(u.logErr)
-}
-else {
-  os.runCmd(`help`)
-  if (await fs.loadedFileHandles().catch(u.logErr)) {
-    w.watchStarted().catch(u.logErr)
-  }
-}
-
 const query = new URLSearchParams(window.location.search)
 
 // Can plug-in arbitrary modules via URL query param.
@@ -188,4 +177,26 @@ for (const val of query.getAll(`import`)) {
 // Can run arbitrary commands on startup.
 for (const val of query.getAll(`run`)) {
   await os.runCmd(...val.split(/\s+/)).catch(u.logErr)
+}
+
+if (TEST_MODE) {
+  u.log.inf(`test mode enabled`)
+  await import(`./test.mjs`).catch(u.logErr)
+}
+else {
+  os.runCmd(`help`)
+
+  if (await fs.loadedFileHandles().catch(u.logErr)) {
+    w.watchStarted().catch(u.logErr)
+  }
+
+  /*
+  For fresh visitors, we want to render some default chart, as a sample. For
+  active users with existing runs, we probably want to render analysis of the
+  latest run. Maybe this should be togglable. If some command or plugin from
+  the URL query has modified the media already, we should avoid touching it.
+  */
+  if (ui.MEDIA.isDefault) {
+    os.runCmdHidden(d.analyzeDefault, `analyze_default`, `running default analysis`).catch(u.logErr)
+  }
 }

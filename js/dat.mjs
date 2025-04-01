@@ -1,4 +1,4 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.61/all.mjs'
+import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
 import * as u from './util.mjs'
 import {E} from './util.mjs'
 
@@ -7,16 +7,16 @@ const tar = window.tabularius ??= a.Emp()
 tar.d = self
 a.patch(window, tar)
 
-const PLOT_DESC_plotOptsDamagePerRoundPerBuiTypeUpg = `damage per round per building type (with upgrade)`
-const PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg = `cost efficiency per round per building type (with upgrade)`
+const plotOptsDamagePerRoundPerBuiTypeUpg_desc = `damage per round per building type (with upgrade)`
+const plotOptsCostEffPerRoundPerBuiTypeUpg_desc = `cost efficiency per round per building type (with upgrade)`
 
 export const ANALYSIS_MODES = {
   dmg: {
-    desc: PLOT_DESC_plotOptsDamagePerRoundPerBuiTypeUpg,
+    desc: plotOptsDamagePerRoundPerBuiTypeUpg_desc,
     fun: plotOptsDamagePerRoundPerBuiTypeUpg,
   },
   cost: {
-    desc: PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg,
+    desc: plotOptsCostEffPerRoundPerBuiTypeUpg_desc,
     fun: plotOptsCostEffPerRoundPerBuiTypeUpg,
   },
   /*
@@ -72,6 +72,34 @@ export async function cmdAnalyze(sig, args) {
     datAddRound(dat, runId, val)
   }
   await renderPlot(await sub.fun(dat))
+}
+
+/*
+Goal: if FS is inited and we have an actual latest run, show its analysis.
+Otherwise, show a sample run for prettiness sake.
+
+TODO: make it possible to display multiple plots at once.
+
+TODO: make it possible to select plot order or disable some.
+*/
+export async function analyzeDefault(sig) {
+  const fs = await import(`./fs.mjs`)
+  const latest = await fs.readLatestRunWithRounds(sig)
+
+  const {runId, rounds} = latest || {
+    runId: `example_run`,
+    rounds: await u.jsonDecompressDecode(await u.fetchText(`data/example_run.gd`))
+  }
+  if (!a.len(rounds)) throw Error(`internal error: missing chart data`)
+
+  await initBuiCodes()
+  const dat = new Dat()
+  for (const val of rounds) datAddRound(dat, runId, val)
+
+  const mode = a.head(ANALYSIS_MODES)
+  const opt = await mode.fun(dat)
+  if (!latest) opt.title = `sample run analyzis: ` + opt.title
+  await renderPlot(opt)
 }
 
 // TODO this should be a URL query parameter; default false in production.
@@ -398,12 +426,12 @@ export async function plotOptsDamagePerRoundPerBuiTypeUpg(dat) {
 
   const pl = await import(`./plot.mjs`)
   const [X_row, Z_labels, Z_X_Y_arr] = aggPerRoundPerBuiTypeUpg(dat, STAT_TYPE_DMG_DONE)
-  const Z_rows = a.map(Z_labels, pl.serie)
+  const Z_rows = a.map(Z_labels, pl.serieWithSum)
 
   return {
     ...pl.LINE_PLOT_OPTS,
     plugins: pl.plugins(),
-    title: PLOT_DESC_plotOptsDamagePerRoundPerBuiTypeUpg,
+    title: plotOptsDamagePerRoundPerBuiTypeUpg_desc,
     series: [{label: `Round`}, ...Z_rows],
     data: [X_row, ...Z_X_Y_arr],
     axes: pl.axes(`round`, `damage`),
@@ -415,12 +443,12 @@ export async function plotOptsCostEffPerRoundPerBuiTypeUpg(dat) {
 
   const pl = await import(`./plot.mjs`)
   const [X_row, Z_labels, Z_X_Y_arr] = aggPerRoundPerBuiTypeUpg(dat, STAT_TYPE_COST_EFF)
-  const Z_rows = a.map(Z_labels, pl.serie)
+  const Z_rows = a.map(Z_labels, pl.serieWithAvg)
 
   return {
     ...pl.LINE_PLOT_OPTS,
     plugins: pl.plugins(),
-    title: PLOT_DESC_plotOptsCostEffPerRoundPerBuiTypeUpg,
+    title: plotOptsCostEffPerRoundPerBuiTypeUpg_desc,
     series: [{label: `Round`}, ...Z_rows],
     data: [X_row, ...Z_X_Y_arr],
     axes: pl.axes(`round`, `eff`),
