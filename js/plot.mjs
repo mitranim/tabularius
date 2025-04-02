@@ -265,7 +265,7 @@ TODO: avoid clipping the tooltip outside the container. We'd have to compare the
 coordinates, the tooltip rectangle, and the parent element rectangle, and change
 in which direction we transform/translate the tooltip
 */
-class TooltipPlugin extends a.Emp {
+export class TooltipPlugin extends a.Emp {
   // Index of currenly hovered series.
   indS = undefined
 
@@ -315,6 +315,11 @@ class TooltipPlugin extends a.Emp {
     const nameLen = nameSuf.length + Math.max(axisNameX.length, axisNameY.length)
 
     const tar = this.tooltip ??= this.makeTooltip()
+    const wid = plot.over.offsetWidth / 2
+    const hei = plot.over.offsetHeight / 2
+    const isRight = posX > wid
+    const isBottom = posY > hei
+    tar.style.transform = `translate(${isRight ? -100 : 0}%, ${isBottom ? -100 : 0}%)`
     tar.style.left = posX + `px`
     tar.style.top = posY + `px`
     tar.textContent = a.joinLinesOptLax([
@@ -333,7 +338,6 @@ class TooltipPlugin extends a.Emp {
         pointerEvents: `none`,
         position: `absolute`,
         background: `oklch(0.45 0.31 264.05 / 0.1)`,
-        transform: `translate(-100%, -100%)`,
         whiteSpace: `pre`,
       },
     })
