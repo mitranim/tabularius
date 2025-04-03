@@ -96,6 +96,8 @@ Details:
       - Write next backup to new run dir (name according to round index).
     - Otherwise: throw an internal error / unreachable / programmer error.
 
+## Other
+
 Define small reusable utility functions (and constants) instead of hardcoding inline.
 
 Be terse.

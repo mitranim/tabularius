@@ -36,6 +36,7 @@ export const WATCH_STATE = new class WatchState extends a.Emp {
   setRoundFile(val) {this.roundFileName = a.optValidStr(val)}
 }()
 
+const WATCH_LOCK_NAME = `watch`
 const WATCH_INTERVAL_MS = a.secToMs(10)
 const WATCH_INTERVAL_MS_SHORT = a.secToMs(1)
 const WATCH_INTERVAL_MS_LONG = a.minToMs(1)
@@ -43,8 +44,25 @@ const WATCH_MAX_ERRS = 3
 
 export async function cmdWatch({sig}) {
   if (isWatching()) return `already running`
-  u.log.inf(`[watch] running`)
 
+  let unlock = await u.lockOpt(WATCH_LOCK_NAME)
+
+  if (unlock) {
+    u.log.inf(`[watch] starting`)
+  }
+  else {
+    const start = Date.now()
+    u.log.verb(`[watch] another process has a lock on watching and backups, waiting until it stops`)
+    unlock = await u.lock(sig, WATCH_LOCK_NAME)
+    const end = Date.now()
+    u.log.verb(`[watch] acquired lock from another process after ${end - start}ms, proceeding to watch and backup`)
+  }
+
+  try {return await cmdWatchUnsync(sig)}
+  finally {unlock()}
+}
+
+export async function cmdWatchUnsync(sig) {
   let sleep = WATCH_INTERVAL_MS
   let errs = 0
   const state = WATCH_STATE

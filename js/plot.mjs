@@ -260,10 +260,6 @@ Relevant demos with tooltips:
 
   https://leeoniya.github.io/uPlot/demos/tooltips.html
   https://leeoniya.github.io/uPlot/demos/tooltips-closest.html
-
-TODO: avoid clipping the tooltip outside the container. We'd have to compare the
-coordinates, the tooltip rectangle, and the parent element rectangle, and change
-in which direction we transform/translate the tooltip
 */
 export class TooltipPlugin extends a.Emp {
   // Index of currenly hovered series.

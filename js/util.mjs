@@ -684,3 +684,45 @@ function avgAdd(acc, num, ind) {
 
 export function firstCliArg(src) {return splitCliArgs(src)[0]}
 export function splitCliArgs(src) {return a.reqStr(src).split(/\s+/)}
+
+/*
+The implementation of "try-lock" behavior missing from the standard DOM API,
+which insists on blocking our promise if the acquisition is successful, going
+against the nature of "try-locking", which should always immediately return,
+reporting if the attempt was successful.
+
+If the returned unlock function is non-nil, the caller must use `try/finally`
+to reliably release the lock.
+*/
+export function lockOpt(name) {
+  return lockWith(name, {ifAvailable: true})
+}
+
+/*
+A non-callback version of `navigator.locks.request` suitable for async funcs.
+Always returns an unlock function, and the caller must use `try/finally` to
+reliably release the lock.
+*/
+export function lock(sig, name) {
+  reqSig(sig)
+  return lockWith(name, {signal: sig})
+}
+
+/*
+Converts the Web Locks API to something usable. See `lockOpt` and `lock`.
+The caller MUST use `try/finally`, or a promise callback equivalent, to unlock.
+*/
+export async function lockWith(name, opt) {
+  a.reqValidStr(name)
+  a.optObj(opt)
+  const {promise: request0, resolve: locked} = Promise.withResolvers()
+  const {promise: block, resolve: unlock} = Promise.withResolvers()
+
+  const request1 = navigator.locks.request(name, opt, function locker(lock) {
+    locked(!!lock)
+    return block
+  })
+
+  const ok = await Promise.race([request0, request1])
+  return ok ? unlock : undefined
+}

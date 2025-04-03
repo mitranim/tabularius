@@ -605,3 +605,24 @@ The `show` command should print the object to the browser console, so the user c
 ---
 
 In the terminal, differentiate user inputs from other log entries. Maybe by their prefix.
+
+---
+
+Live updates of a given analysis. Maybe an analysis sticks around and is stateful. There may be multiple live at once. As long as the procs are running, they may receive updates. Alternatively, instead of running procs, they may simply be found in `MEDIA`. The latter probably makes more sense in JS technical terms, but treating them as procs and tying the lifetime of their medias to the lifetimes of the proces makes management simpler. And we can reuse the proc UI for the media management.
+
+---
+
+<!-- The `watch` command gotta use the Web Locks API for mutual exclusion (one backup process, not multiple concurrent backup processes).
+
+At the start, it logs an attempt to acquire the lock (via `u.log.verb`) and proceeds to attempt. When lock acquired: if the time spent was more than 1s, it logs the fact of lock acquisition with the time elapsed (via `u.log.inf`); then follows up with its regular functionality.
+
+Lock mode: `exclusive`.
+
+Pass the abort signal to the lock request. -->
+
+---
+
+<!-- The `watch` command gotta use the Web Locks API for mutual exclusion (one backup process, not multiple concurrent backup processes), and the `BroadcastChannel` API to notify about changes. All processes listening for changes do so on the broadcast channel, even within the same browser tab. -->
+
+---
+
