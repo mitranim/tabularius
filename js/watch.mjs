@@ -12,7 +12,7 @@ export async function watchStarted() {
   return (
     (await fs.hasPermissionConf(fs.PROGRESS_FILE, fs.PROGRESS_FILE_CONF)) &&
     (await fs.hasPermissionConf(fs.HISTORY_DIR, fs.HISTORY_DIR_CONF)) &&
-    (isWatching() || (os.runCmd(`watch`), true))
+    (isWatching() || (os.runCmd(`watch`).catch(u.logErr), true))
   )
 }
 
@@ -20,9 +20,9 @@ export async function watchStarted() {
 TODO: detection should be across all browser tabs.
 Possibly via `localStorage`.
 */
-function isWatching() {return os.hasProcByName(`watch`)}
+function isWatching() {return !!os.procByName(`watch`)}
 
-class WatchState extends a.Emp {
+export const WATCH_STATE = new class WatchState extends a.Emp {
   progressFileHandle = a.optInst(undefined, FileSystemFileHandle)
   historyDirHandle = a.optInst(undefined, FileSystemDirectoryHandle)
   runDirName = undefined
@@ -34,20 +34,20 @@ class WatchState extends a.Emp {
   }
 
   setRoundFile(val) {this.roundFileName = a.optValidStr(val)}
-}
+}()
 
 const WATCH_INTERVAL_MS = a.secToMs(10)
 const WATCH_INTERVAL_MS_SHORT = a.secToMs(1)
 const WATCH_INTERVAL_MS_LONG = a.minToMs(1)
 const WATCH_MAX_ERRS = 3
 
-export async function cmdWatch(sig) {
+export async function cmdWatch({sig}) {
   if (isWatching()) return `already running`
   u.log.inf(`[watch] running`)
 
   let sleep = WATCH_INTERVAL_MS
   let errs = 0
-  const state = new WatchState()
+  const state = WATCH_STATE
   await watchInit(sig, state)
 
   while (!sig.aborted) {
@@ -74,7 +74,7 @@ export async function cmdWatch(sig) {
         u.log.err(`[watch] unexpected error (${errs} in a row), retrying after ${sleep}ms:`, err)
       }
     }
-    await u.wait(sig, a.after(sleep))
+    if (!await a.after(sleep, sig)) return
   }
 }
 

@@ -317,9 +317,10 @@ export class TooltipPlugin extends a.Emp {
     const tar = this.tooltip ??= this.makeTooltip()
     const wid = plot.over.offsetWidth / 2
     const hei = plot.over.offsetHeight / 2
-    const isRight = posX > wid
-    const isBottom = posY > hei
-    tar.style.transform = `translate(${isRight ? -100 : 0}%, ${isBottom ? -100 : 0}%)`
+    const isRig = posX > wid
+    const isBot = posY > hei
+
+    tar.style.transform = `translate(${isRig ? -100 : 0}%, ${isBot ? -100 : 0}%)`
     tar.style.left = posX + `px`
     tar.style.top = posY + `px`
     tar.textContent = a.joinLinesOptLax([

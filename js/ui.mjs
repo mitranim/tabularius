@@ -90,7 +90,7 @@ export const PROCESS_LIST = new class ProcessList extends u.ReacElem {
 function Process(src) {
   a.reqInst(src, os.Proc)
   return E(`div`, {class: `flex items-center justify-between gap-2`},
-    E(`span`, {class: `font-medium flex-1`}, src.id, `: `, u.joinSpaced(src.args)),
+    E(`span`, {class: `font-medium flex-1`}, src.id, `: `, src.args),
     a.vac(src.startAt) && E(
       `span`,
       {class: `text-sm text-gray-500 dark:text-gray-500`},
@@ -100,7 +100,9 @@ function Process(src) {
       type: `button`,
       class: `bg-red-500 text-white rounded hover:bg-red-600`,
       style: STYLE_BTN_CEN,
-      onclick: a.vac(src.id) && function onclick() {os.runCmd(`kill`, src.id)},
+      onclick: a.vac(src.id) && function onclick() {
+        os.runCmd(`kill ` + src.id).catch(u.logErr)
+      },
     }, `✕`),
   )
 }
@@ -233,7 +235,7 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
     if (!src) return
     u.log.inf(src)
     this.histPush(src)
-    os.runScript(src).catch(u.logErr)
+    os.runCmd(src).catch(u.logErr)
   }
 
   hist = a.laxArr(

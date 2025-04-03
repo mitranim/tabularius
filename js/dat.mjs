@@ -53,8 +53,8 @@ TODO:
 - Media pane: consider supporting tabs natively.
 - Allow to specify just the run id, rather than the full dir name.
 */
-export async function cmdAnalyze(sig, args) {
-  u.reqArrOfStr(args)
+export async function cmdAnalyze({sig, args}) {
+  args = u.splitCliArgs(args)
   const runId = args[1]
   const modeName = args[2]
   if (!runId || args.length > 3) return cmdAnalyzeHelp()
@@ -82,7 +82,7 @@ TODO: make it possible to display multiple plots at once.
 
 TODO: make it possible to select plot order or disable some.
 */
-export async function analyzeDefault(sig) {
+export async function analyzeDefault({sig}) {
   const fs = await import(`./fs.mjs`)
   const latest = await fs.readLatestRunWithRounds(sig)
 

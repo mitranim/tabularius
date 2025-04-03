@@ -409,13 +409,14 @@ export function reqSig(val) {return a.req(val, isSig)}
 
 /*
 The recommended way to wait for async operations. The signal is used for
-cancelation. The special-case validation prevents programmer errors such as
+cancelation. The signal assertion prevents programmer errors such as
 accidentally passing a non-signal. Usage:
 
   await u.wait(sig, someAsyncFun())
 */
 export function wait(sig, ...src) {
   reqSig(sig)
+  if (!src.length) return undefined
   src.push(sig)
   return Promise.race(src)
 }
@@ -680,3 +681,6 @@ export function avg(src) {return a.values(src).reduce(avgAdd, 0)}
 function avgAdd(acc, num, ind) {
   return !a.isFin(num) ? acc : (acc + ((num - acc) / (ind + 1)))
 }
+
+export function firstCliArg(src) {return splitCliArgs(src)[0]}
+export function splitCliArgs(src) {return a.reqStr(src).split(/\s+/)}

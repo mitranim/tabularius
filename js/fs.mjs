@@ -300,8 +300,9 @@ const CMD_LS_HELP = a.joinLines([
 ])
 
 // TODO: order the output via either `u.compareAsc` or `fs.compareHandlesAsc`.
-export async function cmdLs(sig, args) {
-  switch (a.len(u.reqArrOfValidStr(args))) {
+export async function cmdLs({sig, args}) {
+  args = u.splitCliArgs(args)
+  switch (args.length) {
     case 0:
     case 1: return CMD_LS_HELP
     case 2: break
@@ -345,7 +346,8 @@ performance issues might be style-related / CSS-related and fixable, but it's
 really an indicator that very large content should not be displayed all at
 once. For now we copy to the clipboard.
 */
-export async function cmdShow(sig, args) {
+export async function cmdShow({sig, args}) {
+  args = u.splitCliArgs(args)
   const log = args.includes(`-l`)
   args = a.remove(args, `-l`)
 

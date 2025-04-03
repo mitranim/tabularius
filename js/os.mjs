@@ -18,8 +18,8 @@ export class Cmd extends a.Emp {
     super()
     this.name = a.reqValidStr(src.name) // CLI name, short, lowercase.
     this.desc = a.reqValidStr(src.desc) // Terse description of what it does.
-    this.help = a.optStr(src.help)      // Longer, more detailed help (opt-in).
-    this.fun  = a.reqFun(src.fun)       // Actual function. Takes `(args, proc)`. Result is logged.
+    this.help = a.laxStr(src.help)      // Longer, more detailed help (opt-in).
+    this.fun  = a.reqFun(src.fun)       // Actual function. Takes `(proc)`. Result is logged.
   }
   pk() {return this.name}
 }
@@ -37,17 +37,24 @@ export class Proc extends a.Emp {
   constructor(src) {
     a.reqObj(src)
     super()
-    this.id = String(++new.target.id)   // Process id (pid). Must be unique.
-    this.args = u.reqArrOfStr(src.args) // Command name and CLI args.
-    this.startAt = Date.now()           // Shown in the UI.
-    this.control = u.abortController()  // For cancelation.
-    this.promise = undefined            // Assigned after starting.
-    this.status = src.status            // What it's currently doing.
+    this.id = String(++new.target.id)  // Process id (pid). Must be unique.
+    this.args = a.reqStr(src.args)     // CLI command name and args.
+    this.desc = src.desc               // Optional description.
+    this.control = u.abortController() // For cancelation.
+    this.promise = undefined           // Assigned after starting.
+    this.startAt = Date.now()          // Shown in the UI.
+    this.endAt = undefined             // Assigned by `runProc`.
+    this.val = undefined               // Eventual promise value, if any.
+    this.err = undefined               // Eventual promise error, if any.
   }
 
   pk() {return this.id}
   cmd() {return this.args.join(` `)}
+
   deinit() {return this.control.abort(new u.ErrAbort(`deinit`))}
+
+  // Cmd funcs should use this to support cancelation.
+  get sig() {return this.control.signal}
 
   // Incremented for each new instance.
   static id = 0
@@ -59,59 +66,34 @@ values must be procs.
 */
 export const PROCS = o.obs(a.Emp())
 
-export function hasProcByName(name) {
-  return a.some(PROCS, val => val.args[0] === name)
+export function procByName(name) {
+  return a.find(PROCS, val => val.args[0] === name)
 }
 
-export async function runScript(src) {
-  src = a.trim(src)
-  if (!src) return
-  await runCmd(...src.split(/\s+/))
-}
-
-export async function runCmd(...args) {
-  if (!u.isArrOfValidStr(args)) {
-    u.log.err(`"runCmd" expects CLI-style arguments, got ${a.show(args)}`)
-    return
-  }
-
-  const name = args[0]
-  if (!name) {
-    u.log.err(`missing command name in ${a.show(args)}`)
-  }
-
+export async function runCmd(args) {
+  const name = u.firstCliArg(args)
   const cmd = COMMANDS.get(name)
-  if (!cmd) {
-    u.log.err(`unknown command: ${name}`)
-    return
-  }
-
-  await runProc(cmd.fun, name, args, cmd.desc)
+  if (!cmd) throw Error(`unknown command: ${a.show(name)}`)
+  await runProc(cmd.fun, args, cmd.desc)
 }
 
-export async function runCmdHidden(fun, name, status) {
-  await runProc(fun, name, [name], status)
-}
-
-export async function runProc(fun, name, args, status) {
+export async function runProc(fun, args, desc) {
   a.reqFun(fun)
-  a.reqValidStr(name)
 
   /*
   We're not adding this to `PROCS` yet. If the function is done synchronously,
   the process is immediately done. If the function is asynchronous and returns
-  a promise, then we'll register the process.
+  a promise, then we'll register the proc.
   */
-  const proc = new Proc({args, status})
+  const proc = new Proc({args, desc})
+  const name = u.firstCliArg(args)
 
   let out
-  try {out = fun(proc.control.signal, args)}
+  try {out = fun(proc)}
   catch (err) {
     u.logCmdFail(name, err)
     return
   }
-
-  if (a.isNil(out)) return
 
   if (!a.isPromise(out)) {
     u.logCmdDone(name, out)
@@ -122,12 +104,16 @@ export async function runProc(fun, name, args, status) {
   PROCS[proc.id] = proc
   try {
     out = await out
+    proc.val = out
     u.logCmdDone(name, out)
   }
   catch (err) {
+    proc.err = err
     u.logCmdFail(name, err)
   }
   finally {
+    proc.endAt = Date.now()
+    try {proc.deinit()} catch {}
     delete PROCS[proc.id]
   }
 }
@@ -147,8 +133,8 @@ export function showProcs() {
   ])
 }
 
-export function cmdKill(sig, args) {
-  u.reqArrOfStr(args)
+export function cmdKill({sig, args}) {
+  args = u.splitCliArgs(args)
   switch (args.length) {
     case 0:
     case 1:
@@ -158,38 +144,23 @@ export function cmdKill(sig, args) {
       ])
     case 2:
       if (args[1] === `-a`) return procKillAll()
-      return procKill(sig, args[1])
+      return procKill(args[1])
     default: return `too many args; usage: kill <id|name>`
   }
 }
 
-export async function procKill(sig, key) {
-  u.reqSig(sig)
+export async function procKill(key) {
   a.reqStr(key)
-  if (!key) return undefined
-
   const proc = PROCS[key] || a.find(PROCS, val => val.args[0] === key)
   if (!proc) return `no process with id or name ${a.show(key)}`
-
-  try {
-    proc.deinit()
-    await u.wait(sig, proc.promise)
-  }
-  finally {
-    if (proc.control.signal.aborted) {
-      delete PROCS[proc.id]
-    }
-  }
+  proc.deinit()
 }
 
 export function procKillAll() {
-  const procs = PROCS
   let len = 0
-
-  for (const key in procs) {
+  for (const key in PROCS) {
     len++
-    procs[key].deinit()
-    delete procs[key]
+    PROCS[key].deinit()
   }
   return len ? `sent kill signal to ${len} processes` : `no processes running`
 }

@@ -107,6 +107,10 @@ os.COMMANDS.add(new os.Cmd({
   fun: u.cmdClear,
 }))
 
+/*
+TODO: `help <cmd>` which shows help for one command, and tries to use its
+`.help` which should be more detailed than `.desc`.
+*/
 function cmdHelp() {
   return a.joinLines([
     `available commands:`,
@@ -123,14 +127,14 @@ function cmdToHelp(val) {
 }
 
 // Initialize features that require user action.
-async function cmdInit(sig) {
+async function cmdInit({sig}) {
   if (!await fs.initedFileHandles(sig)) return `FS access not initialized`
   if (!await w.watchStarted()) return `FS watch not initialized`
   return `all features initialized`
 }
 
 // Deinitialize features and stop all processes.
-async function cmdDeinit(sig) {
+async function cmdDeinit({sig}) {
   const killed = await os.procKillAll()
   return a.joinLinesLax([
     killed,
@@ -139,7 +143,7 @@ async function cmdDeinit(sig) {
 }
 
 // Show status of features and processes.
-async function cmdStatus(sig) {
+async function cmdStatus({sig}) {
   return a.joinLinesLax([
     await fs.statusProgressFile(sig),
     await fs.statusHistoryDir(sig),
@@ -176,7 +180,7 @@ for (const val of query.getAll(`import`)) {
 
 // Can run arbitrary commands on startup.
 for (const val of query.getAll(`run`)) {
-  await os.runCmd(...val.split(/\s+/)).catch(u.logErr)
+  os.runCmd(val).catch(u.logErr)
 }
 
 if (TEST_MODE) {
@@ -184,7 +188,7 @@ if (TEST_MODE) {
   await import(`./test.mjs`).catch(u.logErr)
 }
 else {
-  os.runCmd(`help`)
+  os.runCmd(`help`).catch(u.logErr)
 
   if (await fs.loadedFileHandles().catch(u.logErr)) {
     w.watchStarted().catch(u.logErr)
@@ -197,6 +201,6 @@ else {
   the URL query has modified the media already, we should avoid touching it.
   */
   if (ui.MEDIA.isDefault) {
-    os.runCmdHidden(d.analyzeDefault, `analyze_default`, `running default analysis`).catch(u.logErr)
+    os.runProc(d.analyzeDefault, `analyze_default`, `running default analysis`).catch(u.logErr)
   }
 }
