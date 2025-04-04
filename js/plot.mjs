@@ -28,23 +28,19 @@ Dark mode demo:
 
 Usage examples:
 
-  E(document.body, {}, E(
-    new pl.Plotter(opts),
-    {class: `block w-full h-full`},
-  ))
-
-  ui.MEDIA.set(E(new pl.Plotter(opts), {class: `block w-full h-full`}))
+  E(document.body, {}, new pl.Plotter(opts))
+  ui.MEDIA.set(new pl.Plotter(opts))
 */
 export class Plotter extends u.Elem {
   constructor(opts) {
     super()
     this.opts = a.reqDict(opts)
     this.resObs = new ResizeObserver(this.onResize.bind(this))
+    this.className = `block w-full h-full`
   }
 
   init() {
     this.deinit()
-    if (!this.isConnected) return
     this.plot = new Plot({...this.opts, ...this.sizes()})
     E(this, {}, this.plot.root)
     this.resObs.observe(this)
@@ -60,7 +56,8 @@ export class Plotter extends u.Elem {
 
   connectedCallback() {
     // Need to wait a tick for the element's geometry to be determined.
-    window.requestAnimationFrame(this.init.bind(this))
+    const init = () => {if (this.isConnected) this.init()}
+    window.requestAnimationFrame(init)
   }
 
   disconnectedCallback() {this.deinit()}
@@ -77,9 +74,7 @@ export class Plotter extends u.Elem {
 
   sizes() {return {width: this.offsetWidth, height: this.offsetHeight / 2}}
 
-  handleEvent(eve) {
-    if (eve.type === `change` && eve.media) this.init()
-  }
+  handleEvent(eve) {if (eve.type === `change` && eve.media) this.init()}
 }
 
 export const SCALE_X = {time: false}
@@ -142,23 +137,23 @@ export function axisStroke() {
   return u.darkModeMediaQuery.matches ? `white` : `black`
 }
 
-export function serieWithSum(label) {
+export function serieWithSum(label, ind) {
   return {
-    ...serie(label),
+    ...serie(label, ind),
     value: serieFormatValWithSum,
   }
 }
 
-export function serieWithAvg(label) {
+export function serieWithAvg(label, ind) {
   return {
-    ...serie(label),
+    ...serie(label, ind),
     value: serieFormatValWithAvg,
   }
 }
 
-export function serie(label) {
+export function serie(label, ind) {
   a.reqValidStr(label)
-  return {label, stroke: nextFgColor(label), width: 2, value: formatVal}
+  return {label, stroke: nextFgColor(ind), width: 2, value: formatVal}
 }
 
 export function serieFormatValWithSum(plot, val, ind) {
@@ -189,13 +184,16 @@ export const numFormat = new Intl.NumberFormat(`en-US`, {
   roundingMode: `halfExpand`,
 })
 
-export function nextFgColor() {
-  COLOR_INDEX++
-  COLOR_INDEX %= FG_COLORS.length
-  return FG_COLORS[COLOR_INDEX]
-}
-
 let COLOR_INDEX = -1
+
+export function resetColorIndex() {COLOR_INDEX = -1}
+
+export function nextFgColor(ind) {
+  ind = a.optNat(ind) ?? ++COLOR_INDEX
+  ind++
+  ind %= FG_COLORS.length
+  return FG_COLORS[ind]
+}
 
 /*
 Copy-paste of `*-500` color variants from:
@@ -319,11 +317,11 @@ export class TooltipPlugin extends a.Emp {
     tar.style.transform = `translate(${isRig ? -100 : 0}%, ${isBot ? -100 : 0}%)`
     tar.style.left = posX + `px`
     tar.style.top = posY + `px`
-    tar.textContent = a.joinLinesOptLax([
+    tar.textContent = u.joinLines(
       series.label,
       (axisNameX + nameSuf).padEnd(nameLen, ` `) + formatVal(valX),
       (axisNameY + nameSuf).padEnd(nameLen, ` `) + formatVal(valY),
-    ])
+    )
     plot.over.appendChild(tar)
   }
 

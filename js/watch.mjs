@@ -1,4 +1,5 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
+import * as pt from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/path.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
@@ -42,22 +43,26 @@ const WATCH_INTERVAL_MS_SHORT = a.secToMs(1)
 const WATCH_INTERVAL_MS_LONG = a.minToMs(1)
 const WATCH_MAX_ERRS = 3
 
-export async function cmdWatch({sig}) {
+export async function cmdWatch(proc) {
+  const {sig} = proc
   if (isWatching()) return `already running`
 
+  proc.desc = `acquiring lock`
   let unlock = await u.lockOpt(WATCH_LOCK_NAME)
 
   if (unlock) {
-    u.log.inf(`[watch] starting`)
+    u.log.info(`[watch] starting`)
   }
   else {
     const start = Date.now()
     u.log.verb(`[watch] another process has a lock on watching and backups, waiting until it stops`)
+    proc.desc = `waiting for another watcher`
     unlock = await u.lock(sig, WATCH_LOCK_NAME)
     const end = Date.now()
     u.log.verb(`[watch] acquired lock from another process after ${end - start}ms, proceeding to watch and backup`)
   }
 
+  proc.desc = `watching and backing up`
   try {return await cmdWatchUnsync(sig)}
   finally {unlock()}
 }
@@ -117,7 +122,7 @@ async function watchInit(sig, state) {
   )
   await state.setRoundFile(roundFile?.name)
 
-  u.log.inf(`[watch] initialized:`, {
+  u.log.info(`[watch] initialized:`, {
     run: state.runDirName,
     round: state.roundFileName,
   })
@@ -136,13 +141,13 @@ async function findLatestRunDir(sig, dir) {
 }
 
 async function findLatestRoundFile(sig, runDir, progressFileHandle) {
-  const ext = u.fileNameExt(progressFileHandle.name)
+  const ext = pt.posix.ext(progressFileHandle.name)
   let max = -Infinity
   let out
 
   for await (const han of fs.readDir(sig, runDir)) {
     if (!fs.isFile(han)) continue
-    if (u.fileNameExt(han.name) !== ext) continue
+    if (pt.posix.ext(han.name) !== ext) continue
 
     const ord = u.strToInt(han.name)
     if (!(ord > max)) continue
@@ -164,8 +169,8 @@ in the current dir.
 async function watchStep(sig, state) {
   const progressFile = await fs.getFile(sig, state.progressFileHandle)
   const content = await u.wait(sig, progressFile.text())
-  const decoded = await u.wait(sig, u.jsonDecompressDecode(content))
-  const nextRoundOrd = decoded?.RoundIndex
+  const roundData = await u.wait(sig, u.jsonDecompressDecode(content))
+  const nextRoundOrd = roundData?.RoundIndex
 
   if (!a.isInt(nextRoundOrd)) {
     throw Error(`[watch] unexpected round in source data: ${a.show(nextRoundOrd)}`)
@@ -200,25 +205,34 @@ async function watchStep(sig, state) {
     return
   }
 
-  const nextFileName = u.intToOrdStr(nextRoundOrd) + u.fileNameExt(state.progressFileHandle.name)
+  const nextFileName = u.intToOrdStr(nextRoundOrd) + pt.posix.ext(state.progressFileHandle.name)
 
-  // TODO inc by 1 for display purposes (everywhere; maybe in file names too).
+  const event = {
+    type: `new_round`,
+    runId: runDirName,
+    roundIndex: nextRoundOrd,
+    roundData,
+  }
+
   if (prevRoundOrd < nextRoundOrd) {
-    u.log.inf(`[watch] round increased from ${prevRoundOrd} to ${nextRoundOrd}, backing up`)
+    u.log.info(`[watch] round increased from ${prevRoundOrd} to ${nextRoundOrd}, backing up`)
     const dir = await u.wait(sig, state.historyDirHandle.getDirectoryHandle(
       runDirName,
       {create: true},
     ))
+
     await fs.writeFile(sig, dir, nextFileName, content)
     await state.setRoundFile(nextFileName)
+
+    u.broadcastToAllTabs(event)
     return
   }
 
   if (nextRoundOrd < prevRoundOrd) {
-    u.log.inf(`[watch] round decreased from ${prevRoundOrd} to ${nextRoundOrd}, assuming new run`)
+    u.log.info(`[watch] round decreased from ${prevRoundOrd} to ${nextRoundOrd}, assuming new run`)
   }
   else {
-    u.log.inf(`[watch] round is now ${nextRoundOrd}, assuming new run`)
+    u.log.info(`[watch] round is now ${nextRoundOrd}, assuming new run`)
   }
 
   const prevDirOrd = u.strToInt(runDirName)
@@ -231,5 +245,9 @@ async function watchStep(sig, state) {
   state.setRunDir(nextDirName)
   await fs.writeFile(sig, dir, nextFileName, content)
   state.setRoundFile(nextFileName)
-  u.log.inf(`[watch] backed up run ${dir.name} > file ${nextFileName}`)
+  u.log.info(`[watch] backed up run ${dir.name} > file ${nextFileName}`)
+
+  event.prevRunId = event.runId
+  event.runId = nextDirName
+  u.broadcastToAllTabs(event)
 }

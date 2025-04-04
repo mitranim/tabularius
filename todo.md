@@ -6,7 +6,7 @@ Firebase: maybe DB-side aggregations for clients, for analytics.
 
 Snapshots include user ID, from Firebase authentication.
 
-Snapshots include run ID (auto-generate it).
+Snapshots include run ID (auto-generate it). Also consider a local run index, for easier ordering, and a run timestamp, which equals to the timestamp of the first round.
 
 In case of defeat, last snapshot indicates defeat.
 
@@ -608,13 +608,40 @@ In the terminal, differentiate user inputs from other log entries. Maybe by thei
 
 ---
 
-Live updates of a given analysis. Maybe an analysis sticks around and is stateful. There may be multiple live at once. As long as the procs are running, they may receive updates. Alternatively, instead of running procs, they may simply be found in `MEDIA`. The latter probably makes more sense in JS technical terms, but treating them as procs and tying the lifetime of their medias to the lifetimes of the proces makes management simpler. And we can reuse the proc UI for the media management.
+Live updates of a given analysis. Maybe an analysis sticks around and is stateful. There may be multiple live at once. As long as the procs are running, they may receive updates. Alternatively, instead of running procs, they may simply be found in `MEDIA`. The latter probably makes more sense in JS technical terms, but treating them as procs and tying the lifetime of their medias to the lifetimes of the processes makes management simpler. And we can reuse the proc UI for the media management.
+
+Update: tying media elements to procs makes no sense in the DOM API. Just give them their own "close" buttons.
+
+---
+
+Live plot updates. Ideas:
+- [x] Each tab allocates a `Dat` singleton (`DAT`). All rounds go there. It's also an `EventTarget`.
+- [x] We add functions `datLoadRun` and `datLoadRound`, where the latter is idempotent.
+- [x] After updating `DAT`, we dispatch an event on it, detailing the changes.
+  - Currently only on new round, which should be enough for plotters.
+- [x] The watcher broadcasts FS updates to all tabs.
+- [x] In each tab, `dat.mjs` has a static event listener on its broadcast channel, which updates `DAT` when a new round is broadcast.
+- [x] We only need to load data from FS when starting analysis, and we do that idempotently for rounds.
+- [x] On FS events, `DAT` updates are always incremental and in-memory, even between tabs. (Always +round.)
+- [x] The watch event includes:
+  - [x] New round as-is.
+  - [x] What's the latest run.
+  - [x] Did the latest run change.
+  - [x] What's the latest round id and index (maybe include in round data).
+- [x] Plotters always use `DAT` as their source.
+- [x] Plotters always subscribe to `DAT` to detect changes in their particular data.
+  - [x] Subscribe in `.connectedCallback`.
+  - [x] Unsubscribe in `.disconnectedCallback`.
+- [x] On an update for its particular data, a plotter rebuilds its plot series and data from `DAT`.
+- [x] Runs have aliases. The most relevant one is `latest`, which always corresponds to the latest run id.
+- [x] A plotter may be given a run id. When the run id is `latest`, a plotter remembers the specific id used last time, and compares it with the new latest on `DAT` updates.
+- [x] Plotters don't rebuild the plot when there's no change in the exact run and rounds they used last time.
 
 ---
 
 <!-- The `watch` command gotta use the Web Locks API for mutual exclusion (one backup process, not multiple concurrent backup processes).
 
-At the start, it logs an attempt to acquire the lock (via `u.log.verb`) and proceeds to attempt. When lock acquired: if the time spent was more than 1s, it logs the fact of lock acquisition with the time elapsed (via `u.log.inf`); then follows up with its regular functionality.
+At the start, it logs an attempt to acquire the lock (via `u.log.verb`) and proceeds to attempt. When lock acquired: if the time spent was more than 1s, it logs the fact of lock acquisition with the time elapsed (via `u.log.info`); then follows up with its regular functionality.
 
 Lock mode: `exclusive`.
 
@@ -623,6 +650,3 @@ Pass the abort signal to the lock request. -->
 ---
 
 <!-- The `watch` command gotta use the Web Locks API for mutual exclusion (one backup process, not multiple concurrent backup processes), and the `BroadcastChannel` API to notify about changes. All processes listening for changes do so on the broadcast channel, even within the same browser tab. -->
-
----
-

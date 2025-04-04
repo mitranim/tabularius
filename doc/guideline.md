@@ -253,7 +253,7 @@ Code is run directly and must be browser-compatible.
 
 JS file names end with `.mjs`.
 
-All logging must be done via the element `log` in `./js/util.mjs`; errors are logged with `log.err`, other messages with `log.inf`.
+All logging must be done via the element `log` in `./js/util.mjs`; errors are logged with `log.err`, other messages with `log.info`.
 
 Deconstruct imports for the function `E`; avoid import deconstruction in other cases:
 

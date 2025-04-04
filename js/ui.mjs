@@ -12,7 +12,7 @@ a.patch(window, tar)
 export function cmdMedia() {MEDIA.toggle()}
 
 // Increment by 1 when publishing an update.
-const VERSION = 11
+const VERSION = 12
 let INITED
 
 /*
@@ -90,10 +90,18 @@ export const PROCESS_LIST = new class ProcessList extends u.ReacElem {
 function Process(src) {
   a.reqInst(src, os.Proc)
   return E(`div`, {class: `flex items-center justify-between gap-2`},
-    E(`span`, {class: `font-medium flex-1`}, src.id, `: `, src.args),
+    E(`pre`, {class: `truncate font-medium flex-1 shrink-0`},
+      src.id, `: `, src.args,
+    ),
+    // TODO: place description on its own line (under).
+    a.vac(src.desc && undefined) && E(
+      `pre`,
+      {class: `truncate text-sm text-gray-500 dark:text-gray-500`},
+      `(`, src.desc, `)`,
+    ),
     a.vac(src.startAt) && E(
-      `span`,
-      {class: `text-sm text-gray-500 dark:text-gray-500`},
+      `pre`,
+      {class: `truncate text-sm text-gray-500 dark:text-gray-500`},
       u.timeFormat.format(src.startAt),
     ),
     E(`button`, {
@@ -114,7 +122,6 @@ export const STYLE_BTN_CEN = {
   height: `2rem`,
   textAlign: `center`,
   verticalAlign: `middle`,
-  alignItems: `center`,
   lineHeight: `1`,
 }
 
@@ -233,7 +240,7 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
   cmdSubmit() {
     const src = this.value.trim()
     if (!src) return
-    u.log.inf(src)
+    u.log.info(src)
     this.histPush(src)
     os.runCmd(src).catch(u.logErr)
   }

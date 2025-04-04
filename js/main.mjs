@@ -112,13 +112,11 @@ TODO: `help <cmd>` which shows help for one command, and tries to use its
 `.help` which should be more detailed than `.desc`.
 */
 function cmdHelp() {
-  return a.joinLines([
+  return u.joinParagraphs(
     `available commands:`,
-    ``,
-    ...a.map(os.COMMANDS, cmdToHelp),
-    ``,
+    a.joinLines(a.map(os.COMMANDS, cmdToHelp)),
     `pro tip: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=analyze 000000"`,
-  ])
+  )
 }
 
 function cmdToHelp(val) {
@@ -136,7 +134,7 @@ async function cmdInit({sig}) {
 // Deinitialize features and stop all processes.
 async function cmdDeinit({sig}) {
   const killed = await os.procKillAll()
-  return a.joinLinesLax([
+  return a.joinLinesOptLax([
     killed,
     await fs.deinitFileHandles(sig)
   ].flat())
@@ -144,11 +142,11 @@ async function cmdDeinit({sig}) {
 
 // Show status of features and processes.
 async function cmdStatus({sig}) {
-  return a.joinLinesLax([
+  return u.joinLines(
     await fs.statusProgressFile(sig),
     await fs.statusHistoryDir(sig),
     os.showProcs(),
-  ])
+  )
 }
 
 const STORAGE_KEY_TEST_MODE = `tabularius_test_mode`
@@ -168,8 +166,8 @@ function cmdTest() {
 ui.init()
 
 // Initial log messages.
-u.log.inf(`welcome to Tabularius`)
-u.log.inf(`type "help" for a list of commands`)
+u.log.info(`welcome to Tabularius`)
+u.log.info(`type "help" for a list of commands`)
 
 const query = new URLSearchParams(window.location.search)
 
@@ -180,11 +178,11 @@ for (const val of query.getAll(`import`)) {
 
 // Can run arbitrary commands on startup.
 for (const val of query.getAll(`run`)) {
-  os.runCmd(val).catch(u.logErr)
+  await os.runCmd(val).catch(u.logErr)
 }
 
 if (TEST_MODE) {
-  u.log.inf(`test mode enabled`)
+  u.log.info(`test mode enabled`)
   await import(`./test.mjs`).catch(u.logErr)
 }
 else {
@@ -199,6 +197,7 @@ else {
   active users with existing runs, we probably want to render analysis of the
   latest run. Maybe this should be togglable. If some command or plugin from
   the URL query has modified the media already, we should avoid touching it.
+  TODO: make this togglable.
   */
   if (ui.MEDIA.isDefault) {
     os.runProc(d.analyzeDefault, `analyze_default`, `running default analysis`).catch(u.logErr)

@@ -1,5 +1,5 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
-import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs.mjs'
+import * as ob from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs.mjs'
 import * as u from './util.mjs'
 
 import * as self from './os.mjs'
@@ -46,11 +46,10 @@ export class Proc extends a.Emp {
     this.endAt = undefined             // Assigned by `runProc`.
     this.val = undefined               // Eventual promise value, if any.
     this.err = undefined               // Eventual promise error, if any.
+    // return ob.obs(this)                // For reactive UI updates.
   }
 
   pk() {return this.id}
-  cmd() {return this.args.join(` `)}
-
   deinit() {return this.control.abort(new u.ErrAbort(`deinit`))}
 
   // Cmd funcs should use this to support cancelation.
@@ -64,10 +63,12 @@ export class Proc extends a.Emp {
 Centralized registry of all currently running processes. Keys must be proc ids,
 values must be procs.
 */
-export const PROCS = o.obs(a.Emp())
+export const PROCS = ob.obs(a.Emp())
 
+// Suboptimal but doesn't matter.
 export function procByName(name) {
-  return a.find(PROCS, val => val.args[0] === name)
+  a.reqStr(name)
+  return a.find(PROCS, val => u.firstCliArg(val.args) === name)
 }
 
 export async function runCmd(args) {
@@ -112,9 +113,11 @@ export async function runProc(fun, args, desc) {
     u.logCmdFail(name, err)
   }
   finally {
-    proc.endAt = Date.now()
-    try {proc.deinit()} catch {}
-    delete PROCS[proc.id]
+    try {
+      proc.endAt = Date.now()
+      proc.deinit()
+    }
+    finally {delete PROCS[proc.id]}
   }
 }
 
@@ -122,26 +125,28 @@ export function cmdPs() {return showProcs()}
 
 export function procToStatus(src) {
   a.reqInst(src, Proc)
-  return a.spaced(src.id + `:`, a.show(src.cmd()) + `:`, src.status)
+  let out = src.id + `: ` + a.show(src.args)
+  if (src.desc) out += `: ` + src.desc
+  return out
 }
 
 export function showProcs() {
   if (!a.len(PROCS)) return `No active processes`
-  return a.joinLines([
+  return u.joinLines(
     `Active processes (pid, name, status):`,
     ...a.map(PROCS, procToStatus),
-  ])
+  )
 }
 
-export function cmdKill({sig, args}) {
+export function cmdKill({args}) {
   args = u.splitCliArgs(args)
   switch (args.length) {
     case 0:
     case 1:
-      return a.joinLines([
+      return u.joinLines(
         `missing process id or name; usage: kill <id|name>;`,
         `alternatively, "kill -a" to kill all`
-      ])
+      )
     case 2:
       if (args[1] === `-a`) return procKillAll()
       return procKill(args[1])
@@ -149,9 +154,9 @@ export function cmdKill({sig, args}) {
   }
 }
 
-export async function procKill(key) {
+export function procKill(key) {
   a.reqStr(key)
-  const proc = PROCS[key] || a.find(PROCS, val => val.args[0] === key)
+  const proc = PROCS[key] || procByName(key)
   if (!proc) return `no process with id or name ${a.show(key)}`
   proc.deinit()
 }

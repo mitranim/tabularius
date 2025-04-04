@@ -47,5 +47,5 @@ t.test(function test_compareOrdNamesDesc() {
 })
 
 const msg = `[test] ok`
-u.log.inf(msg)
+u.log.info(msg)
 console.log(msg)

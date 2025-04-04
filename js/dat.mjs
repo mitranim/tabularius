@@ -1,22 +1,43 @@
+/*
+This module governs our data schema, data analysis, data visualization.
+*/
+
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
 import * as u from './util.mjs'
-import {E} from './util.mjs'
+import * as fs from './fs.mjs'
+import * as ui from './ui.mjs'
+import * as pl from './plot.mjs'
 
 import * as self from './dat.mjs'
 const tar = window.tabularius ??= a.Emp()
 tar.d = self
 a.patch(window, tar)
 
-const plotOptsDamagePerRoundPerBuiTypeUpg_desc = `damage per round per building type (with upgrade)`
-const plotOptsCostEffPerRoundPerBuiTypeUpg_desc = `cost efficiency per round per building type (with upgrade)`
+export class Dat extends EventTarget {}
+
+export class Dim extends a.TypedMap {
+  reqKey(key) {return a.reqValidStr(key)}
+  reqVal(val) {return a.reqDict(val)}
+}
+
+// We use a "star schema". See `datAddRound`.
+export const DAT = new Dat()
+DAT.facts = []
+DAT.dimRun = new Dim()
+DAT.dimRoundInRun = new Dim()
+DAT.dimBuiInRun = new Dim()
+DAT.dimBuiInRound = new Dim()
+
+// Needed for / allows live data updates and plot updates.
+u.listenMessage(u.BROAD, datOnBroadcast)
 
 export const ANALYSIS_MODES = {
   dmg: {
-    desc: plotOptsDamagePerRoundPerBuiTypeUpg_desc,
+    desc: `damage per round per building type (with upgrade)`,
     fun: plotOptsDamagePerRoundPerBuiTypeUpg,
   },
   cost: {
-    desc: plotOptsCostEffPerRoundPerBuiTypeUpg_desc,
+    desc: `cost efficiency per round per building type (with upgrade)`,
     fun: plotOptsCostEffPerRoundPerBuiTypeUpg,
   },
   /*
@@ -30,48 +51,59 @@ export const ANALYSIS_MODES = {
 
 function cmdAnalyzeHelp() {
   return u.joinParagraphs(
-    `usage: "analyze <run_id>" or "analyze <run_id> <cmd>;`,
-    `<run_id> is the name of an existing run in the history directory (run "init" if you haven't created any; "ls /" to see existing runs)`,
-    a.joinLines([
-      `<cmd> chooses analysis mode; currently available modes:`,
+    u.joinLines(
+      `usage examples:`,
+      `  analyze <run_id>`,
+      `  analyze <run_id> <mode>`,
+    ),
+    a.spaced(
+      `<run_id> is the name of an existing run in the history directory`,
+      `(run "init" if you haven't created any; "ls /" to see existing runs)`,
+    ),
+    u.joinLines(
+      `<run_id> can also be just "latest":`,
+      `  analyze latest`,
+      `  analyze latest <mode>`,
+    ),
+    u.joinLines(
+      `<mode> chooses analysis mode; currently available modes:`,
       ...a.entries(ANALYSIS_MODES).map(modeHelp),
-    ]),
+    ),
   )
 }
 
 function modeHelp([name, {desc}], ind) {
-  return name + `: ` + desc + (ind ? `` : ` (default)`)
+  return `  ` + name + `: ` + desc + (ind ? `` : ` (default)`)
 }
 
 /*
 TODO:
-- Use sub-cmds.
-- If no sub-cmd name is provided, use the first one by default.
 - The analysis type might be a flag, not an arg.
 - Support specifying multiple types at once.
 - Displaying multiple: either one under another, or as tabs.
 - Media pane: consider supporting tabs natively.
-- Allow to specify just the run id, rather than the full dir name.
 */
 export async function cmdAnalyze({sig, args}) {
   args = u.splitCliArgs(args)
-  const runId = args[1]
+  let runId = args[1]
   const modeName = args[2]
   if (!runId || args.length > 3) return cmdAnalyzeHelp()
 
-  const sub = modeName && ANALYSIS_MODES[modeName] || a.head(ANALYSIS_MODES)
-  if (!sub) throw Error(modeName ? `unknown analysis mode ${modeName}` : `missing analysis mode`)
+  const mode = (
+    modeName
+    ? ANALYSIS_MODES[modeName] || a.panic(Error(`unknown analysis mode ${modeName}`))
+    : a.head(ANALYSIS_MODES)
+  )
 
-  const fs = await import(`./fs.mjs`)
-  const root = await fs.reqHistoryDir(sig)
-  const runDir = await fs.chdir(sig, root, [runId])
-  const dat = new Dat()
-
-  await initBuiCodes()
-  for await (const val of fs.readRunRounds(sig, runDir)) {
-    datAddRound(dat, runId, val)
+  const isLatest = runId === `latest`
+  if (isLatest) {
+    runId = await fs.findLatestRunId(sig)
+    if (!runId) throw Error(`unable to find latest run: no runs found`)
   }
-  await renderPlot(await sub.fun(dat))
+
+  await datLoadRun(sig, runId)
+  const plotFun = a.bind(mode.fun, {runId, isLatest})
+  ui.MEDIA.set(new DatPlotter(plotFun))
 }
 
 /*
@@ -83,23 +115,62 @@ TODO: make it possible to display multiple plots at once.
 TODO: make it possible to select plot order or disable some.
 */
 export async function analyzeDefault({sig}) {
-  const fs = await import(`./fs.mjs`)
-  const latest = await fs.readLatestRunWithRounds(sig)
-
-  const {runId, rounds} = latest || {
-    runId: `example_run`,
-    rounds: await u.jsonDecompressDecode(await u.fetchText(`data/example_run.gd`))
+  try {await cmdAnalyze({sig, args: `analyze latest`})}
+  catch (_) {
+    u.log.verb(`unable to analyze latest run, showing example run`)
+    await analyzeExampleRun()
   }
+}
+
+async function analyzeExampleRun() {
+  const runId = `example_run`
+  const rounds = await u.jsonDecompressDecode(await u.fetchText(`data/example_run.gd`))
   if (!a.len(rounds)) throw Error(`internal error: missing chart data`)
 
   await initBuiCodes()
-  const dat = new Dat()
-  for (const val of rounds) datAddRound(dat, runId, val)
+  for (const round of rounds) datAddRound(round, runId)
 
   const mode = a.head(ANALYSIS_MODES)
-  const opt = await mode.fun(dat)
-  if (!latest) opt.title = `sample run analyzis: ` + opt.title
-  await renderPlot(opt)
+  const opts = mode.fun({runId})
+  opts.title = `example run analyzis: ` + opts.title
+  ui.MEDIA.set(new pl.Plotter(opts))
+}
+
+export let BUI_CODES
+
+export async function initBuiCodes() {
+  return BUI_CODES ??= await u.fetchJson(new URL(`../data/building_codes.json`, import.meta.url))
+}
+
+export async function datLoadRun(sig, runId) {
+  const root = await fs.reqHistoryDir(sig)
+  const runDir = await fs.chdir(sig, root, [runId])
+  await datLoadRunFromHandle(sig, runDir)
+}
+
+export async function datLoadRunFromHandle(sig, dir) {
+  a.reqInst(dir, FileSystemDirectoryHandle)
+  const runId = dir.name
+
+  for await (const file of fs.readRunRoundHandles(sig, dir)) {
+    await datLoadRoundFromHandle(sig, file, runId)
+  }
+}
+
+export async function datLoadRoundFromHandle(sig, file, runId) {
+  a.reqInst(file, FileSystemFileHandle)
+  const roundId = makeRoundId(runId, u.strToInt(file.name))
+
+  /*
+  Because `DAT` is static, we must load rounds idempotently. We assume that
+  if the round is present, it was fully loaded. Without this check, we would
+  sometimes insert redundant facts and mess up the stats.
+  */
+  if (DAT.dimRoundInRun.has(roundId)) return
+
+  const round = await fs.jsonDecompressDecodeFile(sig, file)
+  await initBuiCodes()
+  datAddRound(round, runId)
 }
 
 // TODO this should be a URL query parameter; default false in production.
@@ -119,43 +190,20 @@ export const STAT_TYPE_DMG_OVER = `dmg_over`
 export const STAT_TYPE_COST_EFF = `cost_eff`
 export const BUILDING_KIND_NEUTRAL = `Neutral`
 
-export class Dim extends a.TypedMap {
-  reqKey(key) {return a.reqValidStr(key)}
-  reqVal(val) {return a.reqDict(val)}
-}
-
-export class Dat extends a.Emp {
-  constructor() {
-    super()
-    this.facts = []
-    this.dimRun = new Dim()
-    this.dimRoundInRun = new Dim()
-    this.dimBuiInRun = new Dim()
-    this.dimBuiInRound = new Dim()
-  }
-}
-
-export let BUI_CODES
-
-export async function initBuiCodes() {
-  BUI_CODES ??= await u.fetchJson(new URL(`../data/building_codes.json`, import.meta.url))
-}
-
 /*
 Decomposes a round into dimensions and facts, adding them to our `Dat`.
 If rounds are provided in an arbitrary order, then the resulting tables
 are unsorted.
 */
-export function datAddRound(dat, runId, round) {
-  a.reqInst(dat, Dat)
-  a.reqValidStr(runId)
+export function datAddRound(round, runId) {
   a.reqDict(round)
+  a.reqValidStr(runId)
 
   let DEBUG_LOGGED = false
   const runIds = {userId: USER_ID, runId}
 
-  if (!dat.dimRun.has(runId)) {
-    dat.dimRun.set(runId, {
+  if (!DAT.dimRun.has(runId)) {
+    DAT.dimRun.set(runId, {
       ...runIds,
       hero: round.HeroType,
       diff: round.DifficultyLevel,
@@ -166,10 +214,14 @@ export function datAddRound(dat, runId, round) {
   }
 
   const roundIndex = a.reqInt(round.RoundIndex)
-  const roundId = u.joinKeys(runId, u.intToOrdStr(roundIndex))
+  const roundId = makeRoundId(runId, round.RoundIndex)
   const roundIds = {...runIds, roundId}
 
-  dat.dimRoundInRun.set(roundId, {
+  if (DAT.dimRoundInRun.has(roundId)) {
+    throw Error(`internal error: redundant attempt to add round ${roundId} to the data`)
+  }
+
+  DAT.dimRoundInRun.set(roundId, {
     ...roundIds,
     roundIndex,
     expired: round.MarkAsExpired,
@@ -184,8 +236,8 @@ export function datAddRound(dat, runId, round) {
     const buiInRunIds = {...roundIds, buiInRunId}
     const buiKind = bui.BuildingType
     const buiInRun = {...buiInRunIds, buiType, buiName, buiKind}
-    if (!dat.dimBuiInRun.has(buiInRunId)) {
-      dat.dimBuiInRun.set(buiInRunId, buiInRun)
+    if (!DAT.dimBuiInRun.has(buiInRunId)) {
+      DAT.dimBuiInRun.set(buiInRunId, buiInRun)
     }
     const buiInRoundId = u.joinKeys(buiInRunId, roundIndex)
     const buiInRoundIds = {...buiInRunIds,buiInRoundId}
@@ -200,7 +252,7 @@ export function datAddRound(dat, runId, round) {
       sellPrice: bui.SellPrice,
       sellCurr: bui.SellCurrencyType,
     }
-    dat.dimBuiInRound.set(buiInRoundId, buiInRound)
+    DAT.dimBuiInRound.set(buiInRoundId, buiInRound)
 
     /*
     A building has `.LiveStats`, `.Weapons`, `.WeaponStats`, `.LiveChildStats`.
@@ -287,7 +339,7 @@ export function datAddRound(dat, runId, round) {
         if (buiWepTypes.has(chiType)) bui_dmgDone_runAcc_fromWepChi += dmgRunAcc
         else bui_dmgDone_runAcc_fromOtherChi += dmgRunAcc
 
-        dat.facts.push({
+        DAT.facts.push({
           ...chiFact,
           statType: STAT_TYPE_DMG_DONE,
           statScope: STAT_SCOPE_RUN_ACC,
@@ -298,7 +350,7 @@ export function datAddRound(dat, runId, round) {
         if (buiWepTypes.has(chiType)) bui_dmgDone_round_fromWepChi += dmgRound
         else bui_dmgDone_round_fromOtherChi += dmgRound
 
-        dat.facts.push({
+        DAT.facts.push({
           ...chiFact,
           statType: STAT_TYPE_DMG_DONE,
           statScope: STAT_SCOPE_ROUND,
@@ -311,7 +363,7 @@ export function datAddRound(dat, runId, round) {
         if (buiWepTypes.has(chiType)) bui_dmgOver_runAcc_fromWepChi += dmgRunAcc
         else bui_dmgOver_runAcc_fromOtherChi += dmgRunAcc
 
-        dat.facts.push({
+        DAT.facts.push({
           ...chiFact,
           statType: STAT_TYPE_DMG_OVER,
           statScope: STAT_SCOPE_RUN_ACC,
@@ -322,7 +374,7 @@ export function datAddRound(dat, runId, round) {
         if (buiWepTypes.has(chiType)) bui_dmgOver_round_fromWepChi += dmgRound
         else bui_dmgOver_round_fromOtherChi += dmgRound
 
-        dat.facts.push({
+        DAT.facts.push({
           ...chiFact,
           statType: STAT_TYPE_DMG_OVER,
           statScope: STAT_SCOPE_ROUND,
@@ -348,13 +400,13 @@ export function datAddRound(dat, runId, round) {
     )
 
     if (bui_dmgDone_runAcc_final || !isNeutral) {
-      dat.facts.push({
+      DAT.facts.push({
         ...buiInRoundIds,
         statType: STAT_TYPE_DMG_DONE,
         statScope: STAT_SCOPE_RUN_ACC,
         statValue: bui_dmgDone_runAcc_final,
       })
-      dat.facts.push({
+      DAT.facts.push({
         ...buiInRoundIds,
         statType: STAT_TYPE_COST_EFF,
         statScope: STAT_SCOPE_RUN_ACC,
@@ -363,13 +415,13 @@ export function datAddRound(dat, runId, round) {
     }
 
     if (bui_dmgDone_round_final || !isNeutral) {
-      dat.facts.push({
+      DAT.facts.push({
         ...buiInRoundIds,
         statType: STAT_TYPE_DMG_DONE,
         statScope: STAT_SCOPE_ROUND,
         statValue: bui_dmgDone_round_final,
       })
-      dat.facts.push({
+      DAT.facts.push({
         ...buiInRoundIds,
         statType: STAT_TYPE_COST_EFF,
         statScope: STAT_SCOPE_ROUND,
@@ -378,7 +430,7 @@ export function datAddRound(dat, runId, round) {
     }
 
     if (bui_dmgOver_runAcc_final || !isNeutral) {
-      dat.facts.push({
+      DAT.facts.push({
         ...buiInRoundIds,
         statType: STAT_TYPE_DMG_OVER,
         statScope: STAT_SCOPE_RUN_ACC,
@@ -387,7 +439,7 @@ export function datAddRound(dat, runId, round) {
     }
 
     if (bui_dmgOver_round_final || !isNeutral) {
-      dat.facts.push({
+      DAT.facts.push({
         ...buiInRoundIds,
         statType: STAT_TYPE_DMG_OVER,
         statScope: STAT_SCOPE_ROUND,
@@ -421,55 +473,77 @@ export function datAddRound(dat, runId, round) {
 // Below 100, we don't really care.
 function isDamageSimilar(one, two) {return (a.laxNum(one) - a.laxNum(two)) < 100}
 
-export async function plotOptsDamagePerRoundPerBuiTypeUpg(dat) {
-  a.reqInst(dat, Dat)
+function makeRoundId(runId, roundIndex) {
+  return u.joinKeys(a.reqValidStr(runId), u.intToOrdStr(roundIndex))
+}
 
-  const pl = await import(`./plot.mjs`)
-  const [X_row, Z_labels, Z_X_Y_arr] = aggPerRoundPerBuiTypeUpg(dat, STAT_TYPE_DMG_DONE)
-  const Z_rows = a.map(Z_labels, pl.serieWithSum)
+function datOnBroadcast(src) {
+  const type = src?.type
+  if (type !== `new_round`) return
+
+  const {roundData, runId} = src
+  datAddRound(roundData, runId)
+  u.dispatchMessage(DAT, src)
+}
+
+export function plotOptsDamagePerRoundPerBuiTypeUpg(opt, datMsg) {
+  const runId = choosePlotRunId(opt.runId, opt.isLatest, datMsg)
+  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_DMG_DONE)
+
+  // Native `.map` passes an index, which is needed for stable colors.
+  const Z_rows = a.arr(Z_labels).map(pl.serieWithSum)
 
   return {
     ...pl.LINE_PLOT_OPTS,
     plugins: pl.plugins(),
-    title: plotOptsDamagePerRoundPerBuiTypeUpg_desc,
+    title: ANALYSIS_MODES.dmg.desc,
     series: [{label: `Round`}, ...Z_rows],
     data: [X_row, ...Z_X_Y_arr],
     axes: pl.axes(`round`, `damage`),
   }
 }
 
-export async function plotOptsCostEffPerRoundPerBuiTypeUpg(dat) {
-  a.reqInst(dat, Dat)
+export function plotOptsCostEffPerRoundPerBuiTypeUpg(opt, datMsg) {
+  const runId = choosePlotRunId(opt.runId, opt.isLatest, datMsg)
+  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_COST_EFF)
 
-  const pl = await import(`./plot.mjs`)
-  const [X_row, Z_labels, Z_X_Y_arr] = aggPerRoundPerBuiTypeUpg(dat, STAT_TYPE_COST_EFF)
-  const Z_rows = a.map(Z_labels, pl.serieWithAvg)
+  // Native `.map` passes an index, which is needed for stable colors.
+  const Z_rows = a.arr(Z_labels).map(pl.serieWithAvg)
 
   return {
     ...pl.LINE_PLOT_OPTS,
     plugins: pl.plugins(),
-    title: plotOptsCostEffPerRoundPerBuiTypeUpg_desc,
+    title: ANALYSIS_MODES.cost.desc,
     series: [{label: `Round`}, ...Z_rows],
     data: [X_row, ...Z_X_Y_arr],
     axes: pl.axes(`round`, `eff`),
   }
 }
 
-function aggPerRoundPerBuiTypeUpg(dat, statType) {
-  a.reqInst(dat, Dat)
+function choosePlotRunId(runId, isLatest, datMsg) {
+  a.reqValidStr(runId)
+  a.optBool(isLatest)
+  if (!a.optObj(datMsg) || datMsg.type !== `new_round`) return runId
+  if (!isLatest && datMsg.runId !== runId) return runId
+  return a.reqValidStr(datMsg.runId)
+}
+
+function aggForRunPerRoundPerBuiTypeUpg(runId, statType) {
+  a.reqValidStr(runId)
   a.reqValidStr(statType)
 
   const X_set = a.bset()
   const Z_X_Y = a.Emp()
 
-  for (const fact of dat.facts) {
+  for (const fact of DAT.facts) {
+    if (fact.runId !== runId) continue
     if (fact.statType !== statType) continue
     if (fact.statScope !== STAT_SCOPE_ROUND) continue
     if (fact.chiType) continue
 
-    const bui = dat.dimBuiInRound.get(fact.buiInRoundId)
+    const bui = DAT.dimBuiInRound.get(fact.buiInRoundId)
     const Z = a.reqValidStr(bui.buiTypeUpgName || bui.buiTypeUpg)
-    const X = a.reqInt(dat.dimRoundInRun.get(fact.roundId).roundIndex)
+    const X = a.reqInt(DAT.dimRoundInRun.get(fact.roundId).roundIndex)
     const X_Y = Z_X_Y[Z] ??= a.Emp()
 
     X_Y[X] = a.laxFin(X_Y[X]) + a.laxFin(fact.statValue)
@@ -530,7 +604,32 @@ export function dropZeroRows(Z, Z_X_Y) {
   }
 }
 
-async function renderPlot(opts) {
-  const [pl, ui] = await Promise.all([import(`./plot.mjs`), import(`./ui.mjs`)])
-  ui.MEDIA.set(E(new pl.Plotter(opts), {class: `block w-full h-full`}))
+export class DatPlotter extends pl.Plotter {
+  constructor(fun) {
+    super(fun())
+    this.fun = fun
+  }
+
+  init() {
+    super.init()
+    this.unsub = u.listenMessage(DAT, this.onDatMsg.bind(this))
+  }
+
+  deinit() {
+    this.unsub?.()
+    super.deinit()
+  }
+
+  onDatMsg(src) {
+    if (!this.isConnected) {
+      console.error(`internal error: ${a.show(this)} received a dat event when not connected to the DOM`)
+      return
+    }
+
+    const opts = this.fun(src)
+    if (!opts) return
+
+    this.opts = opts
+    this.init()
+  }
 }

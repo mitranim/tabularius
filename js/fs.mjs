@@ -1,4 +1,5 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
+import * as pt from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/path.mjs'
 import * as idb from 'https://esm.sh/idb@7.1.1'
 import * as u from './util.mjs'
 
@@ -71,11 +72,11 @@ class FileConf extends a.Emp {
 export const PROGRESS_FILE_CONF = new FileConf({
   key: `progress_file`,
   desc: `progress file`,
-  help: a.joinLines([
+  help: u.joinLines(
     `Pick your TD save/progress file. Typical location:`,
     `C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\SaveFiles\\Progress.gd.`,
     `Note that AppData is hidden by default!`,
-  ]),
+  ),
   mode: `read`,
   pick: pickProgressFile,
 })
@@ -83,10 +84,10 @@ export const PROGRESS_FILE_CONF = new FileConf({
 export const HISTORY_DIR_CONF = new FileConf({
   key: `history_dir`,
   desc: `history directory`,
-  help: a.joinLines([
+  help: u.joinLines(
     `Pick directory for run history/backups. Suggested location:`,
     `C:\\Users\\<user>\\Documents\\tower-dominion`,
-  ]),
+  ),
   mode: `readwrite`,
   pick: pickHistoryDir,
 })
@@ -105,7 +106,7 @@ async function loadFileHandleWithPerm(conf) {
   if (!out) return out
   const perm = await queryPermission(out, {mode})
   if (perm === `granted`) return out
-  u.log.inf(`${desc}: permission needed; run the "init" command`)
+  u.log.info(`${desc}: permission needed; run the "init" command`)
   return undefined
 }
 
@@ -123,10 +124,10 @@ async function loadFileHandle(conf) {
     return undefined
   }
 
-  u.log.inf(`${desc}: loaded handle from DB: ${a.show(out)}`)
+  u.log.verb(`${desc}: loaded handle from DB: ${a.show(out)}`)
 
   if (!a.isInst(out, FileSystemHandle)) {
-    u.log.inf(`${desc}: expected FileSystemHandle; deleting corrupted DB entry`)
+    u.log.info(`${desc}: expected FileSystemHandle; deleting corrupted DB entry`)
     dbDel(store, key).catch(u.logErr)
     return undefined
   }
@@ -156,11 +157,11 @@ async function initFileHandle(sig, handle, conf) {
 
   handle ??= await loadFileHandle(conf)
   if (!handle) {
-    u.log.inf(help)
+    u.log.info(help)
     handle = a.reqInst(await u.wait(sig, pick()), FileSystemHandle)
     try {
       await u.wait(sig, dbPut(DB_STORE_HANDLES, key, handle))
-      u.log.inf(`${desc}: stored handle to DB`)
+      u.log.info(`${desc}: stored handle to DB`)
     }
     catch (err) {
       u.log.err(`${desc}: error storing handle to DB:`, err)
@@ -291,15 +292,14 @@ export async function reqHistoryDir(sig) {
   return reqHandlePermissionConf(HISTORY_DIR, HISTORY_DIR_CONF)
 }
 
-const CMD_LS_HELP = a.joinLines([
+const CMD_LS_HELP = u.joinLines(
   `usage: "ls" or "ls <path>"`,
   `list the directories and files; examples:`,
   `  ls /`,
-  `  ls some_dir/`,
+  `  ls some_dir`,
   `  ls some_dir/some_file`,
-])
+)
 
-// TODO: order the output via either `u.compareAsc` or `fs.compareHandlesAsc`.
 export async function cmdLs({sig, args}) {
   args = u.splitCliArgs(args)
   switch (args.length) {
@@ -309,9 +309,8 @@ export async function cmdLs({sig, args}) {
     default: return CMD_LS_HELP
   }
 
-  // TODO: better error message on type mismatch due to lack or presence of
-  // trailing `/`.
-  const handle = await handleAtPath(sig, args[1])
+  const path = pt.posix.clean(args[1])
+  const handle = await handleAtPath(sig, path)
   const suf = `: `
   if (!isDir(handle)) return handle.kind + suf + handle.name
 
@@ -321,22 +320,27 @@ export async function cmdLs({sig, args}) {
     len = Math.max(len, val.kind.length)
     buf.push([val.kind, val.name])
   }
+
+  buf.sort(compareLsEntriesAsc)
   len += suf.length
+
   const line = ([kind, name]) => (kind + suf).padEnd(len, ` `) + name
   return a.joinLines(a.map(buf, line))
 }
 
+function compareLsEntriesAsc(one, two) {return u.compareAsc(one[1], two[1])}
+
 // TODO implement.
 // export function cmdTree(sig, args) {}
 
-const CMD_SHOW_HELP = a.joinLines([
+const CMD_SHOW_HELP = u.joinLines(
   `usage: "show <path>"`,
   `copy the decoded content of the given file to the clipboard; example:`,
   `  show 000000/000001.gd`,
   `optionally, log the data to the browser console via -l:`,
   `  show -l 000000/000001.gd`,
   `  show 000000/000001.gd -l`,
-])
+)
 
 /*
 Ideally, we'd actually let the user browse the file. But some of our target
@@ -368,29 +372,29 @@ export async function cmdShow({sig, args}) {
 
 // Caution: the iteration order is undefined and unstable.
 export async function* readRunRounds(sig, dir) {
-  for await (const file of readDir(sig, dir)) {
-    if (!isHandleGameFile(file)) continue
-    const out = await jsonDecompressDecodeFile(sig, file)
-    if (!a.isDict(out)) {
-      throw Error(`expected to decode a progress backup from ${dir.name}/${file.name}, got ${a.show(out)}`)
-    }
-    yield out
+  for await (const file of readRunRoundHandles(sig, dir)) {
+    yield await jsonDecompressDecodeFile(sig, file)
   }
 }
 
-// Requires either `loadedFileHandles` or `initedFileHandles` to be run first.
-export async function readLatestRunWithRounds(sig) {
-  let src = HISTORY_DIR
-  if (!src) return undefined
+// Caution: the iteration order is undefined and unstable.
+export async function* readRunRoundHandles(sig, dir) {
+  for await (const file of readDir(sig, dir)) {
+    if (isHandleGameFile(file)) yield file
+  }
+}
 
-  src = await u.asyncIterCollect(sig, readDir(sig, src))
-  src = a.filter(src, isDir)
-  src.sort(compareHandlesDesc)
+export async function findLatestRunId(sig) {
+  const root = await reqHistoryDir(sig)
 
-  for (src of src) {
-    const out = await u.asyncIterCollect(sig, readRunRounds(sig, src))
-    if (!a.reqArr(out).length) continue
-    return {runId: src.name, rounds: out}
+  let dirs = await u.asyncIterCollect(sig, readDir(sig, root))
+  dirs = a.filter(dirs, isDir)
+  dirs.sort(compareHandlesDesc)
+
+  for (const dir of dirs) {
+    for await (const _ of readRunRoundHandles(sig, dir)) {
+      return dir.name
+    }
   }
   return undefined
 }
@@ -398,19 +402,19 @@ export async function readLatestRunWithRounds(sig) {
 export function isHandleGameFile(handle) {
   a.reqInst(handle, FileSystemHandle)
   if (!isFile(handle)) return false
-  const ext = u.fileNameExt(handle.name)
+  const ext = pt.posix.ext(handle.name)
   return ext === `.gd` || ext === `.json`
 }
 
-function compareHandlesAsc(one, two) {
+export function compareHandlesAsc(one, two) {
   return compareHandles(one, two, u.compareAsc)
 }
 
-function compareHandlesDesc(one, two) {
+export function compareHandlesDesc(one, two) {
   return compareHandles(one, two, u.compareDesc)
 }
 
-function compareHandles(one, two, fun) {
+export function compareHandles(one, two, fun) {
   a.reqInst(one, FileSystemHandle)
   a.reqInst(two, FileSystemHandle)
   return fun(one.name, two.name)
@@ -429,11 +433,13 @@ export async function readFile(sig, src) {
 }
 
 export async function handleAtPath(sig, src) {
-  const [dirs, name] = splitSplitPath(src)
+  const path = splitPath(src)
+  const dirs = a.init(path)
+  const name = a.last(path)
   const root = await reqHistoryDir(sig)
-  let handle = await chdir(sig, root, dirs)
-  if (name) handle = await getFileHandle(sig, handle, name)
-  return handle
+  const handle = await chdir(sig, root, dirs)
+  if (!name) return handle
+  return getSubHandle(sig, handle, name)
 }
 
 export async function chdir(sig, handle, path) {
@@ -531,7 +537,7 @@ async function requirePermission(sig, handle, conf) {
 
   let perm = await u.wait(sig, queryPermission(handle, {mode}))
   if (perm === `granted`) return
-  u.log.inf(`${desc}: permission: ${perm}, requesting permission`)
+  u.log.info(`${desc}: permission: ${perm}, requesting permission`)
 
   perm = await requestPermission(sig, handle, {mode})
   if (perm === `granted`) return
@@ -569,6 +575,18 @@ export async function getFile(sig, src, opt) {
   }
 }
 
+export async function getSubHandle(sig, src, name, opt) {
+  u.reqSig(sig)
+  a.reqInst(src, FileSystemDirectoryHandle)
+  a.reqValidStr(name)
+
+  try {return await getFileHandle(sig, src, name, opt)}
+  catch (err) {
+    if (err.cause?.name !== `TypeMismatchError`) throw err
+  }
+  return await getDirectoryHandle(sig, src, name, opt)
+}
+
 export async function getFileHandle(sig, src, name, opt) {
   u.reqSig(sig)
   a.reqInst(src, FileSystemDirectoryHandle)
@@ -598,9 +616,4 @@ export async function getDirectoryHandle(sig, src, name, opt) {
 export function splitPath(src) {
   const sep = `/`
   return a.split(a.stripPre(src, sep), sep)
-}
-
-export function splitSplitPath(src) {
-  src = splitPath(src)
-  return [a.init(src), a.last(src)]
 }

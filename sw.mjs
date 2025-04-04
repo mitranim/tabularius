@@ -32,7 +32,7 @@ supported in NPM, and various CDNs that allow to import NPM modules by URL.
 */
 function shouldCache(req) {
   return (
-    req.method.toLowerCase() === `GET` &&
+    req.method === `GET` &&
     /[@/][\^~>=]?v?(?:\d+|\*|x)[.](?:\d+|\*|x)[.](?:\d+|\*|x)/.test(decodeURI(req.url))
   )
 }

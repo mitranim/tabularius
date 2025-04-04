@@ -155,7 +155,7 @@ export function logErr(err) {log.err(err)}
 
 export const log = new class Log extends Elem {
   // Must be used for all info logging.
-  inf(...msg) {
+  info(...msg) {
     if (!a.vac(msg)) return
     this.addMsg(msg)
   }
@@ -423,8 +423,8 @@ export function wait(sig, ...src) {
 
 export function logCmdDone(name, out) {
   a.reqValidStr(name)
-  if (a.vac(out)) log.inf(`[${name}]`, out)
-  else log.inf(`[${name}] done`)
+  if (a.vac(out)) log.info(`[${name}]`, out)
+  else log.info(`[${name}] done`)
 }
 
 export function logCmdFail(name, err) {
@@ -449,6 +449,7 @@ export function isElemInput(val) {
 
 export function joinSpaced(src) {return a.joinOptLax(src, ` `)}
 export function joinKeys(...src) {return a.joinOptLax(src, `_`)}
+export function joinLines(...src) {return a.joinLinesOptLax(src)}
 export function joinParagraphs(...src) {return a.joinOptLax(src, `\n\n`)}
 
 /*
@@ -504,18 +505,6 @@ export function compareByIntPrefix(prev, next, desc) {
   if (one < two) return desc ? 1 : -1
   if (one > two) return desc ? -1 : 1
   return 0
-}
-
-export function fileNameBase(name) {
-  name = a.laxStr(name)
-  const ind = name.lastIndexOf(`.`)
-  return ind > 0 ? name.slice(0, ind) : ``
-}
-
-export function fileNameExt(name) {
-  name = a.laxStr(name)
-  const ind = name.lastIndexOf(`.`)
-  return ind > 0 ? name.slice(ind) : ``
 }
 
 export async function jsonDecompressDecode(src) {
@@ -725,4 +714,74 @@ export async function lockWith(name, opt) {
 
   const ok = await Promise.race([request0, request1])
   return ok ? unlock : undefined
+}
+
+/*
+We have several event targets (`BROAD` and `DAT`). `BroadcastChannel`
+prioritizes `message` events; they're dispatched when using `.postMessage`.
+Sometimes we pass them along to other event targets. So for simplicity,
+we just use this event type for everything.
+*/
+export const DEFAULT_EVENT_TYPE = `message`
+
+export const BROAD = new BroadcastChannel(`tabularius_broadcast`)
+
+BROAD.onmessage = function onBroadcastMessage(eve) {
+  if (!LOG_VERBOSE) return
+  console.log(`broadcast message event:`, eve)
+}
+
+BROAD.onmessageerror = function onBroadcastError(eve) {
+  if (!LOG_VERBOSE) return
+  console.error(`broadcast error event:`, eve)
+}
+
+export function broadcastToAllTabs(data) {
+  broadcastToThisTab(data)
+  broadcastToOtherTabs(data)
+}
+
+export function broadcastToThisTab(data) {
+  BROAD.dispatchEvent(new MessageEvent(DEFAULT_EVENT_TYPE, {data}))
+}
+
+export function broadcastToOtherTabs(data) {
+  BROAD.postMessage(data)
+}
+
+// Default way of subscribing to our event targets.
+export function listenMessage(tar, fun, opt) {
+  return listen(tar, DEFAULT_EVENT_TYPE, fun, opt)
+}
+
+// Default way of dispatching on our event targets.
+export function dispatchMessage(tar, data) {
+  dispatch(tar, DEFAULT_EVENT_TYPE, data)
+}
+
+/*
+A simplifying wrapper for `.addEventListener`/`.removeEventListener` that
+provides only the event data, without the event, supporting both message
+events and custom events (where data is stored in different fields).
+*/
+export function listen(tar, type, fun, opt) {
+  a.reqStr(type)
+  a.reqFun(fun)
+  a.optObj(opt)
+
+  function onEvent(src) {fun(eventData(src))}
+  tar.addEventListener(type, onEvent, opt)
+  return function unlisten() {tar.removeEventListener(type, onEvent, opt)}
+}
+
+export function dispatch(tar, type, data) {
+  tar.dispatchEvent(new CustomEvent(a.reqStr(type), {detail: data}))
+}
+
+function eventData(src) {
+  a.reqInst(src, Event)
+  return (
+    src.data || // `MessageEvent`
+    src.detail  // `CustomEvent`
+  )
 }
