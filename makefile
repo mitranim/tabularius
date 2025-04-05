@@ -26,7 +26,7 @@ run:
 	$(DENO_RUN) $(run)
 
 lint:
-	deno lint
+	deno lint --rules-exclude=no-window,no-window-prefix
 
 # Trims trailing whitespace from all tracked files.
 # The `-i ''` is required on MacOS, do not remove.

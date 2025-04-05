@@ -491,9 +491,15 @@ function datOnBroadcast(src) {
 
 export function plotOptsDamagePerRoundPerBuiTypeUpg(opt, datMsg) {
   const runId = choosePlotRunId(opt.runId, opt.isLatest, datMsg)
-  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_DMG_DONE, a.sum)
+  const agg = a.sum
+  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_DMG_DONE, agg)
+
+  Z_labels.unshift(`Total`)
+  Z_X_Y_arr.unshift(totals(Z_X_Y_arr, agg))
+
   // Native `.map` passes an index, which is needed for stable colors.
   const Z_rows = a.arr(Z_labels).map(pl.serieWithSum)
+  Z_rows[0].show = false
 
   return {
     ...pl.LINE_PLOT_OPTS,
@@ -507,9 +513,15 @@ export function plotOptsDamagePerRoundPerBuiTypeUpg(opt, datMsg) {
 
 export function plotOptsCostEffPerRoundPerBuiTypeUpg(opt, datMsg) {
   const runId = choosePlotRunId(opt.runId, opt.isLatest, datMsg)
-  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_COST_EFF, u.avg)
+  const agg = u.avg
+  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_COST_EFF, agg)
+
+  Z_labels.unshift(`Total`)
+  Z_X_Y_arr.unshift(totals(Z_X_Y_arr, agg))
+
   // Native `.map` passes an index, which is needed for stable colors.
   const Z_rows = a.arr(Z_labels).map(pl.serieWithAvg)
+  Z_rows[0].show = false
 
   return {
     ...pl.LINE_PLOT_OPTS,
@@ -575,6 +587,24 @@ function aggForRunPerRoundPerBuiTypeUpg(runId, statType, agg) {
 
   dropZeroRows(Z_labels, Z_X_Y_arr)
   return [X_row, Z_labels, Z_X_Y_arr]
+}
+
+export function totals(Z_X_Y, agg) {
+  a.reqArrOf(Z_X_Y, a.isArr)
+  a.reqFun(agg)
+
+  const Z_len = Z_X_Y.length
+  const X_len = Z_len ? Z_X_Y[0].length : 0
+  const Y_col = Array(Z_len)
+  const Z_X_totals = Array(X_len)
+  let X = -1
+
+  while (++X < X_len) {
+    let Z = -1
+    while (++Z < Z_len) Y_col[Z] = Z_X_Y[Z][X]
+    Z_X_totals[X] = agg(Y_col)
+  }
+  return Z_X_totals
 }
 
 // See `test_encodeUpgrade`.

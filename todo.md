@@ -666,7 +666,7 @@ Share the `watch` logging between all tabs, but make it clear that only one back
 
 ---
 
-Damage plot: add a series with total damage, hidden by default.
+<!-- Damage plot: add a series with total damage, hidden by default. -->
 
 ---
 
