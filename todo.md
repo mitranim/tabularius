@@ -16,7 +16,7 @@ The SPA lets you view run history, per round, per run.
 
 The SPA may provide an option to roll back the save.
 
-Detect multiple concurrent instances of the app, only one should deal with files.
+<!-- Detect multiple concurrent instances of the app, only one should deal with files. -->
 
 ## Data
 
@@ -439,7 +439,7 @@ Added (hardcoded), TODO auto-increment.
 
 ---
 
-Charts.
+<!-- Charts.
 
 Considered many bot suggestions, tried d3, `@observablehq/plot` (which is d3-based), `uplot`. Settled on `uplot`: _much_ smaller, way fewer files, advertizes better performance.
 
@@ -448,7 +448,7 @@ TODO:
 - Add `analyze` command.
   - Implement reading run data.
   - Settle on one schema already.
-- Integrate with media panel.
+- Integrate with media panel. -->
 
 ---
 
@@ -511,7 +511,7 @@ Plot: when grouping multiple sources, such as buildings or weapons, into one ser
 
 ---
 
-Media: always show processes under custom media, such as plots.
+<!-- Media: always show processes under custom media, such as plots. -->
 
 ---
 
@@ -535,7 +535,7 @@ Ship with mock data and render a chart right away, for demonstration.
 
 ---
 
-Media pane: support adding any number of custom contents, which can be closed separately. Maybe vertically as blocks with close buttons, maybe as tabs. If using tabs, the tab headers should be grid-like, reflowing (maybe `position: float`).
+<!-- Media pane: support adding any number of custom contents, which can be closed separately. Maybe vertically as blocks with close buttons, maybe as tabs. If using tabs, the tab headers should be grid-like, reflowing (maybe `position: float`). -->
 
 ---
 
@@ -609,7 +609,7 @@ A media UI for showing a breakdown of the latest round and the run so far. (The 
 
 ---
 
-The `show` command should print the object to the browser console, so the user can browse it. Instruct the user about the console.
+<!-- The `show` command should print the object to the browser console, so the user can browse it. Instruct the user about the console. -->
 
 ---
 
@@ -617,9 +617,9 @@ In the terminal, differentiate user inputs from other log entries. Maybe by thei
 
 ---
 
-Live updates of a given analysis. Maybe an analysis sticks around and is stateful. There may be multiple live at once. As long as the procs are running, they may receive updates. Alternatively, instead of running procs, they may simply be found in `MEDIA`. The latter probably makes more sense in JS technical terms, but treating them as procs and tying the lifetime of their medias to the lifetimes of the processes makes management simpler. And we can reuse the proc UI for the media management.
+<!-- Live updates of a given analysis. Maybe an analysis sticks around and is stateful. There may be multiple live at once. As long as the procs are running, they may receive updates. Alternatively, instead of running procs, they may simply be found in `MEDIA`. The latter probably makes more sense in JS technical terms, but treating them as procs and tying the lifetime of their medias to the lifetimes of the processes makes management simpler. And we can reuse the proc UI for the media management.
 
-Update: tying media elements to procs makes no sense in the DOM API. Just give them their own "close" buttons.
+Update: tying media elements to procs makes no sense in the DOM API. Just give them their own "close" buttons. -->
 
 ---
 
@@ -696,3 +696,19 @@ Prettify for launch:
   - Write as `.json` (same base name) to `decoded_<run_id>`. -->
 
 ---
+
+`ls`/`cmdLs`: show file count and progress file count / round count in dirs.
+
+---
+
+When defeated, we should backup the last round (which is "expired"). Currently we don't. And also, make sure we backup the last round on victory, when not using endless.
+
+Upon inspection, it seems like after being defeated and clicking "back", the save file has `.RoundIndex === 0`, `.MarkAsExpired === false`, and no building data.
+
+---
+
+Add a command to decode and show the progress file itself. Could be a mode of `show`.
+
+---
+
+Support multiple CLI commands in one line. We may consider shell-style `&&` and `&`, with corresponding behaviors.

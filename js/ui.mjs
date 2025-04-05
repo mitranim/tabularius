@@ -15,7 +15,7 @@ cmdMedia.desc = `toggle media panel`
 export function cmdMedia() {MEDIA.toggle()}
 
 // Increment by 1 when publishing an update.
-const VERSION = 14
+const VERSION = 15
 let INITED
 
 /*
@@ -77,7 +77,7 @@ export const PROCESS_LIST = new class ProcessList extends u.ReacElem {
 
     E(
       this,
-      {class: `flex flex-col gap-2 border border-gray-300 dark:border-gray-700 rounded p-4 bg-gray-100 dark:bg-gray-800`},
+      {class: a.spaced(MEDIA_CHI_CLS, MEDIA_CHI_PAD, `flex flex-col gap-2`)},
       (
         len
         ? [
@@ -107,82 +107,68 @@ function Process(src) {
       {class: `truncate text-sm text-gray-500 dark:text-gray-500`},
       u.timeFormat.format(src.startAt),
     ),
-    E(`button`, {
-      type: `button`,
-      class: `bg-red-500 text-white rounded hover:bg-red-600`,
-      style: STYLE_BTN_CEN,
-      onclick: a.vac(src.id) && function onclick() {
-        os.runCmd(`kill ` + src.id).catch(u.logErr)
-      },
-    }, `✕`),
+    a.vac(src.id) && BtnKill({
+      onclick() {os.runCmd(`kill ` + src.id).catch(u.logErr)},
+    }),
   )
 }
 
-// For single-character or icon buttons.
-// TODO convert to Tailwind classes.
-export const STYLE_BTN_CEN = {
-  width: `2rem`,
-  height: `2rem`,
-  textAlign: `center`,
-  verticalAlign: `middle`,
-  lineHeight: `1`,
+function BtnKill({class: cls, ...attrs}) {
+  return E(`button`, {
+    type: `button`,
+    class: a.spaced(
+      `w-8 h-8 text-center align-middle leading-none bg-red-500 text-white rounded hover:bg-red-600`,
+      cls,
+    ),
+    ...attrs
+  }, `✕`)
 }
 
-/*
-Default children of the media panel, shown when not replaced by other content.
-Could be defined as a list, but having a wrapper element makes us more flexible
-at displaying replacement content, such as not forcing padding or a particular
-layout.
-*/
-export const MEDIA_CHI_DEFAULT = E(
-  `div`,
-  {class: `flex flex-col gap-4 p-4 flex-1 min-w-0 bg-white dark:bg-gray-900 overflow-y-auto`},
+const MEDIA_CHI_CLS = `border border-gray-300 dark:border-gray-700 rounded bg-gray-100 dark:bg-gray-800`
+const MEDIA_CHI_PAD = `p-4`
 
-  E(`div`, {}, `Media Panel`),
-
-  // Example content - could be a chart, image, etc.
-  E(`div`, {class: `border border-gray-300 dark:border-gray-700 rounded p-4 bg-gray-100 dark:bg-gray-800`},
-    E(`div`, {class: `text-center`}, `Sample Chart`),
-    E(`div`, {class: `h-64 flex items-center justify-center border border-gray-400 dark:border-gray-600 rounded bg-white dark:bg-gray-700`},
-      E(`div`, {class: `text-gray-500 dark:text-gray-400`}, `[Chart placeholder]`)
-    )
-  ),
-
-  PROCESS_LIST,
+export const MEDIA_PLACEHOLDER = E(`div`, {class: a.spaced(MEDIA_CHI_CLS, `flex flex-col gap-4`)},
+  E(`div`, {class: `text-center`}, `Sample Plot`),
+  E(`div`, {class: `h-64 flex items-center justify-center border border-gray-400 dark:border-gray-600 rounded bg-white dark:bg-gray-700`},
+    E(`div`, {class: `text-gray-500 dark:text-gray-400`}, `[Plot Placeholder]`)
+  )
 )
 
 export const MEDIA = new class MediaPanel extends u.Elem {
   constructor() {
     super()
-    this.lastChi = undefined
-    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto`})
-    this.setDefault()
+    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto flex flex-col gap-4 p-4 bg-white dark:bg-gray-900`},
+      MEDIA_PLACEHOLDER,
+      PROCESS_LIST,
+    )
   }
 
-  setDefault() {
-    E(this, {}, MEDIA_CHI_DEFAULT)
-    this.isDefault = true
+  add(val) {
+    a.reqElement(val)
+    val.classList.add(...u.splitCliArgs(MEDIA_CHI_CLS), `relative`)
+    val.appendChild(BtnKill({
+      class: `absolute top-2 right-2`,
+      onclick() {MEDIA.delete(val)},
+    }))
+    MEDIA_PLACEHOLDER.remove()
+    this.prepend(val)
+    this.append(PROCESS_LIST)
   }
 
-  set(...chi) {
-    if (a.vac(chi)) {
-      E(this, {}, chi)
-      this.lastChi = chi
-      this.isDefault = false
-    }
-    else {
-      this.setDefault()
-    }
+  delete(val) {
+    val.remove()
+    if (this.children.length <= 1) this.prepend(MEDIA_PLACEHOLDER)
   }
 
-  toggle() {
-    if (this.isDefault && a.vac(this.lastChi)) {
-      E(this, {}, this.lastChi)
-      this.isDefault = false
-    }
-    else {
-      this.setDefault()
-    }
+  clear() {E(this, {}, undefined)}
+
+  // Too fragile, TODO simplify.
+  isDefault() {
+    return (
+      this.childElementCount === 2 &&
+      MEDIA_PLACEHOLDER.parentNode === this &&
+      PROCESS_LIST.parentNode === this
+    )
   }
 }()
 
@@ -317,7 +303,7 @@ function focusPromptOnSlash(eve) {
 export const PROMPT_INPUT = E(new PromptInput(), {
   class: `w-full bg-transparent resize-none overflow-hidden dark:text-gray-200 outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded p-2 transition-all duration-150 ease-in-out`,
   autofocus: true,
-  id: `prompt`,
+  id: `input`,
 })
 
 export const PROMPT = E(

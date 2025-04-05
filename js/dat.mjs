@@ -106,7 +106,7 @@ export async function cmdAnalyze({sig, args}) {
 
   await datLoadRun(sig, runId)
   const plotFun = a.bind(mode.fun, {runId, isLatest})
-  ui.MEDIA.set(new DatPlotter(plotFun))
+  ui.MEDIA.add(new DatPlotter(plotFun))
 }
 
 /*
@@ -136,7 +136,7 @@ async function analyzeExampleRun() {
   const mode = a.head(ANALYSIS_MODES)
   const opts = mode.fun({runId})
   opts.title = `example run analyzis: ` + opts.title
-  ui.MEDIA.set(new pl.Plotter(opts))
+  ui.MEDIA.add(new pl.Plotter(opts))
 }
 
 export let CODES

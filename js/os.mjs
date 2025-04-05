@@ -1,5 +1,5 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
-import * as ob from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs.mjs'
+import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs.mjs'
 import * as u from './util.mjs'
 
 import * as self from './os.mjs'
@@ -48,7 +48,7 @@ export class Proc extends a.Emp {
     this.endAt = undefined             // Assigned by `runProc`.
     this.val = undefined               // Eventual promise value, if any.
     this.err = undefined               // Eventual promise error, if any.
-    // return ob.obs(this)                // For reactive UI updates.
+    // return o.obs(this)                // For reactive UI updates.
   }
 
   pk() {return this.id}
@@ -65,7 +65,7 @@ export class Proc extends a.Emp {
 Centralized registry of all currently running processes. Keys must be proc ids,
 values must be procs.
 */
-export const PROCS = ob.obs(a.Emp())
+export const PROCS = o.obs(a.Emp())
 
 // Suboptimal but doesn't matter.
 export function procByName(name) {
@@ -74,6 +74,7 @@ export function procByName(name) {
 }
 
 export async function runCmd(args) {
+  args = a.trim(args)
   const name = u.firstCliArg(args)
   const cmd = CMDS[name]
   if (!cmd) throw Error(`unknown command: ${a.show(name)}`)

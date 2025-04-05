@@ -29,20 +29,20 @@ Dark mode demo:
 Usage examples:
 
   E(document.body, {}, new pl.Plotter(opts))
-  ui.MEDIA.set(new pl.Plotter(opts))
+  ui.MEDIA.add(new pl.Plotter(opts))
 */
 export class Plotter extends u.Elem {
   constructor(opts) {
     super()
     this.opts = a.reqDict(opts)
     this.resObs = new ResizeObserver(this.onResize.bind(this))
-    this.className = `block w-full h-full`
+    this.className = `block w-full`
   }
 
   init() {
     this.deinit()
     this.plot = new Plot({...this.opts, ...this.sizes()})
-    E(this, {}, this.plot.root)
+    this.appendChild(this.plot.root)
     this.resObs.observe(this)
     u.darkModeMediaQuery.addEventListener(`change`, this)
   }
@@ -50,6 +50,7 @@ export class Plotter extends u.Elem {
   deinit() {
     u.darkModeMediaQuery.removeEventListener(`change`, this)
     this.resObs.disconnect()
+    this.plot?.root?.remove()
     this.plot?.destroy()
     this.plot = undefined
   }
@@ -72,7 +73,12 @@ export class Plotter extends u.Elem {
     this.plot?.setSize(this.sizes())
   }
 
-  sizes() {return {width: this.offsetWidth, height: this.offsetHeight / 2}}
+  sizes() {
+    return {
+      width: this.offsetWidth,
+      height: this.offsetWidth/(16/9), // Golden ratio.
+    }
+  }
 
   handleEvent(eve) {if (eve.type === `change` && eve.media) this.init()}
 }
@@ -203,7 +209,7 @@ export function formatNumCompact(val) {
   a.reqNum(val)
   let scale = 0
   const mul = 1000
-  while (a.isFin(val) && (val < -mul || val > mul)) {
+  while (a.isFin(val) && Math.abs(val) > mul) {
     scale++
     val /= mul
   }

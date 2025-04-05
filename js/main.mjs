@@ -153,7 +153,7 @@ else {
   the URL query has modified the media already, we should avoid touching it.
   TODO: make this togglable.
   */
-  if (ui.MEDIA.isDefault) {
+  if (ui.MEDIA.isDefault()) {
     os.runProc(d.analyzeDefault, `analyze_default`, `running default analysis`).catch(u.logErr)
   }
 }

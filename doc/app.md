@@ -27,11 +27,11 @@ At the top we have a narrow horizontal strip with the app's title on the left, l
 
 Most of the UI is taken up by the log (left side) and media (right side). The divider between them is draggable. Only the log and media are scrollable.
 
-The log is similar to stdout and stderr in OS terminals. It's a DOM element implemented in `./js/util.mjs` as the variable `log`, a singleton. It's used for logging by _all_ of our browser code.
+The log is similar to stdout and stderr in OS terminals. It's a DOM element implemented in `./js/util.mjs`.`log`, a singleton. It's used for logging by _all_ of our browser code.
 
-The media area, to the right from the log, is used for arbitrary non-text content, similar to special media content in LLM chat apps. Any command can put arbitrary content there. The user can always close that area.
+The media area, to the right from the log, is used for arbitrary non-text content, similar to special media content in LLM chat apps. Any command can add any content there.
 
-Unlike in regular terminals, commands don't block the prompt. Instead, each command starts a "process", which is added to set of currently running processes.
+Unlike in regular terminals, commands don't block the prompt. Instead, each command starts a "process", which is added to set of currently running processes. This is similar to OS process management, and implemented in `./js/os.mjs`.
 
 In the default state of the media panel (when no other content is put there), at the bottom it shows currently running processes. Each process has a pid, a command's name and args, and a tiny button (with a cross) that kills it.
 
@@ -47,7 +47,7 @@ We have terminal commands for initializing the FS access, and showing the curren
 
 ## Backups
 
-Status: done. The description below is somewhat outdated.
+Status: done. The description below is outdated, and many features added later are missing.
 
 Goals:
 - Watch the save/progress file.

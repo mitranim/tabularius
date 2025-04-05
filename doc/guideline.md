@@ -170,14 +170,14 @@ import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs.mjs'
 import * as od from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs_dom.mjs'
 import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/dom_reg.mjs'
 
-// Create renderer
+// Create renderer.
 const ren = new p.Ren()
-const E = ren.elemHtml.bind(ren)
+const E = ren.E.bind(ren)
 
-// Create elements
+// Create or mutate elements via `E`.
 const elem = E(`div`, {class: `container`},
-  E(`h1`, null, `Title`),
-  E(`p`, null, `Content`)
+  E(`h1`, {}, `Title`),
+  E(`p`, {}, `Content`)
 )
 
 // Use observables for mutable state. Observables monitor access to object
