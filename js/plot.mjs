@@ -109,8 +109,10 @@ export const LINE_PLOT_OPTS = {
   },
 }
 
+export const pluginSortLabels = {hooks: {setLegend: sortPlotLabels}}
+
 export function plugins() {
-  return [new TooltipPlugin().opts()]
+  return [new TooltipPlugin().opts(), pluginSortLabels]
 }
 
 export function axes(nameX, nameY) {
@@ -153,7 +155,20 @@ export function serieWithAvg(label, ind) {
 
 export function serie(label, ind) {
   a.reqValidStr(label)
-  return {label, stroke: nextFgColor(ind), width: 2, value: formatVal}
+
+  return {
+    label,
+    stroke: nextFgColor(ind),
+    width: 2,
+
+    /*
+    When formatting series, we preserve values exactly as-is, in order to be
+    able to parse them back and reorder serie DOM nodes by those values. Which
+    seems like the cleanest, least invasive approach to dynamic reordering of
+    series, since Uplot doesn't support that at all. See `pluginSortLabels`.
+    */
+    value: a.id,
+  }
 }
 
 export function serieFormatValWithSum(plot, val, ind) {
@@ -164,19 +179,17 @@ export function serieFormatValWithAvg(plot, val, ind) {
   return serieFormatVal(plot, val, ind, u.avg)
 }
 
-export function serieFormatVal(plot, val, seriesInd, fun) {
-  a.reqFun(fun)
+// See comment in `serie` why we don't format the value here.
+export function serieFormatVal(plot, val, seriesInd, agg) {
+  a.reqFun(agg)
   if (a.isNil(val) && a.isNum(seriesInd)) {
     const dat = plot.data[seriesInd]
-    if (a.isArr(dat)) val = fun(dat)
+    if (a.isArr(dat)) val = agg(dat)
   }
-  return formatVal(val)
+  return val
 }
 
-/*
-Our default value formatter, which should be used for displaying all plot
-values. Needs to be included in every serie.
-*/
+// Our default value formatter, which should be used for all plot values.
 export function formatVal(val) {
   if (!a.isNum(val)) return val
   return formatNumCompact(val)
@@ -194,27 +207,11 @@ export function formatNumCompact(val) {
     scale++
     val /= mul
   }
-  return numFormat1.format(val) + `k`.repeat(scale)
+  return numFormat.format(val) + `k`.repeat(scale)
 }
 
-export const numFormat2 = new Intl.NumberFormat(`en-US`, {
-  maximumFractionDigits: 2,
-  roundingMode: `halfExpand`,
-})
-
-export const numFormat1 = new Intl.NumberFormat(`en-US`, {
+export const numFormat = new Intl.NumberFormat(`en-US`, {
   maximumFractionDigits: 1,
-  roundingMode: `halfExpand`,
-})
-
-export const numFormat0 = new Intl.NumberFormat(`en-US`, {
-  maximumFractionDigits: 0,
-  roundingMode: `halfExpand`,
-})
-
-export const numFormatCompact = new Intl.NumberFormat(`en-US`, {
-  notation: `compact`,
-  maximumFractionDigits: 2,
   roundingMode: `halfExpand`,
 })
 
@@ -372,3 +369,32 @@ export class TooltipPlugin extends a.Emp {
     })
   }
 }
+
+export function sortPlotLabels(plot) {
+  const body = plot.root.getElementsByTagName(`table`)?.[0]?.getElementsByTagName(`tbody`)?.[0]
+  if (!body) return
+
+  const nodes = body.children
+  const len = nodes.length
+  if (!len) return
+
+  // Enables `.style.order` on child nodes.
+  body.style.display = `flex`
+  body.style.flexWrap = `wrap`
+  body.style.justifyContent = `center`
+
+  for (const [ind, val] of a.arr(nodes).map(labelSortable).sort(compareLabelSortable).entries()) {
+    if (!val.ind) continue // Skip X label.
+    val.node.style.order = ind
+    labelValNode(val.node).textContent = formatVal(val.val)
+  }
+}
+
+function labelSortable(node, ind) {
+  const val = parseFloat(labelValNode(node).textContent)
+  return {ind, val, node}
+}
+
+function labelValNode(val) {return val.childNodes[1]}
+
+function compareLabelSortable(one, two) {return two.val - one.val}

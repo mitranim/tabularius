@@ -470,11 +470,11 @@ https://github.com/leeoniya/uPlot/issues?q=dark%20
 
 ---
 
-Plot/analyze: totals; should be shown on labels instead of `--` placeholders when nothing is hovered.
+<!-- Plot/analyze: totals; should be shown on labels instead of `--` placeholders when nothing is hovered. -->
 
 ---
 
-Plot: order series by total value. When hovering an X point, reorder the legend labels by the value in that current X.
+<!-- Plot: order series by total value. When hovering an X point, reorder the legend labels by the value in that current X. -->
 
 ---
 
@@ -490,6 +490,9 @@ https://leeoniya.github.io/uPlot/demos/sine-stream.html
 
 The file watcher needs to send new data to the plot.
 
+* [x] Local.
+* [ ] Remote.
+
 ---
 
 Plot: button to toggle all series.
@@ -497,6 +500,10 @@ Plot: button to toggle all series.
 ---
 
 Plot: when the cursor is near many near-overlapping data points (within a certain proximity threshold), we should group them up, and include all in a tooltip.
+
+---
+
+Plot: when grouping multiple sources, such as buildings or weapons, into one series, indicate the count of grouped entries in the label. Might be WONTFIX because the count _changes_ between rounds.
 
 ---
 
@@ -508,11 +515,7 @@ Media: always show processes under custom media, such as plots.
 
 ---
 
-Plot: when grouping multiple sources, such as buildings or weapons, into one series, indicate the count of grouped entries in the label. Might be WONTFIX because the count _changes_ between rounds.
-
----
-
-Plot: when analyzing building damage, exclude series where every value is zero or missing.
+<!-- Plot: when analyzing building damage, exclude series where every value is zero or missing. -->
 
 ---
 
