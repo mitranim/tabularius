@@ -246,7 +246,7 @@ export function datAddRound(round, runId) {
     const buiInRoundIds = {...buiInRunIds,buiInRoundId}
     const buiUpg = encodeUpgrades(bui.PurchasedUpgrades)
     const buiTypeUpg = u.joinKeys(buiType, buiUpg)
-    const buiTypeUpgName = buiName ? a.spaced(buiName, buiUpg) : buiTypeUpg
+    const buiTypeUpgName = buiName ? u.joinKeys(buiName, buiUpg) : buiTypeUpg
     const buiInRound = {
       ...buiInRoundIds,
       buiUpg,
