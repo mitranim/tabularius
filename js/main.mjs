@@ -12,116 +12,70 @@ tar.m = self
 a.patch(window, tar)
 
 /*
-All commands should be added here so that we can control the ordering.
-`os.COMMANDS` is an ordered map.
+All CLI commands should be added here so that we can control the ordering.
 */
 
-os.COMMANDS.add(new os.Cmd({
-  name: `help`,
-  desc: `show help`,
-  fun: cmdHelp,
-}))
+cmdHelp.cmd = `help`
+cmdHelp.desc = `show help`
+os.addCmd(cmdHelp)
 
-os.COMMANDS.add(new os.Cmd({
-  name: `init`,
-  desc: `initialize features requiring user action`,
-  fun: cmdInit,
-}))
+cmdInit.cmd = `init`
+cmdInit.desc = `grant FS access, start "watch" for backups`
+os.addCmd(cmdInit)
 
-os.COMMANDS.add(new os.Cmd({
-  name: `deinit`,
-  desc: `stop all processes and deinitialize features`,
-  fun: cmdDeinit,
-}))
+cmdDeinit.cmd = `deinit`
+cmdDeinit.desc = `stop all processes, revoke FS access`
+os.addCmd(cmdDeinit)
 
-os.COMMANDS.add(new os.Cmd({
-  name: `status`,
-  desc: `show status of app features and processes`,
-  fun: cmdStatus,
-}))
+cmdStatus.cmd = `status`
+cmdStatus.desc = `show status of app features and processes`
+os.addCmd(cmdStatus)
 
-os.COMMANDS.add(new os.Cmd({
-  name: `ps`,
-  desc: `list running processes`,
-  fun: os.cmdPs,
-}))
+os.addCmd(os.cmdPs)
+os.addCmd(os.cmdKill)
+os.addCmd(w.cmdWatch)
+os.addCmd(fs.cmdLs)
+os.addCmd(fs.cmdShow)
+os.addCmd(fs.cmdDecode)
+os.addCmd(d.cmdAnalyze)
+os.addCmd(ui.cmdMedia)
+os.addCmd(u.cmdVerbose)
+os.addCmd(u.cmdClear)
 
-os.COMMANDS.add(new os.Cmd({
-  name: `kill`,
-  desc: `kill a process`,
-  help: `kill <id>`,
-  fun: os.cmdKill,
-}))
-
-os.COMMANDS.add(new os.Cmd({
-  name: `watch`,
-  desc: `watch the progress file for changes and create backups`,
-  fun: w.cmdWatch,
-}))
-
-os.COMMANDS.add(new os.Cmd({
-  name: `ls`,
-  desc: `list dirs and files; usage: "ls" or "ls <path>"`,
-  fun: fs.cmdLs,
-}))
-
-// os.COMMANDS.add(new os.Cmd({
-//   name: `tree`,
-//   desc: `print a tree of dirs and files`,
-//   fun: fs.cmdTree,
-// }))
-
-os.COMMANDS.add(new os.Cmd({
-  name: `show`,
-  desc: `clipboard the decoded content of a file; usage: "show <path>"`,
-  fun: fs.cmdShow,
-}))
-
-os.COMMANDS.add(new os.Cmd({
-  name: `analyze`,
-  desc: `analyze data`,
-  fun: d.cmdAnalyze,
-}))
-
-os.COMMANDS.add(new os.Cmd({
-  name: `media`,
-  desc: `toggle media panel`,
-  fun: ui.cmdMedia,
-}))
-
-os.COMMANDS.add(new os.Cmd({
-  name: `verbose`,
-  desc: `toggle between quiet and verbose mode`,
-  fun: u.cmdVerbose,
-}))
-
-os.COMMANDS.add(new os.Cmd({
-  name: `test`,
-  desc: `toggle test mode`,
-  fun: cmdTest,
-}))
-
-os.COMMANDS.add(new os.Cmd({
-  name: `clear`,
-  desc: `clear the log`,
-  fun: u.cmdClear,
-}))
+cmdTest.cmd = `test`
+cmdTest.desc = `toggle test mode`
+os.addCmd(cmdTest)
 
 /*
 TODO: `help <cmd>` which shows help for one command, and tries to use its
 `.help` which should be more detailed than `.desc`.
 */
-function cmdHelp() {
+function cmdHelp({args}) {
+  args = u.splitCliArgs(args)
+
+  if (args.length <= 1) {
+    return u.joinParagraphs(
+      `available commands:`,
+      a.joinLines(a.map(os.CMDS, cmdHelpShort)),
+      `pro tip: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=analyze 000000"`,
+    )
+  }
+
+  if (args.length > 2) return `usage: "help" or "help <cmd>"`
+
+  const name = args[1]
+  const cmd = os.CMDS[name]
+  if (!cmd) throw `unknown command ${a.show(name)}`
+
   return u.joinParagraphs(
-    `available commands:`,
-    a.joinLines(a.map(os.COMMANDS, cmdToHelp)),
-    `pro tip: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=analyze 000000"`,
+    `help for command ${a.show(name)}:`,
+    (a.isFun(cmd.help) ? cmd.help() : cmd.help) || cmd.desc,
   )
 }
 
-function cmdToHelp(val) {
-  a.reqInst(val, os.Cmd)
-  return val.name + `: ` + val.desc
+function cmdHelpShort(val) {
+  a.reqFun(val)
+  return a.compact([val.cmd || val.name, val.desc]).join(`: `)
 }
 
 // Initialize features that require user action.

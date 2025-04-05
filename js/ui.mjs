@@ -9,10 +9,13 @@ const tar = window.tabularius ??= a.Emp()
 tar.ui = self
 a.patch(window, tar)
 
+cmdMedia.cmd = `media`
+cmdMedia.desc = `toggle media panel`
+
 export function cmdMedia() {MEDIA.toggle()}
 
 // Increment by 1 when publishing an update.
-const VERSION = 12
+const VERSION = 13
 let INITED
 
 /*
@@ -314,6 +317,7 @@ function focusPromptOnSlash(eve) {
 export const PROMPT_INPUT = E(new PromptInput(), {
   class: `w-full bg-transparent resize-none overflow-hidden dark:text-gray-200 outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded p-2 transition-all duration-150 ease-in-out`,
   autofocus: true,
+  id: `prompt`,
 })
 
 export const PROMPT = E(

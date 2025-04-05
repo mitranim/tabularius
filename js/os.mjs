@@ -8,29 +8,31 @@ tar.os = self
 a.patch(window, tar)
 
 /*
-Represents a CLI-style command.
-Commands can be sync or async.
-Async commands start a "process", see below.
+Centralized registry of CLI-style commands for our "terminal". Each is
+represented with a function, with additional properties describing the
+command.
+
+Commands can be sync or async. Async commands start a "process", see below.
 */
-export class Cmd extends a.Emp {
-  constructor(src) {
-    a.reqObj(src)
-    super()
-    this.name = a.reqValidStr(src.name) // CLI name, short, lowercase.
-    this.desc = a.reqValidStr(src.desc) // Terse description of what it does.
-    this.help = a.laxStr(src.help)      // Longer, more detailed help (opt-in).
-    this.fun  = a.reqFun(src.fun)       // Actual function. Takes `(proc)`. Result is logged.
-  }
-  pk() {return this.name}
-}
+export const CMDS = a.Emp()
 
-class Cmds extends a.Coll {
-  reqKey(key) {return a.reqValidStr(key)}
-  reqVal(val) {return a.reqInst(val, Cmd)}
-}
+/*
+Each command must have:
 
-// Centralized registry of CLI-style commands for our terminal.
-export const COMMANDS = new Cmds()
+  .cmd  -- CLI name, short, lowercase.
+  .desc -- Terse description of what it does.
+  .help -- Longer, more detailed help (optional).
+*/
+export function addCmd(val) {
+  if (!a.isFun(val)) throw TypeError(`a command must be a function, got ${a.show(val)}`)
+  const {cmd, desc} = val
+  if (!cmd) throw TypeError(`missing .cmd on ${a.show(val)}`)
+  if (!a.isStr(cmd)) throw TypeError(`non-string .cmd ${a.show(cmd)} on ${a.show(val)}`)
+  if (!/^[a-z]+$/.test(cmd)) throw TypeError(`a command's .cmd must be a single lowercase word, got ${a.show(cmd)} on ${a.show(val)}`)
+  if (!desc) throw TypeError(`missing .desc on ${a.show(val)}`)
+  if (CMDS[cmd]) throw Error(`redundant registration of command ${a.show(cmd)} (prev ${a.show(CMDS[cmd])}, next ${a.show(val)})`)
+  CMDS[cmd] = val
+}
 
 // Represents a "process" started by an async command.
 export class Proc extends a.Emp {
@@ -73,9 +75,9 @@ export function procByName(name) {
 
 export async function runCmd(args) {
   const name = u.firstCliArg(args)
-  const cmd = COMMANDS.get(name)
+  const cmd = CMDS[name]
   if (!cmd) throw Error(`unknown command: ${a.show(name)}`)
-  await runProc(cmd.fun, args, cmd.desc)
+  await runProc(cmd, args, cmd.desc)
 }
 
 export async function runProc(fun, args, desc) {
@@ -121,6 +123,9 @@ export async function runProc(fun, args, desc) {
   }
 }
 
+cmdPs.cmd = `ps`
+cmdPs.desc = `list running processes`
+
 export function cmdPs() {return showProcs()}
 
 export function procToStatus(src) {
@@ -137,6 +142,10 @@ export function showProcs() {
     ...a.map(PROCS, procToStatus),
   )
 }
+
+cmdKill.cmd = `kill`
+cmdKill.desc = `kill a process`
+cmdKill.help = `"kill <id>" or "kill -a"`
 
 export function cmdKill({args}) {
   args = u.splitCliArgs(args)

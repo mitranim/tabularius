@@ -43,6 +43,9 @@ const WATCH_INTERVAL_MS_SHORT = a.secToMs(1)
 const WATCH_INTERVAL_MS_LONG = a.minToMs(1)
 const WATCH_MAX_ERRS = 3
 
+cmdWatch.cmd = `watch`
+cmdWatch.desc = `watch the progress file for changes and create backups`
+
 export async function cmdWatch(proc) {
   const {sig} = proc
   if (isWatching()) return `already running`

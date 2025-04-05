@@ -134,12 +134,18 @@ export let LOG_VERBOSE = a.boolOpt(
   localStorage.getItem(STORAGE_KEY_VERBOSE)
 )
 
+cmdVerbose.cmd = `verbose`
+cmdVerbose.desc = `toggle between quiet and verbose mode`
+
 export function cmdVerbose() {
   LOG_VERBOSE = !LOG_VERBOSE
   storageSet(sessionStorage, STORAGE_KEY_VERBOSE, LOG_VERBOSE)
   storageSet(localStorage, STORAGE_KEY_VERBOSE, LOG_VERBOSE)
   return `logging is now ` + (LOG_VERBOSE ? `verbose` : `selective`)
 }
+
+cmdClear.cmd = `clear`
+cmdClear.desc = `clear the log`
 
 export function cmdClear() {log.clear()}
 
@@ -188,11 +194,18 @@ export const log = new class Log extends Elem {
   resizePointermove = this.resizePointermove.bind(this)
   resizePointerup = this.resizePointerup.bind(this)
 
-  // List of actual log messages.
-  messageLog = E(`div`, {class: `w-full overflow-y-auto`})
+  /*
+  List of actual log messages.
+
+  Vertical spacing should either exactly match line height, or to be
+  non-existent, like in actual terminals. We want to be consistent with
+  precedent, and don't want to waste vertical space. Still undecided.
+  */
+  messageLog = E(`div`, {class: `w-full leading-tight py-2 overflow-y-auto`})
+  // messageLog = E(`div`, {class: `w-full leading-[1.25] space-y-[1.25em] py-2 overflow-y-auto`})
 
   removedMessageNotice = E(`div`, {
-    class: `text-gray-500 dark:text-gray-400 text-center p-2 border-b border-gray-300 dark:border-gray-700`,
+    class: `text-gray-500 dark:text-gray-400 text-center border-b border-gray-300 dark:border-gray-700`,
     hidden: true,
   })
 
@@ -309,30 +322,31 @@ export const log = new class Log extends Elem {
 }()
 
 function LogMsg(src, type) {
-  const timestamp = timeFormat.format(new Date())
   return E(
-    `div`,
+    `pre`,
     {
       class: a.spaced(
-        `border-l-4 p-2`,
-        type === `err`
-          ? `text-red-500 dark:text-red-400 border-red-500`
-          : `border-transparent`, // Same geometry as errors.
-      ),
+        // Mandatory stuff.
+        `px-2 font-mono whitespace-pre-wrap break-words overflow-wrap-anywhere`,
+
+        // Error-related stuff.
+        a.spaced(
+          `border-l-4`,
+          type === `err`
+            ? `text-red-500 dark:text-red-400 border-red-500`
+            : `border-transparent`, // Same geometry as errors.
+        ),
+      )
     },
     E(
-      `pre`,
-      {class: `font-mono whitespace-pre-wrap break-words overflow-wrap-anywhere`},
-      E(
-        `span`,
-        {
-          class: `text-gray-500 dark:text-gray-400`,
-          'data-tooltip': timestamp,
-        },
-        `> `
-      ),
-      fmtMsg(src)
-    )
+      `span`,
+      {
+        class: `text-gray-500 dark:text-gray-400`,
+        'data-tooltip': timeFormat.format(Date.now()),
+      },
+      `> `
+    ),
+    fmtMsg(src)
   )
 }
 
@@ -507,6 +521,10 @@ export function compareByIntPrefix(prev, next, desc) {
   return 0
 }
 
+export function compareRoundsAsc(one, two) {
+  return a.compareFin(one?.RoundIndex, two?.RoundIndex)
+}
+
 export async function jsonDecompressDecode(src) {
   src = a.trim(src)
 
@@ -636,6 +654,12 @@ Usage:
 */
 export const darkModeMediaQuery = window.matchMedia(`(prefers-color-scheme: dark)`)
 
+export function avg(src) {return a.values(src).reduce(avgAdd, 0)}
+
+function avgAdd(acc, num, ind) {
+  return !a.isFin(num) ? acc : (acc + ((num - acc) / (ind + 1)))
+}
+
 // Non-insane variant of `Math.round`. Rounds away from 0, instead of up.
 export function round(val) {
   a.reqNum(val)
@@ -665,14 +689,15 @@ export async function asyncIterCollect(sig, src) {
   return out
 }
 
-export function avg(src) {return a.values(src).reduce(avgAdd, 0)}
-
-function avgAdd(acc, num, ind) {
-  return !a.isFin(num) ? acc : (acc + ((num - acc) / (ind + 1)))
-}
-
 export function firstCliArg(src) {return splitCliArgs(src)[0]}
 export function splitCliArgs(src) {return a.reqStr(src).split(/\s+/)}
+
+// Suboptimal but not our bottleneck. Used only for CLI flags.
+export function arrRemoved(tar, val) {
+  const len = a.len(tar)
+  while (a.includes(tar, val)) tar.splice(a.indexOf(tar, val), 1)
+  return a.len(tar) < len
+}
 
 /*
 The implementation of "try-lock" behavior missing from the standard DOM API,

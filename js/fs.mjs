@@ -292,7 +292,9 @@ export async function reqHistoryDir(sig) {
   return reqHandlePermissionConf(HISTORY_DIR, HISTORY_DIR_CONF)
 }
 
-const CMD_LS_HELP = u.joinLines(
+cmdLs.cmd = `ls`
+cmdLs.desc = `list dirs and files; usage: "ls" or "ls <path>"`
+cmdLs.help = u.joinLines(
   `usage: "ls" or "ls <path>"`,
   `list the directories and files; examples:`,
   `  ls /`,
@@ -304,9 +306,9 @@ export async function cmdLs({sig, args}) {
   args = u.splitCliArgs(args)
   switch (args.length) {
     case 0:
-    case 1: return CMD_LS_HELP
+    case 1: return cmdLs.help
     case 2: break
-    default: return CMD_LS_HELP
+    default: return cmdLs.help
   }
 
   const path = pt.posix.clean(args[1])
@@ -333,13 +335,23 @@ function compareLsEntriesAsc(one, two) {return u.compareAsc(one[1], two[1])}
 // TODO implement.
 // export function cmdTree(sig, args) {}
 
-const CMD_SHOW_HELP = u.joinLines(
+cmdShow.cmd = `show`
+
+cmdShow.desc = `
+decode and show a round in a run; usage: "show <run_dir>/<round_file>"
+`.trim()
+
+cmdShow.help = u.joinLines(
   `usage: "show <path>"`,
-  `copy the decoded content of the given file to the clipboard; example:`,
-  `  show 000000/000001.gd`,
-  `optionally, log the data to the browser console via -l:`,
-  `  show -l 000000/000001.gd`,
-  `  show 000000/000001.gd -l`,
+  `flags:`,
+  `  -c  copy decoded content to clipboard`,
+  `  -l  log decoded content (as text) to browser console`,
+  `  -p  print decoded object to browser console`,
+  `examples:`,
+  `  show 000000/000001.gd -c`,
+  `  show 000000/000001.gd -c -l`,
+  `  show 000000/000001.gd -c -l -p`,
+  `if no flags are provided, nothing is done`
 )
 
 /*
@@ -352,22 +364,72 @@ once. For now we copy to the clipboard.
 */
 export async function cmdShow({sig, args}) {
   args = u.splitCliArgs(args)
-  const log = args.includes(`-l`)
-  args = a.remove(args, `-l`)
 
-  switch (a.len(u.reqArrOfStr(args))) {
+  const copy = u.arrRemoved(args, `-c`)
+  const log = u.arrRemoved(args, `-l`)
+  const print = u.arrRemoved(args, `-p`)
+
+  switch (args.length) {
     case 2: break
-    default: return CMD_SHOW_HELP
+    default: return cmdShow.help
   }
 
   const path = args[1]
   const handle = await handleAtPath(sig, path)
   if (!isFile(handle)) return `${a.show(path)} is not a file`
+
   const body = await u.jsonDecompress(await readFile(sig, handle))
-  await u.copyToClipboard(body)
-  if (log) console.log(body)
-  if (log) console.log(JSON.parse(body))
-  return `copied file content to clipboard`
+  const msgs = []
+
+  if (copy) {
+    await u.copyToClipboard(body)
+    msgs.push(`copied file content to clipboard`)
+  }
+  if (log) {
+    console.log(body)
+    msgs.push(`printed JSON to browser devtools console`)
+  }
+  if (print) {
+    console.log(JSON.parse(body))
+    msgs.push(`printed decoded object to browser devtools console`)
+  }
+  return msgs.join(`; `)
+}
+
+cmdDecode.cmd = `decode`
+cmdDecode.desc = `decode an entire run, writing the result to a file`
+cmdDecode.help = u.joinParagraphs(
+  cmdDecode.desc,
+  u.joinLines(
+    `usage examples:`,
+    `  decode <run_id>`,
+    `  decode <run_id> -p`,
+    `  decode 000000`,
+    `  decode 000000 -p`,
+  ),
+  `the decoded result is written to "<run_id>.json" in the history directory`,
+  `the flag -p enables pretty-printing`,
+  `tip: use "ls /" to browse runs`,
+)
+
+export async function cmdDecode({sig, args}) {
+  args = u.splitCliArgs(args)
+  const pretty = u.arrRemoved(args, `-p`)
+
+  switch (args.length) {
+    case 2: break
+    default: return cmdDecode.help
+  }
+
+  const runId = args[1]
+  const root = await reqHistoryDir(sig)
+  const dir = await getDirectoryHandle(sig, root, runId)
+  const rounds = await u.asyncIterCollect(sig, readRunRounds(sig, dir))
+  rounds.sort(u.compareRoundsAsc)
+  const path = runId + `.json`
+  const body = pretty ? JSON.stringify(rounds, ``, 2) : JSON.stringify(rounds)
+  await writeFile(sig, root, path, body)
+  return `wrote run ${a.show(runId)} to ${a.show(path)}`
 }
 
 // Caution: the iteration order is undefined and unstable.

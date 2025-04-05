@@ -309,19 +309,19 @@ Unfuck the bot's code style.
 
 ---
 
-Limit length of command history.
+<!-- Limit length of command history. -->
 
 ---
 
-`help <cmd>` should show help for specific command. But only if we can be bothered to define detailed help for each command. May eventually.
+<!-- `help <cmd>` should show help for specific command. But only if we can be bothered to define detailed help for each command. May eventually. -->
 
 ---
 
-Export our modules into global scope, under a single namespace (`tabularius`).
+<!-- Export our modules into global scope, under a single namespace (`tabularius`). -->
 
 ---
 
-When printing a command's output synchronously, skip the log timestamp.
+<!-- When printing a command's output synchronously, skip the log timestamp. -->
 
 ---
 
@@ -365,7 +365,7 @@ Log: only scroll to bottom if already scrolled to bottom. Meaning, if scrolled u
 
 ---
 
-Less vertical spacing in `u.log`.
+<!-- Less vertical spacing in `u.log`. -->
 
 ---
 
@@ -478,6 +478,10 @@ Plot: order series by total value. When hovering an X point, reorder the legend 
 
 ---
 
+Plot: totals should be calculated only for the currently _visible_ ranges in the chart, when zoomed in.
+
+---
+
 Plot auto-updating. First from local data, then from Firebase. Demos:
 
 https://leeoniya.github.io/uPlot/demos/stream-data.html
@@ -516,7 +520,7 @@ Plot: consider if even in damage per round charts, it's not useful to have a cha
 
 ---
 
-Consistently prefer lowercase msgs in log, errors, etc.
+<!-- Consistently prefer lowercase msgs in log, errors, etc. -->
 
 ---
 
@@ -567,6 +571,8 @@ Consider supporting relative run and round indexes. For example, a user's first 
 ---
 
 When analyze one run, or group by commander: show commander name (add to code file, rename it). When analyze one faction, or group by faction: show faction name.
+
+Where to show: probably on a combined stat screen (not a plot) which we're yet to implement.
 
 ---
 
@@ -650,3 +656,40 @@ Pass the abort signal to the lock request. -->
 ---
 
 <!-- The `watch` command gotta use the Web Locks API for mutual exclusion (one backup process, not multiple concurrent backup processes), and the `BroadcastChannel` API to notify about changes. All processes listening for changes do so on the broadcast channel, even within the same browser tab. -->
+
+---
+
+Share the `watch` logging between all tabs, but make it clear that only one backup was made, or that another tab made it.
+
+---
+
+Damage plot: add a series with total damage, hidden by default.
+
+---
+
+Prettify for launch:
+- Some better way to tell visitors about the features, a visual presentation if possible.
+- GitHub and Discord icons.
+- More prominent title.
+- Denser terminal output, less verbosity, consider smaller font.
+- Try for fewer commands and shorter help.
+- GitHub repo readme: better description, add screenshots.
+
+---
+
+<!-- Mission Control mine damage seems to be missing from damage charts. Copy that run and fix it. -->
+
+---
+
+<!-- The cost efficiency plots seem unnaturally similar to the damage plots. Gotta check. If not reproduced in local data, copy recent runs from Windows PC. -->
+
+---
+
+<!-- A command to decode an entire run as JSON:
+- Usage: `decode <run_id>`.
+- Mkdir `decoded_<run_id>`.
+- For every progress file in `<run_id>`:
+  - Read and decode if needed.
+  - Write as `.json` (same base name) to `decoded_<run_id>`. -->
+
+---

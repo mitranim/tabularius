@@ -36,8 +36,8 @@ export const ANALYSIS_MODES = {
     desc: `damage per round per building type (with upgrade)`,
     fun: plotOptsDamagePerRoundPerBuiTypeUpg,
   },
-  cost: {
-    desc: `cost efficiency per round per building type (with upgrade)`,
+  eff: {
+    desc: `cost efficiency per round per building type (with upgrade) (currently INCORRECT: counts only the base building cost)`,
     fun: plotOptsCostEffPerRoundPerBuiTypeUpg,
   },
   /*
@@ -49,7 +49,13 @@ export const ANALYSIS_MODES = {
   */
 }
 
-function cmdAnalyzeHelp() {
+function modeHelp([name, {desc}], ind) {
+  return `  ` + name + `: ` + desc + (ind ? `` : ` (default)`)
+}
+
+cmdAnalyze.cmd = `analyze`
+cmdAnalyze.desc = `analyze data`
+cmdAnalyze.help = function cmdAnalyzeHelp() {
   return u.joinParagraphs(
     u.joinLines(
       `usage examples:`,
@@ -69,11 +75,8 @@ function cmdAnalyzeHelp() {
       `<mode> chooses analysis mode; currently available modes:`,
       ...a.entries(ANALYSIS_MODES).map(modeHelp),
     ),
+    `tip: use "ls /" to browse runs`,
   )
-}
-
-function modeHelp([name, {desc}], ind) {
-  return `  ` + name + `: ` + desc + (ind ? `` : ` (default)`)
 }
 
 /*
@@ -87,11 +90,11 @@ export async function cmdAnalyze({sig, args}) {
   args = u.splitCliArgs(args)
   let runId = args[1]
   const modeName = args[2]
-  if (!runId || args.length > 3) return cmdAnalyzeHelp()
+  if (!runId || args.length > 3) return cmdAnalyze.help()
 
   const mode = (
     modeName
-    ? ANALYSIS_MODES[modeName] || a.panic(Error(`unknown analysis mode ${modeName}`))
+    ? ANALYSIS_MODES[modeName] || a.panic(Error(`unknown analysis mode ${a.show(modeName)}`))
     : a.head(ANALYSIS_MODES)
   )
 
@@ -127,7 +130,7 @@ async function analyzeExampleRun() {
   const rounds = await u.jsonDecompressDecode(await u.fetchText(`data/example_run.gd`))
   if (!a.len(rounds)) throw Error(`internal error: missing chart data`)
 
-  await initBuiCodes()
+  await initCodes()
   for (const round of rounds) datAddRound(round, runId)
 
   const mode = a.head(ANALYSIS_MODES)
@@ -136,10 +139,10 @@ async function analyzeExampleRun() {
   ui.MEDIA.set(new pl.Plotter(opts))
 }
 
-export let BUI_CODES
+export let CODES
 
-export async function initBuiCodes() {
-  return BUI_CODES ??= await u.fetchJson(new URL(`../data/building_codes.json`, import.meta.url))
+export async function initCodes() {
+  return CODES ??= await u.fetchJson(new URL(`../data/codes.json`, import.meta.url))
 }
 
 export async function datLoadRun(sig, runId) {
@@ -169,7 +172,7 @@ export async function datLoadRoundFromHandle(sig, file, runId) {
   if (DAT.dimRoundInRun.has(roundId)) return
 
   const round = await fs.jsonDecompressDecodeFile(sig, file)
-  await initBuiCodes()
+  await initCodes()
   datAddRound(round, runId)
 }
 
@@ -231,7 +234,7 @@ export function datAddRound(round, runId) {
 
   for (const [buiGameEngineInstId, bui] of a.entries(round.Buildings)) {
     const buiType = a.laxStr(bui.EntityID)
-    const buiName = BUI_CODES[buiType]
+    const buiName = CODES.buildings[buiType]
     const buiInRunId = u.joinKeys(runId, buiGameEngineInstId)
     const buiInRunIds = {...roundIds, buiInRunId}
     const buiKind = bui.BuildingType
@@ -488,8 +491,7 @@ function datOnBroadcast(src) {
 
 export function plotOptsDamagePerRoundPerBuiTypeUpg(opt, datMsg) {
   const runId = choosePlotRunId(opt.runId, opt.isLatest, datMsg)
-  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_DMG_DONE)
-
+  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_DMG_DONE, a.sum)
   // Native `.map` passes an index, which is needed for stable colors.
   const Z_rows = a.arr(Z_labels).map(pl.serieWithSum)
 
@@ -505,15 +507,14 @@ export function plotOptsDamagePerRoundPerBuiTypeUpg(opt, datMsg) {
 
 export function plotOptsCostEffPerRoundPerBuiTypeUpg(opt, datMsg) {
   const runId = choosePlotRunId(opt.runId, opt.isLatest, datMsg)
-  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_COST_EFF)
-
+  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_COST_EFF, u.avg)
   // Native `.map` passes an index, which is needed for stable colors.
   const Z_rows = a.arr(Z_labels).map(pl.serieWithAvg)
 
   return {
     ...pl.LINE_PLOT_OPTS,
     plugins: pl.plugins(),
-    title: ANALYSIS_MODES.cost.desc,
+    title: ANALYSIS_MODES.eff.desc,
     series: [{label: `Round`}, ...Z_rows],
     data: [X_row, ...Z_X_Y_arr],
     axes: pl.axes(`round`, `eff`),
@@ -528,9 +529,10 @@ function choosePlotRunId(runId, isLatest, datMsg) {
   return a.reqValidStr(datMsg.runId)
 }
 
-function aggForRunPerRoundPerBuiTypeUpg(runId, statType) {
+function aggForRunPerRoundPerBuiTypeUpg(runId, statType, agg) {
   a.reqValidStr(runId)
   a.reqValidStr(statType)
+  a.reqFun(agg)
 
   const X_set = a.bset()
   const Z_X_Y = a.Emp()
@@ -546,7 +548,8 @@ function aggForRunPerRoundPerBuiTypeUpg(runId, statType) {
     const X = a.reqInt(DAT.dimRoundInRun.get(fact.roundId).roundIndex)
     const X_Y = Z_X_Y[Z] ??= a.Emp()
 
-    X_Y[X] = a.laxFin(X_Y[X]) + a.laxFin(fact.statValue)
+    X_Y[X] ??= []
+    X_Y[X].push(fact.statValue)
     X_set.add(X)
   }
 
@@ -568,7 +571,7 @@ function aggForRunPerRoundPerBuiTypeUpg(runId, statType) {
   Each sub-array index corresponds to an index in X_row.
   Each sub-array value is the Y for that Z and X.
   */
-  const Z_X_Y_arr = a.map(Z_labels, Z => a.map(X_row, X => Z_X_Y[Z][X]))
+  const Z_X_Y_arr = a.map(Z_labels, Z => a.map(X_row, X => agg(Z_X_Y[Z][X])))
 
   dropZeroRows(Z_labels, Z_X_Y_arr)
   return [X_row, Z_labels, Z_X_Y_arr]
