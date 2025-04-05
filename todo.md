@@ -500,7 +500,7 @@ Plot: when the cursor is near many near-overlapping data points (within a certai
 
 ---
 
-Plot: compact the numbers by using `k`/`m` suffixes, like in the game proper. (Do that on the labels _and_ in the tooltip.)
+<!-- Plot: compact the numbers by using `k`/`m` suffixes, like in the game proper. (Do that on the labels _and_ in the tooltip.) -->
 
 ---
 

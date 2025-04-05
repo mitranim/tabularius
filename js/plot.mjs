@@ -177,9 +177,43 @@ export function serieFormatVal(plot, val, seriesInd, fun) {
 Our default value formatter, which should be used for displaying all plot
 values. Needs to be included in every serie.
 */
-export function formatVal(val) {return a.isNum(val) ? numFormat.format(val) : val}
+export function formatVal(val) {
+  if (!a.isNum(val)) return val
+  return formatNumCompact(val)
+}
 
-export const numFormat = new Intl.NumberFormat(`en-US`, {
+/*
+We could also use `Intl.NumberFormat` with `notation: "compact"`.
+This `k`, `kk`, `kkk` notation is experimental.
+*/
+export function formatNumCompact(val) {
+  a.reqNum(val)
+  let scale = 0
+  const mul = 1000
+  while (a.isFin(val) && (val < -mul || val > mul)) {
+    scale++
+    val /= mul
+  }
+  return numFormat1.format(val) + `k`.repeat(scale)
+}
+
+export const numFormat2 = new Intl.NumberFormat(`en-US`, {
+  maximumFractionDigits: 2,
+  roundingMode: `halfExpand`,
+})
+
+export const numFormat1 = new Intl.NumberFormat(`en-US`, {
+  maximumFractionDigits: 1,
+  roundingMode: `halfExpand`,
+})
+
+export const numFormat0 = new Intl.NumberFormat(`en-US`, {
+  maximumFractionDigits: 0,
+  roundingMode: `halfExpand`,
+})
+
+export const numFormatCompact = new Intl.NumberFormat(`en-US`, {
+  notation: `compact`,
   maximumFractionDigits: 2,
   roundingMode: `halfExpand`,
 })
