@@ -57,7 +57,7 @@ function cmdHelp({args}) {
     return u.joinParagraphs(
       `available commands:`,
       a.joinLines(a.map(os.CMDS, cmdHelpShort)),
-      `pro tip: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=analyze 000000"`,
+      `pro tip: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=analyze 0000"`,
     )
   }
 

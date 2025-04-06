@@ -75,6 +75,7 @@ cmdAnalyze.help = function cmdAnalyzeHelp() {
       `<mode> chooses analysis mode; currently available modes:`,
       ...a.entries(ANALYSIS_MODES).map(modeHelp),
     ),
+    `tip: try Ctrl+click or Cmd+click on plot labels`,
     `tip: use "ls /" to browse runs`,
   )
 }

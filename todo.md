@@ -567,7 +567,7 @@ console.log(fs)
 
 ---
 
-Consider supporting non-string run and round indexes. For example, run `000000` should be considered same as `0` locally.
+<!-- Consider supporting non-string run and round indexes. For example, run `000000` should be considered same as `0` locally. -->
 
 Consider supporting relative run and round indexes. For example, a user's first run fetched from cloud storage should be indexed as `0`, and so on.
 
@@ -602,6 +602,18 @@ A media UI for showing building, child, weapon stats in a nice format. Flattenin
 ---
 
 A media UI for showing a breakdown of the latest round and the run so far. (The stat screen that the players constantly ask for.)
+
+Simple approach: a table from almost the same dataset we use for charts. Columns are rounds, rows are series, values are values. But, each cell has two values: per round, and per run accumulated so far (up to that round). There's a toggle for which value is prioritized (round or run_acc); the table is sorted by the priority value, and it's put on top in each cell. Maybe round and run_acc are differentiated by color, and there's a color legend nearby.
+
+Above the table: user id (hidden for now), run id, faction, commander, round count.
+
+Also: total damage would be nice.
+
+Also: we could include even more stats per cell.
+
+So in a general case, every cell is an entity with fields. Our data is N-dimensional.
+
+Near the table, there could be a list of fields, one of them always selected, that's what shows up per cell.
 
 ---
 

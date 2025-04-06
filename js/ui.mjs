@@ -15,7 +15,7 @@ cmdMedia.desc = `toggle media panel`
 export function cmdMedia() {MEDIA.toggle()}
 
 // Increment by 1 when publishing an update.
-const VERSION = 15
+const VERSION = 16
 let INITED
 
 /*

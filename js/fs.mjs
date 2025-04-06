@@ -348,9 +348,9 @@ cmdShow.help = u.joinLines(
   `  -l  log decoded content (as text) to browser console`,
   `  -p  print decoded object to browser console`,
   `examples:`,
-  `  show 000000/000001.gd -c`,
-  `  show 000000/000001.gd -c -l`,
-  `  show 000000/000001.gd -c -l -p`,
+  `  show 0000/0001.gd -c`,
+  `  show 0000/0001.gd -c -l`,
+  `  show 0000/0001.gd -c -l -p`,
   `if no flags are provided, nothing is done`
 )
 
@@ -404,8 +404,8 @@ cmdDecode.help = u.joinParagraphs(
     `usage examples:`,
     `  decode <run_id>`,
     `  decode <run_id> -p`,
-    `  decode 000000`,
-    `  decode 000000 -p`,
+    `  decode 0000`,
+    `  decode 0000 -p`,
   ),
   `the decoded result is written to "<run_id>.json" in the history directory`,
   `the flag -p enables pretty-printing`,

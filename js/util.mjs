@@ -467,13 +467,10 @@ export function joinLines(...src) {return a.joinLinesOptLax(src)}
 export function joinParagraphs(...src) {return a.joinOptLax(src, `\n\n`)}
 
 /*
-How many digits to use for local ordinal ids for runs and rounds.
-
-999999 rounds = unreal
-
-999999 runs = if 10 min per run, then 19 years
+How many digits to use for local ordinal ids for runs and rounds. Needs to be
+long enough for any realistic amount of runs, and short enough to easily type.
 */
-const ORD_STR_LEN = 6
+export const ORD_STR_LEN = 4
 
 export function intToOrdStr(val) {
   return String(a.reqInt(val)).padStart(ORD_STR_LEN, `0`)
