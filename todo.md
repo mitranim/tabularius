@@ -525,6 +525,8 @@ Plot: consider if even in damage per round charts, it's not useful to have a cha
 
 <!-- Consistently prefer lowercase msgs in log, errors, etc. -->
 
+Should probably revert this. When logging large chunks of text, using proper sentences would make it easier to tell where sentences begin and end. Lowercase without trailing dot is only good for errors, to make error messages composable.
+
 ---
 
 Option to analyze latest run without having to type its ID.
@@ -721,6 +723,24 @@ Upon inspection, it seems like after being defeated and clicking "back", the sav
 
 Add a command to decode and show the progress file itself. Could be a mode of `show`.
 
+Add a command that decodes and shows _all_ files in the save dir. Could be a mode of `show`. Could pick that directory on demand without storing the handle. Maybe instead of picking the progress file, we pick the whole save dir. Maybe we pick the whole save dir, but also have an option to pick a specific progress file. The `init` command could have flags or subcommands.
+
+(Added `show_saves`.)
+
+The various FS-walking commands, such as `ls`, should let you choose between the save folder and the history dir. How?
+
 ---
 
 Support multiple CLI commands in one line. We may consider shell-style `&&` and `&`, with corresponding behaviors.
+
+---
+
+The alias "latest" (should rename to "last") should work for both runs and rounds, in all commands. It should be viable to type `show last` or `show last/last` and have it work.
+
+---
+
+Add a command to list, get, and set all our settings in `sessionStorage` and `localStorage`.
+
+---
+
+Consider logging even less by default.
