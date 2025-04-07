@@ -22,28 +22,28 @@ t.test(function test_encodeUpgrade() {
 })
 
 t.test(function test_compareOrdNamesDesc() {
-  t.is(u.compareOrdNamesDesc(), 0)
+  t.is(u.compareDesc(), 0)
 
-  t.is(u.compareOrdNamesDesc(`one`, `two`), 0)
-  t.is(u.compareOrdNamesDesc(`two`, `one`), 0)
-  t.is(u.compareOrdNamesDesc(`0`, `one`), -1)
-  t.is(u.compareOrdNamesDesc(`one`, `0`), 1)
+  t.is(u.compareDesc(`one`, `two`), -1) // Due to fallback on string sorting.
+  t.is(u.compareDesc(`two`, `one`), 1)  // Due to fallback on string sorting.
+  t.is(u.compareDesc(`0`, `one`), -1)
+  t.is(u.compareDesc(`one`, `0`), 1)
 
-  t.is(u.compareOrdNamesDesc(`0`, `0`), 0)
-  t.is(u.compareOrdNamesDesc(`0`, `1`), 1)
-  t.is(u.compareOrdNamesDesc(`1`, `0`), -1)
-  t.is(u.compareOrdNamesDesc(`1`, `1`), 0)
+  t.is(u.compareDesc(`0`, `0`), 0)
+  t.is(u.compareDesc(`0`, `1`), 1)
+  t.is(u.compareDesc(`1`, `0`), -1)
+  t.is(u.compareDesc(`1`, `1`), 0)
 
-  t.is(u.compareOrdNamesDesc(`00`, `00`), 0)
-  t.is(u.compareOrdNamesDesc(`00`, `01`), 1)
-  t.is(u.compareOrdNamesDesc(`01`, `00`), -1)
-  t.is(u.compareOrdNamesDesc(`01`, `01`), 0)
+  t.is(u.compareDesc(`00`, `00`), 0)
+  t.is(u.compareDesc(`00`, `01`), 1)
+  t.is(u.compareDesc(`01`, `00`), -1)
+  t.is(u.compareDesc(`01`, `01`), 0)
 
-  t.is(u.compareOrdNamesDesc(`00`, `one`), -1)
-  t.is(u.compareOrdNamesDesc(`01`, `one`), -1)
+  t.is(u.compareDesc(`00`, `one`), -1)
+  t.is(u.compareDesc(`01`, `one`), -1)
 
-  t.is(u.compareOrdNamesDesc(`one`, `00`), 1)
-  t.is(u.compareOrdNamesDesc(`one`, `01`), 1)
+  t.is(u.compareDesc(`one`, `00`), 1)
+  t.is(u.compareDesc(`one`, `01`), 1)
 })
 
 const msg = `[test] ok`
