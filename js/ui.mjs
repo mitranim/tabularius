@@ -9,11 +9,6 @@ const tar = window.tabularius ??= a.Emp()
 tar.ui = self
 a.patch(window, tar)
 
-cmdMedia.cmd = `media`
-cmdMedia.desc = `toggle media panel`
-
-export function cmdMedia() {MEDIA.toggle()}
-
 // Increment by 1 when publishing an update.
 const VERSION = 16
 let INITED

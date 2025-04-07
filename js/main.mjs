@@ -39,7 +39,6 @@ os.addCmd(fs.cmdShow)
 os.addCmd(fs.cmdShowSaves)
 os.addCmd(fs.cmdDecode)
 os.addCmd(d.cmdAnalyze)
-os.addCmd(ui.cmdMedia)
 os.addCmd(u.cmdVerbose)
 os.addCmd(u.cmdClear)
 
