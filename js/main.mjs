@@ -119,10 +119,6 @@ function cmdTest() {
 
 ui.init()
 
-// Initial log messages.
-u.log.info(`welcome to Tabularius`)
-u.log.info(`type "help" for a list of commands`)
-
 const query = new URLSearchParams(window.location.search)
 
 // Can plug-in arbitrary modules via URL query param.
@@ -130,18 +126,17 @@ for (const val of query.getAll(`import`)) {
   await import(new URL(val, new URL(`..`, import.meta.url))).catch(u.logErr)
 }
 
-// Can run arbitrary commands on startup.
-for (const val of query.getAll(`run`)) {
-  await os.runCmd(val).catch(u.logErr)
-}
-
 if (TEST_MODE) {
   u.log.info(`test mode enabled`)
   await import(`./test.mjs`).catch(u.logErr)
 }
-else {
-  os.runCmd(`help`).catch(u.logErr)
 
+// Can run arbitrary commands on startup via URL query param.
+for (const val of query.getAll(`run`)) await os.runCmd(val).catch(u.logErr)
+
+if (!TEST_MODE && !run.length) os.runCmd(`help`).catch(u.logErr)
+
+if (!TEST_MODE) {
   if (await fs.loadedFileHandles().catch(u.logErr)) {
     w.watchStarted().catch(u.logErr)
   }

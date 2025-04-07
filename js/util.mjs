@@ -437,8 +437,10 @@ export function wait(sig, ...src) {
 
 export function logCmdDone(name, out) {
   a.reqValidStr(name)
-  if (a.vac(out)) log.info(`[${name}]`, out)
-  else log.info(`[${name}] done`)
+  if (a.isNode(out)) log.info(`[${name}]`, out)
+  else if (a.isArr(out) && a.vac(out)) log.info(`[${name}]`, ...out)
+  else if (a.isSome(out)) log.info(`[${name}]`, out)
+  else log.verb(`[${name}] done`)
 }
 
 export function logCmdFail(name, err) {
@@ -580,7 +582,7 @@ export function jsonDecodeOpt(src) {
   return isJsonColl(src) ? JSON.parse(src) : undefined
 }
 
-// Similar to Go's `errors.Is`.
+// Vaguely similar to Go's `errors.Is`.
 // TODO move to `@mitranim/js`.
 export function errIs(err, fun) {
   a.reqFun(fun)
@@ -590,7 +592,6 @@ export function errIs(err, fun) {
   }
   return false
 }
-
 
 export class Err extends Error {get name() {return this.constructor.name}}
 
