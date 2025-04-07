@@ -744,3 +744,7 @@ Add a command to list, get, and set all our settings in `sessionStorage` and `lo
 ---
 
 Consider logging even less by default.
+
+---
+
+<!-- Prompt input: Ctrl+L or Cmd+K should clear. (Consistent with common precedent.) -->

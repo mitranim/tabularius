@@ -219,6 +219,21 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
       return
     }
 
+    // Seems consistent with existing precedent:
+    // - MacOS Terminal.
+    // - Windows Terminal (the good one and the bad one).
+    // - Chrome devtools on MacOS.
+    // - Chrome devtools on Windows.
+    // TODO: what about Linux?
+    if (
+      (eve.key === `k` && !eve.altKey && !eve.ctrlKey && eve.metaKey && !eve.shiftKey) ||
+      (eve.key === `l` && !eve.altKey && eve.ctrlKey && !eve.metaKey && !eve.shiftKey)
+    ) {
+      a.eventKill(eve)
+      u.log.clear()
+      return
+    }
+
     // Lets the user spam the prompt-focusing key without fear of repercussion.
     if (eve.key === PROMPT_FOCUS_KEY && !this.value) {
       a.eventKill(eve)
