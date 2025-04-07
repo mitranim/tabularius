@@ -116,6 +116,10 @@ function cmdTest() {
 
 ui.init()
 
+// Attempt to load the FS handles before running anything else.
+// Can be convenient for URL query "run" commands which rely on FS.
+const loadedFs = !!await fs.loadedFileHandles().catch(u.logErr)
+
 const query = new URLSearchParams(window.location.search)
 
 // Can plug-in arbitrary modules via URL query param.
@@ -134,9 +138,7 @@ for (const val of query.getAll(`run`)) await os.runCmd(val).catch(u.logErr)
 if (!TEST_MODE && !run.length) os.runCmd(`help`).catch(u.logErr)
 
 if (!TEST_MODE) {
-  if (await fs.loadedFileHandles().catch(u.logErr)) {
-    w.watchStarted().catch(u.logErr)
-  }
+  if (loadedFs) w.watchStarted().catch(u.logErr)
 
   /*
   For fresh visitors, we want to render some default chart, as a sample. For
