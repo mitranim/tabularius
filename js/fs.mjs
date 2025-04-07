@@ -73,7 +73,7 @@ export const PROGRESS_FILE_CONF = new FileConf({
   key: `progress_file`,
   desc: `progress file`,
   help: u.joinLines(
-    `Pick your TD save/progress file. Typical location:`,
+    `Pick your TD progress file. Typical location:`,
     `C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\SaveFiles\\Progress.gd.`,
     `Note that AppData is hidden by default!`,
   ),
@@ -295,7 +295,7 @@ export async function reqHistoryDir(sig) {
 cmdLs.cmd = `ls`
 cmdLs.desc = `list dirs and files; usage: "ls" or "ls <path>"`
 cmdLs.help = u.joinLines(
-  `usage: "ls" or "ls <path>"`,
+  `usage: "ls" or "ls <path>`,
   `list the directories and files; examples:`,
   `  ls /`,
   `  ls some_dir`,
@@ -401,19 +401,21 @@ export async function cmdShow({sig, args}) {
 }
 
 cmdDecode.cmd = `decode`
-cmdDecode.desc = `decode an entire run, writing the result to a file`
+cmdDecode.desc = `decode an entire run, writing the resulting JSON to a file`
 cmdDecode.help = u.joinParagraphs(
   cmdDecode.desc,
   u.joinLines(
-    `usage examples:`,
+    `usage:`,
     `  decode <run_id>`,
     `  decode <run_id> -p`,
+  ),
+  u.joinLines(
+    `use "ls /" to browse runs; a typical <run_id> looks like this:`,
     `  decode 0000`,
     `  decode 0000 -p`,
   ),
   `the decoded result is written to "<run_id>.json" in the history directory`,
-  `the flag -p enables pretty-printing`,
-  `tip: use "ls /" to browse runs`,
+  `the flag -p enables JSON pretty-printing`,
 )
 
 export async function cmdDecode({sig, args}) {

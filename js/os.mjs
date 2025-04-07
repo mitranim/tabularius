@@ -151,7 +151,15 @@ export function showProcs() {
 
 cmdKill.cmd = `kill`
 cmdKill.desc = `kill a process`
-cmdKill.help = `"kill <id>" or "kill -a"`
+cmdKill.help = u.joinParagraphs(
+  cmdKill.desc,
+  u.joinLines(
+    `usage:`,
+    `  kill <id> (kill specific process)`,
+    `  kill -a   (kill all processes)`,
+  ),
+  `tip: to find a process id, run "ps" or view the active processes in the media panel`
+)
 
 export function cmdKill({args}) {
   args = u.splitCliArgs(args)

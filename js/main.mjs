@@ -1,4 +1,5 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
+import {E} from './util.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
@@ -16,7 +17,15 @@ All CLI commands should be added here so that we can control the ordering.
 */
 
 cmdHelp.cmd = `help`
-cmdHelp.desc = `show help`
+cmdHelp.desc = `run "help" for a brief summary of all commands, or "help <cmd> for detailed help on one command`,
+cmdHelp.help = u.joinParagraphs(
+  cmdHelp.desc,
+  u.joinLines(
+    `usage:`,
+    `  help`,
+    `  help <cmd>`,
+  ),
+)
 os.addCmd(cmdHelp)
 
 cmdInit.cmd = `init`
@@ -44,17 +53,20 @@ os.addCmd(u.cmdClear)
 
 cmdTest.cmd = `test`
 cmdTest.desc = `toggle test mode`
+cmdTest.help = `toggles test mode, which disables the default startup behavior and imports "js/test.mjs" for testing; intended only for developing Tabularius; not useful to regular users`
 os.addCmd(cmdTest)
 
 function cmdHelp({args}) {
   args = u.splitCliArgs(args)
 
   if (args.length <= 1) {
-    return u.joinParagraphs(
+    return [
       `available commands:`,
-      a.joinLines(a.map(os.CMDS, cmdHelpShort)),
-      `pro tip: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=analyze 0000"`,
-    )
+      E(`div`, {class: u.LOG_SPACE_Y},
+        ...a.map(os.CMDS, cmdHelpShort),
+        E(`p`, {}, E(`b`, {}, `pro tip`), `: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=analyze 0000"`),
+      ),
+    ]
   }
 
   if (args.length > 2) return `usage: "help" or "help <cmd>"`
@@ -64,14 +76,14 @@ function cmdHelp({args}) {
   if (!cmd) throw `unknown command ${a.show(name)}`
 
   return u.joinParagraphs(
-    `help for command ${a.show(name)}:`,
+    `command ${a.show(name)}:`,
     (a.isFun(cmd.help) ? cmd.help() : cmd.help) || cmd.desc,
   )
 }
 
 function cmdHelpShort(val) {
-  a.reqFun(val)
-  return a.compact([val.cmd || val.name, val.desc]).join(`: `)
+  os.reqCmd(val)
+  return E(`p`, {}, E(`b`, {}, val.cmd), `: `, val.desc)
 }
 
 // Initialize features that require user action.
@@ -132,7 +144,8 @@ if (TEST_MODE) {
 }
 
 // Can run arbitrary commands on startup via URL query param.
-for (const val of query.getAll(`run`)) await os.runCmd(val).catch(u.logErr)
+const run = query.getAll(`run`)
+for (const val of run) await os.runCmd(val).catch(u.logErr)
 
 if (!TEST_MODE && !run.length) os.runCmd(`help`).catch(u.logErr)
 

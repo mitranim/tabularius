@@ -135,7 +135,7 @@ export let LOG_VERBOSE = a.boolOpt(
 )
 
 cmdVerbose.cmd = `verbose`
-cmdVerbose.desc = `toggle between quiet and verbose mode`
+cmdVerbose.desc = `toggle between quiet and verbose logging`
 
 export function cmdVerbose() {
   LOG_VERBOSE = !LOG_VERBOSE
@@ -146,6 +146,10 @@ export function cmdVerbose() {
 
 cmdClear.cmd = `clear`
 cmdClear.desc = `clear the log`
+cmdClear.help = u.joinParagraphs(
+  cmdClear.desc,
+  `pro tip: when the prompt is focused, you can also clear the log by pressing "ctrl+l" or "meta+k" ("meta" is also known as "cmd" / "win" / "super" depending on your keyboard and OS)`
+)
 
 export function cmdClear() {log.clear()}
 
@@ -155,15 +159,25 @@ const LOG_WIDTH_MIN = 10 // % of parent width
 const LOG_WIDTH_MAX = 90 // % of parent width
 const LOG_MAX_MSGS = 1024
 
-// Should be used with `.catch` on promises.
-// Logs the error and suppresses rejection, returning `undefined`.
+export const LOG_LINE_HEIGHT = `leading-[1.25]`
+export const LOG_SPACE_Y = `space-y-[1.25em]`
+export const LOG_GAP_Y = `gap-y-[1.25em]`
+
+/*
+Should be used when invoking any async function in sync context. In other words,
+at the top level of async invocation. Logs the error and suppresses the
+rejection. Usage:
+
+  someAsyncFun().catch(u.logErr)
+  somePromise.catch(u.logErr)
+*/
 export function logErr(err) {log.err(err)}
 
 export const log = new class Log extends Elem {
   // Must be used for all info logging.
   info(...msg) {
     if (!a.vac(msg)) return
-    this.addMsg(msg)
+    this.addMsg({}, ...msg)
   }
 
   // Must be used for all error logging.
@@ -171,14 +185,14 @@ export const log = new class Log extends Elem {
     if (!a.vac(msg)) return
     if (a.some(msg, isErrAbort)) return
     console.error(...msg)
-    this.addMsg(msg, `err`)
+    this.addMsg({type: `err`}, ...msg)
   }
 
   // Should be used for optional verbose logging.
   verb(...msg) {
     if (!LOG_VERBOSE) return
     if (!a.vac(msg)) return
-    this.addMsg(msg)
+    this.addMsg({}, ...msg)
   }
 
   clear() {
@@ -201,8 +215,8 @@ export const log = new class Log extends Elem {
   non-existent, like in actual terminals. We want to be consistent with
   precedent, and don't want to waste vertical space. Still undecided.
   */
-  messageLog = E(`div`, {class: `w-full leading-tight py-2 overflow-y-auto`})
-  // messageLog = E(`div`, {class: `w-full leading-[1.25] space-y-[1.25em] py-2 overflow-y-auto`})
+  messageLog = E(`div`, {class: a.spaced(`w-full py-2 overflow-y-auto`, LOG_LINE_HEIGHT)})
+  // messageLog = E(`div`, {class: a.spaced(`w-full py-2 overflow-y-auto`, LOG_LINE_HEIGHT, LOG_SPACE_Y)})
 
   removedMessageNotice = E(`div`, {
     class: `text-gray-500 dark:text-gray-400 text-center border-b border-gray-300 dark:border-gray-700`,
@@ -244,8 +258,8 @@ export const log = new class Log extends Elem {
     )
   }
 
-  addMsg(msg, type) {
-    this.messageLog.append(LogMsg(msg, type))
+  addMsg(props, ...chi) {
+    this.messageLog.append(LogMsg(props, ...chi))
     this.scrollToBottom()
     this.enforceMessageLimit()
   }
@@ -321,7 +335,7 @@ export const log = new class Log extends Elem {
   }
 }()
 
-function LogMsg(src, type) {
+function LogMsg({type} = {}, ...chi) {
   return E(
     `pre`,
     {
@@ -346,11 +360,9 @@ function LogMsg(src, type) {
       },
       `> `
     ),
-    fmtMsg(src)
+    a.map(chi, logShow),
   )
 }
-
-function fmtMsg(src) {return a.map(src, logShow).join(` `)}
 
 // TODO: support error chains.
 function logShow(val) {
@@ -437,15 +449,15 @@ export function wait(sig, ...src) {
 
 export function logCmdDone(name, out) {
   a.reqValidStr(name)
-  if (a.isNode(out)) log.info(`[${name}]`, out)
-  else if (a.isArr(out) && a.vac(out)) log.info(`[${name}]`, ...out)
-  else if (a.isSome(out)) log.info(`[${name}]`, out)
+  if (a.isNode(out)) log.info(out)
+  else if (a.isArr(out) && a.vac(out)) log.info(...out)
+  else if (a.isSome(out)) log.info(out)
   else log.verb(`[${name}] done`)
 }
 
 export function logCmdFail(name, err) {
   a.reqValidStr(name)
-  log.err(`[${name}] error:`, err)
+  log.err(`[${name}] `, err)
 }
 
 /*

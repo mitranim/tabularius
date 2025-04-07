@@ -10,7 +10,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 16
+const VERSION = 17
 let INITED
 
 /*
@@ -214,12 +214,14 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
       return
     }
 
-    // Seems consistent with existing precedent:
-    // - MacOS Terminal.
-    // - Windows Terminal (the good one and the bad one).
-    // - Chrome devtools on MacOS.
-    // - Chrome devtools on Windows.
-    // TODO: what about Linux?
+    /*
+    Seems consistent with existing precedent:
+    - MacOS Terminal.
+    - Windows Terminal (the good one and the bad one).
+    - Chrome devtools on MacOS.
+    - Chrome devtools on Windows.
+    TODO: what about Linux?
+    */
     if (
       (eve.key === `k` && !eve.altKey && !eve.ctrlKey && eve.metaKey && !eve.shiftKey) ||
       (eve.key === `l` && !eve.altKey && eve.ctrlKey && !eve.metaKey && !eve.shiftKey)

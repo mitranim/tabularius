@@ -45,6 +45,11 @@ const WATCH_MAX_ERRS = 3
 
 cmdWatch.cmd = `watch`
 cmdWatch.desc = `watch the progress file for changes and create backups`
+cmdWatch.help = u.joinParagraphs(
+  cmdWatch.desc,
+  `requires running "init" first (just once) to grant FS access`,
+  `can be stopped via "kill watch" (one-off) or "deinit" (permanent until "init")`,
+)
 
 export async function cmdWatch(proc) {
   const {sig} = proc
@@ -125,7 +130,7 @@ async function watchInit(sig, state) {
   )
   await state.setRoundFile(roundFile?.name)
 
-  u.log.info(`[watch] initialized:`, {
+  u.log.info(`[watch] initialized: `, {
     run: state.runDirName,
     round: state.roundFileName,
   })
