@@ -23,13 +23,18 @@ Each command must have:
   .desc -- Terse description of what it does.
   .help -- Longer, more detailed help (optional).
 */
-export function addCmd(val) {
+export function reqCmd(val) {
   if (!a.isFun(val)) throw TypeError(`a command must be a function, got ${a.show(val)}`)
   const {cmd, desc} = val
   if (!cmd) throw TypeError(`missing .cmd on ${a.show(val)}`)
   if (!a.isStr(cmd)) throw TypeError(`non-string .cmd ${a.show(cmd)} on ${a.show(val)}`)
-  if (!/^[a-z]+$/.test(cmd)) throw TypeError(`a command's .cmd must be a single lowercase word, got ${a.show(cmd)} on ${a.show(val)}`)
+  if (!/^[a-z_]+$/.test(cmd)) throw TypeError(`a command's .cmd must be a single lowercase identifier, optionally with "_" separators, got ${a.show(cmd)} on ${a.show(val)}`)
   if (!desc) throw TypeError(`missing .desc on ${a.show(val)}`)
+  return val
+}
+
+export function addCmd(val) {
+  const {cmd} = reqCmd(val)
   if (CMDS[cmd]) throw Error(`redundant registration of command ${a.show(cmd)} (prev ${a.show(CMDS[cmd])}, next ${a.show(val)})`)
   CMDS[cmd] = val
 }

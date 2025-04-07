@@ -36,6 +36,7 @@ os.addCmd(os.cmdKill)
 os.addCmd(w.cmdWatch)
 os.addCmd(fs.cmdLs)
 os.addCmd(fs.cmdShow)
+os.addCmd(fs.cmdShowSaves)
 os.addCmd(fs.cmdDecode)
 os.addCmd(d.cmdAnalyze)
 os.addCmd(ui.cmdMedia)
@@ -46,10 +47,6 @@ cmdTest.cmd = `test`
 cmdTest.desc = `toggle test mode`
 os.addCmd(cmdTest)
 
-/*
-TODO: `help <cmd>` which shows help for one command, and tries to use its
-`.help` which should be more detailed than `.desc`.
-*/
 function cmdHelp({args}) {
   args = u.splitCliArgs(args)
 

@@ -432,6 +432,23 @@ export async function cmdDecode({sig, args}) {
   return `wrote run ${a.show(runId)} to ${a.show(path)}`
 }
 
+cmdShowSaves.cmd = `show_saves`
+cmdShowSaves.desc = `choose the original TD save folder; the command will print the decoded contents of every ".gd" file to the browser devtools console`
+
+export async function cmdShowSaves({sig}) {
+  const dir = await showDirectoryPicker()
+
+  let count = 0
+  for await (const val of readDir(sig, dir)) {
+    if (!isHandleGameFile(val)) continue
+    console.log(`[show_saves] decoded contents of ${a.show(val.name)}:`)
+    console.log(await jsonDecompressDecodeFile(sig, val))
+    count++
+  }
+  if (!count) return `found no files to decode`
+  return `printed decoded contents of ${count} files to the browser devtools console`
+}
+
 // Caution: the iteration order is undefined and unstable.
 export async function* readRunRounds(sig, dir) {
   for await (const file of readRunRoundHandles(sig, dir)) {
