@@ -130,14 +130,14 @@ const MEDIA_CHI_PAD = `p-4`
 export const MEDIA_PLACEHOLDER = E(`div`, {class: a.spaced(MEDIA_CHI_CLS, `flex flex-col gap-4`)},
   E(`div`, {class: `text-center`}, `Sample Plot`),
   E(`div`, {class: `h-64 flex items-center justify-center border border-gray-400 dark:border-gray-600 rounded bg-white dark:bg-gray-700`},
-    E(`div`, {class: `text-gray-500 dark:text-gray-400`}, `[Plot Placeholder]`)
+    E(`div`, {class: `w-full text-center text-gray-500 dark:text-gray-400`}, `[Plot Placeholder]`)
   )
 )
 
 export const MEDIA = new class MediaPanel extends u.Elem {
   constructor() {
     super()
-    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto flex flex-col gap-4 p-4 bg-white dark:bg-gray-900`},
+    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto break-words overflow-wrap-anywhere flex flex-col gap-4 p-4 bg-white dark:bg-gray-900`},
       MEDIA_PLACEHOLDER,
       PROCESS_LIST,
     )
