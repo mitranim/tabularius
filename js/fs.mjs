@@ -341,16 +341,20 @@ cmdShow.desc = `
 decode and show a round in a run; usage: "show <run_dir>/<round_file>"
 `.trim()
 
-cmdShow.help = u.joinLines(
-  `usage: "show <path>"`,
-  `flags:`,
-  `  -c  copy decoded content to clipboard`,
-  `  -l  log decoded content (as text) to browser console`,
-  `  -p  print decoded object to browser console`,
-  `examples:`,
-  `  show 0000/0001.gd -c`,
-  `  show 0000/0001.gd -c -l`,
-  `  show 0000/0001.gd -c -l -p`,
+cmdShow.help = u.joinParagraphs(
+  `usage: "show <path>", "show <path> <flags>"`,
+  u.joinLines(
+    `flags:`,
+    `  -c  copy decoded JSON to clipboard`,
+    `  -l  log decoded JSON to browser console`,
+    `  -p  print decoded object to browser console`,
+  ),
+  u.joinLines(
+    `examples:`,
+    `  show 0000/0001.gd -c`,
+    `  show 0000/0001.gd -c -l`,
+    `  show 0000/0001.gd -c -l -p`,
+  ),
   `if no flags are provided, nothing is done`
 )
 
