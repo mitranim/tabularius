@@ -20,6 +20,57 @@ The SPA may provide an option to roll back the save.
 
 ## Data
 
+### Upload
+
+- [x] For now, it's going to be manual. We add a command `upload`.
+- [x] It first ensures we're authed.
+- [x] It takes either `/`, or `<run_id>`, or `<run_id>/<round_id>`.
+- [x] It walks the resulting dirs, uploading rounds one by one.
+- [x] To display progress in the terminal, it adds one reactive element and continuously updates it, to avoid spam. Something like:
+
+```
+uploading run A of N (id <id>)...
+
+uploading round B of M (id <id>)...
+```
+
+```
+uploaded A of B runs, see error below
+```
+
+```
+uploaded A of B runs, skipped C (already uploaded)
+```
+
+When entering root:
+- [x] Walk runs dirs in order.
+
+When entering a run:
+- [x] Use its dir name as run id.
+- [x] Walk progress files in order.
+
+After reading a progress file:
+- [x] Check if it already has a Firestore id. If true, skip it.
+- [x] Bash together an id, like we already do, but the user id now comes from FB.
+  - [x] `<user.uid>_<run_dir>_<round_index>`
+- [x] Ensure that the document has:
+  - [x] The current FB user id.
+  - [x] The current run id (local dir name). Rename the field; `runId` implies uniqueness, we need another name.
+  - [x] The id that we just made. (Unless FB adds it as a field automatically.)
+  - [x] All fields we add are namespaced by prefixing with `tabularius_` to avoid collisions with the game's field names, and for clarity.
+- [x] Idempotently put the document under that id.
+  - [x] This ensures that each round is uploaded only once per user+run.
+  - [x] How does this interact with rollbacks and forks? Our `watch` command treats rolled-back rounds as new runs, and creates _incomplete_ backups of those new runs, starting at the round just after the fork. For the purpose of global analytics, that's probably not wrong. For the user, this also lets them tell apart the branches. The only inconvenience is being unable to view an entire branch.
+- [x] Add the cloud document id to the file's data, and write it to disk, with the proper encoding.
+
+- [ ] Automatic cloud uploads when authed.
+- [ ] Automatically derive our star schema server-side.
+  - [ ] Probably requires us to drop cost efficiency from the schema, and derive it client-side, because the source data doesn't store the ".SellPrice" of buildings properly.
+
+Also: consider uploading runs concurrently.
+
+Use a mutex to ensure only one tab and one process does the uploading, like in `watch`.
+
 ### Cleanup
 
 We store snapshots without cleanup, because any changes might break the game in case of rollbacks.
@@ -162,6 +213,10 @@ If data collection is optional, show "please send us the data!" (rephrase this),
 
 Sell data upload by mentioning that this gives you your personal run history, in the cloud and safe from local data deletion, cross-platform, viewable from any device, and shareable. (And it helps the devs improve the game.)
 
+Should use the FB Local Emulator Suite for development: https://firebase.google.com/docs/emulator-suite
+
+Also see https://firebase.google.com/docs/rules/simulator for testing security rules.
+
 ## Bot integration
 
 Since we already have a terminal, it should be easy to integrate a bot. Users should be able to type:
@@ -188,14 +243,16 @@ When the bot response describes a function call, we execute that function, send 
 
 The state of our system is mutable. Our app could have public APIs that the bot can use. For example, modifying the log, the media content, and so on. After describing our interfaces and maybe our code, we could also tell the bot to _write JS_, and then evaluate it on the client.
 
-The user can set their own API key to use newer or smarter models:
+<!-- The user can set their own API key to use newer or smarter models:
 
 ```sh
 config set OPEN_AI_API_KEY <value>
 config set OPEN_AI_MODEL <value>
 ```
 
-We use the OpenAI API directly from the client. If we need a default API key and don't want it leaked, we can use a cloud service to proxy the request (keeping the API key secret there), and stay serverless.
+We use the OpenAI API directly from the client. If we need a default API key and don't want it leaked, we can use a cloud service to proxy the request (keeping the API key secret there), and stay serverless. -->
+
+Correction to the above: we'll simply use FB GenKit or VertexAI.
 
 ## Misc
 
@@ -248,7 +305,7 @@ The notice "N older messages removed" should just be a regular message (but grey
 
 <!-- Unfuck msg printing, use functions from `@mitranim/js/lang.mjs`. -->
 
-Unfuck a lot of low-level stuff by using library functions.
+<!-- Unfuck a lot of low-level stuff by using library functions. -->
 
 <!-- Command `clear` should clear the log. -->
 
@@ -397,9 +454,15 @@ An option to copy the decoded contents to the clipboard.
 
 An option to unpack a file, or a run, or all backups, from `.gd` to JSON.
 
+(Partially implemented as a specialized `decode` command. Needs to be more flexible.)
+
 ---
 
-An option to always unpack to JSON.
+An option to unpack the source progress file to a JSON file on disk.
+
+(Partially done, but not quite: the `decode` command can show a specific backup file, but not the source progress file.)
+
+An option to overwrite the source progress file with the content of the given output JSON file (after manual editing, for example).
 
 ---
 
@@ -423,7 +486,7 @@ Catching and logging errors seems to lose their stack traces, possibly due to mu
 
 ---
 
-FS errors such as `NotFoundError` can be hard to debug.
+<!-- FS errors such as `NotFoundError` can be hard to debug. -->
 
 ---
 
@@ -529,11 +592,13 @@ Should probably revert this. When logging large chunks of text, using proper sen
 
 ---
 
-Option to analyze latest run without having to type its ID.
+<!-- Option to analyze latest run without having to type its ID. -->
+
+(Done via the `latest` alias.)
 
 ---
 
-Ship with mock data and render a chart right away, for demonstration.
+<!-- Ship with mock data and render a chart right away, for demonstration. -->
 
 ---
 
@@ -748,3 +813,11 @@ Consider logging even less by default.
 ---
 
 <!-- Prompt input: Ctrl+L or Cmd+K should clear. (Consistent with common precedent.) -->
+
+---
+
+<!-- When adding the user prompt to the log, it should briefly flash to indicate where to start reading. Other messages added to the log should not flash. -->
+
+---
+
+The `analyze` command should support specifying multiple runs, run ranges, filters, or simply grabbing everything.

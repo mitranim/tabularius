@@ -8,7 +8,7 @@ DENO_WATCH ?= $(DENO_RUN) --watch $(if $(CLEAR),,--no-clear-screen)
 
 help:
 	echo "Select one of the following commands."
-	echo "Show definition: make -n <command_name>"
+	echo "Run \`make -n <command_name>\` to see its definition."
 	echo
 	for val in $(MAKEFILE_LIST); do grep -E '^\S+:' $$val; done | sed 's/:.*//' | sort | uniq
 

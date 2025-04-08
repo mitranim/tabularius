@@ -122,8 +122,8 @@ function BtnKill({class: cls, ...attrs}) {
 const MEDIA_CHI_CLS = `border border-gray-300 dark:border-gray-700 rounded bg-gray-100 dark:bg-gray-800`
 const MEDIA_CHI_PAD = `p-4`
 
-export const MEDIA_PLACEHOLDER = E(`div`, {class: a.spaced(MEDIA_CHI_CLS, `flex flex-col gap-4`)},
-  E(`div`, {class: `text-center`}, `Sample Plot`),
+export const MEDIA_PLACEHOLDER = E(`div`, {class: a.spaced(MEDIA_CHI_CLS, `flex flex-col`)},
+  E(`div`, {class: `text-center p-2`}, `Sample Plot`),
   E(`div`, {class: `h-64 flex items-center justify-center border border-gray-400 dark:border-gray-600 rounded bg-white dark:bg-gray-700`},
     E(`div`, {class: `w-full text-center text-gray-500 dark:text-gray-400`}, `[Plot Placeholder]`)
   )
@@ -241,7 +241,7 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
   cmdSubmit() {
     const src = this.value.trim()
     if (!src) return
-    u.log.info(src)
+    u.log.info(src).classList.add(`animate-flash-light`, `dark:animate-flash-dark`)
     this.histPush(src)
     os.runCmd(src).catch(u.logErr)
   }

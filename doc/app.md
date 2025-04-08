@@ -5,7 +5,7 @@ We're developing a SPA with the following goals:
   * Store snapshots to a user-chosen directory, building a history.
   * Optional: upload snapshots to Firebase.
 * Display run history.
-* Analyze the data, with visualizations, charts.
+* Analyze the data, with visualizations, plots.
   * Analyze local data.
   * Optional: query global data from Firebase for more broad analysis.
 
@@ -33,7 +33,7 @@ The media area, to the right from the log, is used for arbitrary non-text conten
 
 Unlike in regular terminals, commands don't block the prompt. Instead, each command starts a "process", which is added to set of currently running processes. This is similar to OS process management, and implemented in `./js/os.mjs`.
 
-In the default state of the media panel (when no other content is put there), at the bottom it shows currently running processes. Each process has a pid, a command's name and args, and a tiny button (with a cross) that kills it.
+The media panel allows adding any amount of media items. They're vertically scrollable. The bottom item always shows currently running processes. Each process has a pid, a command's name and args, and a tiny button that kills it.
 
 In the terminal, processes can be viewed with `ps` and killed with `kill` (using `AbortController`).
 
@@ -47,59 +47,8 @@ We have terminal commands for initializing the FS access, and showing the curren
 
 ## Backups
 
-Status: done. The description below is outdated, and many features added later are missing.
+The `init` command requests FS access and starts the `watch` process, which can also be killed and started separately.
 
-Goals:
-- Watch the save/progress file.
-- Detect file modifications.
-- Detect new rounds (via round index).
-- Detect new rounds (also via round index).
-- Make one backup per round per run.
-- No redundant backups.
-- In the history dir: one sub-dir per run. Place all backups for that run there (1 per round).
-  - Run ids: auto-generated.
-  - Backup file name = round index + `.json`.
-  - For each run directory: name = id. No prefix.
+The `watch` process watches the progress file in the save directory, detects modifications, detects new rounds, makes one backup per round per run (no redundancies), making new run directories when necessary. It also broadcasts FS events to all instances of our app (browser tabs), making it possible to update their plots on the fly.
 
-Details:
-- When the watch command starts:
-  - Check permissions for history dir and crash (by throwing) if not granted.
-    - Dedup with existing code as much as possible.
-  - Inspect history dir.
-  - Get names of sub-dirs.
-  - Sort names alphabetically (default JS sorting).
-  - Get last one via `a.last`.
-  - If not exists: return from this sub-procedure.
-  - Store its name to a variable. This is the latest run id.
-  - Inspect its files.
-  - Get file names.
-  - Sort alphabetically (default JS sorting).
-  - Get last one via `a.last`.
-  - Get base name without extension via `mitranim/js/path.mjs`>`posix.name(name)`.
-  - Parse via `a.intOpt`, store to a variable.
-  - Now we have the latest round index (or nil).
-  - Inspect file timestamp, store to variable.
-  - Parse file as JSON, get `?.RoundIndex`, store to variable.
-  - No error handling here. Crashing is fine. Error will be auto-logged.
-- When checking source file:
-  - Compare with prev timestamp.
-  - If prev timestamp >= next timestamp, then skip this iteration.
-  - Update prev timestamp to next.
-  - Compare round index. Both prev and next round indexes are either finite numbers (`a.onlyFin`) or nil (`a.onlyFin` returns nil for non-finite-numbers). This means 4 possible states: nil+nil, nil+num, num+nil, num+num.
-    - If next is nil: skip this iteration.
-    - If prev = next: overwrite prev with next.
-    - If prev < next: backup to a new file in the target directory for that run. Round index is file name. Pad the file name by zeroes up to length 4 to ensure predictable sorting.
-    - If prev > next:
-      - New run detected.
-      - Generate new run id.
-      - Create new run dir.
-      - Write next backup to new run dir (name according to round index).
-    - Otherwise: throw an internal error / unreachable / programmer error.
-
-## Other
-
-Define small reusable utility functions (and constants) instead of hardcoding inline.
-
-Be terse.
-
-Consider the project's goals. Don't hesitate to offer suggestions for improvement!
+The `upload` command makes it possible to upload backups to Firebase. Currently it's manual; we plan to make it automatic after authenticating.

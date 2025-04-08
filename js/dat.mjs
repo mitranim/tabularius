@@ -148,15 +148,14 @@ export async function initCodes() {
 
 export async function datLoadRun(sig, runId) {
   const root = await fs.reqHistoryDir(sig)
-  const runDir = await fs.chdir(sig, root, [runId])
+  const runDir = await fs.chdir(sig, root, runId)
   await datLoadRunFromHandle(sig, runDir)
 }
 
 export async function datLoadRunFromHandle(sig, dir) {
   a.reqInst(dir, FileSystemDirectoryHandle)
   const runId = dir.name
-
-  for await (const file of fs.readRunRoundHandles(sig, dir)) {
+  for (const file of await fs.readRunRoundHandlesAsc(sig, dir)) {
     await datLoadRoundFromHandle(sig, file, runId)
   }
 }
@@ -477,7 +476,12 @@ export function datAddRound(round, runId) {
 // Below 100, we don't really care.
 function isDamageSimilar(one, two) {return (a.laxNum(one) - a.laxNum(two)) < 100}
 
-function makeRoundId(runId, roundIndex) {
+// Not used for local data; necessary for cloud DB uploads.
+export function makeRunId(userId, runDir) {
+  return u.joinKeys(a.reqValidStr(userId), a.reqValidStr(runDir))
+}
+
+export function makeRoundId(runId, roundIndex) {
   return u.joinKeys(a.reqValidStr(runId), u.intToOrdStr(roundIndex))
 }
 

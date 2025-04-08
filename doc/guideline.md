@@ -1,7 +1,7 @@
 # Coding Guidelines
 
 ## Core Principles
-- **Brevity**: Concise, focused code
+- **Brevity**: Concise, focused code. Be terse. Be really terse.
 - **Simplicity**: Prefer simple solutions over complex ones
 - **Less is more**: Minimize code, dependencies, and complexity
 - **Single Responsibility**: Functions and components do one thing well
@@ -18,6 +18,7 @@
 - Bottom-up design: build primitives first, then compose
 - After finding an initial solution, refine to find the most elegant approach
 - Identify opportunities to convert application code to reusable library code
+- Define small reusable utility functions (and constants) instead of hardcoding inline
 - Apply new reusable code to existing code to reduce duplication
 
 ## Function Design

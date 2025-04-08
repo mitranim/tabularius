@@ -28,7 +28,7 @@ async function fetchWithCache(req) {
 
 /*
 We cache URLs which seem to contain a version modifier similar to what is
-supported in NPM, and various CDNs that allow to import NPM modules by URL.
+supported in NPM and various CDNs that allow to import NPM modules by URL.
 */
 function shouldCache(req) {
   return (

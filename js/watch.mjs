@@ -1,5 +1,4 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
-import * as pt from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/path.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
@@ -121,12 +120,12 @@ async function watchInit(sig, state) {
     throw Error(`missing history dir handle, run "init" to initialize`)
   }
 
-  const runDir = await findLatestRunDir(sig, state.historyDirHandle)
+  const runDir = await fs.findLatestRunDir(sig, state.historyDirHandle)
   state.setRunDir(runDir?.name)
 
   const roundFile = (
     runDir &&
-    await findLatestRoundFile(sig, runDir, state.progressFileHandle)
+    await fs.findLatestRoundFile(sig, runDir, state.progressFileHandle)
   )
   await state.setRoundFile(roundFile?.name)
 
@@ -134,36 +133,6 @@ async function watchInit(sig, state) {
     run: state.runDirName,
     round: state.roundFileName,
   })
-}
-
-async function findLatestRunDir(sig, dir) {
-  let max = -Infinity
-  let out
-  for await (const han of fs.readDir(sig, dir)) {
-    const ord = u.strToInt(han.name)
-    if (!(ord > max)) continue
-    max = ord
-    out = han
-  }
-  return out
-}
-
-async function findLatestRoundFile(sig, runDir, progressFileHandle) {
-  const ext = pt.posix.ext(progressFileHandle.name)
-  let max = -Infinity
-  let out
-
-  for await (const han of fs.readDir(sig, runDir)) {
-    if (!fs.isFile(han)) continue
-    if (pt.posix.ext(han.name) !== ext) continue
-
-    const ord = u.strToInt(han.name)
-    if (!(ord > max)) continue
-
-    max = ord
-    out = han
-  }
-  return out
 }
 
 /*
@@ -213,7 +182,7 @@ async function watchStep(sig, state) {
     return
   }
 
-  const nextFileName = u.intToOrdStr(nextRoundOrd) + pt.posix.ext(state.progressFileHandle.name)
+  const nextFileName = u.intToOrdStr(nextRoundOrd) + u.paths.ext(state.progressFileHandle.name)
 
   const event = {
     type: `new_round`,
@@ -229,7 +198,7 @@ async function watchStep(sig, state) {
       {create: true},
     ))
 
-    await fs.writeFile(sig, dir, nextFileName, content)
+    await fs.writeDirFile(sig, dir, nextFileName, content)
     await state.setRoundFile(nextFileName)
 
     u.broadcastToAllTabs(event)
@@ -251,7 +220,7 @@ async function watchStep(sig, state) {
     {create: true},
   ))
   state.setRunDir(nextDirName)
-  await fs.writeFile(sig, dir, nextFileName, content)
+  await fs.writeDirFile(sig, dir, nextFileName, content)
   state.setRoundFile(nextFileName)
   u.log.info(`[watch] backed up run ${dir.name} > file ${nextFileName}`)
 

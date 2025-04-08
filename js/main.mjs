@@ -6,6 +6,7 @@ import * as fs from './fs.mjs'
 import * as w from './watch.mjs'
 import * as d from './dat.mjs'
 import * as ui from './ui.mjs'
+import * as fb from './fb.mjs'
 
 import * as self from './main.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -40,9 +41,16 @@ cmdStatus.cmd = `status`
 cmdStatus.desc = `show status of app features and processes`
 os.addCmd(cmdStatus)
 
+os.addCmd(w.cmdWatch)
+
+// Firebase auth works, but is disabled until we're done with data upload.
+// os.addCmd(fb.cmdAuth)
+
+// Data upload works, but deriving the star schema is a work in progress.
+// os.addCmd(fb.cmdUpload)
+
 os.addCmd(os.cmdPs)
 os.addCmd(os.cmdKill)
-os.addCmd(w.cmdWatch)
 os.addCmd(fs.cmdLs)
 os.addCmd(fs.cmdShow)
 os.addCmd(fs.cmdShowSaves)

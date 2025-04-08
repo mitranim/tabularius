@@ -1,5 +1,4 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
-import * as pt from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/path.mjs'
 import * as idb from 'https://esm.sh/idb@7.1.1'
 import * as u from './util.mjs'
 
@@ -85,7 +84,7 @@ export const HISTORY_DIR_CONF = new FileConf({
   key: `history_dir`,
   desc: `history directory`,
   help: u.joinLines(
-    `Pick directory for run history/backups. Suggested location:`,
+    `Pick directory for run history (backups). Suggested location:`,
     `C:\\Users\\<user>\\Documents\\tower-dominion`,
   ),
   mode: `readwrite`,
@@ -124,7 +123,7 @@ async function loadFileHandle(conf) {
     return undefined
   }
 
-  u.log.verb(`${desc}: loaded handle from DB: ${a.show(out)}`)
+  u.log.verb(`${desc}: loaded handle from DB`)
 
   if (!a.isInst(out, FileSystemHandle)) {
     u.log.info(`${desc}: expected FileSystemHandle; deleting corrupted DB entry`)
@@ -311,7 +310,7 @@ export async function cmdLs({sig, args}) {
     default: return cmdLs.help
   }
 
-  const path = pt.posix.clean(args[1])
+  const path = u.paths.clean(args[1])
   const handle = await handleAtPath(sig, path)
   const suf = `: `
   if (!isDir(handle)) return handle.kind + suf + handle.name
@@ -430,11 +429,10 @@ export async function cmdDecode({sig, args}) {
   const runId = args[1]
   const root = await reqHistoryDir(sig)
   const dir = await getDirectoryHandle(sig, root, runId)
-  const rounds = await u.asyncIterCollect(sig, readRunRounds(sig, dir))
-  rounds.sort(u.compareRoundsAsc)
+  const rounds = await u.asyncIterCollect(sig, readRunRoundsAsc(sig, dir))
   const path = runId + `.json`
   const body = pretty ? JSON.stringify(rounds, ``, 2) : JSON.stringify(rounds)
-  await writeFile(sig, root, path, body)
+  await writeDirFile(sig, root, path, body)
   return `wrote run ${a.show(runId)} to ${a.show(path)}`
 }
 
@@ -455,14 +453,60 @@ export async function cmdShowSaves({sig}) {
   return `printed decoded contents of ${count} files to the browser devtools console`
 }
 
-// Caution: the iteration order is undefined and unstable.
+export async function findLatestRunDir(sig, dir) {
+  let max = -Infinity
+  let out
+  for await (const han of readDir(sig, dir)) {
+    const ord = u.strToInt(han.name)
+    if (!(ord > max)) continue
+    max = ord
+    out = han
+  }
+  return out
+}
+
+export async function findLatestRoundFile(sig, runDir, progressFileHandle) {
+  const ext = u.paths.ext(progressFileHandle.name)
+  let max = -Infinity
+  let out
+
+  for await (const han of readDir(sig, runDir)) {
+    if (!isFile(han)) continue
+    if (u.paths.ext(han.name) !== ext) continue
+
+    const ord = u.strToInt(han.name)
+    if (!(ord > max)) continue
+
+    max = ord
+    out = han
+  }
+  return out
+}
+
+export async function* readRunsAsc(sig, root) {
+  for (const val of await readDirAsc(sig, root)) {
+    if (isHandleRunDir(val)) yield val
+  }
+}
+
+export async function* readRunRoundsAsc(sig, dir) {
+  for (const file of await readRunRoundHandlesAsc(sig, dir)) {
+    yield await jsonDecompressDecodeFile(sig, file)
+  }
+}
+
+// The iteration order is undefined and unstable.
 export async function* readRunRounds(sig, dir) {
   for await (const file of readRunRoundHandles(sig, dir)) {
     yield await jsonDecompressDecodeFile(sig, file)
   }
 }
 
-// Caution: the iteration order is undefined and unstable.
+export async function readRunRoundHandlesAsc(sig, dir) {
+  return (await u.asyncIterCollect(sig, readRunRoundHandles(sig, dir))).sort(compareHandlesAsc)
+}
+
+// The iteration order is undefined and unstable.
 export async function* readRunRoundHandles(sig, dir) {
   for await (const file of readDir(sig, dir)) {
     if (isHandleGameFile(file)) yield file
@@ -471,24 +515,27 @@ export async function* readRunRoundHandles(sig, dir) {
 
 export async function findLatestRunId(sig) {
   const root = await reqHistoryDir(sig)
-
-  let dirs = await u.asyncIterCollect(sig, readDir(sig, root))
-  dirs = a.filter(dirs, isDir)
-  dirs.sort(compareHandlesDesc)
-
+  const dirs = (await readDirDesc(sig, root)).filter(isDir)
   for (const dir of dirs) {
-    for await (const _ of readRunRoundHandles(sig, dir)) {
-      return dir.name
-    }
+    for await (const _ of readRunRoundHandles(sig, dir)) return dir.name
   }
   return undefined
+}
+
+export function isHandleRunDir(handle) {
+  a.reqInst(handle, FileSystemHandle)
+  return isDir(handle) && a.isSome(u.strToInt(handle.name))
 }
 
 export function isHandleGameFile(handle) {
   a.reqInst(handle, FileSystemHandle)
   if (!isFile(handle)) return false
-  const ext = pt.posix.ext(handle.name)
+  const ext = u.paths.ext(handle.name)
   return ext === `.gd` || ext === `.json`
+}
+
+export function compareRoundsAsc(one, two) {
+  return a.compareFin(one?.RoundIndex, two?.RoundIndex)
 }
 
 export function compareHandlesAsc(one, two) {
@@ -511,18 +558,20 @@ export async function jsonDecompressDecodeFile(sig, src) {
   return src
 }
 
+export async function jsonCompressEncodeFile(sig, tar, src) {
+  await writeFile(sig, tar, await u.jsonCompressEncode(src))
+}
+
 export async function readFile(sig, src) {
   src = await getFile(sig, src)
   src = await u.wait(sig, src.text())
   return src
 }
 
-export async function handleAtPath(sig, src) {
-  const path = splitPath(src)
-  const dirs = a.init(path)
-  const name = a.last(path)
+export async function handleAtPath(sig, path) {
   const root = await reqHistoryDir(sig)
-  const handle = await chdir(sig, root, dirs)
+  const handle = await chdir(sig, root, u.paths.dir(path))
+  const name = u.paths.base(path)
   if (!name) return handle
   return getSubHandle(sig, handle, name)
 }
@@ -530,8 +579,7 @@ export async function handleAtPath(sig, src) {
 export async function chdir(sig, handle, path) {
   u.reqSig(sig)
   a.reqInst(handle, FileSystemHandle)
-  u.optArrOfValidStr(path)
-  for (const name of a.laxArr(path)) {
+  for (const name of u.paths.split(path)) {
     if (!a.isInst(handle, FileSystemDirectoryHandle)) {
       throw new ErrFs(`unable to chdir from ${a.show(handle.name)}, which is not a directory, to ${a.show(name)}`)
     }
@@ -569,30 +617,61 @@ export async function getSubFile(sig, dir, subDirName, fileName) {
   a.reqInst(dir, FileSystemDirectoryHandle)
   a.optValidStr(subDirName)
   a.optValidStr(fileName)
+
   if (!subDirName) return undefined
   if (!fileName) return undefined
+
   const subDir = await getDirectoryHandle(sig, dir, subDirName)
   if (!subDir) return undefined
+
   return await getFileHandle(sig, subDir, fileName)
 }
 
-export async function writeFile(sig, dir, name, body) {
-  a.reqValidStr(name)
-  a.reqValidStr(body)
+export async function writeFile(sig, file, body) {
+  return writeFileAt(sig, file, body, file?.name)
+}
+
+export async function writeDirFile(sig, dir, name, body) {
   const file = await getFileHandle(sig, dir, name, {create: true})
+  return writeFileAt(sig, file, body, u.paths.join(dir.name, name))
+}
+
+async function writeFileAt(sig, file, body, path) {
+  u.reqSig(sig)
+  a.reqInst(file, FileSystemFileHandle)
+  a.reqValidStr(body)
+  a.reqValidStr(path)
+
   const wri = await u.wait(sig, file.createWritable())
   try {
     await u.wait(sig, wri.write(body))
     return file
   }
   catch (err) {
-    throw new ErrFs(`unable to write to ${dir.name}/${name}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to write to ${a.show(path)}: ${err}`, {cause: err})
   }
   finally {await wri.close()}
 }
 
 export function isDir(val) {return val.kind === `directory`}
 export function isFile(val) {return val.kind === `file`}
+
+export function readDirAsc(sig, dir) {
+  return readDirSorted(sig, dir, compareHandlesAsc)
+}
+
+export function readDirDesc(sig, dir) {
+  return readDirSorted(sig, dir, compareHandlesDesc)
+}
+
+/*
+The comparator function must be able to compare handles.
+Recommended: `compareHandlesAsc`, `compareHandlesDesc`.
+*/
+export async function readDirSorted(sig, dir, fun) {
+  a.reqFun(fun)
+  return (await u.asyncIterCollect(sig, readDir(sig, dir))).sort(fun)
+}
 
 /*
 Iterates all file handles in the directory.
@@ -696,9 +775,4 @@ export async function getDirectoryHandle(sig, src, name, opt) {
   catch (err) {
     throw new ErrFs(`unable to get directory handle ${src.name}/${name}: ${err}`, {cause: err})
   }
-}
-
-export function splitPath(src) {
-  const sep = `/`
-  return a.split(a.stripPre(src, sep), sep)
 }

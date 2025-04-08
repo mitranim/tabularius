@@ -1,6 +1,7 @@
 import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
 import * as d from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/dom.mjs'
 import * as p from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/prax.mjs'
+import * as pt from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/path.mjs'
 import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs.mjs'
 import * as od from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs_dom.mjs'
 import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/dom_reg.mjs'
@@ -25,7 +26,28 @@ This library hacks into the DOM, detects changes in the `.className` of any
 element, and dynamically generates Tailwind-compliant styles for the classes
 we actually use.
 */
-tw.install({presets: [tp(), tt()], hash: false})
+tw.install({
+  presets: [tp(), tt()],
+  hash: false,
+  theme: {
+    extend: {
+      animation: {
+        'flash-light': `flash-light 1s ease-out`,
+        'flash-dark': `flash-dark 1s ease-out`,
+      },
+      keyframes: {
+        'flash-light': {
+          '0%, 100%': {backgroundColor: `transparent`},
+          '20%': {backgroundColor: `oklch(0.945 0.129 101.54)`}, // yellow-200
+        },
+        'flash-dark': {
+          '0%, 100%': {backgroundColor: `transparent`},
+          '20%': {backgroundColor: `oklch(0.476 0.114 61.907)`}, // yellow-800
+        },
+      },
+    },
+  },
+})
 
 /*
 Needed for `dr.MixReg`, which enables automatic registration of any custom
@@ -177,7 +199,7 @@ export const log = new class Log extends Elem {
   // Must be used for all info logging.
   info(...msg) {
     if (!a.vac(msg)) return
-    this.addMsg({}, ...msg)
+    return this.addMsg({}, ...msg)
   }
 
   // Must be used for all error logging.
@@ -185,14 +207,14 @@ export const log = new class Log extends Elem {
     if (!a.vac(msg)) return
     if (a.some(msg, isErrAbort)) return
     console.error(...msg)
-    this.addMsg({type: `err`}, ...msg)
+    return this.addMsg({type: `err`}, ...msg)
   }
 
   // Should be used for optional verbose logging.
   verb(...msg) {
     if (!LOG_VERBOSE) return
     if (!a.vac(msg)) return
-    this.addMsg({}, ...msg)
+    return this.addMsg({}, ...msg)
   }
 
   clear() {
@@ -219,7 +241,7 @@ export const log = new class Log extends Elem {
   // messageLog = E(`div`, {class: a.spaced(`w-full py-2 overflow-y-auto`, LOG_LINE_HEIGHT, LOG_SPACE_Y)})
 
   removedMessageNotice = E(`div`, {
-    class: `text-gray-500 dark:text-gray-400 text-center border-b border-gray-300 dark:border-gray-700`,
+    class: `text-gray-500 dark:text-gray-400 text-center border-b border-gray-300 dark:border-gray-700 pb-2`,
     hidden: true,
   })
 
@@ -259,9 +281,10 @@ export const log = new class Log extends Elem {
   }
 
   addMsg(props, ...chi) {
-    this.messageLog.append(LogMsg(props, ...chi))
+    const msg = this.messageLog.appendChild(LogMsg(props, ...chi))
     this.scrollToBottom()
     this.enforceMessageLimit()
+    return msg
   }
 
   /*
@@ -530,10 +553,6 @@ export function compareByIntPrefix(prev, next, desc) {
   if (one < two) return desc ? 1 : -1
   if (one > two) return desc ? -1 : 1
   return 0
-}
-
-export function compareRoundsAsc(one, two) {
-  return a.compareFin(one?.RoundIndex, two?.RoundIndex)
 }
 
 export async function jsonDecompressDecode(src) {
@@ -820,3 +839,15 @@ function eventData(src) {
     src.detail  // `CustomEvent`
   )
 }
+
+// Minor extensions and workarounds for library functionality.
+export const paths = new class PathsPosix extends pt.PathsPosix {
+  split(src) {
+    return a.split(a.stripPre(this.clean(src), this.dirSep), this.dirSep)
+  }
+
+  // In this particular system, all paths are relative to the root.
+  clean(src) {
+    return a.stripPre(super.clean(src), this.dirSep)
+  }
+}()
