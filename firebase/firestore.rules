@@ -2,8 +2,13 @@ rules_version = "2"
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /facts/{docId} {allow read: if true}
+    match /runs/{docId} {allow read: if true}
+    match /runRounds/{docId} {allow read: if true}
+    match /runBuis/{docId} {allow read: if true}
+    match /runRoundBuis/{docId} {allow read: if true}
 
-    match /rounds/{roundId} {
+    match /roundSnaps/{roundId} {
       allow read: if true
 
       allow create: if isOwnedByCurrentUser(request.resource.data)
@@ -16,9 +21,7 @@ service cloud.firestore {
       allow delete: if false
     }
 
-    match /{document=**} {
-      allow read, write: if false
-    }
+    match /{document=**} {allow read, write, delete: if false}
   }
 }
 

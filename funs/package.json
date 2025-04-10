@@ -1,6 +1,6 @@
 {
   "private": true,
-  "main": "funcs.mjs",
+  "main": "funs.mjs",
   "scripts": {
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",

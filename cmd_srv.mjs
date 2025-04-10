@@ -8,13 +8,11 @@ const bro = new ld.LiveBroad()
 
 const dirs = ld.LiveDirs.of(
   hd.dirRel(Deno.env.get(`TAR`) || `.`),
-  // TODO just serve everything from `.`, no point in filtering.
-  // hd.dirRel(`.`, /(?:^\w+[.]html$|^sw[.]mjs$|^js[/]|^data[/]|^firebase[/]|^local[/])/),
   hd.dirRel(`.`),
 )
 
 const liveDirs = ld.LiveDirs.of(
-  hd.dirRel(`.`, /(?:^\w+[.]html$|^sw[.]mjs$|^js[/])/),
+  hd.dirRel(`.`, /(?:^\w+[.]html$|^sw[.]mjs$|^js[/]|^funs[/]util[.]mjs$|^funs[/]codes[.]mjs$|^funs[/]schema[.]mjs$)/),
 )
 
 const dirAbs = hd.dirAbs()

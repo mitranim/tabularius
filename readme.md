@@ -8,9 +8,9 @@ Planned features. Some already implemented:
 * [x] Analysis, with visualizations, charts.
   * [x] Damage per round per building type.
   * [x] More! For example: cost efficiency of damage.
-* [ ] Upload run logs to cloud storage.
-  * [ ] Authentication and security.
-  * [ ] Analysis should be available for both local and cloud logs.
+* [x] Upload run logs to cloud storage.
+  * [x] Authentication and security.
+* [ ] Analysis should be available for both local and cloud logs.
 * [ ] Easy rollback option.
 
 See [`todo.md`](todo.md) for other planned improvements.

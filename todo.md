@@ -168,12 +168,39 @@ We want many options for filtering, grouping, aggregating.
 * Aggregate damage overkill
 * Aggregate damage efficiency (damage per cost)
 
+We support arbitrary filtering, grouping, aggregation via CLI args, for both local and cloud data:
+
+```sh
+plot -s=cloud
+plot -s=cloud userId=current
+plot -s=cloud run=123 run=234
+plot -s=cloud run=123 userId=current
+plot -s=local run=123
+plot -s=local run=latest
+plot -s=local run=123 run=latest
+plot -s=local run=123 -m=dmg
+plot -s=local run=123 -m=eff
+plot -s=local -x=roundNum -y=dmgDone -z=buiTypeUpg
+plot -s=local -x=roundNum -y=dmgOver -z=buiTypeUpg
+plot -s=local -x=roundNum -y=dmgEff -z=buiTypeUpg -a=avg
+```
+
+<!-- Should be possible to specify arbitrary stat types and scopes. But their full names are long. Probably end up with some aliases for commonly used fields, like `dmg` means `statType = dmg && statScope = round`. -->
+
+Should add a command to show an arbitrary fact, to view what's possible. Maybe several example facts, with different stuff. Could be hardcoded in the schema file.
+
+Should be possible to specify one filter and then multiple other options, for multiple plots. We would end up querying data only once, and aggregating for multiple plots in parallel, from the same data. Not relevant for small data sets, useful for large ones, especially in the cloud.
+
+<!-- Consider using Firestore's `getAggregateFromServer`. It supports multiple aggregates over one query, but only returns one aggregate for each. Not as good / convenient / performant as rolling our own aggregating cloud function, but might be faster to get started with. But hundreds of requests per plot is probably not viable. -->
+
 ### Flatting
 
-Considering flatting the data to a much flatter, simpler format. Various considerations:
-* Could be a list of atomic facts (datoms).
-* Could be an event log (similar to the above).
-* Probably want to pre-compute some aggregates for later ease.
+* [x] Considering flatting the data to a much flatter, simpler format. Various considerations:
+  * Could be a list of atomic facts (datoms).
+  * Could be an event log (similar to the above).
+  * Probably want to pre-compute some aggregates for later ease.
+
+Went with a star schema. No pre-computed aggregates (yet).
 
 ## Forks
 
@@ -820,4 +847,45 @@ Consider logging even less by default.
 
 ---
 
-The `analyze` command should support specifying multiple runs, run ranges, filters, or simply grabbing everything.
+The `analyze` command (now `plot`) should support specifying multiple runs, run ranges, filters, or simply grabbing everything.
+
+---
+
+`datAddRound` should have either a smaller equivalent or a mode, where it only creates facts and doesn't bother with dimensions, for local analysis (since we just use facts now).
+
+---
+
+Add an FS function that takes an arbitrary path, walks all round files, and yields only _facts_, with the proper user, run, round ids embedded in them. This is done by: generalizing `datLoadRun`/`datLoadRound` to support an arbitrary path (via a higher-level function); then returning all facts from `DAT`. Ah, it seems like we don't need a generator function here, we just need a more general version of `datLoad*` that loads all rounds from any path including root.
+
+---
+
+When plotting over all cloud data, we should have an option to limit to only the latest game version, and an option to limit by date. It's useful to be able to prefer recent data over old data (outdata, if you will). When no other filter is provided, this should probably be the default. Limiting the data recency also prevents this from getting slower with time and data.
+
+---
+
+Drop command `test`, just use a query parameter.
+
+---
+
+More interactive logging, particularly for chains of operations. Examples:
+
+* [x] `help` -> every command name is a clickable button.
+* [ ] Any command help -> every example is a clickable button.
+* [ ]`plot` -> help includes `plot ps` -> clickable -> list of run ids which are clickable and thus plottable (either local or remote, depending on `-s`).
+* [ ] Similar for other commands, wherever possible.
+
+---
+
+<!-- When logging a user command to the terminal, it should be a reactive element tracking the command status. -->
+
+---
+
+<!-- The `userId` filter should support something like "me" or "current", similar to the magic "latest" for runs. -->
+
+---
+
+Top right: collapse text into icons: Steam (add TD link), Discord, Github.
+
+---
+
+Make plot titles human-readable.

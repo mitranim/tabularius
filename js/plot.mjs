@@ -2,16 +2,318 @@ import * as a from '@mitranim/js/all.mjs'
 import Plot from 'https://esm.sh/uplot@1.6.27'
 import {E} from './util.mjs'
 import * as u from './util.mjs'
+import * as c from '../funs/codes.mjs'
+import * as s from '../funs/schema.mjs'
+import * as ui from './ui.mjs'
+import * as fb from './fb.mjs'
+import * as d from './dat.mjs'
 
 import * as self from './plot.mjs'
 const tar = window.tabularius ??= a.Emp()
-tar.pl = self
+tar.p = self
 a.patch(window, tar)
 
 document.head.append(E(`link`, {
   rel: `stylesheet`,
   href: `https://esm.sh/uplot@1.6.27/dist/uPlot.min.css`,
 }))
+
+cmdPlot.cmd = `plot`
+cmdPlot.desc = `analyze data, visualizing with a plot 📈📉`
+cmdPlot.help = function cmdPlotHelp() {
+  return u.joinParagraphs(
+    `[plot] ` + cmdPlot.desc,
+
+    `options:`,
+
+    u.joinLines(
+      `-p -- preset; supported presets:`,
+      `  -p=dmg -- same as "-x=roundNum -y=${s.STAT_TYPE_DMG_DONE} -z=buiTypeUpg -a=sum"`,
+      `  -p=eff -- same as "-x=roundNum -y=${s.STAT_TYPE_COST_EFF} -z=buiTypeUpg -a=avg"`,
+      `preset "dmg" is default; you can override individual options`,
+    ),
+
+    u.joinLines(
+      `-s -- source; allowed values: ${a.show(a.keys(PLOT_AGG_SRC))}; local data requires running the "init" command to enable access to the progress file and history directory; cloud data requires running the "auth" command (in the form "auth <provider>") to enable cloud backups; the default is ${a.show(a.head(a.keys(PLOT_AGG_SRC)))}; examples:`,
+      `  plot`,
+      ...a.map(a.keys(PLOT_AGG_SRC), key => `plot -s=${key}`).map(u.indent),
+    ),
+
+    u.joinLines(
+      `-x -- X axis; allowed values: ${a.show(a.keys(s.ALLOWED_X_KEYS))}; examples:`,
+      `  plot`,
+      `  plot -x=roundNum`,
+      `  plot -x=runNum`,
+    ),
+
+    u.joinLines(
+      `-y -- Y axis; allowed values: ${a.show(a.keys(s.ALLOWED_Y_STAT_TYPES))}; examples:`,
+      `  plot`,
+      ...a.map(a.keys(s.ALLOWED_Y_STAT_TYPES), key => `plot -y=${key}`).map(u.indent),
+    ),
+
+    u.joinLines(
+      `-z -- Z axis (plot series); allowed values: ${a.show(a.keys(s.ALLOWED_Z_KEYS))}; examples:`,
+      `  plot`,
+      `  plot -z=buiType`,
+      `  plot -z=buiTypeUpg`,
+    ),
+
+    u.joinLines(
+      `-a -- aggregation mode; allowed values: ${a.show(a.keys(s.AGGS))}; examples:`,
+      ...a.map(a.keys(s.AGGS), key => `plot -a=${key}`).map(u.indent),
+    ),
+
+    u.joinLines(
+      `tip: the special filter "run=" works for both "runId" and "runNum" if the input is an integer; examples:`,
+      `  plot run=123`,
+      `  plot run=some_id`,
+    ),
+
+    u.joinLines(
+      `tip: the special filter "round=" works for both "roundId" and "roundNum" if the input is an integer; examples:`,
+      `  plot round=123`,
+      `  plot round=some_id`,
+    ),
+
+    u.joinLines(
+      `tip: "run=latest" or "runId=latest" filters the latest run only; examples:`,
+      `  plot -s=local run=latest`,
+      `  plot -s=cloud run=latest`,
+    ),
+
+    u.joinLines(
+      `tip: "userId=current" filters cloud data by current user id, if any; examples:`,
+      `  plot -s=cloud userId=current`,
+      `  plot -s=cloud userId=current run=latest`,
+    ),
+
+    `tip: try ctrl+click / cmd+click / shift+click on plot labels`,
+    `tip: use "ls" to browse local runs`,
+    `tip: use "cls" to browse cloud runs`,
+
+    u.joinLines(
+      `more examples:`,
+      `  plot -s=local -m=dmg runId=latest`,
+      `  plot -s=local -m=eff runId=latest`,
+      `  plot -s=cloud -m=dmg runId=latest`,
+      `  plot -s=cloud -m=eff runId=latest`,
+      `  plot -x=runNum -y=costEff -z=buiTypeUpg -a=avg`,
+    ),
+  )
+}
+
+export function cmdPlot({sig, args}) {
+  const inp = plotAggCliArgsDecode(args)
+  const src = u.dictPop(inp, `src`)
+  if (src === `local`) return cmdPlotLocal(sig, inp)
+  if (src === `cloud`) return cmdPlotCloud(sig, inp)
+  throw Error(`unknown plot data source ${a.show(src)}`)
+}
+
+export async function cmdPlotLocal(sig, inp) {
+  const opt = s.validPlotAggOpt(inp)
+  const {Z: Z_key, X: X_key, agg} = opt
+  await d.datLoad(sig, d.DAT, opt)
+
+  // TODO: avoid updating when the dat change doesn't affect the current plot.
+  ui.MEDIA.add(new LivePlotter(function plotOpts() {
+    const facts = d.datQueryFacts(d.DAT, opt)
+    const data = s.plotAggFromFacts({facts, Z_key, X_key, agg})
+    return plotOptsWith({data, inp})
+  }))
+}
+
+export async function cmdPlotCloud(sig, inp) {
+  const {data} = await u.wait(sig, fb.fbCall(`plotAgg`, inp))
+  ui.MEDIA.add(new Plotter(plotOptsWith({data, inp})))
+}
+
+export function plotOptsWith({data, inp}) {
+  a.reqArr(data)
+  a.reqDict(inp)
+
+  const agg = s.AGGS.get(inp.agg)
+  const [X_row, Z_labels, Z_X_Y_arr] = data
+  const Z_rows = a.map(Z_labels, plotLabelTitle).map((val, ind) => serieWithAgg(val, ind, agg))
+
+  // Hide the total serie by default.
+  // TODO: when updating a live plot, preserve series show/hide state.
+  Z_rows[0].show = false
+
+  return {
+    ...LINE_PLOT_OPTS,
+    plugins: plugins(),
+    // TODO human readability.
+    title: `${inp.agg} of ${inp.Y} per ${inp.Z} per ${inp.X}`,
+    series: [{label: inp.X}, ...Z_rows],
+    data: [X_row, ...Z_X_Y_arr],
+    axes: axes(inp.X, inp.Y),
+  }
+}
+
+/*
+Converts CLI args to a format suitable for the cloud function `plotAgg` or its
+local equivalent. This is an intermediary data format. See `validPlotAggOpt`
+which validates and converts this to the final representation used by querying
+functions.
+*/
+export function plotAggCliArgsDecode(src) {
+  const out = a.Emp()
+  out.where = a.Emp()
+  out.runLatest = false
+  out.userCurrent = false
+
+  for (const [key, val] of a.tail(u.cliDecode(src))) {
+    if (key === `-p`) {
+      const preset = PLOT_PRESETS.get(u.reqEnum(key, val, PLOT_PRESETS))
+      a.patch(out, preset)
+      continue
+    }
+
+    if (key === `-s`) {
+      u.assUniq(out, `src`, u.reqEnum(key, val, PLOT_AGG_SRC))
+      continue
+    }
+
+    if (key === `-x`) {
+      u.assUniq(out, `X`, u.reqEnum(key, val, s.ALLOWED_X_KEYS))
+      continue
+    }
+
+    if (key === `-y`) {
+      u.assUniq(out, `Y`, u.reqEnum(key, val, s.ALLOWED_Y_STAT_TYPES))
+      continue
+    }
+
+    if (key === `-z`) {
+      u.assUniq(out, `Z`, u.reqEnum(key, val, s.ALLOWED_Z_KEYS))
+      continue
+    }
+
+    if (key === `-a`) {
+      u.assUniq(out, `agg`, u.reqEnum(key, val, s.AGGS))
+      continue
+    }
+
+    if (!key) {
+      throw Error(`plot args must be one of: "-flag", "-flag=val", or "field=val", got ${a.show(val)}`)
+    }
+
+    if (key === `userId`) {
+      if (val === `current`) {
+        out.userCurrent = true
+        continue
+      }
+      u.dictPush(out.where, key, val)
+      continue
+    }
+
+    if (key === `run`) {
+      if (val === `latest`) {
+        out.runLatest = true
+        continue
+      }
+      const int = u.toIntOpt(val)
+      if (a.isSome(int)) u.dictPush(out.where, `runNum`, int)
+      else u.dictPush(out.where, `runId`, val)
+      continue
+    }
+
+    if (key === `round`) {
+      const int = u.toIntOpt(val)
+      if (a.isSome(int)) u.dictPush(out.where, `roundNum`, int)
+      else u.dictPush(out.where, `roundId`, val)
+      continue
+    }
+
+    if (key === `runId`) {
+      if (val === `latest`) {
+        out.runLatest = true
+        continue
+      }
+      u.dictPush(out.where, key, val)
+      continue
+    }
+
+    if (key === `runNum`) {
+      const int = u.toIntOpt(val)
+      if (a.isNil(int)) throw Error(`"runNum" must be an integer, got: ${a.show(val)}`)
+      u.dictPush(out.where, key, int)
+      continue
+    }
+
+    if (key === `roundNum`) {
+      const int = u.toIntOpt(val)
+      if (a.isNil(int)) throw Error(`"roundNum" must be an integer, got: ${a.show(val)}`)
+      u.dictPush(out.where, key, int)
+      continue
+    }
+
+    u.reqEnum(`plot filters`, key, s.ALLOWED_FILTER_KEYS)
+
+    /*
+    Inputs: `one=two one=three four=five`.
+    Outputs: `{one: ["two", "three"], four: ["five"]}`.
+    SYNC[field_pattern].
+    */
+    u.dictPush(out.where, key, val)
+  }
+
+  out.src ||= a.head(PLOT_AGG_SRC)
+  out.X ||= `roundNum`
+  out.Y ||= s.STAT_TYPE_DMG_DONE
+  out.Z ||= `buiTypeUpg`
+  out.agg ||= a.head(a.keys(s.AGGS))
+  return out
+}
+
+const PLOT_AGG_SRC = new Set([`local`, `cloud`])
+
+const PLOT_PRESETS = new Map()
+  .set(`dmg`, {X: `roundNum`, Y: s.STAT_TYPE_DMG_DONE, Z: `buiTypeUpg`, agg: `sum`})
+  .set(`eff`, {X: `roundNum`, Y: s.STAT_TYPE_COST_EFF, Z: `buiTypeUpg`, agg: `avg`})
+
+/*
+Goal: if FS is inited and we have an actual latest run, show its analysis.
+Otherwise, show a sample run for prettiness sake.
+*/
+export async function plotDefault({sig}) {
+  try {
+    await cmdPlot({sig, args: `plot run=latest`})
+  }
+  catch (err) {
+    if (u.LOG_VERBOSE) u.log.err(`error analyzing latest run: `, err)
+    u.log.verb(`unable to plot latest run, plotting example run`)
+    await plotExampleRun()
+  }
+}
+
+export async function plotExampleRun() {
+  const runId = `example_run`
+  const rounds = await u.jsonDecompressDecode(await u.fetchText(
+    new URL(`../data/example_run.gd`, import.meta.url)
+  ))
+  if (!a.len(rounds)) throw Error(`internal error: missing chart data`)
+
+  const dat = a.Emp()
+  s.datInit(dat)
+
+  for (const round of rounds) {
+    s.datAddRound({dat, round, runId, runNum: 0, userId: d.USER_ID})
+  }
+
+  const inp = plotAggCliArgsDecode()
+  delete inp.src
+
+  const {Z: Z_key, X: X_key, where, agg} = s.validPlotAggOpt(inp)
+  const facts = d.datQueryFacts(dat, where)
+  const data = s.plotAggFromFacts({facts, Z_key, X_key, agg})
+  const opts = plotOptsWith({data, inp})
+
+  opts.title = `example run analyzis: ` + opts.title
+  ui.MEDIA.add(new Plotter(opts))
+}
 
 /*
 Interfaces:
@@ -83,6 +385,36 @@ export class Plotter extends u.Elem {
   handleEvent(eve) {if (eve.type === `change` && eve.media) this.init()}
 }
 
+export class LivePlotter extends Plotter {
+  constructor(fun) {
+    super(fun())
+    this.fun = fun
+  }
+
+  init() {
+    super.init()
+    this.unsub = u.listenMessage(d.DAT, this.onDatMsg.bind(this))
+  }
+
+  deinit() {
+    this.unsub?.()
+    super.deinit()
+  }
+
+  onDatMsg(src) {
+    if (!this.isConnected) {
+      console.error(`internal error: ${a.show(this)} received a dat event when not connected to the DOM`)
+      return
+    }
+
+    const opts = this.fun(src)
+    if (!opts) return
+
+    this.opts = opts
+    this.init()
+  }
+}
+
 export const SCALE_X = {time: false}
 export const SCALE_Y = SCALE_X
 export const SCALES = {x: SCALE_X, y: SCALE_Y}
@@ -145,17 +477,14 @@ export function axisStroke() {
   return u.darkModeMediaQuery.matches ? `white` : `black`
 }
 
-export function serieWithSum(label, ind) {
-  return {
-    ...serie(label, ind),
-    value: serieFormatValWithSum,
-  }
-}
+export function serieWithAgg(label, ind, agg) {
+  a.reqFun(agg)
 
-export function serieWithAvg(label, ind) {
   return {
     ...serie(label, ind),
-    value: serieFormatValWithAvg,
+    value(plot, val, ind) {
+      return serieFormatVal(plot, val, ind, agg)
+    },
   }
 }
 
@@ -177,22 +506,13 @@ export function serie(label, ind) {
   }
 }
 
-export function serieFormatValWithSum(plot, val, ind) {
-  return serieFormatVal(plot, val, ind, a.sum)
-}
-
-export function serieFormatValWithAvg(plot, val, ind) {
-  return serieFormatVal(plot, val, ind, u.avg)
-}
-
 // See comment in `serie` why we don't format the value here.
 export function serieFormatVal(plot, val, seriesInd, agg) {
+  a.reqInt(seriesInd)
   a.reqFun(agg)
-  if (a.isNil(val) && a.isNum(seriesInd)) {
-    const dat = plot.data[seriesInd]
-    if (a.isArr(dat)) val = agg(dat)
-  }
-  return val
+  const ind = plot.cursor.idx
+  if (a.isInt(ind) && ind >= 0) return a.laxFin(val)
+  return plot.data[seriesInd].reduce(agg, 0)
 }
 
 // Our default value formatter, which should be used for all plot values.
@@ -374,6 +694,17 @@ export class TooltipPlugin extends a.Emp {
       },
     })
   }
+}
+
+/*
+Converts labels such as `CB01_ABA` into the likes of `Bunker_ABA`. We could
+generate and store those names statically, but doing this dynamically seems
+more reliable, considering that new entities may be added later. Updating the
+table of codes is easier than updating the data.
+*/
+export function plotLabelTitle(val) {
+  const [pre, suf] = a.laxStr(val).split(`_`, 2)
+  return u.joinKeys(c.CODES_SHORT[pre] || pre, suf)
 }
 
 export function sortPlotLabels(plot) {

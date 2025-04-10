@@ -4,9 +4,9 @@ import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
 import * as w from './watch.mjs'
-import * as d from './dat.mjs'
 import * as ui from './ui.mjs'
-import * as fb from './fb.mjs'
+import * as fb from './fb.mjs' // TODO import optionally (probably blocked in China).
+import * as p from './plot.mjs'
 
 import * as self from './main.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -42,20 +42,16 @@ cmdStatus.desc = `show status of app features and processes`
 os.addCmd(cmdStatus)
 
 os.addCmd(w.cmdWatch)
-
-// Firebase auth works, but is disabled until we're done with data upload.
 os.addCmd(fb.cmdAuth)
-
-// Data upload works, but deriving the star schema is a work in progress.
 os.addCmd(fb.cmdUpload)
-
+os.addCmd(fb.cmdCls)
 os.addCmd(os.cmdPs)
 os.addCmd(os.cmdKill)
 os.addCmd(fs.cmdLs)
 os.addCmd(fs.cmdShow)
 os.addCmd(fs.cmdShowSaves)
 os.addCmd(fs.cmdDecode)
-os.addCmd(d.cmdAnalyze)
+os.addCmd(p.cmdPlot)
 os.addCmd(u.cmdVerbose)
 os.addCmd(u.cmdClear)
 
@@ -72,7 +68,7 @@ function cmdHelp({args}) {
       `available commands:`,
       E(`div`, {class: u.LOG_SPACE_Y},
         ...a.map(os.CMDS, cmdHelpShort),
-        E(`p`, {}, E(`b`, {}, `pro tip`), `: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=analyze 0000"`),
+        E(`p`, {}, E(`b`, {}, `pro tip`), `: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=plot 0000"`),
       ),
     ]
   }
@@ -91,7 +87,7 @@ function cmdHelp({args}) {
 
 function cmdHelpShort(val) {
   os.reqCmd(val)
-  return E(`p`, {}, E(`b`, {}, val.cmd), `: `, val.desc)
+  return E(`p`, {}, ui.BtnCmd(val.cmd), `: `, val.desc)
 }
 
 // Initialize features that require user action.
@@ -168,6 +164,6 @@ if (!TEST_MODE) {
   TODO: make this togglable.
   */
   if (ui.MEDIA.isDefault()) {
-    os.runProc(d.analyzeDefault, `analyze_default`, `running default analysis`).catch(u.logErr)
+    os.runProc(p.plotDefault, `plot_default`, `running default analysis`).catch(u.logErr)
   }
 }

@@ -2,7 +2,6 @@ import * as a from '@mitranim/js/all.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
-import * as s from '../funs/schema.mjs'
 
 import * as self from './watch.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -148,14 +147,14 @@ async function watchStep(sig, state) {
   const progressFile = await fs.getFile(sig, state.progressFileHandle)
   const content = await u.wait(sig, progressFile.text())
   const roundData = await u.wait(sig, u.jsonDecompressDecode(content))
-  const nextRoundOrd = roundData?.RoundIndex
+  const nextRoundNum = roundData?.RoundIndex
 
-  if (!a.isInt(nextRoundOrd)) {
-    throw Error(`[watch] unexpected round in source data: ${a.show(nextRoundOrd)}`)
+  if (!a.isInt(nextRoundNum)) {
+    throw Error(`[watch] unexpected round in source data: ${a.show(nextRoundNum)}`)
   }
 
-  if (!nextRoundOrd) {
-    u.log.verb(`[watch] current round is ${nextRoundOrd}, no current run, skipping backup`)
+  if (!nextRoundNum) {
+    u.log.verb(`[watch] current round is ${nextRoundNum}, no current run, skipping backup`)
     return
   }
 
@@ -177,23 +176,25 @@ async function watchStep(sig, state) {
     return
   }
 
-  const prevRoundOrd = u.strToInt(roundFileName)
-  if (prevRoundOrd === nextRoundOrd) {
-    u.log.verb(`[watch] skipping: round is still ${prevRoundOrd}`)
+  const prevRoundNum = u.toIntOpt(roundFileName)
+  if (prevRoundNum === nextRoundNum) {
+    u.log.verb(`[watch] skipping: round is still ${prevRoundNum}`)
     return
   }
 
-  const nextFileName = s.intToOrdStr(nextRoundOrd) + u.paths.ext(state.progressFileHandle.name)
+  const prevDirNum = u.toIntOpt(runDirName)
+  const nextFileName = u.intPadded(nextRoundNum) + u.paths.ext(state.progressFileHandle.name)
 
   const event = {
     type: `new_round`,
     runId: runDirName,
-    roundIndex: nextRoundOrd,
+    runNum: prevDirNum,
+    roundNum: nextRoundNum,
     roundData,
   }
 
-  if (prevRoundOrd < nextRoundOrd) {
-    u.log.info(`[watch] round increased from ${prevRoundOrd} to ${nextRoundOrd}, backing up`)
+  if (prevRoundNum < nextRoundNum) {
+    u.log.info(`[watch] round increased from ${prevRoundNum} to ${nextRoundNum}, backing up`)
     const dir = await u.wait(sig, state.historyDirHandle.getDirectoryHandle(
       runDirName,
       {create: true},
@@ -206,16 +207,15 @@ async function watchStep(sig, state) {
     return
   }
 
-  if (nextRoundOrd < prevRoundOrd) {
-    u.log.info(`[watch] round decreased from ${prevRoundOrd} to ${nextRoundOrd}, assuming new run`)
+  if (nextRoundNum < prevRoundNum) {
+    u.log.info(`[watch] round decreased from ${prevRoundNum} to ${nextRoundNum}, assuming new run`)
   }
   else {
-    u.log.info(`[watch] round is now ${nextRoundOrd}, assuming new run`)
+    u.log.info(`[watch] round is now ${nextRoundNum}, assuming new run`)
   }
 
-  const prevDirOrd = u.strToInt(runDirName)
-  const nextDirOrd = a.isNil(prevDirOrd) ? 0 : prevDirOrd + 1
-  const nextDirName = s.intToOrdStr(nextDirOrd)
+  const nextDirNum = a.isNil(prevDirNum) ? 0 : prevDirNum + 1
+  const nextDirName = u.intPadded(nextDirNum)
   const dir = await u.wait(sig, state.historyDirHandle.getDirectoryHandle(
     nextDirName,
     {create: true},
@@ -227,5 +227,6 @@ async function watchStep(sig, state) {
 
   event.prevRunId = event.runId
   event.runId = nextDirName
+  event.runNum = nextDirNum
   u.broadcastToAllTabs(event)
 }

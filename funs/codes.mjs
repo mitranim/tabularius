@@ -131,7 +131,6 @@ export const BUILDINGS_SHORT = {
   NB10: `Proto-turr`,
   NB11: `DeriumSpire`,
   NB12: `Orio-spect`,
-  NB12: `Rocher`,
   NB13: `SteelFac`,
   NB14: `AdvSteelFac`,
   NB15: `LocalUnder`,
@@ -147,4 +146,9 @@ export const BUILDINGS_SHORT = {
   SB07: `MissCtrl`,
   SB07A: `CtrlExt`,
   SB08: `DemoCharge`,
+}
+
+export const CODES_SHORT = {
+  ...COMMANDERS_SHORT,
+  ...BUILDINGS_SHORT,
 }

@@ -296,7 +296,7 @@ cmdLs.desc = `list dirs and files; usage: "ls" or "ls <path>"`
 cmdLs.help = u.joinLines(
   `usage: "ls" or "ls <path>`,
   `list the directories and files; examples:`,
-  `  ls /`,
+  `  ls`,
   `  ls some_dir`,
   `  ls some_dir/some_file`,
 )
@@ -305,12 +305,12 @@ export async function cmdLs({sig, args}) {
   args = u.splitCliArgs(args)
   switch (args.length) {
     case 0:
-    case 1: return cmdLs.help
+    case 1:
     case 2: break
     default: return cmdLs.help
   }
 
-  const path = u.paths.clean(args[1])
+  const path = u.paths.clean(a.laxStr(args[1]))
   const handle = await handleAtPath(sig, path)
   const suf = `: `
   if (!isDir(handle)) return handle.kind + suf + handle.name
@@ -409,7 +409,7 @@ cmdDecode.help = u.joinParagraphs(
     `  decode <run_id> -p`,
   ),
   u.joinLines(
-    `use "ls /" to browse runs; a typical <run_id> looks like this:`,
+    `use "ls" to browse runs; a typical <run_id> looks like this:`,
     `  decode 0000`,
     `  decode 0000 -p`,
   ),
@@ -457,7 +457,7 @@ export async function findLatestRunDir(sig, dir) {
   let max = -Infinity
   let out
   for await (const han of readDir(sig, dir)) {
-    const ord = u.strToInt(han.name)
+    const ord = u.toIntOpt(han.name)
     if (!(ord > max)) continue
     max = ord
     out = han
@@ -474,7 +474,7 @@ export async function findLatestRoundFile(sig, runDir, progressFileHandle) {
     if (!isFile(han)) continue
     if (u.paths.ext(han.name) !== ext) continue
 
-    const ord = u.strToInt(han.name)
+    const ord = u.toIntOpt(han.name)
     if (!(ord > max)) continue
 
     max = ord
@@ -486,6 +486,32 @@ export async function findLatestRoundFile(sig, runDir, progressFileHandle) {
 export async function* readRunsAsc(sig, root) {
   for (const val of await readDirAsc(sig, root)) {
     if (isHandleRunDir(val)) yield val
+  }
+}
+
+export async function* readRunsByIdsAscOpt(sig, root, ids) {
+  u.reqSig(sig)
+  a.reqInst(root, FileSystemDirectoryHandle)
+
+  for (const id of a.values(ids)) {
+    let dir
+    try {
+      dir = await getDirectoryHandle(sig, root, id)
+    }
+    catch (err) {
+      if (err?.cause?.name === `NotFoundError`) continue
+      throw err
+    }
+    yield dir
+  }
+}
+
+export async function* readRunsByIdsAsc(sig, root, ids) {
+  u.reqSig(sig)
+  a.reqInst(root, FileSystemDirectoryHandle)
+
+  for (const id of a.values(ids)) {
+    yield await getDirectoryHandle(sig, root, id)
   }
 }
 
@@ -513,18 +539,14 @@ export async function* readRunRoundHandles(sig, dir) {
   }
 }
 
-export async function findLatestRunId(sig) {
-  const root = await reqHistoryDir(sig)
-  const dirs = (await readDirDesc(sig, root)).filter(isDir)
-  for (const dir of dirs) {
-    for await (const _ of readRunRoundHandles(sig, dir)) return dir.name
-  }
-  return undefined
+export async function findLatestRunId(sig, root) {
+  a.reqInst(root, FileSystemDirectoryHandle)
+  return a.head((await readDirDesc(sig, root)).filter(isDir))?.name
 }
 
 export function isHandleRunDir(handle) {
   a.reqInst(handle, FileSystemHandle)
-  return isDir(handle) && a.isSome(u.strToInt(handle.name))
+  return isDir(handle) && a.isSome(u.toIntOpt(handle.name))
 }
 
 export function isHandleGameFile(handle) {
@@ -627,7 +649,7 @@ export async function getSubFile(sig, dir, subDirName, fileName) {
   return await getFileHandle(sig, subDir, fileName)
 }
 
-export async function writeFile(sig, file, body) {
+export function writeFile(sig, file, body) {
   return writeFileAt(sig, file, body, file?.name)
 }
 
@@ -746,7 +768,7 @@ export async function getSubHandle(sig, src, name, opt) {
 
   try {return await getFileHandle(sig, src, name, opt)}
   catch (err) {
-    if (err.cause?.name !== `TypeMismatchError`) throw err
+    if (err?.cause?.name !== `TypeMismatchError`) throw err
   }
   return await getDirectoryHandle(sig, src, name, opt)
 }

@@ -1,13 +1,19 @@
+/*
+TODO: make all Firebase features optional. Currently if the scripts fail to
+load, our app fails to start. Which is very bad for users in places where
+Google is blocked.
+
+API: https://firebase.google.com/docs/reference/js
+*/
 import * as a from '@mitranim/js/all.mjs'
 import * as o from '@mitranim/js/obs.mjs'
-import * as fb from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js'
-import * as fba from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js'
-import * as fbs from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js'
-// import * as fbf from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-functions.js'
+import * as fb from 'firebase/firebase-app.js'
+import * as fba from 'firebase/firebase-auth.js'
+import * as fbs from 'firebase/firebase-firestore.js'
+import * as fbf from 'firebase/firebase-functions.js'
 import {E} from './util.mjs'
 import * as u from './util.mjs'
 import * as fs from './fs.mjs'
-import * as d from './dat.mjs'
 import * as s from '../funs/schema.mjs'
 
 import * as self from './fb.mjs'
@@ -17,7 +23,7 @@ tar.lib ??= a.Emp()
 tar.lib.fb = fb
 tar.lib.fba = fba
 tar.lib.fbs = fbs
-// tar.lib.fbf = fbf
+tar.lib.fbf = fbf
 a.patch(window, tar)
 
 /*
@@ -30,7 +36,7 @@ export const fbConf = await u.fetchJson(new URL(`../firebase/firebase.json`, imp
 export const fbApp = fb.initializeApp(fbConf)
 export const fbAuth = fba.getAuth(fbApp)
 export const fbStore = fbs.getFirestore(fbApp)
-// export const fbFun = fbf.getFunctions(fbApp)
+export const fbFun = fbf.getFunctions(fbApp)
 fbConnectEmulatorSuite()
 
 export const fbObs = o.obs({
@@ -47,8 +53,6 @@ fba.onAuthStateChanged(fbAuth, function onAuthChange(user) {
     console.log(`current user:`, user)
   }
 })
-
-export const FB_COLL_ROUNDS = `rounds`
 
 cmdAuth.cmd = `auth`
 cmdAuth.desc = `login to enable cloud backups, or logout to disable`
@@ -81,6 +85,83 @@ export function reqFbUserId() {
   throw `authentication required; run the "auth" command`
 }
 
+cmdCls.cmd = `cls`
+cmdCls.desc = `list cloud runs; requires authentication (run "auth" once)`
+cmdCls.help = u.joinParagraphs(
+  `[cls]: ` + cmdCls.desc,
+  u.joinLines(
+    `usage:`,
+    `  cls`,
+    `  cls <run_id>`,
+  ),
+  `tip: use "upload" to upload runs to the cloud`,
+)
+
+export function cmdCls({sig, args}) {
+  args = u.splitCliArgs(args)
+  if (args.length > 2) return cmdCls.help
+  const runId = a.optStr(args[1])
+  const userId = reqFbUserId()
+  if (runId) return listCloudRounds(sig, runId, userId)
+  return listCloudRuns(sig, userId)
+}
+
+async function listCloudRuns(sig, userId) {
+  a.reqValidStr(userId)
+
+  try {
+    const docs = await fbDocs(sig, fbs.query(
+      fbs.collection(fbStore, s.COLL_RUNS),
+      fbs.where(`userId`, `==`, userId),
+    ))
+    const ids = a.map(docs, getId)
+
+    if (!ids.length) {
+      return `no cloud runs found; use "upload" to upload runs`
+    }
+    return u.joinLines(`cloud run ids:`, ...a.map(ids, u.indent))
+  }
+  catch (err) {
+    throw Error(`unable to list cloud runs: ${err}`, {cause: err})
+  }
+}
+
+async function listCloudRounds(sig, runId, userId) {
+  a.reqValidStr(runId)
+  a.reqValidStr(userId)
+
+  try {
+    const docs = await fbDocs(sig, fbs.query(
+      fbs.collection(fbStore, s.COLL_RUN_ROUNDS),
+      fbs.and(
+        fbs.where(`userId`, `==`, userId),
+        fbs.where(`runId`, `==`, runId),
+      )
+    ))
+    const ids = a.map(docs, getId)
+
+    if (!ids.length) {
+      return `no rounds found for run ${runId}; use "upload" to upload runs`
+    }
+
+    return u.joinLines(`round ids in run ${runId}:`, ...a.map(ids, u.indent))
+  }
+  catch (err) {
+    throw Error(`unable to list round ids in run ${runId}: ${err}`, {cause: err})
+  }
+}
+
+export async function fbDocs(sig, query) {
+  return (await u.wait(sig, fbs.getDocs(query))).docs
+}
+
+export async function fbDocDatas(sig, query) {
+  return a.map((await fbDocs(sig, query)), docData)
+}
+
+function docData(src) {return src.data()}
+function getId(src) {return src.id}
+
 cmdUpload.cmd = `upload`
 cmdUpload.desc = `uploads the given round, run, or all runs, to a cloud database; requires FS access (run "init" once) and authentication (run "auth" once)`
 cmdUpload.help = u.joinParagraphs(
@@ -99,7 +180,7 @@ cmdUpload.help = u.joinParagraphs(
     `  upload <run_id>/<round_id>`,
   ),
   `the upload is idempotent, which means no duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
-  `tip: use "ls /" to browse runs`,
+  `tip: use "ls" to browse runs`,
 )
 
 export async function cmdUpload({sig, args}) {
@@ -168,36 +249,35 @@ export async function uploadRound(sig, file, runName, userId, obs) {
   obs.status = `checking round ${a.show(path)}`
 
   const round = await fs.jsonDecompressDecodeFile(sig, file)
+  if (round.tabularius_roundId) {
+    obs.roundsChecked++
+    return
+  }
 
-  // FIXME restore before pushing.
-  //
-  // if (round.tabularius_roundId) {
-  //   obs.roundsChecked++
-  //   return
-  // }
-
-  const roundIndex = a.reqInt(round.RoundIndex)
   const runId = s.makeRunId(userId, runName)
-  const roundId = s.makeRoundId(runId, roundIndex)
+  const runNum = u.toIntReq(runName)
+  const roundNum = a.reqInt(round.RoundIndex)
+  const roundId = s.makeRoundId(runId, roundNum)
 
   if (a.vac([
     round.tabularius_userId  !== (round.tabularius_userId  = userId),
     round.tabularius_runId   !== (round.tabularius_runId   = runId),
+    round.tabularius_runNum  !== (round.tabularius_runNum  = runNum),
     round.tabularius_roundId !== (round.tabularius_roundId = roundId),
   ])) {
     obs.status = `uploading ${a.show(path)}`
+
     try {
-      const ref = fbs.doc(fbStore, FB_COLL_ROUNDS, roundId)
+      const ref = fbs.doc(fbStore, s.COLL_ROUND_SNAPS, roundId)
       await fbs.setDoc(ref, round, {merge: true})
     }
     catch (err) {
       obs.status = `unable to upload ${a.show(path)}, see the error`
       throw err
     }
-    obs.roundsUploaded++
 
-    // FIXME restore before pushing.
-    // await fs.jsonCompressEncodeFile(sig, file, round)
+    obs.roundsUploaded++
+    await fs.jsonCompressEncodeFile(sig, file, round)
   }
 
   obs.roundsChecked++
@@ -265,7 +345,7 @@ function fbConnectEmulatorSuite() {
     url.port = 9835
     fba.connectAuthEmulator(fbAuth, url.toString(), {disableWarnings: true})
     fbs.connectFirestoreEmulator(fbStore, url.hostname, 9836)
-    // fbf.connectFunctionsEmulator(fbFun, url.hostname, 9837)
+    fbf.connectFunctionsEmulator(fbFun, url.hostname, 9837)
     u.log.verb(`connected FB emulator suite`)
   }
   catch (err) {
@@ -273,5 +353,24 @@ function fbConnectEmulatorSuite() {
   }
 }
 
-// Example for later. We might end up using callable functions.
-// export const funHello = fbf.httpsCallable(fbFun, `helloWorld`)
+export function fbCall(name, inp) {
+  a.reqValidStr(name)
+
+  /*
+  The FB client library performs custom conversion of the input before
+  converting to JSON, in the name of using the ISO encoding for dates,
+  which happens to be the default anyway. What was the point? Anyway,
+  the conversion is buggy. It calls `.hasOwnProperty` on every non-array
+  object, forgetting about null-prototype objects, which we use.
+
+  The clowns also forgot about the replacer parameter in `JSON.stringify`,
+  which works perfectly with null-prototype objects. It doesn't invoke
+  the replacer if the entire input is a date, but that's easy to fix.
+
+  This encoding-decoding converts null-prototype objects to plain ones.
+  Annoying but not our bottleneck.
+  */
+  inp = a.jsonDecode(a.jsonEncode(inp))
+
+  return fbf.httpsCallable(fbFun, name)(inp)
+}

@@ -5,9 +5,11 @@ import * as pt from '@mitranim/js/path.mjs'
 import * as o from '@mitranim/js/obs.mjs'
 import * as od from '@mitranim/js/obs_dom.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
+import * as fu from '../funs/util.mjs'
 import * as tw from 'https://esm.sh/@twind/core@1.1.3'
 import tp from 'https://esm.sh/@twind/preset-autoprefix@1.0.7'
 import tt from 'https://esm.sh/@twind/preset-tailwind@1.1.4'
+export * from '../funs/util.mjs'
 
 import * as self from './util.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -248,7 +250,7 @@ export const log = new class Log extends Elem {
   dragHandle = E(
     `div`,
     {
-      class: `w-1 shrink-0 h-full cursor-ew-resize bg-gray-400 dark:bg-gray-600 opacity-50 hover:opacity-100 transition-opacity border-r border-gray-300 dark:border-gray-700`,
+      class: `w-1 shrink-0 h-full cursor-ew-resize bg-gray-400 dark:bg-gray-600 opacity-50 hover:opacity-100 border-r border-gray-300 dark:border-gray-700`,
       onpointerdown: this.resizePointerdown,
       onpointerup: this.resizePointerup,
     },
@@ -415,14 +417,6 @@ export function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MiB`
 }
 
-export function isArrOfStr(val) {return a.isArrOf(val, a.isStr)}
-export function reqArrOfStr(val) {return a.reqArrOf(val, a.isStr)}
-export function optArrOfStr(val) {return a.optArrOf(val, a.isStr)}
-
-export function isArrOfValidStr(val) {return a.isArrOf(val, a.isValidStr)}
-export function reqArrOfValidStr(val) {return a.reqArrOf(val, a.isValidStr)}
-export function optArrOfValidStr(val) {return a.optArrOf(val, a.isValidStr)}
-
 /*
 Special version of `AbortController`. The signal behaves like a promise, which
 is rejected on cancelation.
@@ -496,52 +490,6 @@ export function isElemInput(val) {
     val.contentEditable === `plaintext-only` ||
     val.role === `textbox`
   )
-}
-
-export function joinSpaced(src) {return a.joinOptLax(src, ` `)}
-export function joinLines(...src) {return a.joinLinesOptLax(src)}
-export function joinParagraphs(...src) {return a.joinOptLax(src, `\n\n`)}
-
-/*
-Very permissive parsing. Works for strings like:
-
-  123
-  123_<id>
-  123.<ext>
-  123_<id>.<ext>
-
-Returns nil when parsing doesn't produce an integer.
-*/
-export function strToInt(src) {
-  return a.onlyInt(parseInt(a.laxStr(src)))
-}
-
-export function toIntOpt(val) {
-  return a.isNum(val) ? val | 0 : a.isStr(val) ? strToInt(val) : val
-}
-
-export function hasIntPrefix(val) {
-  return a.isStr(val) && a.isSome(strToInt(val))
-}
-
-export function compareAsc(one, two) {return compareByIntPrefix(one, two, false)}
-export function compareDesc(one, two) {return compareByIntPrefix(one, two, true)}
-
-/*
-Similar to regular JS sorting, but prefers to sort by an integer prefix.
-Integers always come before other values. Falls back on regular JS sorting.
-Does not support fractional syntax.
-*/
-export function compareByIntPrefix(prev, next, desc) {
-  a.reqBool(desc)
-  const one = strToInt(prev)
-  const two = strToInt(next)
-  if (a.isNil(one) && a.isNil(two)) return a.compare(prev, next)
-  if (a.isNil(one)) return 1
-  if (a.isNil(two)) return -1
-  if (one < two) return desc ? 1 : -1
-  if (one > two) return desc ? -1 : 1
-  return 0
 }
 
 export async function jsonDecompressDecode(src) {
@@ -672,12 +620,6 @@ Usage:
 */
 export const darkModeMediaQuery = window.matchMedia(`(prefers-color-scheme: dark)`)
 
-export function avg(src) {return a.values(src).reduce(avgAdd, 0)}
-
-function avgAdd(acc, num, ind) {
-  return !a.isFin(num) ? acc : (acc + ((num - acc) / (ind + 1)))
-}
-
 // Non-insane variant of `Math.round`. Rounds away from 0, instead of up.
 export function round(val) {
   a.reqNum(val)
@@ -708,9 +650,54 @@ export async function asyncIterCollect(sig, src) {
 }
 
 export function firstCliArg(src) {return splitCliArgs(src)[0]}
-export function splitCliArgs(src) {return a.reqStr(src).split(/\s+/)}
 
-// Suboptimal but not our bottleneck. Used only for CLI flags.
+export function splitCliArgs(src) {return a.split(src, /\s+/)}
+
+export function cliDecode(src) {return splitCliArgs(src).map(cliDecodeArg)}
+
+export function cliDecodeArg(src) {
+  const ind = src.indexOf(`=`)
+  if (ind >= 0) return [src.slice(0, ind), src.slice(ind + `=`.length)]
+  if (src.startsWith(`-`)) return [src, ``]
+  return [``, src]
+}
+
+export function cliGroup(src) {
+  const flags = a.Emp()
+  const args = []
+  for (const [key, val] of src) {
+    if (key) fu.dictPush(flags, key, val)
+    else args.push(val)
+  }
+  return [flags, args]
+}
+
+export function cliBool(key, val) {
+  a.reqValidStr(key)
+  reqEnum(key, val, CLI_BOOL)
+  return !val || val === `true`
+}
+
+const CLI_BOOL = new Set([``, `true`, `false`])
+
+export function assUniq(tar, key, val) {
+  a.reqDict(tar)
+  a.reqValidStr(key)
+  if (key in tar) throw Error(`redundant ${a.show(key)}`)
+  tar[key] = val
+}
+
+export function reqUniq(key, has) {
+  if (!has) return
+  throw Error(`redundant ${a.show(key)}`)
+}
+
+export function reqEnum(key, val, coll) {
+  if (coll.has(val)) return val
+  throw Error(`${a.show(key)} must be one of: ${a.show(a.keys(coll))}, got: ${a.show(val)}`)
+}
+
+// For super simple boolean CLI flags.
 export function arrRemoved(tar, val) {
   const len = a.len(tar)
   while (a.includes(tar, val)) tar.splice(a.indexOf(tar, val), 1)
@@ -840,3 +827,35 @@ export const paths = new class PathsPosix extends pt.PathsPosix {
     return a.stripPre(super.clean(src), this.dirSep)
   }
 }()
+
+export function filterWhere(src, where) {
+  src = a.values(src)
+  where = whereFields(where)
+  if (!where) return src
+  return a.filter(src, where)
+}
+
+/*
+For large-ish datasets, this seems to perform better than a version that loops
+through functions or field patterns for each tested value.
+
+SYNC[field_pattern].
+*/
+export function whereFields(src) {
+  const test = a.mapFlat(a.entries(src), whereField)
+  if (!test.length) return undefined
+
+  return Function(`
+return function whereFields(val) {return ${test.join(` && `)}}
+`)()
+}
+
+function whereField([key, src]) {
+  a.reqStr(key)
+  const out = []
+  for (const val of a.values(src)) {
+    a.reqPrim(val)
+    out.push(`val.${key} === ${a.show(val)}`)
+  }
+  return out
+}

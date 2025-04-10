@@ -13,7 +13,7 @@ help:
 	for val in $(MAKEFILE_LIST); do grep -E '^\S+:' $$val; done | sed 's/:.*//' | sort | uniq
 
 clean:
-	rm -rf "$(TAR)"
+	rm -rf firebase-debug.log firestore-debug.log "$(TAR)"
 
 srv: export TAR := $(TAR)
 srv:
@@ -24,6 +24,12 @@ run.w:
 
 run:
 	$(DENO_RUN) $(run)
+
+fb:
+	firebase emulators:start --log-verbosity QUIET
+
+fb.deploy:
+	firebase deploy
 
 lint:
 	deno lint --rules-exclude=no-window,no-window-prefix

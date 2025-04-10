@@ -41,6 +41,9 @@ export function addCmd(val) {
 
 // Represents a "process" started by an async command.
 export class Proc extends a.Emp {
+  // Incremented for each new instance.
+  static id = 0
+
   constructor(src) {
     a.reqObj(src)
     super()
@@ -53,17 +56,14 @@ export class Proc extends a.Emp {
     this.endAt = undefined             // Assigned by `runProc`.
     this.val = undefined               // Eventual promise value, if any.
     this.err = undefined               // Eventual promise error, if any.
-    // return o.obs(this)                // For reactive UI updates.
+    // return o.obs(this)                 // For reactive UI updates.
   }
-
-  pk() {return this.id}
-  deinit() {return this.control.abort(new u.ErrAbort(`deinit`))}
 
   // Cmd funcs should use this to support cancelation.
   get sig() {return this.control.signal}
+  get running() {return a.isNil(this.endAt)}
 
-  // Incremented for each new instance.
-  static id = 0
+  deinit() {return this.control.abort(new u.ErrAbort(`deinit`))}
 }
 
 /*
@@ -78,16 +78,17 @@ export function procByName(name) {
   return a.find(PROCS, val => u.firstCliArg(val.args) === name)
 }
 
-export async function runCmd(args) {
+export async function runCmd(args, obs) {
   args = a.trim(args)
   const name = u.firstCliArg(args)
   const cmd = CMDS[name]
   if (!cmd) throw Error(`unknown command: ${a.show(name)}`)
-  await runProc(cmd, args, cmd.desc)
+  await runProc(cmd, args, cmd.desc, obs)
 }
 
-export async function runProc(fun, args, desc) {
+export async function runProc(fun, args, desc, obs) {
   a.reqFun(fun)
+  a.optObj(obs)
 
   /*
   We're not adding this to `PROCS` yet. If the function is done synchronously,
@@ -112,6 +113,7 @@ export async function runProc(fun, args, desc) {
   proc.promise = out
   PROCS[proc.id] = proc
   try {
+    if (obs) obs.running = true
     out = await out
     proc.val = out
     u.logCmdDone(name, out)
@@ -125,7 +127,10 @@ export async function runProc(fun, args, desc) {
       proc.endAt = Date.now()
       proc.deinit()
     }
-    finally {delete PROCS[proc.id]}
+    finally {
+      delete PROCS[proc.id]
+      if (obs) obs.running = false
+    }
   }
 }
 
