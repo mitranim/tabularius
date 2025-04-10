@@ -1,0 +1,38 @@
+rules_version = "2"
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /rounds/{roundId} {
+      allow read: if true
+
+      allow create: if isOwnedByCurrentUser(request.resource.data)
+
+      allow update: if (
+        isOwnedByCurrentUser(resource.data) &&
+        isOwnedByCurrentUser(request.resource.data)
+      )
+
+      allow delete: if false
+    }
+
+    match /{document=**} {
+      allow read, write: if false
+    }
+  }
+}
+
+function isAuthed() {
+  return (
+    request.auth != null &&
+    request.auth.uid is string &&
+    request.auth.uid.size() > 0
+  )
+}
+
+function isOwnedByCurrentUser(data) {
+  return (
+    isAuthed() &&
+    data.get("tabularius_userId", "") == request.auth.uid
+  )
+}

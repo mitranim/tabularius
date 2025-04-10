@@ -1,12 +1,14 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
-import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs.mjs'
+import * as a from '@mitranim/js/all.mjs'
+import * as o from '@mitranim/js/obs.mjs'
 import * as fb from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js'
 import * as fba from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js'
 import * as fbs from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js'
+// import * as fbf from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-functions.js'
 import {E} from './util.mjs'
 import * as u from './util.mjs'
 import * as fs from './fs.mjs'
 import * as d from './dat.mjs'
+import * as s from '../funs/schema.mjs'
 
 import * as self from './fb.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -15,6 +17,7 @@ tar.lib ??= a.Emp()
 tar.lib.fb = fb
 tar.lib.fba = fba
 tar.lib.fbs = fbs
+// tar.lib.fbf = fbf
 a.patch(window, tar)
 
 /*
@@ -23,10 +26,12 @@ Further reading:
   https://firebase.google.com/docs/web/setup/
   https://firebase.google.com/docs/web/setup/#available-libraries
 */
-export const fbConf = await u.fetchJson(new URL(`firebase.json`, import.meta.url))
+export const fbConf = await u.fetchJson(new URL(`../firebase/firebase.json`, import.meta.url))
 export const fbApp = fb.initializeApp(fbConf)
 export const fbAuth = fba.getAuth(fbApp)
 export const fbStore = fbs.getFirestore(fbApp)
+// export const fbFun = fbf.getFunctions(fbApp)
+fbConnectEmulatorSuite()
 
 export const fbObs = o.obs({
   user: undefined,
@@ -163,11 +168,17 @@ export async function uploadRound(sig, file, runName, userId, obs) {
   obs.status = `checking round ${a.show(path)}`
 
   const round = await fs.jsonDecompressDecodeFile(sig, file)
-  if (round.tabularius_roundId) return
+
+  // FIXME restore before pushing.
+  //
+  // if (round.tabularius_roundId) {
+  //   obs.roundsChecked++
+  //   return
+  // }
 
   const roundIndex = a.reqInt(round.RoundIndex)
-  const runId = d.makeRunId(userId, runName)
-  const roundId = d.makeRoundId(runId, roundIndex)
+  const runId = s.makeRunId(userId, runName)
+  const roundId = s.makeRoundId(runId, roundIndex)
 
   if (a.vac([
     round.tabularius_userId  !== (round.tabularius_userId  = userId),
@@ -184,7 +195,9 @@ export async function uploadRound(sig, file, runName, userId, obs) {
       throw err
     }
     obs.roundsUploaded++
-    await fs.jsonCompressEncodeFile(sig, file, round)
+
+    // FIXME restore before pushing.
+    // await fs.jsonCompressEncodeFile(sig, file, round)
   }
 
   obs.roundsChecked++
@@ -242,3 +255,23 @@ export async function logout() {
     u.log.err(`unable to logout: `, err)
   }
 }
+
+function fbConnectEmulatorSuite() {
+  const url = new URL(window.location)
+  if (url.hostname !== `localhost`) return
+  if (url.searchParams.get(`emulate`) !== `true`) return
+
+  try {
+    url.port = 9835
+    fba.connectAuthEmulator(fbAuth, url.toString(), {disableWarnings: true})
+    fbs.connectFirestoreEmulator(fbStore, url.hostname, 9836)
+    // fbf.connectFunctionsEmulator(fbFun, url.hostname, 9837)
+    u.log.verb(`connected FB emulator suite`)
+  }
+  catch (err) {
+    u.log.err(`unable to connect FB emulator suite: `, err)
+  }
+}
+
+// Example for later. We might end up using callable functions.
+// export const funHello = fbf.httpsCallable(fbFun, `helloWorld`)

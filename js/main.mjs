@@ -1,4 +1,4 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
+import * as a from '@mitranim/js/all.mjs'
 import {E} from './util.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
@@ -18,7 +18,7 @@ All CLI commands should be added here so that we can control the ordering.
 */
 
 cmdHelp.cmd = `help`
-cmdHelp.desc = `run "help" for a brief summary of all commands, or "help <cmd> for detailed help on one command`,
+cmdHelp.desc = `run "help" for a brief summary of all commands, or "help <cmd>" for detailed help on one command`,
 cmdHelp.help = u.joinParagraphs(
   cmdHelp.desc,
   u.joinLines(
@@ -44,10 +44,10 @@ os.addCmd(cmdStatus)
 os.addCmd(w.cmdWatch)
 
 // Firebase auth works, but is disabled until we're done with data upload.
-// os.addCmd(fb.cmdAuth)
+os.addCmd(fb.cmdAuth)
 
 // Data upload works, but deriving the star schema is a work in progress.
-// os.addCmd(fb.cmdUpload)
+os.addCmd(fb.cmdUpload)
 
 os.addCmd(os.cmdPs)
 os.addCmd(os.cmdKill)

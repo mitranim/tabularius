@@ -1,5 +1,5 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
-import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/dom_reg.mjs'
+import * as a from '@mitranim/js/all.mjs'
+import * as dr from '@mitranim/js/dom_reg.mjs'
 import * as u from './util.mjs'
 import {E} from './util.mjs'
 import * as os from './os.mjs'

@@ -1,0 +1,20 @@
+{
+  "private": true,
+  "main": "funcs.mjs",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {"node": "22"},
+  "dependencies": {
+    "firebase-admin": "12.7.0",
+    "firebase-functions": "6.3.2",
+    "@mitranim/js": "0.1.62"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "3.4.1"
+  }
+}

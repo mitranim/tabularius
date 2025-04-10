@@ -1,5 +1,5 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
-import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs.mjs'
+import * as a from '@mitranim/js/all.mjs'
+import * as o from '@mitranim/js/obs.mjs'
 import * as u from './util.mjs'
 
 import * as self from './os.mjs'

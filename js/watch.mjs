@@ -1,7 +1,8 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
+import * as a from '@mitranim/js/all.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
+import * as s from '../funs/schema.mjs'
 
 import * as self from './watch.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -182,7 +183,7 @@ async function watchStep(sig, state) {
     return
   }
 
-  const nextFileName = u.intToOrdStr(nextRoundOrd) + u.paths.ext(state.progressFileHandle.name)
+  const nextFileName = s.intToOrdStr(nextRoundOrd) + u.paths.ext(state.progressFileHandle.name)
 
   const event = {
     type: `new_round`,
@@ -214,7 +215,7 @@ async function watchStep(sig, state) {
 
   const prevDirOrd = u.strToInt(runDirName)
   const nextDirOrd = a.isNil(prevDirOrd) ? 0 : prevDirOrd + 1
-  const nextDirName = u.intToOrdStr(nextDirOrd)
+  const nextDirName = s.intToOrdStr(nextDirOrd)
   const dir = await u.wait(sig, state.historyDirHandle.getDirectoryHandle(
     nextDirName,
     {create: true},

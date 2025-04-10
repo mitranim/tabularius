@@ -2,31 +2,24 @@
 This module governs our data schema, data analysis, data visualization.
 */
 
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
+import * as a from '@mitranim/js/all.mjs'
 import * as u from './util.mjs'
 import * as fs from './fs.mjs'
 import * as ui from './ui.mjs'
 import * as pl from './plot.mjs'
+import * as s from '../funs/schema.mjs'
 
 import * as self from './dat.mjs'
 const tar = window.tabularius ??= a.Emp()
 tar.d = self
 a.patch(window, tar)
 
-export class Dat extends EventTarget {}
+// We use a "star schema". See `schema.mjs`.
+export const DAT = new EventTarget()
+s.datInit(DAT)
 
-export class Dim extends a.TypedMap {
-  reqKey(key) {return a.reqValidStr(key)}
-  reqVal(val) {return a.reqDict(val)}
-}
-
-// We use a "star schema". See `datAddRound`.
-export const DAT = new Dat()
-DAT.facts = []
-DAT.dimRun = new Dim()
-DAT.dimRoundInRun = new Dim()
-DAT.dimBuiInRun = new Dim()
-DAT.dimBuiInRound = new Dim()
+// Used only for locally-derived data.
+export const USER_ID = `local_user`
 
 // Needed for / allows live data updates and plot updates.
 u.listenMessage(u.BROAD, datOnBroadcast)
@@ -120,7 +113,8 @@ TODO: make it possible to select plot order or disable some.
 */
 export async function analyzeDefault({sig}) {
   try {await cmdAnalyze({sig, args: `analyze latest`})}
-  catch (_) {
+  catch (err) {
+    if (u.LOG_VERBOSE) u.log.err(`error analyzing latest run: `, err)
     u.log.verb(`unable to analyze latest run, showing example run`)
     await analyzeExampleRun()
   }
@@ -131,19 +125,11 @@ async function analyzeExampleRun() {
   const rounds = await u.jsonDecompressDecode(await u.fetchText(`data/example_run.gd`))
   if (!a.len(rounds)) throw Error(`internal error: missing chart data`)
 
-  await initCodes()
-  for (const round of rounds) datAddRound(round, runId)
-
+  for (const round of rounds) s.datAddRound(DAT, round, runId, USER_ID)
   const mode = a.head(ANALYSIS_MODES)
   const opts = mode.fun({runId})
   opts.title = `example run analyzis: ` + opts.title
   ui.MEDIA.add(new pl.Plotter(opts))
-}
-
-export let CODES
-
-export async function initCodes() {
-  return CODES ??= await u.fetchJson(new URL(`../data/codes.json`, import.meta.url))
 }
 
 export async function datLoadRun(sig, runId) {
@@ -162,7 +148,7 @@ export async function datLoadRunFromHandle(sig, dir) {
 
 export async function datLoadRoundFromHandle(sig, file, runId) {
   a.reqInst(file, FileSystemFileHandle)
-  const roundId = makeRoundId(runId, u.strToInt(file.name))
+  const roundId = s.makeRoundId(runId, u.strToInt(file.name))
 
   /*
   Because `DAT` is static, we must load rounds idempotently. We assume that
@@ -172,317 +158,7 @@ export async function datLoadRoundFromHandle(sig, file, runId) {
   if (DAT.dimRoundInRun.has(roundId)) return
 
   const round = await fs.jsonDecompressDecodeFile(sig, file)
-  await initCodes()
-  datAddRound(round, runId)
-}
-
-// TODO this should be a URL query parameter; default false in production.
-export const DATA_DEBUG = false
-
-export const BUI_TYPE_SMOKE_SIGNAL = `CB12A`
-export const BUI_SELL_PRICE_AIR_COMMAND = 1500
-
-// Hardcoded until we integrate a cloud DB.
-export const USER_ID = `local_user`
-
-// TODO / missing: we need game versions in our stats.
-export const STAT_SCOPE_RUN_ACC = `run_acc`
-export const STAT_SCOPE_ROUND = `round`
-export const STAT_TYPE_DMG_DONE = `dmg_done`
-export const STAT_TYPE_DMG_OVER = `dmg_over`
-export const STAT_TYPE_COST_EFF = `cost_eff`
-export const BUILDING_KIND_NEUTRAL = `Neutral`
-
-/*
-Decomposes a round into dimensions and facts, adding them to our `Dat`.
-If rounds are provided in an arbitrary order, then the resulting tables
-are unsorted.
-*/
-export function datAddRound(round, runId) {
-  a.reqDict(round)
-  a.reqValidStr(runId)
-
-  let DEBUG_LOGGED = false
-  const runIds = {userId: USER_ID, runId}
-
-  if (!DAT.dimRun.has(runId)) {
-    DAT.dimRun.set(runId, {
-      ...runIds,
-      hero: round.HeroType,
-      diff: round.DifficultyLevel,
-      frontierLevel: round.CurrentExpertScore,
-      frontierDoctrines: round.OwnedExpertSkills,
-      // TODO game version!
-    })
-  }
-
-  const roundIndex = a.reqInt(round.RoundIndex)
-  const roundId = makeRoundId(runId, round.RoundIndex)
-  const roundIds = {...runIds, roundId}
-
-  if (DAT.dimRoundInRun.has(roundId)) {
-    throw Error(`internal error: redundant attempt to add round ${roundId} to the data`)
-  }
-
-  DAT.dimRoundInRun.set(roundId, {
-    ...roundIds,
-    roundIndex,
-    expired: round.MarkAsExpired,
-    doctrines: round.Skills,
-    neutralOdds: round.CurrentNeutralOdds,
-  })
-
-  for (const [buiGameEngineInstId, bui] of a.entries(round.Buildings)) {
-    const buiType = a.laxStr(bui.EntityID)
-    const buiName = CODES.buildings[buiType]
-    const buiInRunId = u.joinKeys(runId, buiGameEngineInstId)
-    const buiInRunIds = {...roundIds, buiInRunId}
-    const buiKind = bui.BuildingType
-    const buiInRun = {...buiInRunIds, buiType, buiName, buiKind}
-    if (!DAT.dimBuiInRun.has(buiInRunId)) {
-      DAT.dimBuiInRun.set(buiInRunId, buiInRun)
-    }
-    const buiInRoundId = u.joinKeys(buiInRunId, roundIndex)
-    const buiInRoundIds = {...buiInRunIds,buiInRoundId}
-    const buiUpg = encodeUpgrades(bui.PurchasedUpgrades)
-    const buiTypeUpg = u.joinKeys(buiType, buiUpg)
-    const buiTypeUpgName = buiName ? u.joinKeys(buiName, buiUpg) : buiTypeUpg
-    const buiInRound = {
-      ...buiInRoundIds,
-      buiUpg,
-      buiTypeUpg,
-      buiTypeUpgName,
-      sellPrice: bui.SellPrice,
-      sellCurr: bui.SellCurrencyType,
-    }
-    DAT.dimBuiInRound.set(buiInRoundId, buiInRound)
-
-    /*
-    A building has `.LiveStats`, `.Weapons`, `.WeaponStats`, `.LiveChildStats`.
-
-    Damage from the building's own HP, such as for HQ, Barricade, Plasma Fence,
-    is only counted in `.LiveStats`.
-
-    Damage from the building's own weapons is counted redundantly in:
-    - `.LiveStats`
-    - `.WeaponStats`
-    - `.LiveChildStats`
-
-    Damage from the troops spawned by the building, such as JOC assault teams,
-    is counted only in `.LiveChildStats`.
-
-    `.LiveChildStats` include stats for weapons _and_ so-called "dummy bullets"
-    which are associated with weapons. Those stats are duplicated, redundantly.
-
-    As a result, it seems that to compute a building's damage, we must add up:
-    - Damage from `.LiveStats` (HP + weapons).
-    - Damage from `.LiveChildStats`, ONLY for non-weapons, non-dummy-bullets.
-
-    We also calculate damages from `.WeaponStats` to double-check ourselves.
-    */
-    const bui_dmgDone_runAcc = a.laxFin(bui.LiveStats?.stats?.DamageDone?.valueThisGame)
-    const bui_dmgDone_round = a.laxFin(bui.LiveStats?.stats?.DamageDone?.valueThisWave)
-    const bui_dmgOver_runAcc = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisGame)
-    const bui_dmgOver_round = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisWave)
-
-    let bui_dmgDone_runAcc_fromWep = 0
-    let bui_dmgDone_round_fromWep = 0
-    let bui_dmgOver_runAcc_fromWep = 0
-    let bui_dmgOver_round_fromWep = 0
-
-    let bui_dmgDone_runAcc_fromWepChi = 0
-    let bui_dmgDone_round_fromWepChi = 0
-    let bui_dmgOver_runAcc_fromWepChi = 0
-    let bui_dmgOver_round_fromWepChi = 0
-
-    let bui_dmgDone_runAcc_fromOtherChi = 0
-    let bui_dmgDone_round_fromOtherChi = 0
-    let bui_dmgOver_runAcc_fromOtherChi = 0
-    let bui_dmgOver_round_fromOtherChi = 0
-
-    const buiWepTypes = new Set()
-    const buiDumBulTypes = new Set()
-
-    for (const [ind, wep] of a.entries(bui.Weapons)) {
-      buiWepTypes.add(a.reqValidStr(wep.EntityID))
-
-      const dumBulType = wep.DummyBullet?.EntityID
-      if (dumBulType) buiDumBulTypes.add(a.reqStr(dumBulType))
-
-      if (DATA_DEBUG) {
-        const stats = bui.WeaponStats?.[ind]?.stats
-        bui_dmgDone_runAcc_fromWep += a.laxFin(stats?.DamageDone?.valueThisGame)
-        bui_dmgDone_round_fromWep += a.laxFin(stats?.DamageDone?.valueThisWave)
-        bui_dmgOver_runAcc_fromWep += a.laxFin(stats?.DamageOverkill?.valueThisGame)
-        bui_dmgOver_round_fromWep += a.laxFin(stats?.DamageOverkill?.valueThisWave)
-      }
-    }
-
-    for (const [chiType, src] of a.entries(bui.ChildLiveStats)) {
-      a.reqStr(chiType)
-      a.optObj(src)
-
-      if (!chiType) continue
-      if (buiDumBulTypes.has(chiType)) continue
-
-      const stats = src?.stats
-      if (!stats) continue
-
-      /*
-      Child facts are associated with a hypothetical "building child type"
-      dimension. We might want to filter or group on specific child types.
-      However, for now, we're not creating a table `Dat..dimBuiChi` because
-      it would only have 1 field: its primary key. We simply reference this
-      missing dimension by child type in child facts.
-      */
-      const chiFact = {...buiInRoundIds, chiType}
-
-      if (stats.DamageDone) {
-        const dmgRunAcc = a.reqFin(stats.DamageDone.valueThisGame)
-        if (buiWepTypes.has(chiType)) bui_dmgDone_runAcc_fromWepChi += dmgRunAcc
-        else bui_dmgDone_runAcc_fromOtherChi += dmgRunAcc
-
-        DAT.facts.push({
-          ...chiFact,
-          statType: STAT_TYPE_DMG_DONE,
-          statScope: STAT_SCOPE_RUN_ACC,
-          statValue: dmgRunAcc,
-        })
-
-        const dmgRound = a.reqFin(stats.DamageDone.valueThisWave)
-        if (buiWepTypes.has(chiType)) bui_dmgDone_round_fromWepChi += dmgRound
-        else bui_dmgDone_round_fromOtherChi += dmgRound
-
-        DAT.facts.push({
-          ...chiFact,
-          statType: STAT_TYPE_DMG_DONE,
-          statScope: STAT_SCOPE_ROUND,
-          statValue: dmgRound,
-        })
-      }
-
-      if (stats.DamageOverkill) {
-        const dmgRunAcc = a.reqFin(stats.DamageOverkill.valueThisGame)
-        if (buiWepTypes.has(chiType)) bui_dmgOver_runAcc_fromWepChi += dmgRunAcc
-        else bui_dmgOver_runAcc_fromOtherChi += dmgRunAcc
-
-        DAT.facts.push({
-          ...chiFact,
-          statType: STAT_TYPE_DMG_OVER,
-          statScope: STAT_SCOPE_RUN_ACC,
-          statValue: dmgRunAcc,
-        })
-
-        const dmgRound = a.reqFin(stats.DamageOverkill.valueThisWave)
-        if (buiWepTypes.has(chiType)) bui_dmgOver_round_fromWepChi += dmgRound
-        else bui_dmgOver_round_fromOtherChi += dmgRound
-
-        DAT.facts.push({
-          ...chiFact,
-          statType: STAT_TYPE_DMG_OVER,
-          statScope: STAT_SCOPE_ROUND,
-          statValue: dmgRound,
-        })
-      }
-    }
-
-    const bui_dmgDone_runAcc_final = bui_dmgDone_runAcc + bui_dmgDone_runAcc_fromOtherChi
-    const bui_dmgDone_round_final = bui_dmgDone_round + bui_dmgDone_round_fromOtherChi
-    const bui_dmgOver_runAcc_final = bui_dmgOver_runAcc + bui_dmgOver_runAcc_fromOtherChi
-    const bui_dmgOver_round_final = bui_dmgOver_round + bui_dmgOver_round_fromOtherChi
-    const isNeutral = buiKind === BUILDING_KIND_NEUTRAL
-
-    /*
-    TODO: HQ deals damage but can't be sold, no sell price, so it doesn't appear
-    in the cost efficiency chart!
-    */
-    const sellPrice = (
-      buiType === BUI_TYPE_SMOKE_SIGNAL
-      ? BUI_SELL_PRICE_AIR_COMMAND
-      : bui.SellPrice
-    )
-
-    if (bui_dmgDone_runAcc_final || !isNeutral) {
-      DAT.facts.push({
-        ...buiInRoundIds,
-        statType: STAT_TYPE_DMG_DONE,
-        statScope: STAT_SCOPE_RUN_ACC,
-        statValue: bui_dmgDone_runAcc_final,
-      })
-      DAT.facts.push({
-        ...buiInRoundIds,
-        statType: STAT_TYPE_COST_EFF,
-        statScope: STAT_SCOPE_RUN_ACC,
-        statValue: sellPrice ? bui_dmgDone_runAcc_final / sellPrice : 0,
-      })
-    }
-
-    if (bui_dmgDone_round_final || !isNeutral) {
-      DAT.facts.push({
-        ...buiInRoundIds,
-        statType: STAT_TYPE_DMG_DONE,
-        statScope: STAT_SCOPE_ROUND,
-        statValue: bui_dmgDone_round_final,
-      })
-      DAT.facts.push({
-        ...buiInRoundIds,
-        statType: STAT_TYPE_COST_EFF,
-        statScope: STAT_SCOPE_ROUND,
-        statValue: sellPrice ? bui_dmgDone_round_final / sellPrice : 0,
-      })
-    }
-
-    if (bui_dmgOver_runAcc_final || !isNeutral) {
-      DAT.facts.push({
-        ...buiInRoundIds,
-        statType: STAT_TYPE_DMG_OVER,
-        statScope: STAT_SCOPE_RUN_ACC,
-        statValue: bui_dmgOver_runAcc_final,
-      })
-    }
-
-    if (bui_dmgOver_round_final || !isNeutral) {
-      DAT.facts.push({
-        ...buiInRoundIds,
-        statType: STAT_TYPE_DMG_OVER,
-        statScope: STAT_SCOPE_ROUND,
-        statValue: bui_dmgOver_round_final,
-      })
-    }
-
-    /*
-    Redundant data verification. Check if we correctly understand how weapon
-    stats are computed. This check is incomplete, as it doesn't verify that we
-    exclude "dummy bullets".
-    */
-    if (DATA_DEBUG && !DEBUG_LOGGED) {
-      const pre = `round ${roundIndex}: building ${buiGameEngineInstId} (${buiType}): unexpected mismatch between building`
-      if (!isDamageSimilar(bui_dmgDone_round_fromWep, bui_dmgDone_round_fromWepChi)) {
-        debugLog(`${pre} damage calculated from its weapon list vs from weapons in its child stats: ${bui_dmgDone_round_fromWep} vs ${bui_dmgDone_round_fromWepChi}`)
-      }
-      if (!isDamageSimilar(bui_dmgOver_round_fromWep, bui_dmgOver_round_fromWepChi)) {
-        debugLog(`${pre} damage overkill calculated from its weapon list vs from weapons in its child stats: ${bui_dmgOver_round_fromWep} vs ${bui_dmgOver_round_fromWepChi}`)
-      }
-    }
-  }
-
-  function debugLog(...src) {
-    console.debug(...src)
-    DEBUG_LOGGED = true
-  }
-}
-
-// Sums don't exactly match because of float imprecision.
-// Below 100, we don't really care.
-function isDamageSimilar(one, two) {return (a.laxNum(one) - a.laxNum(two)) < 100}
-
-// Not used for local data; necessary for cloud DB uploads.
-export function makeRunId(userId, runDir) {
-  return u.joinKeys(a.reqValidStr(userId), a.reqValidStr(runDir))
-}
-
-export function makeRoundId(runId, roundIndex) {
-  return u.joinKeys(a.reqValidStr(runId), u.intToOrdStr(roundIndex))
+  s.datAddRound(DAT, round, runId, USER_ID)
 }
 
 function datOnBroadcast(src) {
@@ -490,14 +166,14 @@ function datOnBroadcast(src) {
   if (type !== `new_round`) return
 
   const {roundData, runId} = src
-  datAddRound(roundData, runId)
+  s.datAddRound(DAT, roundData, runId, USER_ID)
   u.dispatchMessage(DAT, src)
 }
 
 export function plotOptsDamagePerRoundPerBuiTypeUpg(opt, datMsg) {
   const runId = choosePlotRunId(opt.runId, opt.isLatest, datMsg)
   const agg = a.sum
-  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_DMG_DONE, agg)
+  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, s.STAT_TYPE_DMG_DONE, agg)
 
   Z_labels.unshift(`Total`)
   Z_X_Y_arr.unshift(totals(Z_X_Y_arr, agg))
@@ -519,7 +195,7 @@ export function plotOptsDamagePerRoundPerBuiTypeUpg(opt, datMsg) {
 export function plotOptsCostEffPerRoundPerBuiTypeUpg(opt, datMsg) {
   const runId = choosePlotRunId(opt.runId, opt.isLatest, datMsg)
   const agg = u.avg
-  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, STAT_TYPE_COST_EFF, agg)
+  const [X_row, Z_labels, Z_X_Y_arr] = aggForRunPerRoundPerBuiTypeUpg(runId, s.STAT_TYPE_COST_EFF, agg)
 
   Z_labels.unshift(`Total`)
   Z_X_Y_arr.unshift(totals(Z_X_Y_arr, agg))
@@ -557,7 +233,7 @@ function aggForRunPerRoundPerBuiTypeUpg(runId, statType, agg) {
   for (const fact of DAT.facts) {
     if (fact.runId !== runId) continue
     if (fact.statType !== statType) continue
-    if (fact.statScope !== STAT_SCOPE_ROUND) continue
+    if (fact.statScope !== s.STAT_SCOPE_ROUND) continue
     if (fact.chiType) continue
 
     const bui = DAT.dimBuiInRound.get(fact.buiInRoundId)
@@ -610,16 +286,6 @@ export function totals(Z_X_Y, agg) {
     Z_X_totals[X] = agg(Y_col)
   }
   return Z_X_totals
-}
-
-// See `test_encodeUpgrade`.
-export function encodeUpgrades(src) {
-  return a.map(src, encodeUpgrade).join(``)
-}
-
-export function encodeUpgrade(src) {
-  const ind = a.onlyNat(src?.Index)
-  return ind >= 0 ? `ABCDEFGHIJKLMNOPQRSTUVWXYZ`[ind] : ``
 }
 
 export function dropZeroRows(Z, Z_X_Y) {

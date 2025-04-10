@@ -1,8 +1,10 @@
 .*
 /*
 !/.*ignore
+!/.*rc
 !/*.mjs
 !/*.html
+!/*.json
 !/makefile
 !/readme.md
 !/todo.md
@@ -10,3 +12,5 @@
 !/js
 !/doc
 !/data
+!/firebase
+!/funs

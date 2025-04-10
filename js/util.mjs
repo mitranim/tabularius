@@ -1,10 +1,10 @@
-import * as a from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/all.mjs'
-import * as d from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/dom.mjs'
-import * as p from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/prax.mjs'
-import * as pt from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/path.mjs'
-import * as o from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs.mjs'
-import * as od from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/obs_dom.mjs'
-import * as dr from 'https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/dom_reg.mjs'
+import * as a from '@mitranim/js/all.mjs'
+import * as d from '@mitranim/js/dom.mjs'
+import * as p from '@mitranim/js/prax.mjs'
+import * as pt from '@mitranim/js/path.mjs'
+import * as o from '@mitranim/js/obs.mjs'
+import * as od from '@mitranim/js/obs_dom.mjs'
+import * as dr from '@mitranim/js/dom_reg.mjs'
 import * as tw from 'https://esm.sh/@twind/core@1.1.3'
 import tp from 'https://esm.sh/@twind/preset-autoprefix@1.0.7'
 import tt from 'https://esm.sh/@twind/preset-tailwind@1.1.4'
@@ -499,19 +499,8 @@ export function isElemInput(val) {
 }
 
 export function joinSpaced(src) {return a.joinOptLax(src, ` `)}
-export function joinKeys(...src) {return a.joinOptLax(src, `_`)}
 export function joinLines(...src) {return a.joinLinesOptLax(src)}
 export function joinParagraphs(...src) {return a.joinOptLax(src, `\n\n`)}
-
-/*
-How many digits to use for local ordinal ids for runs and rounds. Needs to be
-long enough for any realistic amount of runs, and short enough to easily type.
-*/
-export const ORD_STR_LEN = 4
-
-export function intToOrdStr(val) {
-  return String(a.reqInt(val)).padStart(ORD_STR_LEN, `0`)
-}
 
 /*
 Very permissive parsing. Works for strings like:

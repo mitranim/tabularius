@@ -90,8 +90,16 @@
     }
   </style>
 
-  <!-- Should allow dynamically evaluated modules, if any, to import ours. -->
-  <script type="importmap">{"imports": {"tabularius/": "./js/"}}</script>
+  <!--
+  The importmap rule for "tabularius" should allow dynamically evaluated
+  modules, if any (a pending feature), to import ours.
+  -->
+  <script type="importmap">
+    {"imports": {
+      "tabularius/": "./js/",
+      "@mitranim/js/": "https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/"
+    }}
+  </script>
 
   <!--
   Showing initialization errors may help both users and developers.
