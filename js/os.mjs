@@ -1,5 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as o from '@mitranim/js/obs.mjs'
+import {E} from './util.mjs'
 import * as u from './util.mjs'
 
 import * as self from './os.mjs'
@@ -56,10 +57,10 @@ export class Proc extends a.Emp {
     this.endAt = undefined             // Assigned by `runProc`.
     this.val = undefined               // Eventual promise value, if any.
     this.err = undefined               // Eventual promise error, if any.
-    // return o.obs(this)                 // For reactive UI updates.
+    return o.obs(this)                 // For reactive UI updates.
   }
 
-  // Cmd funcs should use this to support cancelation.
+  // Cmd funs should use this to support cancelation.
   get sig() {return this.control.signal}
   get running() {return a.isNil(this.endAt)}
 
@@ -81,9 +82,15 @@ export function procByName(name) {
 export async function runCmd(args, obs) {
   args = a.trim(args)
   const name = u.firstCliArg(args)
+  const cmd = reqCmdByName(name)
+  await runProc(cmd, args, u.callOpt(cmd.desc), obs)
+}
+
+export function reqCmdByName(name) {
+  a.reqValidStr(name)
   const cmd = CMDS[name]
-  if (!cmd) throw Error(`unknown command: ${a.show(name)}`)
-  await runProc(cmd, args, cmd.desc, obs)
+  if (cmd) return cmd
+  throw Error(`unknown command ${a.show(name)}`)
 }
 
 export async function runProc(fun, args, desc, obs) {
@@ -113,7 +120,7 @@ export async function runProc(fun, args, desc, obs) {
   proc.promise = out
   PROCS[proc.id] = proc
   try {
-    if (obs) obs.running = true
+    if (obs) obs.proc = proc
     out = await out
     proc.val = out
     u.logCmdDone(name, out)
@@ -129,56 +136,71 @@ export async function runProc(fun, args, desc, obs) {
     }
     finally {
       delete PROCS[proc.id]
-      if (obs) obs.running = false
+      if (obs) delete obs.proc
     }
   }
 }
 
 cmdPs.cmd = `ps`
 cmdPs.desc = `list running processes`
-
-export function cmdPs() {return showProcs()}
+export function cmdPs() {return new Procs()}
 
 export function procToStatus(src) {
   a.reqInst(src, Proc)
-  let out = src.id + `: ` + a.show(src.args)
-  if (src.desc) out += `: ` + src.desc
-  return out
+  return [
+    src.id, `: `, src.args,
+    a.vac(src.desc) && [`: `, u.callOpt(src.desc)],
+    `; `, BtnCmd(`kill ${src.id}`),
+  ]
 }
 
 export function showProcs() {
   if (!a.len(PROCS)) return `no active processes`
-  return u.joinLines(
+  return u.LogLines(
     `active processes (pid, name, status):`,
-    ...a.map(PROCS, procToStatus),
+    ...a.map(PROCS, procToStatus).map(u.indentChi),
   )
+}
+
+// Also see `Kill`.
+export class Procs extends u.ReacElem {
+  run() {
+    PROCS[``] // Subscribe to updates.
+    E(this, {}, showProcs())
+  }
 }
 
 cmdKill.cmd = `kill`
 cmdKill.desc = `kill a process`
-cmdKill.help = u.joinParagraphs(
-  cmdKill.desc,
-  u.joinLines(
-    `usage:`,
-    `  kill <id> (kill specific process)`,
-    `  kill -a   (kill all processes)`,
-  ),
-  `tip: to find a process id, run "ps" or view the active processes in the media panel`
-)
+cmdKill.help = function cmdKillHelp() {
+  return u.LogParagraphs(
+    u.callOpt(cmdKill.desc),
+    u.LogLines(
+      `usage:`,
+      [`  `, BtnCmd(`kill -a`), `  -- kill all processes`],
+      `  kill <id> -- kill specific process`,
+    ),
+    new Kill(),
+  )
+}
 
 export function cmdKill({args}) {
   args = u.splitCliArgs(args)
   switch (args.length) {
     case 0:
     case 1:
-      return u.joinLines(
-        `missing process id or name; usage: kill <id|name>;`,
-        `alternatively, "kill -a" to kill all`
+      return u.LogParagraphs(
+        `missing process id or name`,
+        os.cmdHelpDetailed(cmdKill),
       )
     case 2:
       if (args[1] === `-a`) return procKillAll()
       return procKill(args[1])
-    default: return `too many args; usage: kill <id|name>`
+    default:
+      return u.LogParagraphs(
+        `too many args`,
+        os.cmdHelpDetailed(cmdKill),
+      )
   }
 }
 
@@ -197,3 +219,105 @@ export function procKillAll() {
   }
   return len ? `sent kill signal to ${len} processes` : `no processes running`
 }
+
+export function procKillOpt(pat) {
+  a.reqStr(pat)
+  for (const [key, val] of a.entries(PROCS)) {
+    if (key === pat || u.firstCliArg(val.args) === pat) val.deinit()
+  }
+}
+
+// Also see `Procs`.
+export class Kill extends u.ReacElem {
+  run() {
+    PROCS[``] // Subscribe to updates.
+    const active = a.map(PROCS, lineKillProc)
+    E(this, {}, u.LogLines(
+      active.length ? `active processes:` : `no active processes`,
+      ...active,
+    ))
+  }
+}
+
+function lineKillProc(val) {
+  return [`  `, BtnCmd(`kill ${val.id}`), `: `, val.args]
+}
+
+cmdHelp.cmd = `help`
+cmdHelp.desc = `brief summary of all commands, or detailed help on one command`
+
+export function cmdHelp({args}) {
+  args = u.splitCliArgs(args)
+  if (args.includes(`-h`) || args.includes(`--help`)) os.cmdHelpDetailed(cmdHelp)
+  if (args.length > 2) return os.cmdHelpDetailed(cmdHelp)
+
+  if (args.length <= 1) {
+    return u.LogParagraphs(
+      `available commands:`,
+      ...a.map(CMDS, cmdHelpShort),
+      [
+        E(`b`, {}, `pro tip`),
+        `: can run commands on startup via URL query parameters; for example, try appending to the URL: `,
+        u.BtnUrlAppend(`?run=plot -s=cloud run=latest`),
+      ],
+    )
+  }
+
+  return cmdHelpDetailed(reqCmdByName(args[1]))
+}
+
+export function cmdHelpDetailed(val) {
+  reqCmd(val)
+  return [
+    `command `, BtnCmd(val.cmd), `: `,
+    u.callOpt(val.help) || u.callOpt(val.desc),
+  ]
+}
+
+export function cmdHelpShort(val) {
+  reqCmd(val)
+  return [
+    BtnCmdWithHelp(val),
+    `: `, u.callOpt(val.desc),
+  ]
+}
+
+export function BtnCmdWithHelp(cmd) {
+  let name
+  if (a.isFun(cmd)) {
+    reqCmd(cmd)
+    name = cmd.cmd
+  }
+  else name = a.reqValidStr(cmd)
+
+  if (!a.vac(cmd?.help)) return BtnCmd(name)
+  return [BtnCmd(name), BtnHelp(name, {class: `ml-1`})]
+}
+
+export function BtnCmd(cmd) {
+  a.reqValidStr(cmd)
+  return u.Btn(cmd, function onClickRunCmd() {
+    runCmd(cmd).catch(u.logErr)
+  })
+}
+
+export function BtnHelp(cmd, {class: cls} = {}) {
+  a.reqValidStr(cmd)
+  return E(
+    `button`,
+    {
+      type: `button`,
+      class: a.spaced(cls, u.INLINE_BTN_CLS),
+      onclick() {runCmd(`help ${cmd}`).catch(u.logErr)},
+    },
+    `?`,
+  )
+}
+
+export function runCmdMock(dur) {
+  a.reqFin(dur)
+  return runProc(cmdMock, `mock ${dur}`, `mock command that sleeps`)
+  function cmdMock({sig}) {return a.after(dur, sig)}
+}
+
+// for (const _ of a.span(8)) runCmdMock(a.minToMs(1024))

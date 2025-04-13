@@ -22,7 +22,7 @@ Deno.serve({
   handler: respond,
   onListen({port, hostname}) {
     if (hostname === `0.0.0.0`) hostname = `localhost`
-    console.log(`listening on http://${hostname}:${port}`)
+    console.log(`listening on http://${hostname}:${port}?emulate=true`)
   },
 })
 

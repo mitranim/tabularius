@@ -2,7 +2,6 @@ import * as a from '@mitranim/js/all.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
-import * as ui from './ui.mjs'
 
 import * as self from './watch.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -11,17 +10,16 @@ a.patch(window, tar)
 
 export async function watchStarted() {
   return (
-    (await fs.hasPermissionConf(fs.PROGRESS_FILE, fs.PROGRESS_FILE_CONF)) &&
-    (await fs.hasPermissionConf(fs.HISTORY_DIR, fs.HISTORY_DIR_CONF)) &&
-    (isWatching() || (os.runCmd(`watch`).catch(u.logErr), true))
+    (await isWatchingLocal()) || (
+      (await fs.fileConfHasPermission(fs.PROGRESS_FILE_CONF)) &&
+      (await fs.fileConfHasPermission(fs.HISTORY_DIR_CONF)) &&
+      (os.runCmd(`watch`).catch(u.logErr), true)
+    )
   )
 }
 
-/*
-TODO: detection should be across all browser tabs.
-Possibly via `localStorage`.
-*/
-function isWatching() {return !!os.procByName(`watch`)}
+export function isWatchingGlobal() {return u.lockHeld(WATCH_LOCK_NAME)}
+export function isWatchingLocal() {return !!os.procByName(`watch`)}
 
 export const WATCH_STATE = new class WatchState extends a.Emp {
   progressFileHandle = a.optInst(undefined, FileSystemFileHandle)
@@ -37,22 +35,31 @@ export const WATCH_STATE = new class WatchState extends a.Emp {
   setRoundFile(val) {this.roundFileName = a.optValidStr(val)}
 }()
 
-const WATCH_LOCK_NAME = `watch`
-const WATCH_INTERVAL_MS = a.secToMs(10)
-const WATCH_INTERVAL_MS_SHORT = a.secToMs(1)
-const WATCH_INTERVAL_MS_LONG = a.minToMs(1)
-const WATCH_MAX_ERRS = 3
+export const WATCH_LOCK_NAME = `tabularius.watch`
+export const WATCH_INTERVAL_MS = a.secToMs(10)
+export const WATCH_INTERVAL_MS_SHORT = a.secToMs(1)
+export const WATCH_INTERVAL_MS_LONG = a.minToMs(1)
+export const WATCH_MAX_ERRS = 3
 
 cmdWatch.cmd = `watch`
 cmdWatch.desc = `watch the progress file for changes and create backups`
-cmdWatch.help = cmdWatchHelp
+cmdWatch.help = function cmdWatchHelp() {
+  return u.LogParagraphs(
+    u.callOpt(cmdWatch.desc),
+    [`requires running `, os.BtnCmdWithHelp(`init`), ` first (just once) to grant FS access`],
+    [
+      `can be stopped via `, os.BtnCmd(`kill watch`), ` (one-off) or `,
+      os.BtnCmdWithHelp(`deinit`), ` (permanent until `, os.BtnCmd(`init`),`)`,
+    ],
+  )
+}
 
 export async function cmdWatch(proc) {
-  const {sig} = proc
-  if (isWatching()) return `[watch] already running`
+  if (isWatchingLocal()) return `already running`
 
   proc.desc = `acquiring lock`
   let unlock = await u.lockOpt(WATCH_LOCK_NAME)
+  const {sig} = proc
 
   if (unlock) {
     u.log.info(`[watch] starting`)
@@ -60,7 +67,7 @@ export async function cmdWatch(proc) {
   else {
     const start = Date.now()
     u.log.verb(`[watch] another process has a lock on watching and backups, waiting until it stops`)
-    proc.desc = `waiting for another watcher`
+    proc.desc = `waiting for another "watch" process`
     unlock = await u.lock(sig, WATCH_LOCK_NAME)
     const end = Date.now()
     u.log.verb(`[watch] acquired lock from another process after ${end - start}ms, proceeding to watch and backup`)
@@ -69,22 +76,6 @@ export async function cmdWatch(proc) {
   proc.desc = `watching and backing up`
   try {return await cmdWatchUnsync(sig)}
   finally {unlock()}
-}
-
-function cmdWatchHelp() {
-  return [
-    cmdWatch.desc,
-    u.LogLine(
-      `requires running `,
-      ui.BtnCmd(`init`),
-      ` first (just once) to grant FS access; can be stopped via `,
-      ui.BtnCmd(`kill watch`),
-      ` (one-off) or `,
-      ui.BtnCmd(`deinit`),
-      ` (permanent until `,
-      ui.BtnCmd(`init`),`)`,
-    ),
-  ]
 }
 
 export async function cmdWatchUnsync(sig) {
@@ -103,18 +94,18 @@ export async function cmdWatchUnsync(sig) {
       if (u.errIs(err, u.isErrAbort)) return
       errs++
       if (u.errIs(err, fs.isErrFs)) {
-        u.log.err(`[watch] filesystem error, may need to run "deinit" and "init":`, err)
+        u.log.err(`[watch] filesystem error, may need to run "deinit" and "init": `, err)
       }
       if (errs >= WATCH_MAX_ERRS) {
         throw Error(`unexpected error; reached max error count ${errs}, exiting: ${err}`, {cause: err})
       }
       if (u.errIs(err, u.isErrDecoding)) {
         sleep = WATCH_INTERVAL_MS_SHORT
-        u.log.err(`[watch] file decoding error, retrying after ${sleep}ms:`, err)
+        u.log.err(`[watch] file decoding error, retrying after ${sleep}ms: `, err)
       }
       else {
         sleep = WATCH_INTERVAL_MS_LONG
-        u.log.err(`[watch] unexpected error (${errs} in a row), retrying after ${sleep}ms:`, err)
+        u.log.err(`[watch] unexpected error (${errs} in a row), retrying after ${sleep}ms: `, err)
       }
     }
     if (!await a.after(sleep, sig)) return
@@ -123,15 +114,11 @@ export async function cmdWatchUnsync(sig) {
 
 // Initialize backup state by inspecting history directory.
 async function watchInit(sig, state) {
-  a.final(state, `progressFileHandle`, fs.PROGRESS_FILE)
-  a.final(state, `historyDirHandle`, fs.HISTORY_DIR)
+  await fs.fileConfRequireOrRequestPermission(sig, fs.PROGRESS_FILE_CONF)
+  a.final(state, `progressFileHandle`, fs.PROGRESS_FILE_CONF.handle)
 
-  if (!state.progressFileHandle) {
-    throw [`missing progress file handle, run `, ui.BtnCmd(`init`), ` to initialize`]
-  }
-  if (!state.historyDirHandle) {
-    throw [`missing history dir handle, run `, ui.BtnCmd(`init`), ` to initialize`]
-  }
+  await fs.fileConfRequireOrRequestPermission(sig, fs.HISTORY_DIR_CONF)
+  a.final(state, `historyDirHandle`, fs.HISTORY_DIR_CONF.handle)
 
   const runDir = await fs.findLatestRunDir(sig, state.historyDirHandle)
   state.setRunDir(runDir?.name)
@@ -142,10 +129,10 @@ async function watchInit(sig, state) {
   )
   await state.setRoundFile(roundFile?.name)
 
-  u.log.info(u.LogLine(`[watch] initialized: `, {
+  u.log.info(`[watch] initialized: `, {
     run: state.runDirName,
     round: state.roundFileName,
-  }))
+  })
 }
 
 /*
@@ -202,6 +189,7 @@ async function watchStep(sig, state) {
     type: `new_round`,
     runId: runDirName,
     runNum: prevDirNum,
+    roundId: nextFileName,
     roundNum: nextRoundNum,
     roundData,
   }
@@ -216,7 +204,7 @@ async function watchStep(sig, state) {
     await fs.writeDirFile(sig, dir, nextFileName, content)
     await state.setRoundFile(nextFileName)
 
-    u.broadcastToAllTabs(event)
+    watchBroadcast(event).catch(u.logErr)
     return
   }
 
@@ -241,5 +229,16 @@ async function watchStep(sig, state) {
   event.prevRunId = event.runId
   event.runId = nextDirName
   event.runNum = nextDirNum
-  u.broadcastToAllTabs(event)
+  event.roundId = nextFileName
+  watchBroadcast(event).catch(u.logErr)
+}
+
+async function watchBroadcast(eve) {
+  u.broadcastToAllTabs(eve)
+
+  const {fb} = await u.cloudFeatureImport
+  if (!fb) return
+
+  const {runId, roundId} = eve
+  os.runCmd(`upload -q ${u.paths.join(runId, roundId)}`)
 }

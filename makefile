@@ -28,11 +28,13 @@ run:
 fb:
 	firebase emulators:start --log-verbosity QUIET
 
+# Requires `gcloud auth login` or equivalent.
+# May require some retries.
 fb.deploy:
 	firebase deploy
 
 lint:
-	deno lint --rules-exclude=no-window,no-window-prefix
+	deno lint --rules-exclude=no-window,no-window-prefix,constructor-super
 
 # Trims trailing whitespace from all tracked files.
 # The `-i ''` is required on MacOS, do not remove.

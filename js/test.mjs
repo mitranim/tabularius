@@ -1,3 +1,7 @@
+/*
+Usage: add `import=js/test.mjs` to URL query.
+*/
+
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
 import * as s from '../funs/schema.mjs'

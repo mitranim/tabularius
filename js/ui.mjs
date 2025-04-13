@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 18
+const VERSION = 19
 let INITED
 
 /*
@@ -34,13 +34,7 @@ export function init() {
 
   document.getElementById(`loading_style`)?.remove()
   document.getElementById(`loading_msg`)?.remove()
-
-  /*
-  Add a global keyboard shortcut for focusing the command prompt. Goal: focus
-  the command prompt when the focusing key is pressed, but only if not already
-  in an input field.
-  */
-  document.addEventListener(`keydown`, focusPromptOnSlash)
+  document.addEventListener(`keydown`, onKeydownGlobal)
   INITED = true
 }
 
@@ -55,8 +49,7 @@ export const TITLEBAR = E(
 
   // Left side with title.
   E(`h1`, {}, `Tabularius — book-keeper for `,
-    // TODO: decorate link.
-    E(`a`, {href: `https://store.steampowered.com/app/3226530`, ...tarblan},
+    E(`a`, {href: `https://store.steampowered.com/app/3226530`, ...tarblan, class: u.INLINE_BTN_CLS},
       `Tower Dominion`,
     ),
   ),
@@ -107,12 +100,12 @@ function Process(src) {
     // TODO: place description on its own line (under).
     a.vac(src.desc && undefined) && E(
       `pre`,
-      {class: `truncate text-sm text-gray-500 dark:text-gray-500`},
-      `(`, src.desc, `)`,
+      {class: `truncate text-sm text-gray-500 dark:text-gray-400`},
+      `(`, u.callOpt(src.desc), `)`,
     ),
     a.vac(src.startAt) && E(
       `pre`,
-      {class: `truncate text-sm text-gray-500 dark:text-gray-500`},
+      {class: `truncate text-sm text-gray-500 dark:text-gray-400`},
       u.timeFormat.format(src.startAt),
     ),
     a.vac(src.id) && BtnKill({
@@ -132,32 +125,6 @@ export function BtnKill({class: cls, ...attrs}) {
   }, `✕`)
 }
 
-export function BtnCmd(cmd) {
-  a.reqValidStr(cmd)
-  return E(
-    `button`,
-    {
-      type: `button`,
-      class: `px-1 bg-gray-200 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-300 dark:hover:bg-gray-600`,
-      onclick() {os.runCmd(cmd).catch(u.logErr)},
-    },
-    cmd,
-  )
-}
-
-export function BtnHelp(cmd, {class: cls} = {}) {
-  a.reqValidStr(cmd)
-  return E(
-    `button`,
-    {
-      type: `button`,
-      class: a.spaced(cls, `text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200`),
-      onclick() {os.runCmd(`help ${cmd}`).catch(u.logErr)},
-    },
-    `?`,
-  )
-}
-
 const MEDIA_CHI_CLS = `border border-gray-300 dark:border-gray-700 rounded bg-gray-100 dark:bg-gray-800`
 const MEDIA_CHI_PAD = `p-4`
 
@@ -171,10 +138,8 @@ export const MEDIA_PLACEHOLDER = E(`div`, {class: a.spaced(MEDIA_CHI_CLS, `flex 
 export const MEDIA = new class MediaPanel extends u.Elem {
   constructor() {
     super()
-    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto break-words overflow-wrap-anywhere flex flex-col gap-4 p-4 bg-white dark:bg-gray-900`},
-      MEDIA_PLACEHOLDER,
-      PROCESS_LIST,
-    )
+    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto break-words overflow-wrap-anywhere flex flex-col gap-4 p-4 bg-white dark:bg-gray-900`})
+    this.clear()
   }
 
   add(val) {
@@ -194,7 +159,7 @@ export const MEDIA = new class MediaPanel extends u.Elem {
     if (this.children.length <= 1) this.prepend(MEDIA_PLACEHOLDER)
   }
 
-  clear() {E(this, {}, undefined)}
+  clear() {E(this, {}, MEDIA_PLACEHOLDER, PROCESS_LIST)}
 
   // Too fragile, TODO simplify.
   isDefault() {
@@ -214,7 +179,8 @@ export const PROMPT_HIST_MAX = 256
 
 /*
 Subclassing a built-in element class which is NOT `HTMLElement` requires a
-polyfill in some browsers. TODO use `https://github.com/ungap/custom-elements`.
+polyfill in some browsers. Our `index.html` should import
+`https://github.com/ungap/custom-elements`.
 */
 class PromptInput extends dr.MixReg(HTMLInputElement) {
   connectedCallback() {
@@ -253,24 +219,7 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
       return
     }
 
-    /*
-    Seems consistent with existing precedent:
-    - MacOS Terminal.
-    - Windows Terminal (the good one and the bad one).
-    - Chrome devtools on MacOS.
-    - Chrome devtools on Windows.
-    TODO: what about Linux?
-    */
-    if (
-      (eve.key === `k` && !eve.altKey && !eve.ctrlKey && eve.metaKey && !eve.shiftKey) ||
-      (eve.key === `l` && !eve.altKey && eve.ctrlKey && !eve.metaKey && !eve.shiftKey)
-    ) {
-      a.eventKill(eve)
-      u.log.clear()
-      return
-    }
-
-    // Lets the user spam the prompt-focusing key without fear of repercussion.
+    // Lets the user spam the prompt-focusing key without fear.
     if (eve.key === PROMPT_FOCUS_KEY && !this.value) {
       a.eventKill(eve)
     }
@@ -281,15 +230,8 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
     const src = this.value.trim()
     if (!src) return
 
-    const obs = o.obs({running: false})
-    const elem = u.reac(self => {
-      E(self, {},
-        src,
-        a.vac(obs.running) && [` `, E(`span`, {class: `text-gray-500`}, `(running)`)],
-      )
-    })
-
-    u.log.info(elem).classList.add(`animate-flash-light`, `dark:animate-flash-dark`)
+    const obs = o.obs({proc: undefined})
+    u.logMsgFlash(u.log.info(new SubmittedCmd(src, obs)))
     this.histPush(src)
     os.runCmd(src, obs).catch(u.logErr)
   }
@@ -332,6 +274,36 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
     this.value = ``
     u.storageSet(sessionStorage, PROMPT_HIST_KEY)
   }
+
+  addSpaced(suf, pre) {
+    if (a.optStr(suf))
+    if (a.optStr(pre))
+    if (!pre) return
+    if (this.value) this.value = a.spaced(this.value, suf)
+    else this.value = a.spaced(pre, suf)
+    this.focus()
+  }
+}
+
+class SubmittedCmd extends u.ReacElem {
+  constructor(src, obs) {
+    super()
+    this.src = a.reqValidStr(src)
+    this.obs = a.reqObj(obs)
+  }
+
+  run() {
+    const {src, obs: {proc}} = this
+    E(this, {},
+      src,
+      a.vac(proc) && [
+        ` `,
+        E(`span`, {class: `text-gray-500 dark:text-gray-400`},
+          `(running; `, os.BtnCmd(`kill ${proc.id}`), `)`
+        )
+      ],
+    )
+  }
 }
 
 function histStore(store, hist, val) {
@@ -352,12 +324,34 @@ function validPromptHist(src) {
 function histDecode(src) {return a.isNil(src) ? src : a.lines(src)}
 function histEncode(src) {return a.joinLines(src)}
 
-function focusPromptOnSlash(eve) {
-  if (eve.key !== PROMPT_FOCUS_KEY) return
-  if (a.findAncestor(eve.target, u.isElemInput)) return
-  // Prevent the prompt-focusing character from being typed.
-  a.eventKill(eve)
-  PROMPT_INPUT.focus()
+function onKeydownGlobal(eve) {
+  /*
+  Shortcut for clearing the log. Seems consistent with existing precedent in:
+    - MacOS Terminal.
+    - Windows Terminal (the good one and the bad one).
+    - Chrome devtools on MacOS.
+    - Chrome devtools on Windows.
+  TODO: what about Linux?
+  */
+  if (
+    (eve.key === `k` && !eve.altKey && !eve.ctrlKey && eve.metaKey && !eve.shiftKey) ||
+    (eve.key === `l` && !eve.altKey && eve.ctrlKey && !eve.metaKey && !eve.shiftKey)
+  ) {
+    a.eventKill(eve)
+    u.log.clear()
+    PROMPT_INPUT.focus()
+    return
+  }
+
+  // Shortcut for focusing the prompt input.
+  if (
+    eve.key === PROMPT_FOCUS_KEY &&
+    !a.findAncestor(eve.target, u.isElemInput)
+  ) {
+    // Prevent the prompt-focusing character from being typed.
+    a.eventKill(eve)
+    PROMPT_INPUT.focus()
+  }
 }
 
 // TODO: avoid wasting space, remove the parent's padding.
@@ -374,3 +368,53 @@ export const PROMPT = E(
   E(`span`, {class: `text-green-600 dark:text-green-400`}, `>`),
   PROMPT_INPUT,
 )
+
+export function BtnPromptAppend(suf, pre) {
+  a.reqValidStr(suf)
+  a.optStr(pre)
+
+  return E(
+    `button`,
+    {
+      type: `button`,
+      class: u.INLINE_BTN_CLS,
+      onclick() {PROMPT_INPUT.addSpaced(suf, pre)},
+    },
+    suf,
+  )
+}
+
+cmdClear.cmd = `clear`
+cmdClear.desc = `clear log and media`
+cmdClear.help = function cmdClearHelp() {
+  return u.LogParagraphs(
+    u.callOpt(cmdClear.desc),
+    u.LogLines(
+      `flags:`,
+      [`  `, ui.BtnPromptAppend(`-l`, `clear`), ` -- clear only the log`],
+      [`  `, ui.BtnPromptAppend(`-m`, `clear`), ` -- clear only the media`],
+    ),
+    u.LogLines(
+      `usage:`,
+      [`  `, os.BtnCmd(`clear`)],
+      [`  `, os.BtnCmd(`clear -l`)],
+      [`  `, os.BtnCmd(`clear -m`)],
+    ),
+    [E(`b`, {}, `pro tip`), `: can also clear the log by pressing "ctrl+l" or "cmd+k"`],
+  )
+}
+
+export function cmdClear({args}) {
+  args = u.splitCliArgs(args)
+  const log = u.arrRemoved(args, `-l`)
+  const media = u.arrRemoved(args, `-m`)
+
+  switch (args.length) {
+    case 1:
+    case 2: break
+    default: return os.cmdHelpDetailed(cmdClear)
+  }
+
+  if (log || !media) u.log.clear()
+  if (media || !log) MEDIA.clear()
+}

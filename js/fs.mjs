@@ -1,5 +1,7 @@
 import * as a from '@mitranim/js/all.mjs'
+import * as o from '@mitranim/js/obs.mjs'
 import * as idb from 'https://esm.sh/idb@7.1.1'
+import {E} from './util.mjs'
 import * as u from './util.mjs'
 
 export {idb}
@@ -53,10 +55,7 @@ class ErrFs extends u.Err {}
 class ErrFsPerm extends ErrFs {}
 export function isErrFs(err) {return a.isInst(err, ErrFs)}
 
-export let PROGRESS_FILE = undefined
-export let HISTORY_DIR = undefined
-
-class FileConf extends a.Emp {
+export class FileConf extends a.Emp {
   constructor(src) {
     super()
     this.key = a.reqValidStr(src.key)
@@ -64,17 +63,19 @@ class FileConf extends a.Emp {
     this.help = a.reqValidStr(src.help)
     this.mode = a.reqValidStr(src.mode)
     this.pick = a.reqFun(src.pick)
-    return Object.freeze(this)
+    this.handle = undefined
+    this.perm = undefined
+    return o.obs(this)
   }
 }
 
 export const PROGRESS_FILE_CONF = new FileConf({
   key: `progress_file`,
   desc: `progress file`,
-  help: u.joinLines(
-    `Pick your TD progress file. Typical location:`,
+  help: u.joinParagraphs(
+    `pick your TD progress file; typical location:`,
     `C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\SaveFiles\\Progress.gd.`,
-    `Note that AppData is hidden by default!`,
+    `note that AppData is hidden by default!`,
   ),
   mode: `read`,
   pick: pickProgressFile,
@@ -83,8 +84,8 @@ export const PROGRESS_FILE_CONF = new FileConf({
 export const HISTORY_DIR_CONF = new FileConf({
   key: `history_dir`,
   desc: `history directory`,
-  help: u.joinLines(
-    `Pick directory for run history (backups). Suggested location:`,
+  help: u.joinParagraphs(
+    `pick directory for run history (backups); suggested location:`,
     `C:\\Users\\<user>\\Documents\\tower-dominion`,
   ),
   mode: `readwrite`,
@@ -93,240 +94,317 @@ export const HISTORY_DIR_CONF = new FileConf({
 
 // Try to load file handles from IDB on app startup.
 export async function loadedFileHandles() {
-  PROGRESS_FILE = await loadFileHandleWithPerm(PROGRESS_FILE_CONF)
-  HISTORY_DIR = await loadFileHandleWithPerm(HISTORY_DIR_CONF)
-  return !!(PROGRESS_FILE && HISTORY_DIR)
+  return !!((await loadedProgressFile()) && (await loadedHistoryDir()))
+}
+
+export function loadedProgressFile() {
+  return fileConfLoadedWithPerm(PROGRESS_FILE_CONF)
+}
+
+export function loadedHistoryDir() {
+  return fileConfLoadedWithPerm(HISTORY_DIR_CONF)
 }
 
 // Try to load a handle and check its permission.
-async function loadFileHandleWithPerm(conf) {
+export async function fileConfLoadedWithPerm(conf) {
   const {desc, mode} = a.reqInst(conf, FileConf)
-  const out = await loadFileHandle(conf)
-  if (!out) return out
-  const perm = await queryPermission(out, {mode})
-  if (perm === `granted`) return out
-  u.log.info(`${desc}: permission needed; run the "init" command`)
+  await fileConfLoad(conf)
+  if (!conf.handle) return undefined
+
+  conf.perm = await queryPermission(conf.handle, {mode})
+  if (conf.perm === `granted`) return conf.handle
+
+  u.log.info(...msgNotGranted(desc))
   return undefined
 }
 
-async function loadFileHandle(conf) {
+export async function fileConfLoad(conf) {
   const store = DB_STORE_HANDLES
   const {key, desc} = a.reqInst(conf, FileConf)
-  let out
+  let handle
 
   try {
-    out = await dbGet(store, key)
-    if (a.isNil(out)) return undefined
+    handle = await dbGet(store, key)
+    if (a.isNil(handle)) return
   }
   catch (err) {
-    u.log.err(`${desc}: error loading handle from DB:`, err)
-    return undefined
+    u.log.err(desc, `: error loading handle from DB:`, err)
+    return
   }
 
-  u.log.verb(`${desc}: loaded handle from DB`)
+  u.log.verb(desc, `: loaded handle from DB`)
 
-  if (!a.isInst(out, FileSystemHandle)) {
-    u.log.info(`${desc}: expected FileSystemHandle; deleting corrupted DB entry`)
+  if (!a.isInst(handle, FileSystemHandle)) {
+    u.log.info(desc, `: expected FileSystemHandle; deleting corrupted DB entry`)
     dbDel(store, key).catch(u.logErr)
-    return undefined
+    return
   }
 
-  return out
+  conf.handle = handle
 }
 
+/*
+See also `loadedFileHandles`. The difference between "load" and "init" behaviors
+in our code is caused by browser security rules and permissions. When running
+due to a user input, we're allowed to request permissions, but otherwise, we're
+only allowed to query permissions.
+*/
 export async function initedFileHandles(sig) {
-  return !!(
-    await initedProgressFile(sig) &&
-    await initedHistoryDir(sig)
-  )
+  await fileConfInit(sig, PROGRESS_FILE_CONF)
+  await fileConfInit(sig, HISTORY_DIR_CONF)
+  return true
 }
 
-export async function initedProgressFile(sig) {
-  return !!(PROGRESS_FILE = await initFileHandle(sig, PROGRESS_FILE, PROGRESS_FILE_CONF))
-}
-
-export async function initedHistoryDir(sig) {
-  return !!(HISTORY_DIR = await initFileHandle(sig, HISTORY_DIR, HISTORY_DIR_CONF))
-}
-
-async function initFileHandle(sig, handle, conf) {
+/*
+See the comment on `fileConfRequireOrRequestPermission`. This must be used only
+on a user action, such as prompt input submission or a click.
+*/
+export async function fileConfInit(sig, conf) {
   u.reqSig(sig)
-  a.optInst(handle, FileSystemHandle)
   const {desc, help, key, pick} = a.reqInst(conf, FileConf)
 
-  handle ??= await loadFileHandle(conf)
-  if (!handle) {
+  if (!conf.handle) await fileConfLoad(conf)
+
+  if (!conf.handle) {
     u.log.info(help)
-    handle = a.reqInst(await u.wait(sig, pick()), FileSystemHandle)
+    conf.handle = a.reqInst(await u.wait(sig, pick()), FileSystemHandle)
+
     try {
-      await u.wait(sig, dbPut(DB_STORE_HANDLES, key, handle))
-      u.log.info(`${desc}: stored handle to DB`)
+      await u.wait(sig, dbPut(DB_STORE_HANDLES, key, conf.handle))
+      u.log.info(desc, `: stored handle to DB`)
     }
     catch (err) {
-      u.log.err(`${desc}: error storing handle to DB:`, err)
+      u.log.err(desc, `: error storing handle to DB:`, err)
     }
   }
 
-  await requirePermission(sig, handle, conf)
-  return handle
+  await fileConfRequireOrRequestPermission(sig, conf)
 }
 
 export async function deinitFileHandles(sig) {
   return a.compact([
-    await deinitProgressFile(sig),
-    await deinitHistoryDir(sig),
+    await fileConfDeinit(sig, PROGRESS_FILE_CONF),
+    await fileConfDeinit(sig, HISTORY_DIR_CONF),
   ])
 }
 
-// Deinitialize progress file: delete handle from DB and reset variable
-export async function deinitProgressFile(sig) {
-  const msg = await deinitFileConf(sig, PROGRESS_FILE, PROGRESS_FILE_CONF)
-  PROGRESS_FILE = undefined
-  return msg
-}
-
-// Deinitialize history directory: delete handle from DB and reset variable
-export async function deinitHistoryDir(sig) {
-  const msg = await deinitFileConf(sig, HISTORY_DIR, HISTORY_DIR_CONF)
-  HISTORY_DIR = undefined
-  return msg
-}
-
-async function deinitFileConf(sig, handle, conf) {
+export async function fileConfDeinit(sig, conf) {
   u.reqSig(sig)
-  a.optInst(handle, FileSystemHandle)
   const {key, desc} = a.reqInst(conf, FileConf)
-  try {await u.wait(sig, dbDel(DB_STORE_HANDLES, key))}
-  catch (err) {u.log.err(`${desc}: error deleting from DB:`, err)}
-  if (handle) return `${desc}: deinitialized`
-  return `${desc}: not initialized`
+
+  try {
+    await u.wait(sig, dbDel(DB_STORE_HANDLES, key))
+  }
+  catch (err) {
+    u.log.err(desc, `: error deleting from DB:`, err)
+  }
+
+  if (!conf.handle) return `${desc}: not initialized`
+  conf.handle = undefined
+  conf.perm = undefined
+  return `${desc}: deinitialized`
 }
 
-// Returns a string indicating status of progress file.
-export function statusProgressFile(sig) {
-  return getHandleStatus(sig, PROGRESS_FILE, PROGRESS_FILE_CONF)
+export class FileConfStatus extends u.ReacElem {
+  constructor(conf) {super().conf = a.reqInst(conf, FileConf)}
+
+  // SYNC[file_conf_status].
+  run() {
+    const {handle, perm, desc} = this.conf
+    if (!handle) return E(this, {}, msgNotInited(desc))
+    if (perm !== `granted`) return E(this, {}, msgNotGranted(desc))
+    return E(this, {}, desc, `: `, handle.name)
+  }
 }
 
-export function statusHistoryDir(sig) {
-  return getHandleStatus(sig, HISTORY_DIR, HISTORY_DIR_CONF)
-}
-
-async function getHandleStatus(sig, handle, conf) {
-  const {desc} = a.reqInst(conf, FileConf)
-  const msg = await getHandleStatusProblem(sig, handle, conf)
-  if (msg) return msg
-
-  if (isDir(handle)) return getHandleStatusForDir(sig, handle, conf)
-  if (isFile(handle)) return getHandleStatusForFile(sig, handle, conf)
-  return `${desc}: unknown handle kind: ${handle.kind}`
-}
-
-async function getHandleStatusForDir(sig, handle, conf) {
-  const {desc} = a.reqInst(conf, FileConf)
-  const {fileCount, dirCount, byteCount} = await getDirectoryStats(sig, handle)
-  const details = a.compact([
-    fileCount ? `${fileCount} files` : ``,
-    dirCount ? `${dirCount} dirs` : ``,
-    byteCount ? `${u.formatSize(byteCount)}` : ``,
-  ]).join(`, `)
-  return `${desc}: ${handle.name}` + (details && `: `) + details
-}
-
-async function getHandleStatusForFile(sig, handle, conf) {
-  const {desc} = a.reqInst(conf, FileConf)
-  const file = await getFile(sig, handle)
-  return `${desc}: ${file.name} (${u.formatSize(file.size)})`
-}
-
-async function getHandleStatusProblem(sig, handle, conf) {
+// SYNC[file_conf_status].
+export async function fileConfStatusProblem(sig, conf) {
   u.reqSig(sig)
-  a.optInst(handle, FileSystemHandle)
+  const {handle, desc, mode} = a.reqInst(conf, FileConf)
+  if (!handle) return msgNotInited(desc)
 
-  const {desc, mode} = a.reqInst(conf, FileConf)
-  if (!handle) return `${desc}: not initialized`
-
-  const perm = await u.wait(sig, queryPermission(handle, {mode}))
-  if (perm !== `granted`) return `${desc}: permission needed`
+  conf.perm = await u.wait(sig, queryPermission(handle, {mode}))
+  if (conf.perm !== `granted`) return msgNotGranted(desc)
   return undefined
 }
 
+/*
+Note: browsers allow `.requestPermission` only as a result of a user action.
+We can't trigger it automatically on app startup, for example. This can only
+be run as a result of manually invoking a command, or clicking something in
+the UI, etc.
+
+SYNC[file_conf_status].
+*/
+export async function fileConfRequireOrRequestPermission(sig, conf) {
+  const {handle, desc, mode} = a.reqInst(conf, FileConf)
+  if (!handle) throw msgNotInited(desc)
+
+  conf.perm = await u.wait(sig, queryPermission(handle, {mode}))
+  if (conf.perm === `granted`) return
+
+  u.log.info(desc, `: permission: `, a.show(conf.perm), `, requesting permission`)
+  conf.perm = await requestPermission(sig, handle, {mode})
+  if (conf.perm === `granted`) return
+
+  throw msgNotGranted(desc)
+}
+
+function msgNotInited(desc) {
+  return [desc, `: not initialized, run the `, os.BtnCmdWithHelp(`init`), ` command`]
+}
+
+function msgNotGranted(desc) {
+  return [desc, `: permission needed, run `, os.BtnCmdWithHelp(`init`), ` to grant`]
+}
+
+export async function fileConfRequirePermission(sig, conf) {
+  const msg = await fileConfStatusProblem(sig, conf)
+  if (msg) throw msg
+}
+
+export function fileHandleStatStr(sig, handle) {
+  a.reqInst(handle, FileSystemHandle)
+  if (isFile(handle)) return fileStatStr(sig, handle)
+  if (isDir(handle)) return dirStatStr(sig, handle)
+  u.log.err(`unrecognized handle kind ${a.show(handle.kind)}`)
+  return undefined
+}
+
+export async function fileStatStr(sig, handle) {
+  return u.formatSize(await fileSize(sig, handle))
+}
+
+export async function fileSize(sig, handle) {
+  return (await getFile(sig, handle)).size
+}
+
+export async function dirStatStr(sig, handle) {
+  const {fileCount, dirCount, byteCount} = await dirStat(sig, handle)
+  return a.joinOpt([
+    fileCount ? `${fileCount} files` : ``,
+    dirCount ? `${dirCount} dirs` : ``,
+    byteCount ? `${u.formatSize(byteCount)}` : ``,
+  ], `, `)
+}
+
 // Get statistics about a directory (file count, dir count, total size).
-async function getDirectoryStats(sig, src, out) {
+export async function dirStat(sig, dir, out) {
   out ??= a.Emp()
   out.fileCount = a.laxInt(out.fileCount)
   out.dirCount = a.laxInt(out.dirCount)
   out.byteCount = a.laxInt(out.byteCount)
 
-  for await (const val of readDir(sig, src)) {
+  for await (const val of readDir(sig, dir)) {
     if (isDir(val)) {
-      await getDirectoryStats(sig, val, out)
+      await dirStat(sig, val, out)
       out.dirCount++
       continue
     }
 
     if (isFile(val)) {
-      const file = await getFile(sig, val)
-      out.byteCount += file.size
+      out.byteCount += await fileSize(sig, val)
       out.fileCount++
     }
   }
   return out
 }
 
-async function pickProgressFile() {
-  return a.head(await showOpenFilePicker({
+export async function pickProgressFile() {
+  return a.head(await reqFsFilePick()({
     types: [{description: `Game [save / progress] file`}],
     multiple: false
   }))
 }
 
-function pickHistoryDir() {
-  return showDirectoryPicker({
+export function pickHistoryDir() {
+  return reqFsDirPick()({
     types: [{description: `Directory for [run history / backups]`}],
   })
 }
 
+/*
+See the comment on `fileConfRequireOrRequestPermission`. This must be used only
+on a user action, such as prompt input submission or a click.
+*/
 export async function reqHistoryDir(sig) {
-  await initedHistoryDir(sig)
-  return reqHandlePermissionConf(HISTORY_DIR, HISTORY_DIR_CONF)
+  await fileConfInit(sig, HISTORY_DIR_CONF, true)
+  await fileConfRequireOrRequestPermission(sig, HISTORY_DIR_CONF)
+  return HISTORY_DIR_CONF.handle
 }
 
 cmdLs.cmd = `ls`
-cmdLs.desc = `list dirs and files; usage: "ls" or "ls <path>"`
-cmdLs.help = u.joinLines(
-  `usage: "ls" or "ls <path>`,
-  `list the directories and files; examples:`,
-  `  ls`,
-  `  ls some_dir`,
-  `  ls some_dir/some_file`,
-)
+cmdLs.desc = `list dirs and files`
+cmdLs.help = function cmdLsHelp() {
+  return u.LogParagraphs(
+    `list dirs and files`,
+    u.LogLines(
+      `usage:`,
+      [`  `, os.BtnCmd(`ls`)],
+      [`  `, os.BtnCmd(`ls -s`), ` -- show stats`],
+      `  ls <path>`,
+    ),
+    u.LogLines(
+      `examples:`,
+      `  ls some_dir`,
+      `  ls some_dir/some_file`,
+    ),
+  )
+}
 
 export async function cmdLs({sig, args}) {
   args = u.splitCliArgs(args)
+  const stat = u.arrRemoved(args, `-s`)
+
   switch (args.length) {
     case 0:
     case 1:
     case 2: break
-    default: return cmdLs.help
+    default: return os.cmdHelpDetailed(cmdLs)
   }
 
   const path = u.paths.clean(a.laxStr(args[1]))
-  const handle = await handleAtPath(sig, path)
-  const suf = `: `
-  if (!isDir(handle)) return handle.kind + suf + handle.name
+  const root = await reqHistoryDir(sig)
+  const handle = await handleAtPath(sig, root, path)
+  const showPath = a.show(handle.name || path)
+  const inf = `: `
+  const suf = stat ? `` : [` (tip: `, os.BtnCmd(`ls -s`), ` adds stats)`]
+
+  if (!isDir(handle)) {
+    if (!stat) return [handle.kind + inf + showPath, suf]
+    return handle.kind + inf + showPath + inf + await fileStatStr(sig, handle)
+  }
 
   let len = 0
   const buf = []
   for await (const val of readDir(sig, handle)) {
     len = Math.max(len, val.kind.length)
-    buf.push([val.kind, val.name])
+    buf.push([val.kind, val.name, a.vac(stat) && await fileHandleStatStr(sig, val)])
   }
 
   buf.sort(compareLsEntriesAsc)
-  len += suf.length
+  len += inf.length
+  if (!buf.length) return `directory ${showPath} is empty`
 
-  const line = ([kind, name]) => (kind + suf).padEnd(len, ` `) + name
-  return a.joinLines(a.map(buf, line))
+  return u.LogLines(
+    [`contents of directory ${showPath}`, suf, `:`],
+    ...u.alignTable(a.map(buf, function lsRow([kind, name, stat]) {
+      return [
+        kind + inf,
+        BtnLsEntry(path, name, stat),
+        (a.vac(stat) && ` (` + stat + `)`),
+      ]
+    })),
+  )
+}
+
+function BtnLsEntry(path, name, stat) {
+  path = u.paths.join(path, name)
+  return u.Btn(name, function onClickLsEntry() {
+    u.copyToClipboard(path)
+    u.log.info(`copied `, a.show(path), ` to clipboard`)
+    os.runCmd(`ls ` + path + (stat ? ` -s` : ``))
+  })
 }
 
 function compareLsEntriesAsc(one, two) {return u.compareAsc(one[1], two[1])}
@@ -335,50 +413,60 @@ function compareLsEntriesAsc(one, two) {return u.compareAsc(one[1], two[1])}
 // export function cmdTree(sig, args) {}
 
 cmdShow.cmd = `show`
-
-cmdShow.desc = `
-decode and show a round in a run; usage: "show <run_dir>/<round_file>"
-`.trim()
-
-cmdShow.help = u.joinParagraphs(
-  `usage: "show <path>", "show <path> <flags>"`,
-  u.joinLines(
-    `flags:`,
-    `  -c  copy decoded JSON to clipboard`,
-    `  -l  log decoded JSON to browser console`,
-    `  -p  print decoded object to browser console`,
-  ),
-  u.joinLines(
-    `examples:`,
-    `  show 0000/0001.gd -c`,
-    `  show 0000/0001.gd -c -l`,
-    `  show 0000/0001.gd -c -l -p`,
-  ),
-  `if no flags are provided, nothing is done`
-)
+cmdShow.desc = `decode and show a round in a run`
+cmdShow.help = function cmdShowHelp() {
+  return u.LogParagraphs(
+    u.callOpt(cmdShow.desc),
+    u.LogLines(
+      `usage:`,
+      [`  `, os.BtnCmd(`show latest`)],
+      `  show <dir>/<file>`,
+      `  show <dir>/<file> <flags>`,
+    ),
+    u.LogLines(
+      `flags:`,
+      [`  `, ui.BtnPromptAppend(`-c`, `show`), ` -- copy decoded JSON to clipboard`],
+      [`  `, ui.BtnPromptAppend(`-l`, `show`), ` -- log decoded JSON to browser console`],
+      [`  `, ui.BtnPromptAppend(`-p`, `show`), ` -- print decoded object to browser console`],
+    ),
+    u.LogLines(
+      `examples:`,
+      `  show 0000/0001.gd -c`,
+      `  show 0000/0001.gd -c -l`,
+      `  show 0000/0001.gd -c -l -p`,
+    ),
+    `if no flags are provided, nothing is done`,
+    [`tip: use `, os.BtnCmdWithHelp(`ls`), ` to browse local runs`],
+  )
+}
 
 /*
-Ideally, we'd actually let the user browse the file. But some of our target
+We don't support printing game files to our log, because some of our target
 files are so huge, that merely including their text in the DOM, as a
-`.textContent` of a single element, makes browser layout updates very slow. The
-performance issues might be style-related / CSS-related and fixable, but it's
-really an indicator that very large content should not be displayed all at
-once. For now we copy to the clipboard.
+`.textContent` of a single element, makes browser layout updates very slow.
+The performance issues might be style-related / CSS-related and fixable, but
+it's not a priority. The browser devtools console handles this pretty well.
 */
 export async function cmdShow({sig, args}) {
   args = u.splitCliArgs(args)
-
   const copy = u.arrRemoved(args, `-c`)
   const log = u.arrRemoved(args, `-l`)
   const print = u.arrRemoved(args, `-p`)
 
   switch (args.length) {
     case 2: break
-    default: return cmdShow.help
+    default: return os.cmdHelpDetailed(cmdShow)
   }
 
   const path = args[1]
-  const handle = await handleAtPath(sig, path)
+  const root = await reqHistoryDir(sig)
+
+  const handle = (
+    path === `latest`
+    ? await findLatestRoundFile(sig, await findLatestRunDir(sig, root))
+    : await handleAtPath(sig, root, path)
+  )
+
   if (!isFile(handle)) return `${a.show(path)} is not a file`
 
   const body = await u.jsonDecompress(await readFile(sig, handle))
@@ -396,26 +484,28 @@ export async function cmdShow({sig, args}) {
     console.log(JSON.parse(body))
     msgs.push(`printed decoded object to browser devtools console`)
   }
-  return msgs.join(`; `)
+
+  if (msgs.length) return msgs.join(`; `)
+  return `no flags provided, nothing done`
 }
 
 cmdDecode.cmd = `decode`
 cmdDecode.desc = `decode an entire run, writing the resulting JSON to a file`
-cmdDecode.help = u.joinParagraphs(
-  cmdDecode.desc,
-  u.joinLines(
-    `usage:`,
-    `  decode <run_id>`,
-    `  decode <run_id> -p`,
-  ),
-  u.joinLines(
-    `use "ls" to browse runs; a typical <run_id> looks like this:`,
-    `  decode 0000`,
-    `  decode 0000 -p`,
-  ),
-  `the decoded result is written to "<run_id>.json" in the history directory`,
-  `the flag "-p" enables JSON pretty-printing`,
-)
+cmdDecode.help = function cmdDecodeHelp() {
+  return u.LogParagraphs(
+    u.callOpt(cmdDecode.desc),
+    u.LogLines(
+      `usage:`,
+      [`  `, os.BtnCmd(`decode latest`)],
+      [`  `, os.BtnCmd(`decode latest -p`)],
+      `  decode <run_id>`,
+      `  decode <run_id> -p`,
+    ),
+    [`the flag `, ui.BtnPromptAppend(`-p`, `decode`), ` enables JSON pretty-printing`],
+    `the decoded result is written to "<run_id>.json" in the history directory`,
+    [`tip: use `, os.BtnCmdWithHelp(`ls`), ` to browse local runs`],
+  )
+}
 
 export async function cmdDecode({sig, args}) {
   args = u.splitCliArgs(args)
@@ -423,14 +513,20 @@ export async function cmdDecode({sig, args}) {
 
   switch (args.length) {
     case 2: break
-    default: return cmdDecode.help
+    default: return os.cmdHelpDetailed(cmdDecode)
   }
 
   const runId = args[1]
   const root = await reqHistoryDir(sig)
-  const dir = await getDirectoryHandle(sig, root, runId)
+
+  const dir = (
+    runId === `latest`
+    ? await findLatestRunDir(sig, root)
+    : await getDirectoryHandle(sig, root, runId)
+  )
+
   const rounds = await u.asyncIterCollect(sig, readRunRoundsAsc(sig, dir))
-  const path = runId + `.json`
+  const path = dir.name + `.json`
   const body = pretty ? JSON.stringify(rounds, ``, 2) : JSON.stringify(rounds)
   await writeDirFile(sig, root, path, body)
   return `wrote run ${a.show(runId)} to ${a.show(path)}`
@@ -440,7 +536,7 @@ cmdShowSaves.cmd = `show_saves`
 cmdShowSaves.desc = `choose the original TD save folder; the command will print the decoded contents of every ".gd" file to the browser devtools console`
 
 export async function cmdShowSaves({sig}) {
-  const dir = await showDirectoryPicker()
+  const dir = await reqFsDirPick()()
 
   let count = 0
   for await (const val of readDir(sig, dir)) {
@@ -453,10 +549,10 @@ export async function cmdShowSaves({sig}) {
   return `printed decoded contents of ${count} files to the browser devtools console`
 }
 
-export async function findLatestRunDir(sig, dir) {
+export async function findLatestRunDir(sig, root) {
   let max = -Infinity
   let out
-  for await (const han of readDir(sig, dir)) {
+  for await (const han of readDir(sig, root)) {
     const ord = u.toIntOpt(han.name)
     if (!(ord > max)) continue
     max = ord
@@ -466,13 +562,16 @@ export async function findLatestRunDir(sig, dir) {
 }
 
 export async function findLatestRoundFile(sig, runDir, progressFileHandle) {
-  const ext = u.paths.ext(progressFileHandle.name)
+  a.optInst(progressFileHandle, FileSystemFileHandle)
+  const ext = progressFileHandle ? u.paths.ext(progressFileHandle.name) : ``
   let max = -Infinity
   let out
 
   for await (const han of readDir(sig, runDir)) {
     if (!isFile(han)) continue
-    if (u.paths.ext(han.name) !== ext) continue
+    const fileExt = u.paths.ext(han.name)
+    const isBackupFile = ext ? fileExt === ext : isGameFileExt(fileExt)
+    if (!isBackupFile) continue
 
     const ord = u.toIntOpt(han.name)
     if (!(ord > max)) continue
@@ -552,8 +651,11 @@ export function isHandleRunDir(handle) {
 export function isHandleGameFile(handle) {
   a.reqInst(handle, FileSystemHandle)
   if (!isFile(handle)) return false
-  const ext = u.paths.ext(handle.name)
-  return ext === `.gd` || ext === `.json`
+  return isGameFileExt(u.paths.ext(handle.name))
+}
+
+export function isGameFileExt(val) {
+  return a.reqStr(val) === `.gd` || val === `.json`
 }
 
 export function compareRoundsAsc(one, two) {
@@ -590,8 +692,8 @@ export async function readFile(sig, src) {
   return src
 }
 
-export async function handleAtPath(sig, path) {
-  const root = await reqHistoryDir(sig)
+export async function handleAtPath(sig, root, path) {
+  a.reqInst(root, FileSystemDirectoryHandle)
   const handle = await chdir(sig, root, u.paths.dir(path))
   const name = u.paths.base(path)
   if (!name) return handle
@@ -610,22 +712,8 @@ export async function chdir(sig, handle, path) {
   return handle
 }
 
-export async function reqHandlePermissionConf(handle, conf) {
-  const msg = await statusPermissionConf(handle, conf)
-  if (msg) throw new ErrFsPerm(msg)
-  return handle
-}
-
-export async function statusPermissionConf(handle, conf) {
-  const {desc, mode} = a.reqInst(conf, FileConf)
-  if (!handle) return `${desc}: not initialized`
-  const perm = await queryPermission(handle, {mode})
-  if (perm !== `granted`) return `${desc}: permission needed`
-  return undefined
-}
-
-export function hasPermissionConf(handle, conf) {
-  const {mode} = a.reqInst(conf, FileConf)
+export function fileConfHasPermission(conf) {
+  const {handle, mode} = a.reqInst(conf, FileConf)
   return hasPermission(handle, {mode})
 }
 
@@ -658,7 +746,7 @@ export async function writeDirFile(sig, dir, name, body) {
   return writeFileAt(sig, file, body, u.paths.join(dir.name, name))
 }
 
-async function writeFileAt(sig, file, body, path) {
+export async function writeFileAt(sig, file, body, path) {
   u.reqSig(sig)
   a.reqInst(file, FileSystemFileHandle)
   a.reqValidStr(body)
@@ -718,24 +806,6 @@ export async function queryPermission(src, opt) {
   }
 }
 
-async function requirePermission(sig, handle, conf) {
-  const {desc, mode} = a.reqInst(conf, FileConf)
-
-  let perm = await u.wait(sig, queryPermission(handle, {mode}))
-  if (perm === `granted`) return
-  u.log.info(`${desc}: permission: ${perm}, requesting permission`)
-
-  perm = await requestPermission(sig, handle, {mode})
-  if (perm === `granted`) return
-  throw new ErrFsPerm(`please grant permission for ${desc}`)
-}
-
-/*
-Note: browsers allow `.requestPermission` only as a result of a user action.
-We can't trigger it automatically on app startup, for example. This can only
-be run as a result of manually invoking a command, or clicking something in
-the UI, etc.
-*/
 export async function requestPermission(sig, handle, opt) {
   u.reqSig(sig)
   a.reqInst(handle, FileSystemHandle)
@@ -782,7 +852,7 @@ export async function getFileHandle(sig, src, name, opt) {
     return await u.wait(sig, src.getFileHandle(name, opt))
   }
   catch (err) {
-    throw new ErrFs(`unable to get file handle ${src.name}/${name}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to get file handle ${a.show(p.util.join(src.name, name))}: ${err}`, {cause: err})
   }
 }
 
@@ -795,6 +865,20 @@ export async function getDirectoryHandle(sig, src, name, opt) {
     return await u.wait(sig, src.getDirectoryHandle(name, opt))
   }
   catch (err) {
-    throw new ErrFs(`unable to get directory handle ${src.name}/${name}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to get directory handle ${a.show(p.util.join(src.name, name))}: ${err}`, {cause: err})
   }
+}
+
+export function reqFsFilePick() {
+  if (typeof showOpenFilePicker !== `function`) throw errFsApi()
+  return showOpenFilePicker
+}
+
+export function reqFsDirPick() {
+  if (typeof showDirectoryPicker !== `function`) throw errFsApi()
+  return showDirectoryPicker
+}
+
+export function errFsApi() {
+  return Error(`the current environment seems to be lacking the File System API; at the time of writing, it's supported in Chromium-based browsers, such as Chrome, Edge, Opera, Arc, and more, and in very recent versions of other browsers; please consider updating your browser or using a recent Chromium-based browser`)
 }

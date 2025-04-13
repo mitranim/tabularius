@@ -28,10 +28,9 @@ The SPA may provide an option to roll back the save.
 - [x] It walks the resulting dirs, uploading rounds one by one.
 - [x] To display progress in the terminal, it adds one reactive element and continuously updates it, to avoid spam. Something like:
 - [x] Automatically derive our star schema server-side.
-- [ ] Automatic cloud uploads when authed.
-  - [ ] Probably requires us to drop cost efficiency from the schema, and derive it client-side, because the source data doesn't store the ".SellPrice" of buildings properly.
-  - [ ] Use a mutex to ensure only one tab and one process does the uploading, like in `watch`.
-  - [ ] New rounds detected by `watch` should trigger upload.
+- [x] Automatic cloud uploads when authed.
+  - [x] Use a mutex to ensure only one tab and one process does the uploading, like in `watch`.
+  - [x] New rounds detected by `watch` should trigger upload.
 
 ```
 uploading run A of N (id <id>)...
@@ -869,9 +868,9 @@ Drop command `test`, just use a query parameter.
 More interactive logging, particularly for chains of operations. Examples:
 
 * [x] `help` -> every command name is a clickable button.
-* [ ] Any command help -> every example is a clickable button.
-* [ ]`plot` -> help includes `plot ps` -> clickable -> list of run ids which are clickable and thus plottable (either local or remote, depending on `-s`).
-* [ ] Similar for other commands, wherever possible.
+* [x] Any command help -> every example is a clickable button.
+* [x] Similar for other commands, wherever possible.
+* [ ] `plot` -> help includes `plot ps` -> clickable -> list of run ids which are clickable and thus plottable (either local or remote, depending on `-s`).
 
 ---
 
@@ -892,3 +891,18 @@ Make plot titles human-readable.
 ---
 
 Consolidate initialization and status (FS and auth).
+
+---
+
+Support special identifier `latest` in more commands. Add this to their help, as a button.
+* [x] `show`
+* [x] `decode`
+* [x] `upload`
+
+---
+
+<!-- Make all "status" commands fully reactive: `status`, `ps`. Requires moving file handles to `FileConf` and making it observable. -->
+
+---
+
+<!-- Properly handle dirs with spaces in their names, by forbidding spaces. -->

@@ -1,12 +1,11 @@
 import * as a from '@mitranim/js/all.mjs'
-import {E} from './util.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
 import * as w from './watch.mjs'
 import * as ui from './ui.mjs'
-import * as fb from './fb.mjs' // TODO import optionally (probably blocked in China).
 import * as p from './plot.mjs'
+const {fb, up} = await u.cloudFeatureImport
 
 import * as self from './main.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -18,155 +17,113 @@ CLI commands may be defined in arbitrary modules. They should all be registered
 here, rather than in the origin modules, so that we can control the ordering.
 */
 
-cmdHelp.cmd = `help`
-cmdHelp.desc = `run "help" for a brief summary of all commands, or "help <cmd>" for detailed help on one command`,
-cmdHelp.help = u.joinParagraphs(
-  cmdHelp.desc,
-  u.joinLines(
-    `usage:`,
-    `  help`,
-    `  help <cmd>`,
-  ),
-)
-os.addCmd(cmdHelp)
+os.addCmd(os.cmdHelp)
 
 cmdInit.cmd = `init`
 cmdInit.desc = cmdInitDesc
+cmdInit.help = cmdInitHelp
 os.addCmd(cmdInit)
 
-cmdDeinit.cmd = `deinit`
-cmdDeinit.desc = `stop all processes, revoke FS access`
-os.addCmd(cmdDeinit)
-
-cmdStatus.cmd = `status`
-cmdStatus.desc = `show status of app features and processes`
-os.addCmd(cmdStatus)
+if (fb) os.addCmd(fb.cmdAuth)
+os.addCmd(p.cmdPlot)
 
 os.addCmd(fs.cmdLs)
 os.addCmd(fs.cmdShow)
 os.addCmd(fs.cmdShowSaves)
 os.addCmd(fs.cmdDecode)
-os.addCmd(p.cmdPlot)
 
+if (fb) os.addCmd(fb.cmdCls)
+if (up) os.addCmd(up.cmdUpload)
 os.addCmd(w.cmdWatch)
-os.addCmd(fb.cmdAuth)
-os.addCmd(fb.cmdUpload)
-os.addCmd(fb.cmdCls)
+
+cmdStatus.cmd = `status`
+cmdStatus.desc = `show status of app features and processes`
+os.addCmd(cmdStatus)
+
 os.addCmd(os.cmdPs)
 os.addCmd(os.cmdKill)
 os.addCmd(u.cmdVerbose)
-os.addCmd(u.cmdClear)
 
-cmdTest.cmd = `test`
-cmdTest.desc = `toggle test mode`
-cmdTest.help = `toggles test mode, which disables the default startup behavior and imports "js/test.mjs" for testing; intended only for developing Tabularius; not useful to regular users`
-os.addCmd(cmdTest)
+cmdDeinit.cmd = `deinit`
+cmdDeinit.desc = `stop all processes, revoke FS access`
+os.addCmd(cmdDeinit)
+os.addCmd(ui.cmdClear)
 
-function cmdHelp({args}) {
-  args = u.splitCliArgs(args)
-
-  if (args.length > 2) return `usage: "help" or "help <cmd>"`
-
-  if (args.length <= 1) {
-    return [
-      `available commands:`,
-      ...a.map(os.CMDS, cmdHelpShort),
-      E(`p`, {}, E(`b`, {}, `pro tip`), `: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=plot -s=cloud run=latest"`),
-    ]
-  }
-
-  const name = args[1]
-  const cmd = os.CMDS[name]
-  if (!cmd) throw `unknown command ${a.show(name)}`
-
-  return [
-    u.LogLine(`command `, ui.BtnCmd(name), `:`),
-    callOpt(cmd.help) || callOpt(cmd.desc),
-  ]
-}
-
-function callOpt(val) {return a.isFun(val) ? val() : val}
-
-function cmdHelpShort(val) {
-  os.reqCmd(val)
-  return E(`p`, {},
-    ui.BtnCmd(val.cmd),
-    a.vac(val.help) && ui.BtnHelp(val.cmd, {class: `ml-1`}),
-    `: `, callOpt(val.desc),
-  )
-}
-
-// Initialize features that require user action.
 async function cmdInit({sig}) {
-  if (!await fs.initedFileHandles(sig)) return `FS access not initialized`
+  const hadFsAccess = await fs.loadedFileHandles()
+  if (!hadFsAccess && !await fs.initedFileHandles(sig)) return `FS access not initialized`
   if (!await w.watchStarted()) return `FS watch not initialized`
-  return `all features initialized`
+  if (!hadFsAccess) u.optStartUploadAfterInit(sig)
+  return `FS initialized`
 }
 
 function cmdInitDesc() {
-  return E(`span`, {},
-    `grant FS access, start `, ui.BtnCmd(`watch`), ` for backups`,
+  return [
+    `grant FS access, start `, os.BtnCmdWithHelp(`watch`), ` for local backups, `,
+    `run `, os.BtnCmdWithHelp(`auth`), ` for cloud backups`,
+  ]
+}
+
+function cmdInitHelp() {
+  return u.LogParagraphs(
+    cmdInitDesc(),
+    [`enables the use of `, os.BtnCmdWithHelp(`plot`), ` for analyzing locally-stored runs`],
+    [`also see `, os.BtnCmdWithHelp(`auth`), ` for cloud backups`],
   )
 }
 
 // Deinitialize features and stop all processes.
 async function cmdDeinit({sig}) {
-  const killed = await os.procKillAll()
-  return [
-    killed,
-    await fs.deinitFileHandles(sig)
-  ]
+  return u.LogParagraphs(
+    await os.procKillAll(),
+    ...await fs.deinitFileHandles(sig),
+  )
 }
 
 // Show status of features and processes.
-async function cmdStatus({sig}) {
-  return [
-    await fs.statusProgressFile(sig),
-    await fs.statusHistoryDir(sig),
-    fb.authStatus(),
-    os.showProcs(),
-  ]
+function cmdStatus() {
+  return u.LogParagraphs(
+    new fs.FileConfStatus(fs.PROGRESS_FILE_CONF),
+    new fs.FileConfStatus(fs.HISTORY_DIR_CONF),
+    fb && [`auth: `, new fb.AuthStatus()],
+    new os.Procs(),
+  )
 }
 
-const STORAGE_KEY_TEST_MODE = `tabularius_test_mode`
-const TEST_MODE = a.isSome(sessionStorage.getItem(STORAGE_KEY_TEST_MODE))
+async function main() {
+  ui.init()
 
-// Toggles test mode.
-function cmdTest() {
-  if (TEST_MODE) {
-    sessionStorage.removeItem(STORAGE_KEY_TEST_MODE)
+  // Attempt to load the FS handles before running anything else.
+  // Can be convenient for URL query "run" commands which rely on FS.
+  const loadedFs = !!await fs.loadedFileHandles().catch(u.logErr)
+  let imported = 0
+  let ran = 0
+
+  for (const [key, val] of u.urlQuery(window.location.search)) {
+    // Can plug-in arbitrary modules via URL query param.
+    if (key === `import`) {
+      if (!val) continue
+      imported++
+      await import(new URL(val, new URL(`..`, import.meta.url))).catch(u.logErr)
+      continue
+    }
+
+    // Can run arbitrary commands on startup via URL query param.
+    if (key === `run`) {
+      if (!val) continue
+      ran++
+      await os.runCmd(val).catch(u.logErr)
+    }
   }
-  else {
-    sessionStorage.setItem(STORAGE_KEY_TEST_MODE, ``)
-  }
-  window.location.reload()
-}
 
-ui.init()
+  /*
+  Custom imports are for advanced users, so we skip the intro in that case.
+  If the user wants to run stuff at this point, they can do it via URL query.
+  */
+  if (imported) return
 
-// Attempt to load the FS handles before running anything else.
-// Can be convenient for URL query "run" commands which rely on FS.
-const loadedFs = !!await fs.loadedFileHandles().catch(u.logErr)
-
-const query = new URLSearchParams(window.location.search)
-
-// Can plug-in arbitrary modules via URL query param.
-for (const val of query.getAll(`import`)) {
-  await import(new URL(val, new URL(`..`, import.meta.url))).catch(u.logErr)
-}
-
-if (TEST_MODE) {
-  u.log.info(`test mode enabled`)
-  await import(`./test.mjs`).catch(u.logErr)
-}
-
-// Can run arbitrary commands on startup via URL query param.
-const run = query.getAll(`run`)
-for (const val of run) await os.runCmd(val).catch(u.logErr)
-
-if (!TEST_MODE && !run.length) os.runCmd(`help`).catch(u.logErr)
-
-if (!TEST_MODE) {
+  u.log.info(`welcome to Tabularius! 🚀`)
+  await os.runCmd(`help`).catch(u.logErr)
   if (loadedFs) w.watchStarted().catch(u.logErr)
 
   /*
@@ -179,4 +136,13 @@ if (!TEST_MODE) {
   if (ui.MEDIA.isDefault()) {
     os.runProc(p.plotDefault, `plot_default`, `running default analysis`).catch(u.logErr)
   }
+
+  if (!loadedFs) {
+    u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`init`))
+  }
+  else {
+    fb?.recommendAuthIfNeededOrRunUpload(u.sig)
+  }
 }
+
+main().catch(u.logErr)

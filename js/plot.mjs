@@ -5,7 +5,7 @@ import * as u from './util.mjs'
 import * as c from '../funs/codes.mjs'
 import * as s from '../funs/schema.mjs'
 import * as ui from './ui.mjs'
-import * as fb from './fb.mjs'
+import * as fs from './fs.mjs'
 import * as d from './dat.mjs'
 
 import * as self from './plot.mjs'
@@ -20,85 +20,111 @@ document.head.append(E(`link`, {
 
 cmdPlot.cmd = `plot`
 cmdPlot.desc = `analyze data, visualizing with a plot 📈📉`
+
 cmdPlot.help = function cmdPlotHelp() {
-  return u.joinParagraphs(
-    `[plot] ` + cmdPlot.desc,
+  return u.LogParagraphs(
+    u.callOpt(cmdPlot.desc),
 
-    `options:`,
+    `flags:`,
 
-    u.joinLines(
-      `-p -- preset; supported presets:`,
-      `  -p=dmg -- same as "-x=roundNum -y=${s.STAT_TYPE_DMG_DONE} -z=buiTypeUpg -a=sum"`,
-      `  -p=eff -- same as "-x=roundNum -y=${s.STAT_TYPE_COST_EFF} -z=buiTypeUpg -a=avg"`,
-      `preset "dmg" is default; you can override individual options`,
+    u.LogLines(
+      BtnPromptAppendPlot(`-p`),
+      ` -- preset; can be overriden with other flags; supported values:`,
+      ...a.map(a.entries(PLOT_PRESETS), PresetHelp).map(u.indentChi),
     ),
 
-    u.joinLines(
-      `-s -- source; allowed values: ${a.show(a.keys(PLOT_AGG_SRC))}; local data requires running the "init" command to enable access to the progress file and history directory; cloud data requires running the "auth" command (in the form "auth <provider>") to enable cloud backups; the default is ${a.show(a.head(a.keys(PLOT_AGG_SRC)))}; examples:`,
-      `  plot`,
-      ...a.map(a.keys(PLOT_AGG_SRC), key => `plot -s=${key}`).map(u.indent),
+    u.LogLines(
+      [
+        BtnPromptAppendPlot(`-s`),
+        ` -- data source; local data requires running the `,
+        os.BtnCmdWithHelp(`init`),
+        ` command to enable access to the progress file and history directory; `,
+        `cloud data requires running the `,
+        os.BtnCmdWithHelp(`auth`),
+        ` command to enable cloud backups; supported values:`,
+      ],
+      ...FlagAppendBtns(PLOT_AGG_SRC, `-s`, PLOG_AGG_OPT_DEF_SRC).map(u.indentChi),
     ),
 
-    u.joinLines(
-      `-x -- X axis; allowed values: ${a.show(a.keys(s.ALLOWED_X_KEYS))}; examples:`,
-      `  plot`,
-      `  plot -x=roundNum`,
-      `  plot -x=runNum`,
+    u.LogLines(
+      [
+        BtnPromptAppendPlot(`-x`),
+        ` -- X axis; supported values:`,
+      ],
+      ...FlagAppendBtns(s.ALLOWED_X_KEYS, `-x`, PLOG_AGG_OPT_DEF_X).map(u.indentChi),
     ),
 
-    u.joinLines(
-      `-y -- Y axis; allowed values: ${a.show(a.keys(s.ALLOWED_Y_STAT_TYPES))}; examples:`,
-      `  plot`,
-      ...a.map(a.keys(s.ALLOWED_Y_STAT_TYPES), key => `plot -y=${key}`).map(u.indent),
+    u.LogLines(
+      [
+        BtnPromptAppendPlot(`-y`),
+        ` -- Y axis; supported values:`,
+      ],
+      ...FlagAppendBtns(s.ALLOWED_Y_STAT_TYPES, `-y`, PLOG_AGG_OPT_DEF_Y).map(u.indentChi),
     ),
 
-    u.joinLines(
-      `-z -- Z axis (plot series); allowed values: ${a.show(a.keys(s.ALLOWED_Z_KEYS))}; examples:`,
-      `  plot`,
-      `  plot -z=buiType`,
-      `  plot -z=buiTypeUpg`,
+    u.LogLines(
+      [
+        BtnPromptAppendPlot(`-z`),
+        ` -- Z axis (plot series); supported values:`,
+      ],
+      ...FlagAppendBtns(s.ALLOWED_Z_KEYS, `-z`, PLOG_AGG_OPT_DEF_Z).map(u.indentChi),
     ),
 
-    u.joinLines(
-      `-a -- aggregation mode; allowed values: ${a.show(a.keys(s.AGGS))}; examples:`,
-      ...a.map(a.keys(s.AGGS), key => `plot -a=${key}`).map(u.indent),
+    u.LogLines(
+      [
+        BtnPromptAppendPlot(`-a`),
+        ` -- aggregation mode; supported values:`,
+      ],
+      ...FlagAppendBtns(s.AGGS, `-a`, PLOG_AGG_OPT_DEF_AGG).map(u.indentChi),
     ),
 
-    u.joinLines(
+    u.LogLines(
       `tip: the special filter "run=" works for both "runId" and "runNum" if the input is an integer; examples:`,
-      `  plot run=123`,
-      `  plot run=some_id`,
+      [`  `, os.BtnCmd(`plot run=123`)],
+      [`  `, os.BtnCmd(`plot run=some_id`)],
     ),
 
-    u.joinLines(
+    u.LogLines(
       `tip: the special filter "round=" works for both "roundId" and "roundNum" if the input is an integer; examples:`,
-      `  plot round=123`,
-      `  plot round=some_id`,
+      [`  `, os.BtnCmd(`plot round=123`)],
+      [`  `, os.BtnCmd(`plot round=some_id`)],
     ),
 
-    u.joinLines(
-      `tip: "run=latest" or "runId=latest" filters the latest run only; examples:`,
-      `  plot -s=local run=latest`,
-      `  plot -s=cloud run=latest`,
+    u.LogLines(
+      [
+        `tip: `,
+        BtnPromptAppendPlot(`run=latest`),
+        ` or `,
+        BtnPromptAppendPlot(`runId=latest`),
+        ` filters the latest run only; examples:`,
+      ],
+      [`  `, os.BtnCmd(`plot -s=local run=latest`)],
+      [`  `, os.BtnCmd(`plot -s=cloud run=latest`)],
     ),
 
-    u.joinLines(
-      `tip: "userId=current" filters cloud data by current user id, if any; examples:`,
-      `  plot -s=cloud userId=current`,
-      `  plot -s=cloud userId=current run=latest`,
+    u.LogLines(
+      [
+        `tip: `,
+        BtnPromptAppendPlot(`userId=current`),
+        ` filters cloud data by current user id, if any; examples:`,
+      ],
+      [`  `, os.BtnCmd(`plot -s=cloud userId=current`)],
+      [`  `, os.BtnCmd(`plot -s=cloud userId=current run=latest`)],
     ),
 
     `tip: try ctrl+click / cmd+click / shift+click on plot labels`,
-    `tip: use "ls" to browse local runs`,
-    `tip: use "cls" to browse cloud runs`,
+    [`tip: use `, os.BtnCmdWithHelp(`ls`), ` to browse local runs`],
+    [`tip: use `, os.BtnCmdWithHelp(`cls`), ` to browse cloud runs`],
 
-    u.joinLines(
+    u.LogLines(
       `more examples:`,
-      `  plot -s=local -m=dmg runId=latest`,
-      `  plot -s=local -m=eff runId=latest`,
-      `  plot -s=cloud -m=dmg runId=latest`,
-      `  plot -s=cloud -m=eff runId=latest`,
-      `  plot -x=runNum -y=costEff -z=buiTypeUpg -a=avg`,
+      [`  `, os.BtnCmd(`plot`)],
+      [`  `, os.BtnCmd(`plot -s=cloud`)],
+      [`  `, os.BtnCmd(`plot -s=local -p=dmg runId=latest`)],
+      [`  `, os.BtnCmd(`plot -s=local -p=eff runId=latest`)],
+      [`  `, os.BtnCmd(`plot -s=cloud -p=dmg runId=latest`)],
+      [`  `, os.BtnCmd(`plot -s=cloud -p=eff runId=latest`)],
+      [`  `, os.BtnCmd(`plot -x=runNum -y=costEff -z=buiTypeUpg -a=avg`)],
     ),
   )
 }
@@ -125,6 +151,7 @@ export async function cmdPlotLocal(sig, inp) {
 }
 
 export async function cmdPlotCloud(sig, inp) {
+  const fb = await import(`./fb.mjs`)
   const {data} = await u.wait(sig, fb.fbCall(`plotAgg`, inp))
   ui.MEDIA.add(new Plotter(plotOptsWith({data, inp})))
 }
@@ -172,27 +199,27 @@ export function plotAggCliArgsDecode(src) {
     }
 
     if (key === `-s`) {
-      u.assUniq(out, `src`, u.reqEnum(key, val, PLOT_AGG_SRC))
+      u.assUniq(out, `src`, `-s`, u.reqEnum(key, val, PLOT_AGG_SRC))
       continue
     }
 
     if (key === `-x`) {
-      u.assUniq(out, `X`, u.reqEnum(key, val, s.ALLOWED_X_KEYS))
+      u.assUniq(out, `X`, `-x`, u.reqEnum(key, val, s.ALLOWED_X_KEYS))
       continue
     }
 
     if (key === `-y`) {
-      u.assUniq(out, `Y`, u.reqEnum(key, val, s.ALLOWED_Y_STAT_TYPES))
+      u.assUniq(out, `Y`, `-y`, u.reqEnum(key, val, s.ALLOWED_Y_STAT_TYPES))
       continue
     }
 
     if (key === `-z`) {
-      u.assUniq(out, `Z`, u.reqEnum(key, val, s.ALLOWED_Z_KEYS))
+      u.assUniq(out, `Z`, `-z`, u.reqEnum(key, val, s.ALLOWED_Z_KEYS))
       continue
     }
 
     if (key === `-a`) {
-      u.assUniq(out, `agg`, u.reqEnum(key, val, s.AGGS))
+      u.assUniq(out, `agg`, `-a`, u.reqEnum(key, val, s.AGGS))
       continue
     }
 
@@ -260,19 +287,24 @@ export function plotAggCliArgsDecode(src) {
     u.dictPush(out.where, key, val)
   }
 
-  out.src ||= a.head(PLOT_AGG_SRC)
-  out.X ||= `roundNum`
-  out.Y ||= s.STAT_TYPE_DMG_DONE
-  out.Z ||= `buiTypeUpg`
-  out.agg ||= a.head(a.keys(s.AGGS))
+  out.src ||= PLOG_AGG_OPT_DEF_SRC
+  out.X ||= PLOG_AGG_OPT_DEF_X
+  out.Y ||= PLOG_AGG_OPT_DEF_Y
+  out.Z ||= PLOG_AGG_OPT_DEF_Z
+  out.agg ||= PLOG_AGG_OPT_DEF_AGG
   return out
 }
 
-const PLOT_AGG_SRC = new Set([`local`, `cloud`])
+export const PLOT_AGG_SRC = new Set([`local`, `cloud`])
+export const PLOG_AGG_OPT_DEF_SRC = a.head(PLOT_AGG_SRC)
+export const PLOG_AGG_OPT_DEF_X = `roundNum`
+export const PLOG_AGG_OPT_DEF_Y = s.STAT_TYPE_DMG_DONE
+export const PLOG_AGG_OPT_DEF_Z = `buiTypeUpg`
+export const PLOG_AGG_OPT_DEF_AGG = a.head(a.keys(s.AGGS))
 
-const PLOT_PRESETS = new Map()
-  .set(`dmg`, {X: `roundNum`, Y: s.STAT_TYPE_DMG_DONE, Z: `buiTypeUpg`, agg: `sum`})
-  .set(`eff`, {X: `roundNum`, Y: s.STAT_TYPE_COST_EFF, Z: `buiTypeUpg`, agg: `avg`})
+export const PLOT_PRESETS = new Map()
+  .set(`dmg`, {X: PLOG_AGG_OPT_DEF_X, Y: s.STAT_TYPE_DMG_DONE, Z: PLOG_AGG_OPT_DEF_Z, agg: `sum`})
+  .set(`eff`, {X: PLOG_AGG_OPT_DEF_X, Y: s.STAT_TYPE_COST_EFF, Z: PLOG_AGG_OPT_DEF_Z, agg: `avg`})
 
 /*
 Goal: if FS is inited and we have an actual latest run, show its analysis.
@@ -280,13 +312,16 @@ Otherwise, show a sample run for prettiness sake.
 */
 export async function plotDefault({sig}) {
   try {
-    await cmdPlot({sig, args: `plot run=latest`})
+    if (await fs.loadedHistoryDir()) {
+      await cmdPlot({sig, args: `plot run=latest`})
+      return
+    }
   }
   catch (err) {
     if (u.LOG_VERBOSE) u.log.err(`error analyzing latest run: `, err)
     u.log.verb(`unable to plot latest run, plotting example run`)
-    await plotExampleRun()
   }
+  await plotExampleRun()
 }
 
 export async function plotExampleRun() {
@@ -311,7 +346,7 @@ export async function plotExampleRun() {
   const data = s.plotAggFromFacts({facts, Z_key, X_key, agg})
   const opts = plotOptsWith({data, inp})
 
-  opts.title = `example run analyzis: ` + opts.title
+  opts.title = `example run analysis: ` + opts.title
   ui.MEDIA.add(new Plotter(opts))
 }
 
@@ -735,3 +770,22 @@ function labelSortable(node, ind) {
 function labelValNode(val) {return val.childNodes[1]}
 
 function compareLabelSortable(one, two) {return two.val - one.val}
+
+function BtnPromptAppendPlot(val) {return ui.BtnPromptAppend(val, `plot`)}
+
+function PresetHelp([key, val]) {
+  return [
+    BtnPromptAppendPlot(`-p=${key}`),
+    ` -- same as `,
+    BtnPromptAppendPlot(`-x=${val.X} -y=${val.Y} -z=${val.Z} -a=${val.agg}`),
+  ]
+}
+
+function FlagAppendBtns(src, flag, def) {
+  a.reqValidStr(flag)
+  a.reqValidStr(def)
+  return a.keys(src).map(key => [
+    BtnPromptAppendPlot(`${flag}=${key}`),
+    a.vac(key === def) && ` (default)`,
+  ])
+}

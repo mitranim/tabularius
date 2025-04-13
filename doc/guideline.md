@@ -292,4 +292,4 @@ Typography:
 
 * We set the monospace font family at the top level, and don't alter it anywhere else.
 * Stick to default font size, avoid modifying it.
-* NEVER use bold or italic fonts.
+* Avoid bold or italic fonts.

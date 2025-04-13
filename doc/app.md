@@ -35,7 +35,7 @@ Unlike in regular terminals, commands don't block the prompt. Instead, each comm
 
 The media panel allows adding any amount of media items. They're vertically scrollable. The bottom item always shows currently running processes. Each process has a pid, a command's name and args, and a tiny button that kills it.
 
-In the terminal, processes can be viewed with `ps` and killed with `kill` (using `AbortController`).
+In the terminal, processes can be viewed with `ps` and killed with `kill` (via `AbortController`; our processes respect `AbortSignal` where possible).
 
 ## File system
 

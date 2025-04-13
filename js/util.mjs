@@ -21,6 +21,7 @@ tar.lib.p = p
 tar.lib.o = o
 tar.lib.od = od
 tar.lib.dr = dr
+tar.lib.tw = tw
 a.patch(window, tar)
 
 /*
@@ -168,20 +169,13 @@ export function cmdVerbose() {
   return `logging is now ` + (LOG_VERBOSE ? `verbose` : `selective`)
 }
 
-cmdClear.cmd = `clear`
-cmdClear.desc = `clear the log`
-cmdClear.help = u.joinParagraphs(
-  cmdClear.desc,
-  `pro tip: when the prompt is focused, you can also clear the log by pressing "ctrl+l" or "cmd+k"`
-)
+export const INLINE_BTN_CLS = `text-sky-800 dark:text-sky-200 hover:underline hover:decoration-dotted cursor-pointer inline`
 
-export function cmdClear() {log.clear()}
-
-const LOG_WIDTH_KEY = `tabularius_log_width`
-const LOG_WIDTH_DEFAULT = 50 // % of parent width
-const LOG_WIDTH_MIN = 10 // % of parent width
-const LOG_WIDTH_MAX = 90 // % of parent width
-const LOG_MAX_MSGS = 1024
+export const LOG_WIDTH_KEY = `tabularius_log_width`
+export const LOG_WIDTH_DEFAULT = 50 // % of parent width
+export const LOG_WIDTH_MIN = 10 // % of parent width
+export const LOG_WIDTH_MAX = 90 // % of parent width
+export const LOG_MAX_MSGS = 1024
 
 export const LOG_LINE_HEIGHT = `leading-[1.25]`
 export const LOG_SPACE_Y = `space-y-[1.25em]`
@@ -204,9 +198,9 @@ export const log = new class Log extends Elem {
   // Must be used for all error logging.
   err(...msg) {
     if (a.some(msg, isErrAbort)) return undefined
-    msg = this.addMsg({type: `err`}, ...msg)
-    if (msg) console.error(...msg)
-    return msg
+    const out = this.addMsg({type: `err`}, ...msg)
+    if (out) console.error(...msg)
+    return out
   }
 
   // Should be used for optional verbose logging.
@@ -235,7 +229,7 @@ export const log = new class Log extends Elem {
   non-existent, like in actual terminals. We want to be consistent with
   precedent, and don't want to waste vertical space. Still undecided.
   */
-  messageLog = E(`div`, {class: a.spaced(`w-full py-2 overflow-y-auto`, LOG_LINE_HEIGHT)})
+  messageLog = E(`div`, {class: a.spaced(`w-full py-2 overflow-x-hidden overflow-y-auto`, LOG_LINE_HEIGHT)})
   // messageLog = E(`div`, {class: a.spaced(`w-full py-2 overflow-y-auto`, LOG_LINE_HEIGHT, LOG_SPACE_Y)})
 
   removedMessageNotice = E(`div`, {
@@ -279,19 +273,33 @@ export const log = new class Log extends Elem {
   }
 
   addMsg(props, ...chi) {
-    const msg = this.messageLog.appendChild(LogMsg(props, ...chi))
-    if (msg) {
-      this.scrollToBottom()
-      this.enforceMessageLimit()
-    }
+    const msg = LogMsg.init(props, ...chi)
+    if (!msg) return msg
+
+    const log = this.messageLog
+    log.lastElementChild?.unsetLatest?.()
+
+    msg.setLatest()
+    log.appendChild(msg)
+    this.scrollToBottom()
+    this.enforceMessageLimit()
     return msg
   }
 
   /*
   TODO: when appending a new message, scroll to bottom ONLY if already at the
   bottom. If scrolled up, don't scroll to bottom.
+
+  TODO: don't scroll to bottom for messages printed on app startup.
   */
-  scrollToBottom() {this.messageLog.lastChild?.scrollIntoViewIfNeeded?.()}
+  scrollToBottom() {
+    const log = this.messageLog
+    const chi = log.lastChild
+    if (!chi) return
+
+    const diff = chi.getBoundingClientRect().bottom - log.getBoundingClientRect().bottom
+    if (diff > 0) log.scrollBy(0, diff * 2)
+  }
 
   resizePointerdown(eve) {
     // Prevent text selection during drag.
@@ -358,32 +366,40 @@ export const log = new class Log extends Elem {
   }
 }()
 
-function LogMsg({type} = {}, ...chi) {
-  chi = a.vac(a.flat(chi).map(logElem))
-  if (!chi) return undefined
-  chi[0].prepend(LogPrefix())
+const LOG_MSG_CLS = `px-2 font-mono whitespace-pre-wrap border-l-4`
+const LOG_MSG_CLS_ERR = `text-red-500 dark:text-red-400 border-red-500`
+const LOG_MSG_CLS_INFO = `border-transparent`
+const LOG_MSG_CLS_INFO_LATEST = `border-yellow-300 dark:border-yellow-800`
 
-  return E(
-    `pre`,
-    {
-      // Twind seems to be lacking `break-anywhere`.
-      style: {overflowWrap: `anywhere`},
-      class: a.spaced(
-        // Mandatory stuff.
-        `px-2 flex flex-col flex-wrap font-mono whitespace-pre-wrap`,
-        LOG_SPACE_Y,
+export class LogMsg extends dr.MixReg(HTMLPreElement) {
+  static init({type} = {}, ...chi) {
+    chi = logShowChi(chi)
+    if (!chi) return undefined
 
-        // Error-related stuff.
-        a.spaced(
-          `border-l-4`,
-          type === `err`
-            ? `text-red-500 dark:text-red-400 border-red-500`
-            : `border-transparent`, // Same geometry as errors.
-        ),
-      ),
-    },
-    ...chi,
-  )
+    const msg = new this()
+    msg.isErr = type === `err`
+
+    return E(
+      msg,
+      {
+        // TODO find if there's a class for this. Twind seems to lack `break-anywhere`.
+        style: {overflowWrap: `anywhere`},
+        class: a.spaced(LOG_MSG_CLS, a.vac(msg.isErr) && LOG_MSG_CLS_ERR),
+      },
+      LogPrefix(),
+      ...chi,
+    )
+  }
+
+  setLatest() {
+    if (this.isErr) return
+    E(this, {class: a.spaced(LOG_MSG_CLS, LOG_MSG_CLS_INFO_LATEST)})
+  }
+
+  unsetLatest() {
+    if (this.isErr) return
+    E(this, {class: a.spaced(LOG_MSG_CLS, LOG_MSG_CLS_INFO)})
+  }
 }
 
 function LogPrefix() {
@@ -397,17 +413,16 @@ function LogPrefix() {
   )
 }
 
-export function LogLine(...chi) {
-  chi = a.vac(a.flat(chi).map(logShow))
-  return chi && E(`p`, {}, ...chi)
+export function LogLines(...chi) {return intersperse(chi, LogNewline)}
+export function LogParagraphs(...chi) {return intersperse(chi, LogNewlines)}
+export function LogNewline() {return `\n`}
+export function LogNewlines() {return `\n\n`}
+
+export function logMsgFlash(tar) {
+  tar.classList.add(`animate-flash-light`, `dark:animate-flash-dark`)
 }
 
-// TODO: support error chains.
-function logElem(val) {
-  if (a.isNil(val) || val === ``) return undefined
-  if (a.isNode(val)) return val
-  return E(`p`, {}, logShow(val))
-}
+function logShowChi(src) {return a.vac(a.mapCompact(a.flat(src), logShow))}
 
 // TODO: support error chains.
 function logShow(val) {
@@ -466,6 +481,12 @@ export function abortController() {
 
 function abortSignalThen(...src) {return this.promise.then(...src)}
 
+/*
+Unkillable background signal, for browser REPL convenience and for rare cases
+where we need to suppress cancelation.
+*/
+export const sig = abortController().signal
+
 export function isSig(val) {
   return a.isInst(val, AbortSignal) && a.isPromise(val)
 }
@@ -494,7 +515,11 @@ export function logCmdDone(name, out) {
 
 export function logCmdFail(name, err) {
   a.reqValidStr(name)
+  // log.err(name)
   log.err(`[${name}] `, err)
+
+  // if (a.isArr(err)) log.err(`[${name}] `, ...err)
+  // else log.err(`[${name}] `, err)
 }
 
 /*
@@ -551,7 +576,17 @@ export function jsonCompressEncode(src) {
 }
 
 export async function compressEncode(src) {
-  return toBase64(await (await gzip(src)).bytes())
+  src = await gzip(src)
+  src = await resBytes(src)
+  src = toBase64(src)
+  return src
+}
+
+export async function resBytes(src) {
+  a.reqInst(src, Response)
+  src = await a.resOk(src)
+  // At the time of writing, only recent browsers have `Response..bytes()`.
+  return src.bytes?.() ?? new Uint8Array(await src.arrayBuffer())
 }
 
 /*
@@ -611,12 +646,11 @@ export function unGzip(src) {
   return new Response(src).text()
 }
 
-/*
-Takes a source string to gzip and returns a `Response`.
-The caller is free to call `.arrayBuffer()` or `.bytes()`.
-*/
+// Takes a source string to gzip and returns a `Response`.
 export async function gzip(src) {
-  src = new Response(a.reqStr(src)).body
+  a.reqStr(src)
+  src = new Response(src)
+  src = src.body
   src = await src.pipeThrough(new CompressionStream(`gzip`))
   return new Response(src)
 }
@@ -700,10 +734,11 @@ export function cliBool(key, val) {
 
 const CLI_BOOL = new Set([``, `true`, `false`])
 
-export function assUniq(tar, key, val) {
+export function assUniq(tar, key, desc, val) {
   a.reqDict(tar)
   a.reqValidStr(key)
-  if (key in tar) throw Error(`redundant ${a.show(key)}`)
+  a.reqValidStr(desc)
+  if (key in tar) throw Error(`redundant ${a.show(desc)}`)
   tar[key] = val
 }
 
@@ -725,10 +760,10 @@ export function arrRemoved(tar, val) {
 }
 
 /*
-The implementation of "try-lock" behavior missing from the standard DOM API,
-which insists on blocking our promise if the acquisition is successful, going
-against the nature of "try-locking", which should always immediately return,
-reporting if the attempt was successful.
+Implements the "try-lock" behavior missing from the standard DOM API,
+which insists on blocking our promise if the acquisition is successful,
+going against the nature of "try-locking", which should always return
+immediately, reporting if the attempt was successful.
 
 If the returned unlock function is non-nil, the caller must use `try/finally`
 to reliably release the lock.
@@ -737,8 +772,13 @@ export function lockOpt(name) {
   return lockWith(name, {ifAvailable: true})
 }
 
+export async function lockHeld(name) {
+  a.reqValidStr(name)
+  return !!(await navigator.locks.query(name))?.held?.length
+}
+
 /*
-A non-callback version of `navigator.locks.request` suitable for async funcs.
+A non-callback version of `navigator.locks.request` suitable for async funs.
 Always returns an unlock function, and the caller must use `try/finally` to
 reliably release the lock.
 */
@@ -879,3 +919,132 @@ function whereField([key, src]) {
   }
   return out
 }
+
+export function intersperse(src, fun) {
+  const buf = []
+  for (src of a.values(src)) buf.push(src, callOpt(fun))
+  buf.pop()
+  return buf
+}
+
+export function callOpt(val) {return a.isFun(val) ? val() : val}
+
+/*
+In a few places we suggest appending `?<some_stuff>` to the URL query.
+Most users wouldn't know that if there's already stuff in the query,
+then you must apppend with `&` rather than `?`. And it's a pain even
+if you know it. Frankly, whoever designed the format made a mistake.
+So we rectify it.
+*/
+export function urlQuery(src) {
+  return new URLSearchParams(a.split(src, `?`).join(`&`))
+}
+
+export function BtnUrlAppend(val) {
+  a.reqValidStr(val)
+  return E(
+    `button`, {
+      type: `button`,
+      class: INLINE_BTN_CLS,
+      onclick() {window.location += val},
+    },
+    val,
+  )
+}
+
+export function Btn(chi, fun) {
+  a.reqSome(chi)
+  a.reqFun(fun)
+
+  return E(
+    `button`,
+    {
+      type: `button`,
+      class: `px-1 inline whitespace-nowrap bg-gray-200 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-300 dark:hover:bg-gray-600`,
+      onclick: fun,
+    },
+    chi,
+  )
+}
+
+export function alignTable(rows) {
+  const cols = []
+
+  return a.reqArr(rows).map(makeRow).map(alignRow)
+
+  function makeRow(src) {
+    a.reqArr(src)
+    const out = []
+    let ind = -1
+
+    while (++ind < src.length) {
+      const pair = tableCellPair(src[ind])
+      out[ind] = pair
+      cols[ind] = Math.max(cols[ind] | 0, pair[1])
+    }
+    return out
+  }
+
+  function alignRow(src) {return src.map(alignCell)}
+
+  function alignCell([val, len], ind) {
+    if (isLastCol(ind)) return val
+    return tableCellPad(val, len, cols[ind] | 0)
+  }
+
+  function isLastCol(ind) {
+    while (++ind < cols.length) if (cols[ind]) return false
+    return true
+  }
+}
+
+function tableCellPair(src) {
+  if (a.isNode(src)) return [src, src.textContent.length]
+  src = a.renderLax(src)
+  return [src, src.length]
+}
+
+function tableCellPad(src, len, max) {
+  if (a.isNode(src)) return [src, ` `.repeat(Math.max(0, max - len))]
+  return src.padEnd(max | 0, ` `)
+}
+
+export async function optStartUploadAfterInit(sig) {
+  const {fb} = await cloudFeatureImport
+  if (!fb) return
+  if (!await fb.nextUser(sig)) return
+  await optStartUploadAfterAuth(sig)
+}
+
+export async function optStartUploadAfterAuth() {
+  const [os, fs] = await Promise.all([import(`./os.mjs`), import(`./fs.mjs`)])
+  if (!await fs.loadedHistoryDir().catch(logErr)) return
+  os.runCmd(`upload -p /`)
+}
+
+export const cloudFeatureImport = async function cloudFeatureImport() {
+  const out = a.Emp()
+  const msg = `import cloud-related modules; cloud backups and analytics will be unavailable`
+  let res
+
+  try {
+    res = await Promise.race([
+      a.after(a.minToMs(1), sig),
+      Promise.all([import(`./fb.mjs`), import(`./upload.mjs`)]),
+    ])
+  }
+  catch (err) {
+    log.err(`unable to ${msg}; error: `, err)
+    return out
+  }
+
+  if (a.isArr(res)) {
+    const [fb, up] = res
+    out.fb = fb
+    out.up = up
+    return out
+  }
+
+  log.err(`timed out trying to ${msg}`)
+  return out
+}()

@@ -26,6 +26,8 @@ export function reqArrOfValidStr(val) {return a.reqArrOf(val, a.isValidStr)}
 export function optArrOfValidStr(val) {return a.optArrOf(val, a.isValidStr)}
 
 export function indent(src) {return a.optStr(src) ? `  ` + src : ``}
+export function indentChi(src) {return a.vac(src) && [`  `, src]}
+
 export function joinKeys(...src) {return a.joinOptLax(src, `_`)}
 export function joinSpaced(...src) {return a.joinOptLax(src, ` `)}
 export function joinLines(...src) {return a.joinLinesOptLax(src)}
