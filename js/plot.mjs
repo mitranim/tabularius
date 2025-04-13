@@ -108,7 +108,7 @@ export function cmdPlot({sig, args}) {
   const src = u.dictPop(inp, `src`)
   if (src === `local`) return cmdPlotLocal(sig, inp)
   if (src === `cloud`) return cmdPlotCloud(sig, inp)
-  throw Error(`unknown plot data source ${a.show(src)}`)
+  throw `unknown plot data source ${a.show(src)}`
 }
 
 export async function cmdPlotLocal(sig, inp) {

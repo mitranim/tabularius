@@ -79,6 +79,13 @@ export function cmdAuth({args}) {
   throw `unknown auth mode ${a.show(mode)}`
 }
 
+export function authStatus() {
+  const {user, known} = fbObs
+  if (!known) return `auth: unknown, waiting for response`
+  if (!user) return `auth: unauthenticated, run "auth" to login`
+  return `auth: logged in as ${user.uid}`
+}
+
 export function reqFbUserId() {
   const id = fbObs.user?.uid
   if (id) return id

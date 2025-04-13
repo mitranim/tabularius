@@ -147,9 +147,9 @@ export function procToStatus(src) {
 }
 
 export function showProcs() {
-  if (!a.len(PROCS)) return `No active processes`
+  if (!a.len(PROCS)) return `no active processes`
   return u.joinLines(
-    `Active processes (pid, name, status):`,
+    `active processes (pid, name, status):`,
     ...a.map(PROCS, procToStatus),
   )
 }

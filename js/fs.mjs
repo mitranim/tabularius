@@ -414,7 +414,7 @@ cmdDecode.help = u.joinParagraphs(
     `  decode 0000 -p`,
   ),
   `the decoded result is written to "<run_id>.json" in the history directory`,
-  `the flag -p enables JSON pretty-printing`,
+  `the flag "-p" enables JSON pretty-printing`,
 )
 
 export async function cmdDecode({sig, args}) {

@@ -27,6 +27,11 @@ The SPA may provide an option to roll back the save.
 - [x] It takes either `/`, or `<run_id>`, or `<run_id>/<round_id>`.
 - [x] It walks the resulting dirs, uploading rounds one by one.
 - [x] To display progress in the terminal, it adds one reactive element and continuously updates it, to avoid spam. Something like:
+- [x] Automatically derive our star schema server-side.
+- [ ] Automatic cloud uploads when authed.
+  - [ ] Probably requires us to drop cost efficiency from the schema, and derive it client-side, because the source data doesn't store the ".SellPrice" of buildings properly.
+  - [ ] Use a mutex to ensure only one tab and one process does the uploading, like in `watch`.
+  - [ ] New rounds detected by `watch` should trigger upload.
 
 ```
 uploading run A of N (id <id>)...
@@ -63,13 +68,7 @@ After reading a progress file:
   - [x] How does this interact with rollbacks and forks? Our `watch` command treats rolled-back rounds as new runs, and creates _incomplete_ backups of those new runs, starting at the round just after the fork. For the purpose of global analytics, that's probably not wrong. For the user, this also lets them tell apart the branches. The only inconvenience is being unable to view an entire branch.
 - [x] Add the cloud document id to the file's data, and write it to disk, with the proper encoding.
 
-- [ ] Automatic cloud uploads when authed.
-- [ ] Automatically derive our star schema server-side.
-  - [ ] Probably requires us to drop cost efficiency from the schema, and derive it client-side, because the source data doesn't store the ".SellPrice" of buildings properly.
-
 Also: consider uploading runs concurrently.
-
-Use a mutex to ensure only one tab and one process does the uploading, like in `watch`.
 
 ### Cleanup
 
@@ -493,7 +492,7 @@ An option to overwrite the source progress file with the content of the given ou
 
 ---
 
-`logShow`: support error chains.
+`logElem` / `logShow`: support error chains.
 
 ---
 
@@ -889,3 +888,7 @@ Top right: collapse text into icons: Steam (add TD link), Discord, Github.
 ---
 
 Make plot titles human-readable.
+
+---
+
+Consolidate initialization and status (FS and auth).

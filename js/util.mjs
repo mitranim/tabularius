@@ -172,7 +172,7 @@ cmdClear.cmd = `clear`
 cmdClear.desc = `clear the log`
 cmdClear.help = u.joinParagraphs(
   cmdClear.desc,
-  `pro tip: when the prompt is focused, you can also clear the log by pressing "ctrl+l" or "meta+k" ("meta" is also known as "cmd" / "win" / "super" depending on your keyboard and OS)`
+  `pro tip: when the prompt is focused, you can also clear the log by pressing "ctrl+l" or "cmd+k"`
 )
 
 export function cmdClear() {log.clear()}
@@ -199,23 +199,19 @@ export function logErr(err) {log.err(err)}
 
 export const log = new class Log extends Elem {
   // Must be used for all info logging.
-  info(...msg) {
-    if (!a.vac(msg)) return
-    return this.addMsg({}, ...msg)
-  }
+  info(...msg) {return this.addMsg({}, ...msg)}
 
   // Must be used for all error logging.
   err(...msg) {
-    if (!a.vac(msg)) return
-    if (a.some(msg, isErrAbort)) return
-    console.error(...msg)
-    return this.addMsg({type: `err`}, ...msg)
+    if (a.some(msg, isErrAbort)) return undefined
+    msg = this.addMsg({type: `err`}, ...msg)
+    if (msg) console.error(...msg)
+    return msg
   }
 
   // Should be used for optional verbose logging.
   verb(...msg) {
-    if (!LOG_VERBOSE) return
-    if (!a.vac(msg)) return
+    if (!LOG_VERBOSE) return undefined
     return this.addMsg({}, ...msg)
   }
 
@@ -284,8 +280,10 @@ export const log = new class Log extends Elem {
 
   addMsg(props, ...chi) {
     const msg = this.messageLog.appendChild(LogMsg(props, ...chi))
-    this.scrollToBottom()
-    this.enforceMessageLimit()
+    if (msg) {
+      this.scrollToBottom()
+      this.enforceMessageLimit()
+    }
     return msg
   }
 
@@ -361,12 +359,19 @@ export const log = new class Log extends Elem {
 }()
 
 function LogMsg({type} = {}, ...chi) {
+  chi = a.vac(a.flat(chi).map(logElem))
+  if (!chi) return undefined
+  chi[0].prepend(LogPrefix())
+
   return E(
     `pre`,
     {
+      // Twind seems to be lacking `break-anywhere`.
+      style: {overflowWrap: `anywhere`},
       class: a.spaced(
         // Mandatory stuff.
-        `px-2 font-mono whitespace-pre-wrap break-words overflow-wrap-anywhere`,
+        `px-2 flex flex-col flex-wrap font-mono whitespace-pre-wrap`,
+        LOG_SPACE_Y,
 
         // Error-related stuff.
         a.spaced(
@@ -375,23 +380,40 @@ function LogMsg({type} = {}, ...chi) {
             ? `text-red-500 dark:text-red-400 border-red-500`
             : `border-transparent`, // Same geometry as errors.
         ),
-      )
+      ),
     },
-    E(
-      `span`,
-      {
-        class: `text-gray-500 dark:text-gray-400`,
-        'data-tooltip': timeFormat.format(Date.now()),
-      },
-      `> `
-    ),
-    a.map(chi, logShow),
+    ...chi,
   )
+}
+
+function LogPrefix() {
+  return E(
+    `span`,
+    {
+      class: `text-gray-500 dark:text-gray-400`,
+      'data-tooltip': timeFormat.format(Date.now()),
+    },
+    `> `,
+  )
+}
+
+export function LogLine(...chi) {
+  chi = a.vac(a.flat(chi).map(logShow))
+  return chi && E(`p`, {}, ...chi)
+}
+
+// TODO: support error chains.
+function logElem(val) {
+  if (a.isNil(val) || val === ``) return undefined
+  if (a.isNode(val)) return val
+  return E(`p`, {}, logShow(val))
 }
 
 // TODO: support error chains.
 function logShow(val) {
-  if (a.isStr(val) || a.isNode(val)) return val
+  if (a.isNil(val) || val === ``) return undefined
+  if (a.isStr(val)) return val
+  if (a.isNode(val)) return val
   return a.show(val)
 }
 
@@ -466,9 +488,7 @@ export function wait(sig, ...src) {
 
 export function logCmdDone(name, out) {
   a.reqValidStr(name)
-  if (a.isNode(out)) log.info(out)
-  else if (a.isArr(out) && a.vac(out)) log.info(...out)
-  else if (a.isSome(out)) log.info(out)
+  if (a.vac(out)) log.info(out)
   else log.verb(`[${name}] done`)
 }
 

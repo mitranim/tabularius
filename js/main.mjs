@@ -14,7 +14,8 @@ tar.m = self
 a.patch(window, tar)
 
 /*
-All CLI commands should be added here so that we can control the ordering.
+CLI commands may be defined in arbitrary modules. They should all be registered
+here, rather than in the origin modules, so that we can control the ordering.
 */
 
 cmdHelp.cmd = `help`
@@ -30,7 +31,7 @@ cmdHelp.help = u.joinParagraphs(
 os.addCmd(cmdHelp)
 
 cmdInit.cmd = `init`
-cmdInit.desc = `grant FS access, start "watch" for backups`
+cmdInit.desc = cmdInitDesc
 os.addCmd(cmdInit)
 
 cmdDeinit.cmd = `deinit`
@@ -41,17 +42,18 @@ cmdStatus.cmd = `status`
 cmdStatus.desc = `show status of app features and processes`
 os.addCmd(cmdStatus)
 
+os.addCmd(fs.cmdLs)
+os.addCmd(fs.cmdShow)
+os.addCmd(fs.cmdShowSaves)
+os.addCmd(fs.cmdDecode)
+os.addCmd(p.cmdPlot)
+
 os.addCmd(w.cmdWatch)
 os.addCmd(fb.cmdAuth)
 os.addCmd(fb.cmdUpload)
 os.addCmd(fb.cmdCls)
 os.addCmd(os.cmdPs)
 os.addCmd(os.cmdKill)
-os.addCmd(fs.cmdLs)
-os.addCmd(fs.cmdShow)
-os.addCmd(fs.cmdShowSaves)
-os.addCmd(fs.cmdDecode)
-os.addCmd(p.cmdPlot)
 os.addCmd(u.cmdVerbose)
 os.addCmd(u.cmdClear)
 
@@ -63,31 +65,35 @@ os.addCmd(cmdTest)
 function cmdHelp({args}) {
   args = u.splitCliArgs(args)
 
+  if (args.length > 2) return `usage: "help" or "help <cmd>"`
+
   if (args.length <= 1) {
     return [
       `available commands:`,
-      E(`div`, {class: u.LOG_SPACE_Y},
-        ...a.map(os.CMDS, cmdHelpShort),
-        E(`p`, {}, E(`b`, {}, `pro tip`), `: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=plot 0000"`),
-      ),
+      ...a.map(os.CMDS, cmdHelpShort),
+      E(`p`, {}, E(`b`, {}, `pro tip`), `: can run commands on startup via URL query parameters; for example, try appending to the URL: "?run=plot -s=cloud run=latest"`),
     ]
   }
-
-  if (args.length > 2) return `usage: "help" or "help <cmd>"`
 
   const name = args[1]
   const cmd = os.CMDS[name]
   if (!cmd) throw `unknown command ${a.show(name)}`
 
-  return u.joinParagraphs(
-    `command ${a.show(name)}:`,
-    (a.isFun(cmd.help) ? cmd.help() : cmd.help) || cmd.desc,
-  )
+  return [
+    u.LogLine(`command `, ui.BtnCmd(name), `:`),
+    callOpt(cmd.help) || callOpt(cmd.desc),
+  ]
 }
+
+function callOpt(val) {return a.isFun(val) ? val() : val}
 
 function cmdHelpShort(val) {
   os.reqCmd(val)
-  return E(`p`, {}, ui.BtnCmd(val.cmd), `: `, val.desc)
+  return E(`p`, {},
+    ui.BtnCmd(val.cmd),
+    a.vac(val.help) && ui.BtnHelp(val.cmd, {class: `ml-1`}),
+    `: `, callOpt(val.desc),
+  )
 }
 
 // Initialize features that require user action.
@@ -97,22 +103,29 @@ async function cmdInit({sig}) {
   return `all features initialized`
 }
 
+function cmdInitDesc() {
+  return E(`span`, {},
+    `grant FS access, start `, ui.BtnCmd(`watch`), ` for backups`,
+  )
+}
+
 // Deinitialize features and stop all processes.
 async function cmdDeinit({sig}) {
   const killed = await os.procKillAll()
-  return a.joinLinesOptLax([
+  return [
     killed,
     await fs.deinitFileHandles(sig)
-  ].flat())
+  ]
 }
 
 // Show status of features and processes.
 async function cmdStatus({sig}) {
-  return u.joinLines(
+  return [
     await fs.statusProgressFile(sig),
     await fs.statusHistoryDir(sig),
+    fb.authStatus(),
     os.showProcs(),
-  )
+  ]
 }
 
 const STORAGE_KEY_TEST_MODE = `tabularius_test_mode`

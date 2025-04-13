@@ -3,11 +3,11 @@
 We're developing a SPA with the following goals:
 * Make periodic snapshots of a save file from a game.
   * Store snapshots to a user-chosen directory, building a history.
-  * Optional: upload snapshots to Firebase.
+  * Upload snapshots to Firestore.
 * Display run history.
 * Analyze the data, with visualizations, plots.
   * Analyze local data.
-  * Optional: query global data from Firebase for more broad analysis.
+  * Query global data from Firestore for more broad analysis.
 
 In development, the SPA is hosted by a local server running in Deno. In production, it's hosted on GitHub Pages.
 
@@ -51,4 +51,12 @@ The `init` command requests FS access and starts the `watch` process, which can 
 
 The `watch` process watches the progress file in the save directory, detects modifications, detects new rounds, makes one backup per round per run (no redundancies), making new run directories when necessary. It also broadcasts FS events to all instances of our app (browser tabs), making it possible to update their plots on the fly.
 
-The `upload` command makes it possible to upload backups to Firebase. Currently it's manual; we plan to make it automatic after authenticating.
+The `upload` command makes it possible to upload backups to Firestore. Currently it's manual; we plan to make it automatic after authenticating.
+
+## Cloud
+
+When authenticated, run history is uploaded to Firestore (currently manually). By using cloud functions, we derive our own schema suitable for analytics.
+
+## Analytics and plots
+
+We support filtering, grouping, aggregating stats over fairly arbitrary parameters (via the `plot` command). This is supported for both local and cloud data (selected with the `-s` flag).

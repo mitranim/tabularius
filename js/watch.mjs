@@ -2,6 +2,7 @@ import * as a from '@mitranim/js/all.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
+import * as ui from './ui.mjs'
 
 import * as self from './watch.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -44,15 +45,11 @@ const WATCH_MAX_ERRS = 3
 
 cmdWatch.cmd = `watch`
 cmdWatch.desc = `watch the progress file for changes and create backups`
-cmdWatch.help = u.joinParagraphs(
-  cmdWatch.desc,
-  `requires running "init" first (just once) to grant FS access`,
-  `can be stopped via "kill watch" (one-off) or "deinit" (permanent until "init")`,
-)
+cmdWatch.help = cmdWatchHelp
 
 export async function cmdWatch(proc) {
   const {sig} = proc
-  if (isWatching()) return `already running`
+  if (isWatching()) return `[watch] already running`
 
   proc.desc = `acquiring lock`
   let unlock = await u.lockOpt(WATCH_LOCK_NAME)
@@ -72,6 +69,22 @@ export async function cmdWatch(proc) {
   proc.desc = `watching and backing up`
   try {return await cmdWatchUnsync(sig)}
   finally {unlock()}
+}
+
+function cmdWatchHelp() {
+  return [
+    cmdWatch.desc,
+    u.LogLine(
+      `requires running `,
+      ui.BtnCmd(`init`),
+      ` first (just once) to grant FS access; can be stopped via `,
+      ui.BtnCmd(`kill watch`),
+      ` (one-off) or `,
+      ui.BtnCmd(`deinit`),
+      ` (permanent until `,
+      ui.BtnCmd(`init`),`)`,
+    ),
+  ]
 }
 
 export async function cmdWatchUnsync(sig) {
@@ -114,10 +127,10 @@ async function watchInit(sig, state) {
   a.final(state, `historyDirHandle`, fs.HISTORY_DIR)
 
   if (!state.progressFileHandle) {
-    throw Error(`missing progress file handle, run "init" to initialize`)
+    throw [`missing progress file handle, run `, ui.BtnCmd(`init`), ` to initialize`]
   }
   if (!state.historyDirHandle) {
-    throw Error(`missing history dir handle, run "init" to initialize`)
+    throw [`missing history dir handle, run `, ui.BtnCmd(`init`), ` to initialize`]
   }
 
   const runDir = await fs.findLatestRunDir(sig, state.historyDirHandle)
@@ -129,10 +142,10 @@ async function watchInit(sig, state) {
   )
   await state.setRoundFile(roundFile?.name)
 
-  u.log.info(`[watch] initialized: `, {
+  u.log.info(u.LogLine(`[watch] initialized: `, {
     run: state.runDirName,
     round: state.roundFileName,
-  })
+  }))
 }
 
 /*

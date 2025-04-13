@@ -145,6 +145,19 @@ export function BtnCmd(cmd) {
   )
 }
 
+export function BtnHelp(cmd, {class: cls} = {}) {
+  a.reqValidStr(cmd)
+  return E(
+    `button`,
+    {
+      type: `button`,
+      class: a.spaced(cls, `text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200`),
+      onclick() {os.runCmd(`help ${cmd}`).catch(u.logErr)},
+    },
+    `?`,
+  )
+}
+
 const MEDIA_CHI_CLS = `border border-gray-300 dark:border-gray-700 rounded bg-gray-100 dark:bg-gray-800`
 const MEDIA_CHI_PAD = `p-4`
 
