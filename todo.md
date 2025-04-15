@@ -505,7 +505,7 @@ Consolidate `show`, `decode`, `show_saves` into one command. It should also supp
 
 ---
 
-Consolidate `status` and `ps`.
+<!-- Consolidate `status` and `ps`. -->
 
 ---
 

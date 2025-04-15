@@ -43,10 +43,7 @@ if (up) os.addCmd(up.cmdUpload)
 cmdStatus.cmd = `status`
 cmdStatus.desc = `show status of app features and processes`
 
-// FIXME consolidate
 os.addCmd(cmdStatus)
-// os.addCmd(os.cmdPs)
-
 os.addCmd(os.cmdKill)
 os.addCmd(u.cmdVerbose)
 

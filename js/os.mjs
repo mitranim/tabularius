@@ -141,10 +141,6 @@ export async function runProc(fun, args, desc, obs) {
   }
 }
 
-cmdPs.cmd = `ps`
-cmdPs.desc = `list running processes`
-export function cmdPs() {return new Procs()}
-
 export function procToStatus(src) {
   a.reqInst(src, Proc)
   return [
