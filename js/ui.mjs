@@ -275,10 +275,9 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
     u.storageSet(sessionStorage, PROMPT_HIST_KEY)
   }
 
-  addSpaced(suf, pre) {
-    if (a.optStr(suf))
-    if (a.optStr(pre))
-    if (!suf && !pre) return
+  addSpaced(pre, suf) {
+    if (a.reqValidStr(suf))
+    if (a.reqValidStr(pre))
     if (this.value) this.value = a.spaced(a.trim(this.value), a.trim(suf))
     else this.value = a.spaced(a.trim(pre), a.trim(suf))
     this.focus()
@@ -299,7 +298,7 @@ class SubmittedCmd extends u.ReacElem {
       a.vac(proc) && [
         ` `,
         E(`span`, {class: `text-gray-500 dark:text-gray-400`},
-          `(running; `, os.BtnCmd(`kill ${proc.id}`), `)`
+          `(`, a.vac(proc.desc) || `running`, `; `, os.BtnCmd(`kill ${proc.id}`), `)`
         )
       ],
     )
@@ -369,9 +368,14 @@ export const PROMPT = E(
   PROMPT_INPUT,
 )
 
+export function BtnPrompt(src) {
+  const [head, ...tail] = u.splitCliArgs(src)
+  return BtnPromptAppend(head, tail.join(` `), src)
+}
+
 export function BtnPromptAppend(pre, suf, alias) {
+  a.reqValidStr(pre)
   a.reqValidStr(suf)
-  a.optStr(pre)
   a.optStr(alias)
 
   return E(
@@ -379,7 +383,7 @@ export function BtnPromptAppend(pre, suf, alias) {
     {
       type: `button`,
       class: u.INLINE_BTN_CLS,
-      onclick() {PROMPT_INPUT.addSpaced(suf, pre)},
+      onclick() {PROMPT_INPUT.addSpaced(pre, suf)},
     },
     alias || suf,
   )

@@ -251,10 +251,10 @@ export class UploadProgress extends u.ReacElem {
   run() {
     const {status, runsChecked, roundsChecked, roundsUploaded} = this.obs
     E(this, {}, `upload progress:
-status: ${status}
-runs checked: ${runsChecked}
-rounds checked: ${roundsChecked}
-rounds uploaded: ${roundsUploaded}
+  status: ${status}
+  runs checked: ${runsChecked}
+  rounds checked: ${roundsChecked}
+  rounds uploaded: ${roundsUploaded}
 `)
   }
 }
