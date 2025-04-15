@@ -283,15 +283,11 @@ export function cmdHelpShort(val) {
 }
 
 export function BtnCmdWithHelp(cmd) {
-  let name
-  if (a.isFun(cmd)) {
-    reqCmd(cmd)
-    name = cmd.cmd
-  }
-  else name = a.reqValidStr(cmd)
+  if (a.isFun(cmd)) reqCmd(cmd)
+  else cmd = reqCmdByName(cmd)
 
-  if (!a.vac(cmd?.help)) return BtnCmd(name)
-  return [BtnCmd(name), BtnHelp(name, {class: `ml-1`})]
+  if (!a.vac(cmd?.help)) return BtnCmd(cmd.cmd)
+  return [BtnCmd(cmd.cmd), BtnHelp(cmd.cmd, {class: `ml-1`})]
 }
 
 export function BtnCmd(cmd) {
