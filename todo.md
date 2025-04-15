@@ -912,3 +912,19 @@ Support special identifier `latest` in more commands. Add this to their help, as
 <!-- Disable automatic Firestore indexing for round snapshots. -->
 
 ---
+
+Keyboard hotkeys for activating visible clickables in the log. For example, holding Alt might enumerate them and show numbers; pressing a number activates the corresponding clickable.
+
+---
+
+Have something clickable somewhere which is always displayed which runs `help`, so you can never be without help. Maybe on the left side of the prompt. (Some kinda "home" or "help" emoji maybe.)
+
+---
+
+In `plot` help, unusable / useless parameters should be shown but disabled (greyed out). For example, when not logged in, current user filter; when cloud is unavailable, cloud-related stuff; when FS unavailable, local-only stuff.
+
+---
+
+When running `plot -s=cloud userId=current`, if not authed, try to auth.
+
+---

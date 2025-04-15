@@ -175,7 +175,7 @@ export function plotOptsWith({data, inp}) {
     // TODO human readability.
     title: `${inp.agg} of ${inp.Y} per ${inp.Z} per ${inp.X}`,
     series: [{label: inp.X}, ...Z_rows],
-    data: [X_row, ...Z_X_Y_arr],
+    data: [X_row, ...a.arr(Z_X_Y_arr)],
     axes: axes(inp.X, inp.Y),
   }
 }
