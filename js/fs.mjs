@@ -419,15 +419,15 @@ cmdShow.help = function cmdShowHelp() {
     u.callOpt(cmdShow.desc),
     u.LogLines(
       `usage:`,
-      [`  `, os.BtnCmd(`show latest`), ` (`, ui.BtnPromptAppend(`latest`, `show`), `)`],
+      [`  `, os.BtnCmd(`show latest`), ` (`, ui.BtnPromptAppend(`show`, `latest`), `)`],
       `  show <dir>/<file>`,
       `  show <dir>/<file> <flags>`,
     ),
     u.LogLines(
       `flags:`,
-      [`  `, ui.BtnPromptAppend(`-c`, `show`), ` -- copy decoded JSON to clipboard`],
-      [`  `, ui.BtnPromptAppend(`-l`, `show`), ` -- log decoded JSON to browser console`],
-      [`  `, ui.BtnPromptAppend(`-p`, `show`), ` -- print decoded object to browser console`],
+      [`  `, ui.BtnPromptAppend(`show``-c`, ), ` -- copy decoded JSON to clipboard`],
+      [`  `, ui.BtnPromptAppend(`show``-l`, ), ` -- log decoded JSON to browser console`],
+      [`  `, ui.BtnPromptAppend(`show``-p`, ), ` -- print decoded object to browser console`],
     ),
     u.LogLines(
       `examples:`,
@@ -501,7 +501,7 @@ cmdDecode.help = function cmdDecodeHelp() {
       `  decode <run_id>`,
       `  decode <run_id> -p`,
     ),
-    [`the flag `, ui.BtnPromptAppend(`-p`, `decode`), ` enables JSON pretty-printing`],
+    [`the flag `, ui.BtnPromptAppend(`decode`, `-p`), ` enables JSON pretty-printing`],
     `the decoded result is written to "<run_id>.json" in the history directory`,
     [`tip: use `, os.BtnCmdWithHelp(`ls`), ` to browse local runs`],
   )

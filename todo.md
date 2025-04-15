@@ -939,25 +939,27 @@ In `plot` help, unusable / useless parameters should be shown but disabled (grey
 
 ---
 
-When running `plot -s=cloud userId=current`, if not authed, try to auth.
+<!-- When running `plot -s=cloud userId=current`, if not authed, try to auth. -->
+
+(Printed an error with the `auth` command mentioned.)
 
 ---
 
-In `plot` help, explain how to logical OR.
+<!-- In `plot` help, explain how to logical OR. -->
 
 ---
 
-`plot` without args should print help.
+<!-- `plot` without args should print help. -->
 
 ---
 
-In `plot`, filter by current user by default; `user=all` should be opt-in. When not authed, select one user (how?).
+<!-- In `plot`, filter by current user by default; `user=all` should be opt-in. When not authed, select one user (how?). -->
 
-Same for runs: filter by latest run by default; providing any `run=` or `runId=` overrides that; special `run=all` suppresses the default without adding an actual filter.
+<!-- Same for runs: filter by latest run by default; providing any `run=` or `runId=` overrides that; special `run=all` suppresses the default without adding an actual filter. -->
 
 ---
 
-In `plot`, maybe `-y` should be repeatable, as "or". Maybe it makes no sense.
+<!-- In `plot`, maybe `-y` should be repeatable, as "or". Maybe it makes no sense. -->
 
 ---
 

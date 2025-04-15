@@ -11,7 +11,7 @@ import * as p from './plot.mjs'
 // Some tricky cases need a loop inside a benchmark to bench true.
 const REPEAT_COUNT = 65_536
 
-const plotAggInp = p.plotAggCliArgsDecode(``)
+const plotAggInp = p.cmdPlotDecodeArgs(``)
 delete plotAggInp.src
 const plotAggOpt = s.validPlotAggOpt(plotAggInp)
 
@@ -25,21 +25,24 @@ const whereFields_compiled = u.whereFields(plotAggOpt.where)
 const whereFields_interpreted = u.whereFields(plotAggOpt.where)
 
 function whereFieldsInterpreted(src) {
-  const funs = a.mapFlat(a.entries(src), whereFuns)
+  const groups = a.mapCompact(a.entries(src), whereGroup)
+  if (!groups.length) return undefined
 
   return function whereFieldsInterpreted(tar) {
-    for (const fun of funs) if (!fun(tar)) return false
+    outer:
+    for (const group of groups) {
+      for (const [key, val] of group) {
+        if (tar?.[key] === val) continue outer
+      }
+      return false
+    }
     return true
   }
 }
 
-function whereFuns([key, vals]) {
+function whereGroup([key, vals]) {
   a.reqStructKey(key)
-  const out = []
-  for (const val of a.values(vals)) {
-    out.push(function whereField(src) {return src?.[key] === val})
-  }
-  return out
+  return a.vac(a.map(vals, val => [key, val]))
 }
 
 // Indicates benchmark accuracy. Should be single digit nanoseconds, ideally 0.

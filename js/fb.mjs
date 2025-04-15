@@ -60,7 +60,7 @@ export function nextUser(sig) {
   u.reqSig(sig)
   if (fbObs.known) return fbObs.user
 
-  return u.wait(sig, new Promise(function initNextUser(done) {
+  return u.wait(sig, new Promise(function nextUserInit(done) {
     const unsub = fba.onAuthStateChanged(fbAuth, function fbAuthOnChange(user) {
       unsub()
       done(user)
@@ -337,7 +337,6 @@ export async function recommendAuthIfNeededOrRunUpload(sig) {
     recommendAuth()
     return
   }
-
   os.runCmd(`upload -p /`).catch(u.logErr)
 }
 

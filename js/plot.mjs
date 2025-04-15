@@ -24,31 +24,32 @@ cmdPlot.desc = `analyze data, visualizing with a plot 📈📉`
 cmdPlot.help = function cmdPlotHelp() {
   return u.LogParagraphs(
     u.callOpt(cmdPlot.desc),
-
     `flags:`,
 
     u.LogLines(
-      BtnPromptAppendPlot(`-p`),
-      ` -- preset; can be overriden with other flags; supported values:`,
+      [
+        BtnAppend(`-p`),
+        ` -- preset; can be overridden with other flags; supported values:`,
+      ],
       ...a.map(a.entries(PLOT_PRESETS), PresetHelp).map(u.indentChi),
     ),
 
     u.LogLines(
       [
-        BtnPromptAppendPlot(`-s`),
-        ` -- data source; local data requires running the `,
+        BtnAppend(`-s`),
+        ` -- data source; "local" requires running the `,
         os.BtnCmdWithHelp(`init`),
-        ` command to enable access to the progress file and history directory; `,
-        `cloud data requires running the `,
+        ` command to grant access to the history directory; `,
+        `"cloud" may require the `,
         os.BtnCmdWithHelp(`auth`),
-        ` command to enable cloud backups; supported values:`,
+        ` command; supported values:`,
       ],
       ...FlagAppendBtns(PLOT_AGG_SRC, `-s`, PLOG_AGG_OPT_DEF_SRC).map(u.indentChi),
     ),
 
     u.LogLines(
       [
-        BtnPromptAppendPlot(`-x`),
+        BtnAppend(`-x`),
         ` -- X axis; supported values:`,
       ],
       ...FlagAppendBtns(s.ALLOWED_X_KEYS, `-x`, PLOG_AGG_OPT_DEF_X).map(u.indentChi),
@@ -56,7 +57,7 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       [
-        BtnPromptAppendPlot(`-y`),
+        BtnAppend(`-y`),
         ` -- Y axis; supported values:`,
       ],
       ...FlagAppendBtns(s.ALLOWED_Y_STAT_TYPES, `-y`, PLOG_AGG_OPT_DEF_Y).map(u.indentChi),
@@ -64,7 +65,7 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       [
-        BtnPromptAppendPlot(`-z`),
+        BtnAppend(`-z`),
         ` -- Z axis (plot series); supported values:`,
       ],
       ...FlagAppendBtns(s.ALLOWED_Z_KEYS, `-z`, PLOG_AGG_OPT_DEF_Z).map(u.indentChi),
@@ -72,44 +73,41 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       [
-        BtnPromptAppendPlot(`-a`),
+        BtnAppend(`-a`),
         ` -- aggregation mode; supported values:`,
       ],
       ...FlagAppendBtns(s.AGGS, `-a`, PLOG_AGG_OPT_DEF_AGG).map(u.indentChi),
     ),
 
     u.LogLines(
-      `tip: the special filter "run=" works for both "runId" and "runNum" if the input is an integer; examples:`,
-      [`  `, BtnPromptAppendPlot(`run=123`)],
-      [`  `, BtnPromptAppendPlot(`run=some_id`)],
-    ),
-
-    u.LogLines(
-      `tip: the special filter "round=" works for both "roundId" and "roundNum" if the input is an integer; examples:`,
-      [`  `, BtnPromptAppendPlot(`round=123`)],
-      [`  `, BtnPromptAppendPlot(`round=some_id`)],
+      `supported filters:`,
+      ...a.map(s.ALLOWED_FILTER_KEYS, supportedFilter) .map(u.indentChi),
     ),
 
     u.LogLines(
       [
-        `tip: `,
-        BtnPromptAppendPlot(`run=latest`),
-        ` or `,
-        BtnPromptAppendPlot(`runId=latest`),
-        ` filters the latest run only; examples:`,
+        `special filter `,
+        BtnAppend(`run=`),
+        ` works for both "runId" and "runNum" if the input is an integer; examples:`,
       ],
-      [`  `, BtnPromptAppendPlot(`-s=local run=latest`)],
-      [`  `, BtnPromptAppendPlot(`-s=cloud run=latest`)],
+      [`  `, BtnAppend(`run=1`)],
+      [`  `, BtnAppend(`run=0001`)],
     ),
 
     u.LogLines(
       [
-        `tip: `,
-        BtnPromptAppendPlot(`userId=current`),
-        ` filters cloud data by current user id, if any; examples:`,
+        `special filter `,
+        BtnAppend(`round=`),
+        ` works for both "roundId" and "roundNum" if the input is an integer; examples:`,
       ],
-      [`  `, BtnPromptAppendPlot(`-s=cloud userId=current`)],
-      [`  `, BtnPromptAppendPlot(`-s=cloud userId=current run=latest`)],
+      [`  `, BtnAppend(`round=1`)],
+      [`  `, BtnAppend(`round=0001`)],
+    ),
+
+    u.LogLines(
+      [`tip: repeat a filter to combine via logical "OR"; examples:`],
+      [`  `, BtnAppend(`run=1 run=2`), ` -- first and second runs`],
+      [`  `, BtnAppend(`roundNum=1 roundNum=2`), ` -- first and second rounds`],
     ),
 
     `tip: try ctrl+click / cmd+click / shift+click on plot labels`,
@@ -118,30 +116,33 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       `more examples:`,
-      [`  `, BtnPromptAppendPlot(`-s=cloud`)],
-      [`  `, BtnPromptAppendPlot(`-s=local -p=dmg runId=latest`)],
-      [`  `, BtnPromptAppendPlot(`-s=local -p=eff runId=latest`)],
-      [`  `, BtnPromptAppendPlot(`-s=cloud -p=dmg runId=latest`)],
-      [`  `, BtnPromptAppendPlot(`-s=cloud -p=eff runId=latest`)],
-      [`  `, BtnPromptAppendPlot(`-x=runNum -y=costEff -z=buiTypeUpg -a=avg`)],
+      [`  `, BtnAppend(`-s=cloud`)],
+      [`  `, BtnAppend(`-s=local -p=dmg`)],
+      [`  `, BtnAppend(`-s=local -p=eff`)],
+      [`  `, BtnAppend(`-s=cloud -p=dmg`)],
+      [`  `, BtnAppend(`-s=cloud -p=eff`)],
+      [`  `, BtnAppend(`run=all -x=runNum`)],
+      [`  `, BtnAppend(`run=all -x=runNum -z=userId`)],
+      [`  `, BtnAppend(`run=all -x=runNum -y=costEff -z=buiTypeUpg -a=avg`)],
     ),
   )
 }
 
 export function cmdPlot({sig, args}) {
-  const inp = plotAggCliArgsDecode(args)
+  if (!a.tail(u.splitCliArgs(args)).length) return cmdPlot.help()
+  const inp = cmdPlotDecodeArgs(args)
   const src = u.dictPop(inp, `src`)
   if (src === `local`) return cmdPlotLocal(sig, inp)
   if (src === `cloud`) return cmdPlotCloud(sig, inp)
   throw `unknown plot data source ${a.show(src)}`
 }
 
-// TODO: avoid updating when the dat change doesn't affect the current plot.
 export async function cmdPlotLocal(sig, inp) {
   const opt = s.validPlotAggOpt(inp)
   const {Z: Z_key, X: X_key, agg} = opt
   await d.datLoad(sig, d.DAT, opt)
 
+  // TODO: on `DAT` events, don't update the plot if unaffected.
   ui.MEDIA.add(new LivePlotter(function plotOpts() {
     const facts = d.datQueryFacts(d.DAT, opt)
     const data = s.plotAggFromFacts({facts, Z_key, X_key, agg})
@@ -149,9 +150,11 @@ export async function cmdPlotLocal(sig, inp) {
   }))
 }
 
-// TODO: avoid updating when the dat change doesn't affect the current plot.
 export async function cmdPlotCloud(sig, inp) {
   const fb = await import(`./fb.mjs`)
+  if (inp.userCurrent && !await fb.nextUser(sig)) {
+    throw [`filtering cloud data by current user requres authentication; run the `, os.BtnCmdWithHelp(`auth`), ` command`]
+  }
   const {data} = await u.wait(sig, fb.fbCall(`plotAgg`, inp))
   ui.MEDIA.add(new Plotter(plotOptsWith({data, inp})))
 }
@@ -181,15 +184,15 @@ export function plotOptsWith({data, inp}) {
 
 /*
 Converts CLI args to a format suitable for the cloud function `plotAgg` or its
-local equivalent. This is an intermediary data format. See `validPlotAggOpt`
-which validates and converts this to the final representation used by querying
-functions.
+local equivalent. This is an intermediary data format suitable for JSON for
+cloud function calls. See `validPlotAggOpt` which validates and converts this
+to the final representation used by querying functions.
 */
-export function plotAggCliArgsDecode(src) {
+export function cmdPlotDecodeArgs(src) {
   const out = a.Emp()
   out.where = a.Emp()
-  out.runLatest = false
-  out.userCurrent = false
+  out.userCurrent = undefined
+  out.runLatest = undefined
 
   for (const [key, val] of a.tail(u.cliDecode(src))) {
     if (key === `-p`) {
@@ -228,22 +231,44 @@ export function plotAggCliArgsDecode(src) {
     }
 
     if (key === `userId`) {
+      out.userCurrent ??= false
       if (val === `current`) {
         out.userCurrent = true
         continue
       }
+      if (val === `all`) continue
       u.dictPush(out.where, key, val)
       continue
     }
 
-    if (key === `run`) {
+    if (key === `run` || key === `runId`) {
+      out.runLatest ??= false
       if (val === `latest`) {
         out.runLatest = true
         continue
       }
+      if (val === `all`) continue
+    }
+
+    if (key === `run`) {
+      out.runLatest ??= false
       const int = u.toIntOpt(val)
       if (a.isSome(int)) u.dictPush(out.where, `runNum`, int)
       else u.dictPush(out.where, `runId`, val)
+      continue
+    }
+
+    if (key === `runId`) {
+      out.runLatest ??= false
+      u.dictPush(out.where, key, val)
+      continue
+    }
+
+    if (key === `runNum`) {
+      out.runLatest ??= false
+      const int = u.toIntOpt(val)
+      if (a.isNil(int)) throw Error(`"runNum" must be an integer, got: ${a.show(val)}`)
+      u.dictPush(out.where, key, int)
       continue
     }
 
@@ -251,22 +276,6 @@ export function plotAggCliArgsDecode(src) {
       const int = u.toIntOpt(val)
       if (a.isSome(int)) u.dictPush(out.where, `roundNum`, int)
       else u.dictPush(out.where, `roundId`, val)
-      continue
-    }
-
-    if (key === `runId`) {
-      if (val === `latest`) {
-        out.runLatest = true
-        continue
-      }
-      u.dictPush(out.where, key, val)
-      continue
-    }
-
-    if (key === `runNum`) {
-      const int = u.toIntOpt(val)
-      if (a.isNil(int)) throw Error(`"runNum" must be an integer, got: ${a.show(val)}`)
-      u.dictPush(out.where, key, int)
       continue
     }
 
@@ -292,6 +301,8 @@ export function plotAggCliArgsDecode(src) {
   out.Y ||= PLOG_AGG_OPT_DEF_Y
   out.Z ||= PLOG_AGG_OPT_DEF_Z
   out.agg ||= PLOG_AGG_OPT_DEF_AGG
+  out.userCurrent ??= true
+  out.runLatest ??= true
   return out
 }
 
@@ -338,7 +349,7 @@ export async function plotExampleRun() {
     s.datAddRound({dat, round, runId, runNum: 0, userId: d.USER_ID})
   }
 
-  const inp = plotAggCliArgsDecode()
+  const inp = cmdPlotDecodeArgs()
   delete inp.src
 
   const {Z: Z_key, X: X_key, where, agg} = s.validPlotAggOpt(inp)
@@ -777,13 +788,13 @@ function labelValNode(val) {return val.childNodes[1]}
 
 function compareLabelSortable(one, two) {return two.val - one.val}
 
-function BtnPromptAppendPlot(val) {return ui.BtnPromptAppend(val, `plot`)}
+function BtnAppend(val) {return ui.BtnPromptAppend(`plot`, val)}
 
 function PresetHelp([key, val]) {
   return [
-    BtnPromptAppendPlot(`-p=${key}`),
+    BtnAppend(`-p=${key}`),
     ` -- same as `,
-    BtnPromptAppendPlot(`-x=${val.X} -y=${val.Y} -z=${val.Z} -a=${val.agg}`),
+    BtnAppend(`-x=${val.X} -y=${val.Y} -z=${val.Z} -a=${val.agg}`),
   ]
 }
 
@@ -791,7 +802,31 @@ function FlagAppendBtns(src, flag, def) {
   a.reqValidStr(flag)
   a.reqValidStr(def)
   return a.keys(src).map(key => [
-    BtnPromptAppendPlot(`${flag}=${key}`),
+    BtnAppend(`${flag}=${key}`),
     a.vac(key === def) && ` (default)`,
   ])
+}
+
+function supportedFilter(key) {
+  return [BtnAppend(`${key}=`), (
+    key === `userId`
+    ? [
+      ` (default `,
+      BtnAppend(`userId=current`),
+      `, disable via `,
+      BtnAppend(`userId=all`),
+      `)`,
+    ]
+    : key === `runId`
+    ? [
+      ` (default `,
+      BtnAppend(`runId=latest`),
+      `, disable via `,
+      BtnAppend(`runId=all`),
+      `)`,
+    ]
+    : key === `runNum`
+    ? [`  (disables default `, BtnAppend(`runId=latest`), `)`]
+    : undefined
+  )]
 }

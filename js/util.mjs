@@ -907,7 +907,7 @@ through functions or field patterns for each tested value.
 SYNC[field_pattern].
 */
 export function whereFields(src) {
-  const test = a.mapFlat(a.entries(src), whereField)
+  const test = a.mapCompact(a.entries(src), whereField)
   if (!test.length) return undefined
 
   return Function(`
@@ -922,7 +922,7 @@ function whereField([key, src]) {
     a.reqPrim(val)
     out.push(`val.${key} === ${a.show(val)}`)
   }
-  return out
+  return `(` + out.join(` || `) + `)`
 }
 
 export function intersperse(src, fun) {

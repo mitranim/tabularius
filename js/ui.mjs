@@ -369,9 +369,10 @@ export const PROMPT = E(
   PROMPT_INPUT,
 )
 
-export function BtnPromptAppend(suf, pre) {
+export function BtnPromptAppend(pre, suf, alias) {
   a.reqValidStr(suf)
   a.optStr(pre)
+  a.optStr(alias)
 
   return E(
     `button`,
@@ -380,7 +381,7 @@ export function BtnPromptAppend(suf, pre) {
       class: u.INLINE_BTN_CLS,
       onclick() {PROMPT_INPUT.addSpaced(suf, pre)},
     },
-    suf,
+    alias || suf,
   )
 }
 
@@ -391,8 +392,8 @@ cmdClear.help = function cmdClearHelp() {
     u.callOpt(cmdClear.desc),
     u.LogLines(
       `flags:`,
-      [`  `, ui.BtnPromptAppend(`-l`, `clear`), ` -- clear only the log`],
-      [`  `, ui.BtnPromptAppend(`-m`, `clear`), ` -- clear only the media`],
+      [`  `, ui.BtnPromptAppend(`clear`, `-l`), ` -- clear only the log`],
+      [`  `, ui.BtnPromptAppend(`clear`, `-m`), ` -- clear only the media`],
     ),
     u.LogLines(
       `usage:`,

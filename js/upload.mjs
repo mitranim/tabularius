@@ -59,8 +59,8 @@ cmdUpload.help = function cmdUploadHelp() {
     ),
     u.LogLines(
       `flags:`,
-      [`  `, ui.BtnPromptAppend(`-p`, `upload`), ` -- persistent mode`],
-      [`  `, ui.BtnPromptAppend(`-q`, `upload`), ` -- quiet mode, minimal logging`],
+      [`  `, ui.BtnPromptAppend(`upload`, `-p`), ` -- persistent mode`],
+      [`  `, ui.BtnPromptAppend(`upload`, `-q`), ` -- quiet mode, minimal logging`],
     ),
     `the upload is idempotent, which means no duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
     [
