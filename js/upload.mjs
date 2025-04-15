@@ -31,6 +31,15 @@ cmdUpload.desc = function cmdUploadDesc() {
 cmdUpload.help = function cmdUploadHelp() {
   return u.LogParagraphs(
     cmdUpload.desc(),
+    [
+      `upload is invoked `,
+      E(`b`, {}, `automatically`),
+      ` after running `,
+      os.BtnCmdWithHelp(`init`),
+      ` and `,
+      os.BtnCmdWithHelp(`auth`),
+      ` in any order; you generally don't need to run it manually`,
+    ],
     `usage:`,
     u.LogLines(
       `upload all runs:`,
@@ -54,7 +63,13 @@ cmdUpload.help = function cmdUploadHelp() {
       [`  `, ui.BtnPromptAppend(`-q`, `upload`), ` -- quiet mode, minimal logging`],
     ),
     `the upload is idempotent, which means no duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
-    [`tip: use `, os.BtnCmdWithHelp(`ls`), ` to browse local runs`],
+    [
+      `tip: use `,
+      os.BtnCmdWithHelp(`ls`),
+      ` to browse local runs and `,
+      os.BtnCmdWithHelp(`cls`),
+      ` to browse uploaded runs`,
+    ],
   )
 }
 

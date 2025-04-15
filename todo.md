@@ -471,9 +471,9 @@ An option to backup all save files, not just the progress file.
 
 ---
 
-An option to view the decoded contents of a `.gd` file.
+<!-- An option to view the decoded contents of a `.gd` file. -->
 
-An option to copy the decoded contents to the clipboard.
+<!-- An option to copy the decoded contents to the clipboard. -->
 
 ---
 
@@ -494,6 +494,10 @@ We could also store a global var, user could edit it in the browser console, the
 ---
 
 `decode` should have run and round modes. If a run is specified, decode the whole run. If a round in a run is specified, decode only that round.
+
+---
+
+Consolidate `show`, `decode`, `show_saves` into one command. It should also support run numbers, similar to `plot`.
 
 ---
 
@@ -807,7 +811,11 @@ Prettify for launch:
 
 ---
 
-`ls`/`cmdLs`: show file count and progress file count / round count in dirs.
+<!-- `ls`/`cmdLs`: show file count and progress file count / round count in dirs. -->
+
+---
+
+Consolidate `ls` and `cls`, with a flag that switches between local and cloud sources, similar to `plot`.
 
 ---
 
@@ -939,8 +947,26 @@ In `plot` help, explain how to logical OR.
 
 ---
 
+`plot` without args should print help.
+
+---
+
 In `plot`, filter by current user by default; `user=all` should be opt-in. When not authed, select one user (how?).
+
+Same for runs: filter by latest run by default; providing any `run=` or `runId=` overrides that; special `run=all` suppresses the default without adding an actual filter.
 
 ---
 
 In `plot`, maybe `-y` should be repeatable, as "or". Maybe it makes no sense.
+
+---
+
+Implement an easy rollback option.
+
+---
+
+Make a rundown of features, with screenshots. Use it for the readme and for announcements.
+
+---
+
+Make a YouTube video guide. Maybe get Claude Code to analyze the app and write a script for the video.
