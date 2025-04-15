@@ -74,7 +74,7 @@ export const PROGRESS_FILE_CONF = new FileConf({
   desc: `progress file`,
   help: u.joinParagraphs(
     `pick your TD progress file; typical location:`,
-    `C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\SaveFiles\\Progress.gd.`,
+    `C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\SaveFiles\\Progress.gd`,
     `note that AppData is hidden by default!`,
   ),
   mode: `read`,

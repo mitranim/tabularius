@@ -137,12 +137,12 @@ export function cmdPlot({sig, args}) {
   throw `unknown plot data source ${a.show(src)}`
 }
 
+// TODO: avoid updating when the dat change doesn't affect the current plot.
 export async function cmdPlotLocal(sig, inp) {
   const opt = s.validPlotAggOpt(inp)
   const {Z: Z_key, X: X_key, agg} = opt
   await d.datLoad(sig, d.DAT, opt)
 
-  // TODO: avoid updating when the dat change doesn't affect the current plot.
   ui.MEDIA.add(new LivePlotter(function plotOpts() {
     const facts = d.datQueryFacts(d.DAT, opt)
     const data = s.plotAggFromFacts({facts, Z_key, X_key, agg})
@@ -150,6 +150,7 @@ export async function cmdPlotLocal(sig, inp) {
   }))
 }
 
+// TODO: avoid updating when the dat change doesn't affect the current plot.
 export async function cmdPlotCloud(sig, inp) {
   const fb = await import(`./fb.mjs`)
   const {data} = await u.wait(sig, fb.fbCall(`plotAgg`, inp))
@@ -166,7 +167,7 @@ export function plotOptsWith({data, inp}) {
 
   // Hide the total serie by default.
   // TODO: when updating a live plot, preserve series show/hide state.
-  Z_rows[0].show = false
+  if (Z_rows[0]) Z_rows[0].show = false
 
   return {
     ...LINE_PLOT_OPTS,
