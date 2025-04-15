@@ -113,36 +113,14 @@ export function reqFbUserId() {
   throw [`authentication required; run the `, os.BtnCmdWithHelp(`auth`), ` command`]
 }
 
-cmdCls.cmd = `cls`
-cmdCls.desc = function cmdClsDesc() {
-  return [
-    `list cloud runs; requires authentication (run `,
-    os.BtnCmdWithHelp(`auth`),
-    ` once)`,
-  ]
-}
-cmdCls.help = function cmdClsHelp() {
-  return u.LogParagraphs(
-    u.callOpt(cmdCls.desc),
-    u.LogLines(
-      `usage:`,
-      [`  `, os.BtnCmd(`cls`)],
-      `  cls <run_id>`,
-    ),
-    [`tip: use `, os.BtnCmdWithHelp(`upload`), ` to upload runs to the cloud`],
-  )
-}
-
-export function cmdCls({sig, args}) {
-  args = u.splitCliArgs(args)
-  if (args.length > 2) return os.cmdHelpDetailed(cmdCls)
-  const runId = a.optStr(args[1])
+export function listRunsRounds({sig}, runId) {
+  a.optStr(runId)
   const userId = reqFbUserId()
-  if (runId) return listCloudRounds(sig, runId, userId)
-  return listCloudRuns(sig, userId)
+  if (!runId) return listRuns(sig, userId)
+  return listRounds(sig, userId, runId)
 }
 
-async function listCloudRuns(sig, userId) {
+export async function listRuns(sig, userId) {
   a.reqValidStr(userId)
 
   try {
@@ -170,7 +148,7 @@ async function listCloudRuns(sig, userId) {
   }
 }
 
-async function listCloudRounds(sig, runId, userId) {
+export async function listRounds(sig, userId, runId) {
   a.reqValidStr(runId)
   a.reqValidStr(userId)
 
@@ -207,7 +185,7 @@ function BtnCloudRun(val) {
   return u.Btn(val, function onClickCloudRun() {
     u.copyToClipboard(val)
     u.log.info(`copied `, a.show(val), ` to clipboard`)
-    os.runCmd(`cls ` + val)
+    os.runCmd(`ls -c ` + val)
   })
 }
 

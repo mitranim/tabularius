@@ -501,6 +501,14 @@ Consolidate `show`, `decode`, `show_saves` into one command. It should also supp
 
 ---
 
+<!-- Consolidate `ls` and `cls`, with a flag that switches between local and cloud sources, similar to `plot`. -->
+
+---
+
+Consolidate `status` and `ps`.
+
+---
+
 `logElem` / `logShow`: support error chains.
 
 ---
@@ -812,10 +820,6 @@ Prettify for launch:
 ---
 
 <!-- `ls`/`cmdLs`: show file count and progress file count / round count in dirs. -->
-
----
-
-Consolidate `ls` and `cls`, with a flag that switches between local and cloud sources, similar to `plot`.
 
 ---
 

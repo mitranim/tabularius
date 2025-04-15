@@ -333,45 +333,19 @@ export async function reqHistoryDir(sig) {
   return HISTORY_DIR_CONF.handle
 }
 
-cmdLs.cmd = `ls`
-cmdLs.desc = `list dirs and files`
-cmdLs.help = function cmdLsHelp() {
-  return u.LogParagraphs(
-    `list dirs and files`,
-    u.LogLines(
-      `usage:`,
-      [`  `, os.BtnCmd(`ls`)],
-      [`  `, os.BtnCmd(`ls -s`), ` -- show stats`],
-      `  ls <path>`,
-    ),
-    u.LogLines(
-      `examples:`,
-      `  ls some_dir`,
-      `  ls some_dir/some_file`,
-    ),
-  )
-}
+export async function listDirsFiles({sig}, path, info) {
+  a.optStr(path)
+  a.optBool(info)
 
-export async function cmdLs({sig, args}) {
-  args = u.splitCliArgs(args)
-  const stat = u.arrRemoved(args, `-s`)
-
-  switch (args.length) {
-    case 0:
-    case 1:
-    case 2: break
-    default: return os.cmdHelpDetailed(cmdLs)
-  }
-
-  const path = u.paths.clean(a.laxStr(args[1]))
+  path = u.paths.clean(a.laxStr(path))
   const root = await reqHistoryDir(sig)
   const handle = await handleAtPath(sig, root, path)
   const showPath = a.show(handle.name || path)
   const inf = `: `
-  const suf = stat ? `` : [` (tip: `, os.BtnCmd(`ls -s`), ` adds stats)`]
+  const suf = info ? `` : [` (tip: `, os.BtnCmd(`ls -i`), ` adds stats)`]
 
   if (!isDir(handle)) {
-    if (!stat) return [handle.kind + inf + showPath, suf]
+    if (!info) return [handle.kind + inf + showPath, suf]
     return handle.kind + inf + showPath + inf + await fileStatStr(sig, handle)
   }
 
@@ -379,7 +353,7 @@ export async function cmdLs({sig, args}) {
   const buf = []
   for await (const val of readDir(sig, handle)) {
     len = Math.max(len, val.kind.length)
-    buf.push([val.kind, val.name, a.vac(stat) && await fileHandleStatStr(sig, val)])
+    buf.push([val.kind, val.name, a.vac(info) && await fileHandleStatStr(sig, val)])
   }
 
   buf.sort(compareLsEntriesAsc)
@@ -388,22 +362,22 @@ export async function cmdLs({sig, args}) {
 
   return u.LogLines(
     [`contents of directory ${showPath}`, suf, `:`],
-    ...u.alignTable(a.map(buf, function lsRow([kind, name, stat]) {
+    ...u.alignTable(a.map(buf, function lsRow([kind, name, info]) {
       return [
         kind + inf,
-        BtnLsEntry(path, name, stat),
-        (a.vac(stat) && ` (` + stat + `)`),
+        BtnLsEntry(path, name, info),
+        (a.vac(info) && ` (` + info + `)`),
       ]
     })),
   )
 }
 
-function BtnLsEntry(path, name, stat) {
+function BtnLsEntry(path, name, info) {
   path = u.paths.join(path, name)
   return u.Btn(name, function onClickLsEntry() {
     u.copyToClipboard(path)
     u.log.info(`copied `, a.show(path), ` to clipboard`)
-    os.runCmd(`ls ` + path + (stat ? ` -s` : ``))
+    os.runCmd(`ls ` + path + (info ? ` -i` : ``))
   })
 }
 

@@ -27,20 +27,26 @@ os.addCmd(cmdInit)
 if (fb) os.addCmd(fb.cmdAuth)
 os.addCmd(p.cmdPlot)
 
-os.addCmd(fs.cmdLs)
-os.addCmd(fs.cmdShow)
-os.addCmd(fs.cmdShowSaves)
-os.addCmd(fs.cmdDecode)
+cmdLs.cmd = `ls`
+cmdLs.desc = cmdLsDesc
+cmdLs.help = cmdLsHelp
+os.addCmd(cmdLs)
 
-if (fb) os.addCmd(fb.cmdCls)
-if (up) os.addCmd(up.cmdUpload)
+// FIXME consolidate
+os.addCmd(fs.cmdShow)
+// os.addCmd(fs.cmdShowSaves)
+// os.addCmd(fs.cmdDecode)
+
 os.addCmd(w.cmdWatch)
+if (up) os.addCmd(up.cmdUpload)
 
 cmdStatus.cmd = `status`
 cmdStatus.desc = `show status of app features and processes`
-os.addCmd(cmdStatus)
 
-os.addCmd(os.cmdPs)
+// FIXME consolidate
+os.addCmd(cmdStatus)
+// os.addCmd(os.cmdPs)
+
 os.addCmd(os.cmdKill)
 os.addCmd(u.cmdVerbose)
 
@@ -49,7 +55,7 @@ cmdDeinit.desc = `stop all processes, revoke FS access`
 os.addCmd(cmdDeinit)
 os.addCmd(ui.cmdClear)
 
-async function cmdInit({sig}) {
+export async function cmdInit({sig}) {
   const hadFsAccess = await fs.loadedFileHandles()
   if (!hadFsAccess && !await fs.initedFileHandles(sig)) return `FS access not initialized`
   if (!await w.watchStarted()) return `FS watch not initialized`
@@ -73,7 +79,7 @@ function cmdInitHelp() {
 }
 
 // Deinitialize features and stop all processes.
-async function cmdDeinit({sig}) {
+export async function cmdDeinit({sig}) {
   return u.LogParagraphs(
     await os.procKillAll(),
     ...await fs.deinitFileHandles(sig),
@@ -81,13 +87,95 @@ async function cmdDeinit({sig}) {
 }
 
 // Show status of features and processes.
-function cmdStatus() {
+export function cmdStatus() {
   return u.LogParagraphs(
     new fs.FileConfStatus(fs.PROGRESS_FILE_CONF),
     new fs.FileConfStatus(fs.HISTORY_DIR_CONF),
     fb && [`auth: `, new fb.AuthStatus()],
     new os.Procs(),
   )
+}
+
+function cmdLsDesc() {
+  return `list local dirs/files, or cloud runs/rounds`
+}
+
+function cmdLsHelp() {
+  return u.LogParagraphs(
+    cmdLsDesc(),
+    u.LogLines(
+      `supported sources:`,
+      [`  local -- default -- requires `, os.BtnCmdWithHelp(`init`)],
+      [
+        `  cloud -- `, ui.BtnPromptAppend(`ls`, `-c`),
+        `      -- requires `, os.BtnCmdWithHelp(`auth`),
+      ],
+    ),
+    u.LogLines(
+      `local usage:`,
+      [`  `, ui.BtnPrompt(`ls /`)],
+      [`  `, ui.BtnPrompt(`ls -i`), ` -- additional stats`],
+      [`  `, os.BtnCmd(`ls /`)],
+      [`  `, os.BtnCmd(`ls -i`)],
+      `  ls <some_dir>`,
+      `  ls <some_dir>/<some_file>`,
+    ),
+    u.LogLines(
+      `cloud usage:`,
+      [`  `, ui.BtnPrompt(`ls -c`)],
+      [`  `, os.BtnCmd(`ls -c`)],
+      `  ls -c <some_run_id>`,
+    ),
+    // TODO: don't bother telling about how to init when already inited.
+    [
+      `tip: to upload runs to the cloud, run `,
+      os.BtnCmdWithHelp(`init`), ` to grant FS access, and `,
+      os.BtnCmdWithHelp(`auth`), ` to authenticate`
+    ],
+  )
+}
+
+export function cmdLs(proc) {
+  const pairs = a.tail(u.cliDecode(proc.args))
+  if (!pairs.length) return os.cmdHelpDetailed(cmdLs)
+
+  const args = []
+  let cloud
+  let info
+
+  for (const [key, val] of pairs) {
+    if (key === `-c`) {
+      if (a.isSome(cloud)) throw Error(`redundant "-c"`)
+      cloud = u.cliBool(key, val)
+      if (cloud && !fb) throw Error(`cloud-related modules are unavailable`)
+      continue
+    }
+
+    if (key === `-i`) {
+      if (a.isSome(info)) throw Error(`redundant "-i"`)
+      info = u.cliBool(key, val)
+      continue
+    }
+
+    if (key.startsWith(`-`)) {
+      return u.LogParagraphs(
+        `unrecognized flag ${a.show(key)}`,
+        cmdLs.help(),
+      )
+    }
+    args.push(val)
+  }
+
+  if (args.length > 1) {
+    return u.LogParagraphs(`too many arguments`, cmdLs.help())
+  }
+
+  if (cloud) {
+    if (info) u.LogParagraphs(`unsupported "-i" in cloud mode`, cmdLs.help())
+    return fb.listRunsRounds(proc, args[0])
+  }
+
+  return fs.listDirsFiles(proc, args[0], info)
 }
 
 async function main() {
