@@ -258,8 +258,10 @@ cmdHelp.desc = `brief summary of all commands, or detailed help on one command`
 
 export function cmdHelp({args}) {
   args = u.splitCliArgs(args)
-  if (args.includes(`-h`) || args.includes(`--help`)) os.cmdHelpDetailed(cmdHelp)
-  if (args.length > 2) return os.cmdHelpDetailed(cmdHelp)
+
+  if (args.includes(`-h`) || args.includes(`--help`)) {
+    return os.cmdHelpDetailed(cmdHelp)
+  }
 
   if (args.length <= 1) {
     return u.LogParagraphs(
