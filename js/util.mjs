@@ -169,7 +169,7 @@ export function cmdVerbose() {
   return `logging is now ` + (LOG_VERBOSE ? `verbose` : `selective`)
 }
 
-export const INLINE_BTN_CLS = `text-sky-800 dark:text-sky-200 hover:underline hover:decoration-dotted cursor-pointer inline`
+export const INLINE_BTN_CLS = `text-sky-700 dark:text-sky-300 hover:underline hover:decoration-dotted cursor-pointer inline`
 
 export const LOG_WIDTH_KEY = `tabularius.log_width`
 export const LOG_WIDTH_DEFAULT = 50 // % of parent width

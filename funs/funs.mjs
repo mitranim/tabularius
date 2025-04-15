@@ -140,7 +140,7 @@ export const plotAgg = ffh.onCall(async function plotAgg(req) {
 })
 
 async function latestRunIds(where) {
-  const {userId, runId: _, ...rest} = a.laxDict(where)
+  const {userId, runId: _, ...rest} = a.pickKeys(where, s.ALLOWED_RUN_FILTERS)
   const userIds = u.compactSet(userId)
 
   if (!userIds.size) {

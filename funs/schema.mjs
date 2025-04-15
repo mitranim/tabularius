@@ -429,6 +429,12 @@ export const ALLOWED_FILTER_KEYS = new Set([
   // `statType`,
 ])
 
+export const ALLOWED_RUN_FILTERS = new Set([
+  `userId`,
+  `runId`,
+  `runNum`,
+])
+
 export function validPlotAggOpt(src) {
   src ??= a.Emp()
   if (!a.isDict(src)) {

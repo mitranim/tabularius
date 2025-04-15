@@ -99,7 +99,13 @@ async function main() {
   let imported = 0
   let ran = 0
 
-  for (const [key, val] of u.urlQuery(window.location.search)) {
+  const query = u.urlQuery(window.location.search)
+  if (!query.get(`import`)) {
+    u.log.info(`welcome to Tabularius! 🚀`)
+    await os.runCmd(`help`).catch(u.logErr)
+  }
+
+  for (const [key, val] of query) {
     // Can plug-in arbitrary modules via URL query param.
     if (key === `import`) {
       if (!val) continue
@@ -122,8 +128,6 @@ async function main() {
   */
   if (imported) return
 
-  u.log.info(`welcome to Tabularius! 🚀`)
-  await os.runCmd(`help`).catch(u.logErr)
   if (loadedFs) w.watchStarted().catch(u.logErr)
 
   /*

@@ -961,6 +961,10 @@ In `plot`, maybe `-y` should be repeatable, as "or". Maybe it makes no sense.
 
 ---
 
+In help for various commands, prioritize "append to prompt" buttons over "run cmd" buttons.
+
+---
+
 Implement an easy rollback option.
 
 ---
