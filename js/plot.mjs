@@ -80,14 +80,14 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       `tip: the special filter "run=" works for both "runId" and "runNum" if the input is an integer; examples:`,
-      [`  `, os.BtnCmd(`plot run=123`)],
-      [`  `, os.BtnCmd(`plot run=some_id`)],
+      [`  `, BtnPromptAppendPlot(`run=123`)],
+      [`  `, BtnPromptAppendPlot(`run=some_id`)],
     ),
 
     u.LogLines(
       `tip: the special filter "round=" works for both "roundId" and "roundNum" if the input is an integer; examples:`,
-      [`  `, os.BtnCmd(`plot round=123`)],
-      [`  `, os.BtnCmd(`plot round=some_id`)],
+      [`  `, BtnPromptAppendPlot(`round=123`)],
+      [`  `, BtnPromptAppendPlot(`round=some_id`)],
     ),
 
     u.LogLines(
@@ -98,8 +98,8 @@ cmdPlot.help = function cmdPlotHelp() {
         BtnPromptAppendPlot(`runId=latest`),
         ` filters the latest run only; examples:`,
       ],
-      [`  `, os.BtnCmd(`plot -s=local run=latest`)],
-      [`  `, os.BtnCmd(`plot -s=cloud run=latest`)],
+      [`  `, BtnPromptAppendPlot(`-s=local run=latest`)],
+      [`  `, BtnPromptAppendPlot(`-s=cloud run=latest`)],
     ),
 
     u.LogLines(
@@ -108,8 +108,8 @@ cmdPlot.help = function cmdPlotHelp() {
         BtnPromptAppendPlot(`userId=current`),
         ` filters cloud data by current user id, if any; examples:`,
       ],
-      [`  `, os.BtnCmd(`plot -s=cloud userId=current`)],
-      [`  `, os.BtnCmd(`plot -s=cloud userId=current run=latest`)],
+      [`  `, BtnPromptAppendPlot(`-s=cloud userId=current`)],
+      [`  `, BtnPromptAppendPlot(`-s=cloud userId=current run=latest`)],
     ),
 
     `tip: try ctrl+click / cmd+click / shift+click on plot labels`,

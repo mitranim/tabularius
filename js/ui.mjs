@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 22
+const VERSION = 23
 let INITED
 
 /*
@@ -278,9 +278,9 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
   addSpaced(suf, pre) {
     if (a.optStr(suf))
     if (a.optStr(pre))
-    if (!pre) return
-    if (this.value) this.value = a.spaced(this.value, suf)
-    else this.value = a.spaced(pre, suf)
+    if (!suf && !pre) return
+    if (this.value) this.value = a.spaced(a.trim(this.value), a.trim(suf))
+    else this.value = a.spaced(a.trim(pre), a.trim(suf))
     this.focus()
   }
 }

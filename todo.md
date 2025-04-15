@@ -906,3 +906,9 @@ Support special identifier `latest` in more commands. Add this to their help, as
 ---
 
 <!-- Properly handle dirs with spaces in their names, by forbidding spaces. -->
+
+---
+
+<!-- Disable automatic Firestore indexing for round snapshots. -->
+
+---

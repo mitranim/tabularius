@@ -852,7 +852,7 @@ export async function getFileHandle(sig, src, name, opt) {
     return await u.wait(sig, src.getFileHandle(name, opt))
   }
   catch (err) {
-    throw new ErrFs(`unable to get file handle ${a.show(p.util.join(src.name, name))}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to get file handle ${a.show(u.paths.join(src.name, name))}: ${err}`, {cause: err})
   }
 }
 
@@ -865,7 +865,7 @@ export async function getDirectoryHandle(sig, src, name, opt) {
     return await u.wait(sig, src.getDirectoryHandle(name, opt))
   }
   catch (err) {
-    throw new ErrFs(`unable to get directory handle ${a.show(p.util.join(src.name, name))}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to get directory handle ${a.show(u.paths.join(src.name, name))}: ${err}`, {cause: err})
   }
 }
 

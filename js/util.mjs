@@ -134,7 +134,7 @@ export function storageSet(store, key, val) {
   a.reqValidStr(key)
 
   if (a.isNil(val)) {
-    store.removeItem(key)
+    if (a.hasOwnEnum(store, key)) store.removeItem(key)
     return
   }
 
@@ -171,7 +171,7 @@ export function cmdVerbose() {
 
 export const INLINE_BTN_CLS = `text-sky-800 dark:text-sky-200 hover:underline hover:decoration-dotted cursor-pointer inline`
 
-export const LOG_WIDTH_KEY = `tabularius_log_width`
+export const LOG_WIDTH_KEY = `tabularius.log_width`
 export const LOG_WIDTH_DEFAULT = 50 // % of parent width
 export const LOG_WIDTH_MIN = 10 // % of parent width
 export const LOG_WIDTH_MAX = 90 // % of parent width
@@ -180,6 +180,9 @@ export const LOG_MAX_MSGS = 1024
 export const LOG_LINE_HEIGHT = `leading-[1.25]`
 export const LOG_SPACE_Y = `space-y-[1.25em]`
 export const LOG_GAP_Y = `gap-y-[1.25em]`
+
+// Delete old entry (renamed). TODO drop this line.
+storageSet(localStorage, `tabularius_log_width`)
 
 /*
 Should be used when invoking any async function in sync context. In other words,
