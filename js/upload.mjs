@@ -63,13 +63,8 @@ cmdUpload.help = function cmdUploadHelp() {
       [`  `, ui.BtnPromptAppend(`upload`, `-q`), ` -- quiet mode, minimal logging`],
     ),
     `the upload is idempotent, which means no duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
-    [
-      `tip: use `,
-      os.BtnCmdWithHelp(`ls`),
-      ` to browse local runs and `,
-      os.BtnCmdWithHelp(`cls`),
-      ` to browse uploaded runs`,
-    ],
+    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud runs`],
   )
 }
 

@@ -32,24 +32,21 @@ cmdLs.desc = cmdLsDesc
 cmdLs.help = cmdLsHelp
 os.addCmd(cmdLs)
 
-// FIXME consolidate
 os.addCmd(fs.cmdShow)
-// os.addCmd(fs.cmdShowSaves)
-// os.addCmd(fs.cmdDecode)
-
 os.addCmd(w.cmdWatch)
 if (up) os.addCmd(up.cmdUpload)
 
 cmdStatus.cmd = `status`
 cmdStatus.desc = `show status of app features and processes`
-
 os.addCmd(cmdStatus)
+
 os.addCmd(os.cmdKill)
 os.addCmd(u.cmdVerbose)
 
 cmdDeinit.cmd = `deinit`
 cmdDeinit.desc = `stop all processes, revoke FS access`
 os.addCmd(cmdDeinit)
+
 os.addCmd(ui.cmdClear)
 
 export async function cmdInit({sig}) {
@@ -154,21 +151,21 @@ export function cmdLs(proc) {
       continue
     }
 
-    if (key.startsWith(`-`)) {
+    if (key) {
       return u.LogParagraphs(
         `unrecognized flag ${a.show(key)}`,
-        cmdLs.help(),
+        os.cmdHelpDetailed(cmdLs),
       )
     }
     args.push(val)
   }
 
   if (args.length > 1) {
-    return u.LogParagraphs(`too many arguments`, cmdLs.help())
+    return u.LogParagraphs(`too many arguments`, os.cmdHelpDetailed(cmdLs))
   }
 
   if (cloud) {
-    if (info) u.LogParagraphs(`unsupported "-i" in cloud mode`, cmdLs.help())
+    if (info) u.LogParagraphs(`unsupported "-i" in cloud mode`, os.cmdHelpDetailed(cmdLs))
     return fb.listRunsRounds(proc, args[0])
   }
 

@@ -120,7 +120,7 @@ async function watchInit(sig, state) {
   await fs.fileConfRequireOrRequestPermission(sig, fs.HISTORY_DIR_CONF)
   a.final(state, `historyDirHandle`, fs.HISTORY_DIR_CONF.handle)
 
-  const runDir = await fs.findLatestRunDir(sig, state.historyDirHandle)
+  const runDir = await fs.findLatestDirEntryOpt(sig, state.historyDirHandle)
   state.setRunDir(runDir?.name)
 
   const roundFile = (
@@ -217,10 +217,7 @@ async function watchStep(sig, state) {
 
   const nextDirNum = a.isNil(prevDirNum) ? 0 : prevDirNum + 1
   const nextDirName = u.intPadded(nextDirNum)
-  const dir = await u.wait(sig, state.historyDirHandle.getDirectoryHandle(
-    nextDirName,
-    {create: true},
-  ))
+  const dir = await fs.getDirectoryHandle(sig, state.historyDirHandle, nextDirName, {create: true})
   state.setRunDir(nextDirName)
   await fs.writeDirFile(sig, dir, nextFileName, content)
   state.setRoundFile(nextFileName)

@@ -497,7 +497,7 @@ We could also store a global var, user could edit it in the browser console, the
 
 ---
 
-Consolidate `show`, `decode`, `show_saves` into one command. It should also support run numbers, similar to `plot`.
+<!-- Consolidate `show`, `decode`, `show_saves` into one command. It should also support run numbers, similar to `plot`. -->
 
 ---
 
@@ -980,3 +980,11 @@ Make a rundown of features, with screenshots. Use it for the readme and for anno
 ---
 
 Make a YouTube video guide. Maybe get Claude Code to analyze the app and write a script for the video.
+
+---
+
+Since `ls` requires args now, update all cases of "tip: use `ls` to browse local runs" (or similar) to use `ls /`.
+
+---
+
+Some convenient way to report issues and suggest improvements. Maybe command `report` that sends email to developer. Maybe user can view their reports. Dev can view all reports. Maybe even chat between user and dev.

@@ -565,9 +565,9 @@ export async function jsonDecompressDecode(src) {
 }
 
 /*
-Similar to `jsonDecompressDecode` but does not JSON-decode. The output is expected
-to be either empty or a string containing valid JSON, but we don't validate it
-thoroughly.
+Similar to `jsonDecompressDecode` but does not JSON-decode. The output is
+expected to be either empty or a string containing valid JSON, but we don't
+validate it very thoroughly.
 */
 export async function jsonDecompress(src) {
   src = a.trim(src)
@@ -884,7 +884,14 @@ function eventData(src) {
 // Minor extensions and workarounds for library functionality.
 export const paths = new class PathsPosix extends pt.PathsPosix {
   split(src) {
-    return a.split(a.stripPre(this.clean(src), this.dirSep), this.dirSep)
+    // If the path ends with the dir separator, the last item is an empty string.
+    if (this.isDirLike(src)) return a.split(this.clean(src), this.dirSep)
+    return a.split(this.cleanPre(src), this.dirSep)
+  }
+
+  split1(src) {
+    src = this.split(src)
+    return [src[0] || ``, src.slice(1).join(this.sep)]
   }
 
   // In this particular system, all paths are relative to the root.

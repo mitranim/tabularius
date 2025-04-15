@@ -330,4 +330,4 @@ export function runCmdMock(dur) {
   function cmdMock({sig}) {return a.after(dur, sig)}
 }
 
-for (const _ of a.span(8)) runCmdMock(a.minToMs(1024))
+// for (const _ of a.span(8)) runCmdMock(a.minToMs(1024))

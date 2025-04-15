@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 26
+const VERSION = 27
 let INITED
 
 /*
@@ -190,12 +190,10 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
     this.onkeydown = this.onKeydown
   }
 
-  // When focused, simplify the placeholder
   onFocus() {
-    this.placeholder = `type a command (try "help" or "help <cmd>")`
+    this.placeholder = `type a command (try "help" or "help <cmd>", ↑↓ for history)`
   }
 
-  // When unfocused, mention the shortcut
   onBlur() {
     this.placeholder = `type a command (try "help" or "help <cmd>"; press ${a.show(PROMPT_FOCUS_KEY)} to focus)`
   }

@@ -111,8 +111,8 @@ cmdPlot.help = function cmdPlotHelp() {
     ),
 
     `tip: try ctrl+click / cmd+click / shift+click on plot labels`,
-    [`tip: use `, os.BtnCmdWithHelp(`ls`), ` to browse local runs`],
-    [`tip: use `, os.BtnCmdWithHelp(`cls`), ` to browse cloud runs`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud runs`],
 
     u.LogLines(
       `more examples:`,
@@ -252,7 +252,7 @@ export function cmdPlotDecodeArgs(src) {
 
     if (key === `run`) {
       out.runLatest ??= false
-      const int = u.toIntOpt(val)
+      const int = a.intOpt(val)
       if (a.isSome(int)) u.dictPush(out.where, `runNum`, int)
       else u.dictPush(out.where, `runId`, val)
       continue
@@ -266,21 +266,21 @@ export function cmdPlotDecodeArgs(src) {
 
     if (key === `runNum`) {
       out.runLatest ??= false
-      const int = u.toIntOpt(val)
+      const int = a.intOpt(val)
       if (a.isNil(int)) throw Error(`"runNum" must be an integer, got: ${a.show(val)}`)
       u.dictPush(out.where, key, int)
       continue
     }
 
     if (key === `round`) {
-      const int = u.toIntOpt(val)
+      const int = a.intOpt(val)
       if (a.isSome(int)) u.dictPush(out.where, `roundNum`, int)
       else u.dictPush(out.where, `roundId`, val)
       continue
     }
 
     if (key === `roundNum`) {
-      const int = u.toIntOpt(val)
+      const int = a.intOpt(val)
       if (a.isNil(int)) throw Error(`"roundNum" must be an integer, got: ${a.show(val)}`)
       u.dictPush(out.where, key, int)
       continue
