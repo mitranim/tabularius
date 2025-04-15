@@ -8,14 +8,6 @@
 
   <style>
     /*
-    Monospace fonts tend to be larger than regular ones. TODO: instead of
-    forcing a specific default value, it might be ideal to specify that the
-    font size should be reduced from the default, but no less than X. We might
-    be able to do that with the CSS `clamp` property.
-    */
-    :root {font-size: 16px}
-
-    /*
     Make `[hidden]` actually work. Take priority over Tailwind classes.
     The attribute `[hidden]` and its effect are built-in. We reproduce it
     with a higher specificity. Reference:
