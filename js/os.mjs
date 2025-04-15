@@ -177,31 +177,40 @@ cmdKill.help = function cmdKillHelp() {
     u.callOpt(cmdKill.desc),
     u.LogLines(
       `usage:`,
-      [`  `, BtnCmd(`kill -a`), `  -- kill all processes`],
-      `  kill <id> -- kill specific process`,
+      [`  `, BtnCmd(`kill -a`), `           -- kill all processes`],
+      `  kill <id>          -- kill by id`,
+      `  kill <name>        -- kill by name`,
+      `  kill <id> <id> ... -- kill multiple`,
     ),
     new Kill(),
   )
 }
 
 export function cmdKill({args}) {
-  args = u.splitCliArgs(args)
-  switch (args.length) {
-    case 0:
-    case 1:
-      return u.LogParagraphs(
-        `missing process id or name`,
-        os.cmdHelpDetailed(cmdKill),
-      )
-    case 2:
-      if (args[1] === `-a`) return procKillAll()
-      return procKill(args[1])
-    default:
-      return u.LogParagraphs(
-        `too many args`,
-        os.cmdHelpDetailed(cmdKill),
-      )
+  args = a.tail(u.splitCliArgs(args))
+  const all = u.arrRemoved(args, `-a`)
+
+  if (all) {
+    if (args.length) {
+      return u.LogParagraphs(`too many inputs`, os.cmdHelpDetailed(cmdKill))
+    }
+    return procKillAll()
   }
+
+  if (!args.length) {
+    return u.LogParagraphs(
+      `missing process id or name`,
+      os.cmdHelpDetailed(cmdKill),
+    )
+  }
+
+  const msgs = a.mapCompact(args, procKill)
+  const killed = args.length - msgs.length
+
+  return a.joinOptLax([
+    u.LOG_VERBOSE && killed ? `sent kill signal to ${killed} processes` : ``,
+    ...msgs,
+  ], `; `)
 }
 
 export function procKill(key) {
@@ -209,6 +218,7 @@ export function procKill(key) {
   const proc = PROCS[key] || procByName(key)
   if (!proc) return `no process with id or name ${a.show(key)}`
   proc.deinit()
+  return undefined
 }
 
 export function procKillAll() {
