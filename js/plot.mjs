@@ -118,13 +118,12 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       `more examples:`,
-      [`  `, os.BtnCmd(`plot`)],
-      [`  `, os.BtnCmd(`plot -s=cloud`)],
-      [`  `, os.BtnCmd(`plot -s=local -p=dmg runId=latest`)],
-      [`  `, os.BtnCmd(`plot -s=local -p=eff runId=latest`)],
-      [`  `, os.BtnCmd(`plot -s=cloud -p=dmg runId=latest`)],
-      [`  `, os.BtnCmd(`plot -s=cloud -p=eff runId=latest`)],
-      [`  `, os.BtnCmd(`plot -x=runNum -y=costEff -z=buiTypeUpg -a=avg`)],
+      [`  `, BtnPromptAppendPlot(`-s=cloud`)],
+      [`  `, BtnPromptAppendPlot(`-s=local -p=dmg runId=latest`)],
+      [`  `, BtnPromptAppendPlot(`-s=local -p=eff runId=latest`)],
+      [`  `, BtnPromptAppendPlot(`-s=cloud -p=dmg runId=latest`)],
+      [`  `, BtnPromptAppendPlot(`-s=cloud -p=eff runId=latest`)],
+      [`  `, BtnPromptAppendPlot(`-x=runNum -y=costEff -z=buiTypeUpg -a=avg`)],
     ),
   )
 }
@@ -475,7 +474,13 @@ export const LINE_PLOT_OPTS = {
       isolate: true,
     */
   },
-  focus: {alpha: 0.2},
+
+  /*
+  TODO: more clearly indicate the currently hovered series, maybe with an outline.
+  Then we don't have to make other series unreadable.
+  */
+  focus: {alpha: 0.3},
+
   cursor: {
     // When hovering near a datapoint, apply the setting `../focus/alpha`
     // to all other series.
@@ -739,8 +744,8 @@ more reliable, considering that new entities may be added later. Updating the
 table of codes is easier than updating the data.
 */
 export function plotLabelTitle(val) {
-  const [pre, suf] = a.laxStr(val).split(`_`, 2)
-  return u.joinKeys(c.CODES_SHORT[pre] || pre, suf)
+  const [pre, ...suf] = a.laxStr(val).split(`_`)
+  return u.joinKeys(c.CODES_SHORT[pre] || pre, ...suf)
 }
 
 export function sortPlotLabels(plot) {

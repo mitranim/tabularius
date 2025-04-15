@@ -334,9 +334,13 @@ export async function recommendAuthIfNeededOrRunUpload(sig) {
   const user = await nextUser(sig)
 
   if (!user) {
-    u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`auth`))
+    recommendAuth()
     return
   }
 
   os.runCmd(`upload -p /`).catch(u.logErr)
+}
+
+export function recommendAuth() {
+  u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`auth`))
 }

@@ -396,12 +396,14 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
 
   setLatest() {
     if (this.isErr) return
-    E(this, {class: a.spaced(LOG_MSG_CLS, LOG_MSG_CLS_INFO_LATEST)})
+    this.classList.remove(...splitCliArgs(LOG_MSG_CLS_INFO))
+    this.classList.add(...splitCliArgs(LOG_MSG_CLS_INFO_LATEST))
   }
 
   unsetLatest() {
     if (this.isErr) return
-    E(this, {class: a.spaced(LOG_MSG_CLS, LOG_MSG_CLS_INFO)})
+    this.classList.remove(...splitCliArgs(LOG_MSG_CLS_INFO_LATEST))
+    this.classList.add(...splitCliArgs(LOG_MSG_CLS_INFO))
   }
 }
 
@@ -1015,7 +1017,10 @@ function tableCellPad(src, len, max) {
 export async function optStartUploadAfterInit(sig) {
   const {fb} = await cloudFeatureImport
   if (!fb) return
-  if (!await fb.nextUser(sig)) return
+  if (!await fb.nextUser(sig)) {
+    fb.recommendAuth()
+    return
+  }
   await optStartUploadAfterAuth(sig)
 }
 

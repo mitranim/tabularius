@@ -489,6 +489,12 @@ An option to unpack the source progress file to a JSON file on disk.
 
 An option to overwrite the source progress file with the content of the given output JSON file (after manual editing, for example).
 
+We could also store a global var, user could edit it in the browser console, then we can store that var to a file.
+
+---
+
+`decode` should have run and round modes. If a run is specified, decode the whole run. If a round in a run is specified, decode only that round.
+
 ---
 
 `logElem` / `logShow`: support error chains.
@@ -928,3 +934,13 @@ In `plot` help, unusable / useless parameters should be shown but disabled (grey
 When running `plot -s=cloud userId=current`, if not authed, try to auth.
 
 ---
+
+In `plot` help, explain how to logical OR.
+
+---
+
+In `plot`, filter by current user by default; `user=all` should be opt-in. When not authed, select one user (how?).
+
+---
+
+In `plot`, maybe `-y` should be repeatable, as "or". Maybe it makes no sense.

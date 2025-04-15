@@ -419,7 +419,7 @@ cmdShow.help = function cmdShowHelp() {
     u.callOpt(cmdShow.desc),
     u.LogLines(
       `usage:`,
-      [`  `, os.BtnCmd(`show latest`)],
+      [`  `, os.BtnCmd(`show latest`), ` (`, ui.BtnPromptAppend(`latest`, `show`), `)`],
       `  show <dir>/<file>`,
       `  show <dir>/<file> <flags>`,
     ),
