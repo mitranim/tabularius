@@ -1,24 +1,31 @@
+// https://firebase.google.com/docs/rules/rules-language
+
 rules_version = "2"
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /facts/{docId} {allow read: if true}
-    match /runs/{docId} {allow read: if true}
-    match /runRounds/{docId} {allow read: if true}
-    match /runBuis/{docId} {allow read: if true}
-    match /runRoundBuis/{docId} {allow read: if true}
+    match /facts/{id} {allow read}
+    match /runs/{id} {allow read}
+    match /runRounds/{id} {allow read}
+    match /runBuis/{id} {allow read}
+    match /runRoundBuis/{id} {allow read}
 
-    match /roundSnaps/{roundId} {
-      allow read: if true
+    match /roundSnaps/{id} {
+      allow read
 
-      allow create: if isOwnedByCurrentUser(request.resource.data)
+      allow create: if isRoundSnapOwnedByCurrentUser(request.resource.data)
 
       allow update: if (
-        isOwnedByCurrentUser(resource.data) &&
-        isOwnedByCurrentUser(request.resource.data)
+        isRoundSnapOwnedByCurrentUser(resource.data) &&
+        isRoundSnapOwnedByCurrentUser(request.resource.data)
       )
 
       allow delete: if false
+    }
+
+    match /msgs/{id} {
+      allow read: if true
+      allow create, update: if isOwnedByCurrentUser(request.resource.data)
     }
 
     match /{document=**} {allow read, write, delete: if false}
@@ -33,9 +40,16 @@ function isAuthed() {
   )
 }
 
-function isOwnedByCurrentUser(data) {
+function isRoundSnapOwnedByCurrentUser(data) {
   return (
     isAuthed() &&
     data.get("tabularius_userId", "") == request.auth.uid
+  )
+}
+
+function isOwnedByCurrentUser(data) {
+  return (
+    isAuthed() &&
+    data.get("userId", "") == request.auth.uid
   )
 }

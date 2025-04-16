@@ -26,25 +26,22 @@ cmdPlot.help = function cmdPlotHelp() {
     u.callOpt(cmdPlot.desc),
     `flags:`,
 
+    [
+      BtnAppend(`-c`),
+      ` -- use cloud data; may require the `,
+      os.BtnCmdWithHelp(`auth`), ` command; `,
+      `the default without `, BtnAppend(`-c`),
+      ` is to use local data, which requires the `,
+      os.BtnCmdWithHelp(`init`),
+      ` command to grant access to the history directory`,
+    ],
+
     u.LogLines(
       [
         BtnAppend(`-p`),
         ` -- preset; can be overridden with other flags; supported values:`,
       ],
       ...a.map(a.entries(PLOT_PRESETS), PresetHelp).map(u.indentChi),
-    ),
-
-    u.LogLines(
-      [
-        BtnAppend(`-s`),
-        ` -- data source; "local" requires running the `,
-        os.BtnCmdWithHelp(`init`),
-        ` command to grant access to the history directory; `,
-        `"cloud" may require the `,
-        os.BtnCmdWithHelp(`auth`),
-        ` command; supported values:`,
-      ],
-      ...FlagAppendBtns(PLOT_AGG_SRC, `-s`, PLOG_AGG_OPT_DEF_SRC).map(u.indentChi),
     ),
 
     u.LogLines(
@@ -116,14 +113,16 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       `more examples:`,
-      [`  `, BtnAppend(`-s=cloud`)],
-      [`  `, BtnAppend(`-s=local -p=dmg`)],
-      [`  `, BtnAppend(`-s=local -p=eff`)],
-      [`  `, BtnAppend(`-s=cloud -p=dmg`)],
-      [`  `, BtnAppend(`-s=cloud -p=eff`)],
+      [`  `, BtnAppend(`-c`)],
+      [`  `, BtnAppend(`-p=dmg`)],
+      [`  `, BtnAppend(`-p=eff`)],
+      [`  `, BtnAppend(`-c -p=dmg`)],
+      [`  `, BtnAppend(`-c -p=eff`)],
       [`  `, BtnAppend(`run=all -x=runNum`)],
       [`  `, BtnAppend(`run=all -x=runNum -z=userId`)],
       [`  `, BtnAppend(`run=all -x=runNum -y=costEff -z=buiTypeUpg -a=avg`)],
+      [`  `, BtnAppend(`-c run=latest userId=all`)],
+      [`  `, BtnAppend(`-c run=latest userId=all -p=eff`)],
     ),
   )
 }
@@ -131,10 +130,9 @@ cmdPlot.help = function cmdPlotHelp() {
 export function cmdPlot({sig, args}) {
   if (!a.tail(u.splitCliArgs(args)).length) return cmdPlot.help()
   const inp = cmdPlotDecodeArgs(args)
-  const src = u.dictPop(inp, `src`)
-  if (src === `local`) return cmdPlotLocal(sig, inp)
-  if (src === `cloud`) return cmdPlotCloud(sig, inp)
-  throw `unknown plot data source ${a.show(src)}`
+  const cloud = u.dictPop(inp, `cloud`)
+  if (cloud) return cmdPlotCloud(sig, inp)
+  return cmdPlotLocal(sig, inp)
 }
 
 export async function cmdPlotLocal(sig, inp) {
@@ -153,7 +151,7 @@ export async function cmdPlotLocal(sig, inp) {
 export async function cmdPlotCloud(sig, inp) {
   const fb = await import(`./fb.mjs`)
   if (inp.userCurrent && !await fb.nextUser(sig)) {
-    throw [`filtering cloud data by current user requres authentication; run the `, os.BtnCmdWithHelp(`auth`), ` command`]
+    throw [`filtering cloud data by current user requires authentication; run the `, os.BtnCmdWithHelp(`auth`), ` command`]
   }
   const {data} = await u.wait(sig, fb.fbCall(`plotAgg`, inp))
   ui.MEDIA.add(new Plotter(plotOptsWith({data, inp})))
@@ -191,18 +189,16 @@ to the final representation used by querying functions.
 export function cmdPlotDecodeArgs(src) {
   const out = a.Emp()
   out.where = a.Emp()
-  out.userCurrent = undefined
-  out.runLatest = undefined
 
   for (const [key, val] of a.tail(u.cliDecode(src))) {
-    if (key === `-p`) {
-      const preset = PLOT_PRESETS.get(u.reqEnum(key, val, PLOT_PRESETS))
-      a.patch(out, preset)
+    if (key === `-c`) {
+      u.assUniq(out, `cloud`, `-c`, u.cliBool(key, val))
       continue
     }
 
-    if (key === `-s`) {
-      u.assUniq(out, `src`, `-s`, u.reqEnum(key, val, PLOT_AGG_SRC))
+    if (key === `-p`) {
+      const preset = PLOT_PRESETS.get(u.reqEnum(key, val, PLOT_PRESETS))
+      a.patch(out, preset)
       continue
     }
 
@@ -296,7 +292,7 @@ export function cmdPlotDecodeArgs(src) {
     u.dictPush(out.where, key, val)
   }
 
-  out.src ||= PLOG_AGG_OPT_DEF_SRC
+  out.cloud ??= false
   out.X ||= PLOG_AGG_OPT_DEF_X
   out.Y ||= PLOG_AGG_OPT_DEF_Y
   out.Z ||= PLOG_AGG_OPT_DEF_Z
@@ -306,8 +302,6 @@ export function cmdPlotDecodeArgs(src) {
   return out
 }
 
-export const PLOT_AGG_SRC = new Set([`local`, `cloud`])
-export const PLOG_AGG_OPT_DEF_SRC = a.head(PLOT_AGG_SRC)
 export const PLOG_AGG_OPT_DEF_X = `roundNum`
 export const PLOG_AGG_OPT_DEF_Y = s.STAT_TYPE_DMG_DONE
 export const PLOG_AGG_OPT_DEF_Z = `buiTypeUpg`
@@ -350,7 +344,7 @@ export async function plotExampleRun() {
   }
 
   const inp = cmdPlotDecodeArgs()
-  delete inp.src
+  delete inp.cloud
 
   const {Z: Z_key, X: X_key, where, agg} = s.validPlotAggOpt(inp)
   const facts = d.datQueryFacts(dat, where)

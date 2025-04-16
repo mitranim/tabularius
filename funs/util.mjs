@@ -20,10 +20,12 @@ export function intPadded(val) {
 export function isArrOfStr(val) {return a.isArrOf(val, a.isStr)}
 export function reqArrOfStr(val) {return a.reqArrOf(val, a.isStr)}
 export function optArrOfStr(val) {return a.optArrOf(val, a.isStr)}
+export function laxArrOfStr(val) {return a.optArrOf(val, a.isStr) ?? []}
 
 export function isArrOfValidStr(val) {return a.isArrOf(val, a.isValidStr)}
 export function reqArrOfValidStr(val) {return a.reqArrOf(val, a.isValidStr)}
 export function optArrOfValidStr(val) {return a.optArrOf(val, a.isValidStr)}
+export function laxArrOfValidStr(val) {return a.optArrOf(val, a.isValidStr) ?? []}
 
 export function indent(src) {return a.optStr(src) ? `  ` + src : ``}
 export function indentChi(src) {return a.vac(src) && [`  `, src]}
@@ -118,4 +120,12 @@ export function mapUniq(src, fun) {
   const set = new Set()
   for (src of a.values(src)) set.add(fun(src))
   return a.arr(set)
+}
+
+export function uniqArr(src) {return a.arr(compactSet(src))}
+
+export function arrOfUniqValidStr(src) {
+  const out = new Set()
+  for (src of a.values(src)) if (a.optStr(src)) out.add(src)
+  return a.arr(out)
 }

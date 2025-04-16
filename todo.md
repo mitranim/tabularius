@@ -169,18 +169,18 @@ We want many options for filtering, grouping, aggregating.
 We support arbitrary filtering, grouping, aggregation via CLI args, for both local and cloud data:
 
 ```sh
-plot -s=cloud
-plot -s=cloud userId=current
-plot -s=cloud run=123 run=234
-plot -s=cloud run=123 userId=current
-plot -s=local run=123
-plot -s=local run=latest
-plot -s=local run=123 run=latest
-plot -s=local run=123 -m=dmg
-plot -s=local run=123 -m=eff
-plot -s=local -x=roundNum -y=dmgDone -z=buiTypeUpg
-plot -s=local -x=roundNum -y=dmgOver -z=buiTypeUpg
-plot -s=local -x=roundNum -y=dmgEff -z=buiTypeUpg -a=avg
+plot -c
+plot -c userId=current
+plot -c run=123 run=234
+plot -c run=123 userId=current
+plot run=123
+plot run=latest
+plot run=123 run=latest
+plot run=123 -m=dmg
+plot run=123 -m=eff
+plot -x=roundNum -y=dmgDone -z=buiTypeUpg
+plot -x=roundNum -y=dmgOver -z=buiTypeUpg
+plot -x=roundNum -y=dmgEff -z=buiTypeUpg -a=avg
 ```
 
 <!-- Should be possible to specify arbitrary stat types and scopes. But their full names are long. Probably end up with some aliases for commonly used fields, like `dmg` means `statType = dmg && statScope = round`. -->
@@ -943,7 +943,7 @@ In `plot` help, unusable / useless parameters should be shown but disabled (grey
 
 ---
 
-<!-- When running `plot -s=cloud userId=current`, if not authed, try to auth. -->
+<!-- When running `plot -c userId=current`, if not authed, try to auth. -->
 
 (Printed an error with the `auth` command mentioned.)
 
@@ -971,6 +971,10 @@ In help for various commands, prioritize "append to prompt" buttons over "run cm
 
 ---
 
+<!-- `plot`: use `-c` instead of `-s=cloud` for cloud data source. -->
+
+---
+
 Implement an easy rollback option.
 
 ---
@@ -983,8 +987,8 @@ Make a YouTube video guide. Maybe get Claude Code to analyze the app and write a
 
 ---
 
-Since `ls` requires args now, update all cases of "tip: use `ls` to browse local runs" (or similar) to use `ls /`.
+<!-- Since `ls` requires args now, update all cases of "tip: use `ls` to browse local runs" (or similar) to use `ls /`. -->
 
 ---
 
-Some convenient way to report issues and suggest improvements. Maybe command `report` that sends email to developer. Maybe user can view their reports. Dev can view all reports. Maybe even chat between user and dev.
+<!-- Some convenient way to report issues and suggest improvements. -->

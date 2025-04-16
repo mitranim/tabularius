@@ -6,10 +6,11 @@ import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as ui from './ui.mjs'
 
-export {idb}
 import * as self from './fs.mjs'
 const tar = window.tabularius ??= a.Emp()
 tar.fs = self
+tar.lib ??= a.Emp()
+tar.idb = idb
 a.patch(window, tar)
 
 // Initialize IndexedDB for persistence of file handles and other values.
@@ -389,7 +390,7 @@ function compareLsEntriesAsc(one, two) {return u.compareAsc(one[1], two[1])}
 // export function cmdTree(sig, args) {}
 
 cmdShow.cmd = `show`
-cmdShow.desc = `decode and show runs, rounds, or save files with flexible output options`
+cmdShow.desc = `decode and show runs, rounds, or save files, with flexible output options`
 
 cmdShow.help = function cmdShowHelp() {
   return u.LogParagraphs(
@@ -436,7 +437,7 @@ cmdShow.help = function cmdShowHelp() {
     ),
 
     `if no flags are provided, nothing is done`,
-    [`tip: use `, os.BtnCmdWithHelp(`ls`), ` to browse local runs`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
   )
 }
 
@@ -574,7 +575,7 @@ export async function showSaves({sig, root, path, opt}) {
 }
 
 export async function findLatestDirEntryReq(sig, dir, fun) {
-  const out = findLatestDirEntryOpt(sig, dir, fun)
+  const out = await findLatestDirEntryOpt(sig, dir, fun)
   if (out) return out
   throw new ErrFs(`unable to find latest entry in ${a.show(dir.name)}`)
 }

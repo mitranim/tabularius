@@ -1045,7 +1045,11 @@ export const cloudFeatureImport = async function cloudFeatureImport() {
   try {
     res = await Promise.race([
       a.after(a.minToMs(1), sig),
-      Promise.all([import(`./fb.mjs`), import(`./upload.mjs`)]),
+      Promise.all([
+        import(`./fb.mjs`),
+        import(`./msgs.mjs`),
+        import(`./upload.mjs`),
+      ]),
     ])
   }
   catch (err) {
@@ -1054,8 +1058,9 @@ export const cloudFeatureImport = async function cloudFeatureImport() {
   }
 
   if (a.isArr(res)) {
-    const [fb, up] = res
+    const [fb, ms, up] = res
     out.fb = fb
+    out.ms = ms
     out.up = up
     return out
   }
@@ -1063,3 +1068,16 @@ export const cloudFeatureImport = async function cloudFeatureImport() {
   log.err(`timed out trying to ${msg}`)
   return out
 }()
+
+export function stripPreSpaced(src, pre) {
+  src = a.laxStr(src)
+  pre = a.laxStr(pre)
+
+  if (!pre) return src
+  if (!src.startsWith(pre)) return src
+
+  const out = src.slice(pre.length)
+  if (!out) return out
+  if (/^\s/.test(out)) return out.trim()
+  return src
+}

@@ -5,7 +5,7 @@ import * as fs from './fs.mjs'
 import * as w from './watch.mjs'
 import * as ui from './ui.mjs'
 import * as p from './plot.mjs'
-const {fb, up} = await u.cloudFeatureImport
+const {fb, ms, up} = await u.cloudFeatureImport
 
 import * as self from './main.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -42,6 +42,8 @@ os.addCmd(cmdStatus)
 
 os.addCmd(os.cmdKill)
 os.addCmd(u.cmdVerbose)
+
+if (ms) os.addCmd(ms.cmdFeedback)
 
 cmdDeinit.cmd = `deinit`
 cmdDeinit.desc = `stop all processes, revoke FS access`
@@ -96,7 +98,7 @@ function cmdLsDesc() {
 
 function cmdLsHelp() {
   return u.LogParagraphs(
-    cmdLsDesc(),
+    cmdLs.desc(),
     u.LogLines(
       `supported sources:`,
       [`  local -- default -- requires `, os.BtnCmdWithHelp(`init`)],

@@ -81,7 +81,11 @@ t.test(function test_cmdPlotDecodeArgs() {
   function fail(src, msg) {t.throws(() => p.cmdPlotDecodeArgs(src), Error, msg)}
 
   test(``, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`, where: {}, runLatest: true, userCurrent: true,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`, where: {}, runLatest: true, userCurrent: true,
+  })
+
+  test(`plot`, {
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`, where: {}, runLatest: true, userCurrent: true,
   })
 
   fail(`plot -x=run`, `"-x" must be one of: ${a.show(a.keys(s.ALLOWED_X_KEYS))}`)
@@ -97,149 +101,144 @@ t.test(function test_cmdPlotDecodeArgs() {
   fail(`plot -z=upg`, `got: "upg"`)
 
   test(`plot -x=roundNum -y=dmgDone -z=buiTypeUpg`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`, where: {},
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`, where: {},
     userCurrent: true, runLatest: true,
   })
 
   test(`plot -x=runNum -y=dmgOver -z=buiType`, {
-    src: `local`, X: `runNum`, Y: `dmgOver`, Z: `buiType`, agg: `sum`, where: {},
+    cloud: false, X: `runNum`, Y: `dmgOver`, Z: `buiType`, agg: `sum`, where: {},
     userCurrent: true, runLatest: true,
   })
 
-  test(`plot -s=local`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`, where: {},
-    userCurrent: true, runLatest: true,
-  })
-
-  test(`plot -s=cloud`, {
-    src: `cloud`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`, where: {},
+  test(`plot -c`, {
+    cloud: true, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`, where: {},
     userCurrent: true, runLatest: true,
   })
 
   fail(`plot one=two`, `"plot filters" must be one of: ${a.show(a.keys(s.ALLOWED_FILTER_KEYS))}`)
 
   test(`plot userId=one`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: false, runLatest: true,
     where: {userId: [`one`]},
   })
 
   test(`plot userId=current`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: true,
     where: {},
   })
 
   test(`plot userId=one userId=current`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: true,
     where: {userId: [`one`]},
   })
 
   test(`plot userId=all`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: false, runLatest: true,
     where: {},
   })
 
   test(`plot userId=one userId=all`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: false, runLatest: true,
     where: {userId: [`one`]},
   })
 
   test(`plot userId=one runId=two`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: false, runLatest: false,
     where: {userId: [`one`], runId: [`two`]},
   })
 
   test(`plot userId=one runId=two runId=three`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: false, runLatest: false,
     where: {userId: [`one`], runId: [`two`, `three`]},
   })
 
   test(`plot run=one`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: false,
     where: {runId: [`one`]},
   })
 
   test(`plot runId=one`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: false,
     where: {runId: [`one`]},
   })
 
   test(`plot run=12`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: false,
     where: {runNum: [12]},
   })
 
   test(`plot run=0012`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: false,
     where: {runNum: [12]},
   })
 
   test(`plot run=latest`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: true,
     where: {},
   })
 
   test(`plot runId=latest`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: true,
     where: {},
   })
 
   test(`plot runId=0001 runId=latest`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: true,
     where: {runId: [`0001`]},
   })
 
   test(`plot run=all`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: false,
     where: {},
   })
 
   test(`plot runId=all`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: false,
     where: {},
   })
 
   test(`plot runNum=1`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: false,
     where: {runNum: [1]},
   })
 
   test(`plot round=one`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: true,
     where: {roundId: [`one`]},
   })
 
   test(`plot round=12`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: true,
     where: {roundNum: [12]},
   })
 
   test(`plot round=0012`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
     userCurrent: true, runLatest: true,
     where: {roundNum: [12]},
   })
 
   test(`plot -a=avg`, {
-    src: `local`, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `avg`,
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `avg`,
     userCurrent: true, runLatest: true,
     where: {},
   })
@@ -254,9 +253,21 @@ t.test(function test_cmdPlotDecodeArgs() {
 
   {
     const inp = p.cmdPlotDecodeArgs()
-    delete inp.src
+    delete inp.cloud
     s.validPlotAggOpt(inp)
   }
+})
+
+t.test(function test_stripPreSpaced() {
+  function test(src, pre, exp) {t.is(u.stripPreSpaced(src, pre), exp)}
+  test(``, ``, ``)
+  test(`one`, ``, `one`)
+  test(``, `one`, ``)
+  test(`one two`, `one`, `two`)
+  test(`one one two`, `one`, `one two`)
+  test(`two one`, `one`, `two one`)
+  test(`oneone`, `one`, `oneone`)
+  test(`onetwo`, `one`, `onetwo`)
 })
 
 // TODO test generic XYZ aggregation; see `schema.mjs`.

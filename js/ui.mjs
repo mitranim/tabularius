@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 27
+const VERSION = 28
 let INITED
 
 /*
@@ -388,7 +388,7 @@ export function BtnPromptAppend(pre, suf, alias) {
 }
 
 cmdClear.cmd = `clear`
-cmdClear.desc = `clear log and media`
+cmdClear.desc = `clear log and/or media`
 cmdClear.help = function cmdClearHelp() {
   return u.LogParagraphs(
     u.callOpt(cmdClear.desc),

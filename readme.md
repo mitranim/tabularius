@@ -47,3 +47,4 @@ Tabularius is a companion app for Tower Dominion. Automatic backups (local and c
 - Global data querying and comparison
 - User data isolation and security
 - Manual and automatic cloud synchronization
+- Rudimentary feedback system

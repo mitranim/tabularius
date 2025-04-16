@@ -107,6 +107,7 @@ export function authStatus() {
   return `logged in as ${user.uid}`
 }
 
+// TODO make async, use `nextUser`.
 export function reqFbUserId() {
   const id = fbObs.user?.uid
   if (id) return id
@@ -124,11 +125,10 @@ export async function listRuns(sig, userId) {
   a.reqValidStr(userId)
 
   try {
-    const docs = await fbDocs(sig, fbs.query(
+    const ids = snapIds(await u.wait(sig, fbs.getDocs(fbs.query(
       fbs.collection(fbStore, s.COLL_RUNS),
       fbs.where(`userId`, `==`, userId),
-    ))
-    const ids = a.map(docs, getId)
+    ))))
 
     if (!ids.length) {
       return [
@@ -153,14 +153,13 @@ export async function listRounds(sig, userId, runId) {
   a.reqValidStr(userId)
 
   try {
-    const docs = await fbDocs(sig, fbs.query(
+    const ids = snapIds(await u.wait(sig, fbs.getDocs(fbs.query(
       fbs.collection(fbStore, s.COLL_RUN_ROUNDS),
       fbs.and(
         fbs.where(`userId`, `==`, userId),
         fbs.where(`runId`, `==`, runId),
       )
-    ))
-    const ids = a.map(docs, getId)
+    ))))
 
     if (!ids.length) {
       return [
@@ -197,16 +196,11 @@ function BtnCloudRound(val) {
   })
 }
 
-export async function fbDocs(sig, query) {
-  return (await u.wait(sig, fbs.getDocs(query))).docs
-}
+export function snapIds(src) {return a.map(src.docs, getId)}
+export function snapDocs(src) {return a.map(src.docs, docData)}
 
-export async function fbDocDatas(sig, query) {
-  return a.map((await fbDocs(sig, query)), docData)
-}
-
-function docData(src) {return src.data()}
 function getId(src) {return src.id}
+function docData(src) {return src.data()}
 
 /*
 In our case, anon login would be a gotcha for the user. If you login, logout,
@@ -321,3 +315,5 @@ export async function recommendAuthIfNeededOrRunUpload(sig) {
 export function recommendAuth() {
   u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`auth`))
 }
+
+export function isDev() {return fbObs.user?.email === `me@mitranim.com`}
