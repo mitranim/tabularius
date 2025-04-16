@@ -19,7 +19,7 @@ Tabularius is a companion app for Tower Dominion. Automatic backups (local and c
 ### Core System
 
 - Terminal emulator interface with command history
-- Process management (`ps`, `kill`)
+- Process management (`status`, `kill`)
 - File system access via Web FileSystem API
 - Dark/light mode toggle
 - Cross-tab communication

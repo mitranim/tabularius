@@ -557,8 +557,6 @@ export async function showSaves({sig, root, path, opt}) {
   u.reqSig(sig)
   a.optStr(path)
 
-  console.trace()
-
   // TODO store the handle to IDB to avoid re-prompting.
   const dir = await reqFsDirPick()()
   console.log(`dir:`, dir)
