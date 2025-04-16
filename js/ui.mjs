@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 28
+const VERSION = 29
 let INITED
 
 /*
@@ -60,7 +60,7 @@ export const TITLEBAR = E(
   E(`div`, {class: `flex gap-4`},
     E(`span`, {class: `text-gray-600 dark:text-gray-400`}, `v` + VERSION),
     E(`a`, {href: `https://github.com/mitranim/tabularius`, ...tarblan, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `GitHub`),
-    E(`a`, {href: `https://discord.gg/vYNuXDfJ`, ...tarblan, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `Discord`)
+    E(`a`, {href: `https://discord.gg/upPxCEVxgD`, ...tarblan, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `Discord`)
   ),
 )
 
