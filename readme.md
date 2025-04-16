@@ -29,7 +29,7 @@ Automatically plots the latest run! Automatically watches the game save, makes b
 - Bonus tip: can have any number of plots at once!
 - Note: FS access requires running the `init` command once.
 
-![image](https://github.com/user-attachments/assets/ca042028-824e-414b-9ab7-7430d57852b3)
+![watching and plotting](https://github.com/user-attachments/assets/ca042028-824e-414b-9ab7-7430d57852b3)
 
 After running `init` (to grant FS access) and `auth google`, the app automatically uploads your run history to the cloud.
 - _Any_ cloud run can be analyzed with `plot`!
@@ -37,11 +37,11 @@ After running `init` (to grant FS access) and `auth google`, the app automatical
 - Help the developers balance the game!
 - Data is perfectly anonymous, your personal details are secret.
 
-![image](https://github.com/user-attachments/assets/990bb3fd-fad2-4275-89fe-09b6ec003b66)
+![cloud backups and plots](https://github.com/user-attachments/assets/990bb3fd-fad2-4275-89fe-09b6ec003b66)
 
 Show the content of arbitrary save files, either from the original save folder, or from arbitrary runs and rounds in your history directory:
 
-![image](https://github.com/user-attachments/assets/93d18598-2f3a-4a30-879b-0d9884c87449)
+![show arbitrary save files](https://github.com/user-attachments/assets/93d18598-2f3a-4a30-879b-0d9884c87449)
 
 And more!
 
