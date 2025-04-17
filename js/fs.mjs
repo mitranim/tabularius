@@ -410,6 +410,8 @@ function compareLsEntriesAsc(one, two) {return u.compareAsc(one[1], two[1])}
 // TODO implement.
 // export function cmdTree(sig, args) {}
 
+export const SHOW_DIR = `show`
+
 cmdShow.cmd = `show`
 cmdShow.desc = `decode and show runs, rounds, or save files, with flexible output options`
 
@@ -565,7 +567,7 @@ export async function showData({sig, root, path, data, opt}) {
   if (write) {
     coded ??= JSON.stringify(data, undefined, pretty ? 2 : 0)
 
-    const outDirName = `show`
+    const outDirName = SHOW_DIR
     const outDir = await getDirectoryHandle(sig, root, outDirName, {create: true})
 
     const outName = u.paths.name(path) + `.json`
@@ -582,7 +584,6 @@ export async function showSaves({sig, root, path, opt}) {
 
   // TODO store the handle to IDB to avoid re-prompting.
   const dir = await reqFsDirPick()()
-  console.log(`dir:`, dir)
 
   if (path) {
     const handle = await getFileHandle(sig, dir, path)

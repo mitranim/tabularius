@@ -191,6 +191,12 @@ export async function uploadRun({sig, dir, userId, state}) {
   a.reqInst(dir, FileSystemDirectoryHandle)
   const runName = dir.name
 
+  // Questionable special case. TODO more general approach.
+  if (runName === fs.SHOW_DIR) {
+    u.log.info(`[upload] skipping `, a.show(runName))
+    return
+  }
+
   if (state) {
     state.status = `uploading run ${runName}`
     state.runsChecked++
@@ -207,6 +213,13 @@ export async function uploadRound({sig, file, runName, userId, state}) {
   a.reqValidStr(userId)
 
   const path = u.paths.join(runName, file.name)
+
+  // Questionable special case. TODO more general approach.
+  if (runName === fs.SHOW_DIR) {
+    u.log.info(`[upload] skipping `, a.show(path))
+    return
+  }
+
   if (state) state.status = `checking round ${a.show(path)}`
 
   const round = await fs.jsonDecompressDecodeFile(sig, file)
