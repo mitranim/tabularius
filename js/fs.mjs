@@ -72,24 +72,34 @@ export class FileConf extends a.Emp {
   }
 }
 
+export const PROGRESS_FILE_LOCATION = u.joinParagraphs(
+  `location of progress file; note that "AppData" is hidden by default:`,
+  `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\SaveFiles\\Progress.gd`,
+)
+
 export const PROGRESS_FILE_CONF = new FileConf({
   key: `progress_file`,
   desc: `progress file`,
   help: u.joinParagraphs(
-    `pick your TD progress file; typical location:`,
-    `C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\SaveFiles\\Progress.gd`,
-    `note that AppData is hidden by default!`,
+    `pick your game progress file`,
+    PROGRESS_FILE_LOCATION,
   ),
   mode: `read`,
   pick: pickProgressFile,
 })
 
+
+export const HISTORY_DIR_LOCATION = u.joinParagraphs(
+  `suggested location of run history dir; create it yourself:`,
+  `  C:\\Users\\<user>\\Documents\\tower-dominion-history`,
+)
+
 export const HISTORY_DIR_CONF = new FileConf({
   key: `history_dir`,
-  desc: `history directory`,
+  desc: `history dir`,
   help: u.joinParagraphs(
-    `pick directory for run history (backups); suggested location:`,
-    `C:\\Users\\<user>\\Documents\\tower-dominion`,
+    `pick directory for run history (backups)`,
+    HISTORY_DIR_LOCATION,
   ),
   mode: `readwrite`,
   pick: pickHistoryDir,
@@ -97,15 +107,15 @@ export const HISTORY_DIR_CONF = new FileConf({
 
 // Try to load file handles from IDB on app startup.
 export async function loadedFileHandles() {
-  return !!((await loadedProgressFile()) && (await loadedHistoryDir()))
+  return (await loadedProgressFile()) && (await loadedHistoryDir())
 }
 
-export function loadedProgressFile() {
-  return fileConfLoadedWithPerm(PROGRESS_FILE_CONF)
+export async function loadedProgressFile() {
+  return !!await fileConfLoadedWithPerm(PROGRESS_FILE_CONF)
 }
 
-export function loadedHistoryDir() {
-  return fileConfLoadedWithPerm(HISTORY_DIR_CONF)
+export async function loadedHistoryDir() {
+  return !!await fileConfLoadedWithPerm(HISTORY_DIR_CONF)
 }
 
 // Try to load a handle and check its permission.
@@ -158,6 +168,18 @@ export async function initedFileHandles(sig) {
   return true
 }
 
+export async function initedProgressFile(sig) {
+  const conf = PROGRESS_FILE_CONF
+  await fileConfInit(sig, conf).catch(u.logErr)
+  return !!conf.handle
+}
+
+export async function initedHistoryDir(sig) {
+  const conf = HISTORY_DIR_CONF
+  await fileConfInit(sig, conf).catch(u.logErr)
+  return !!conf.handle
+}
+
 /*
 See the comment on `fileConfRequireOrRequestPermission`. This must be used only
 on a user action, such as prompt input submission or a click.
@@ -165,7 +187,6 @@ on a user action, such as prompt input submission or a click.
 export async function fileConfInit(sig, conf) {
   u.reqSig(sig)
   const {desc, help, key, pick} = a.reqInst(conf, FileConf)
-
   if (!conf.handle) await fileConfLoad(conf)
 
   if (!conf.handle) {
@@ -458,7 +479,9 @@ export async function cmdShow({sig, args}) {
     return u.LogParagraphs(`missing input paths`, os.cmdHelpDetailed(cmdShow))
   }
 
-  if (!(opt.copy || opt.log || opt.write)) return `no action flags specified, nothing done`
+  if (!(opt.copy || opt.log || opt.write)) {
+    return `no action flags provided, nothing done`
+  }
 
   const root = await reqHistoryDir(sig)
 

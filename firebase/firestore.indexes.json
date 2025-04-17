@@ -1,9 +1,20 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "msgs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "tags", "arrayConfig": "CONTAINS"},
+        {"fieldPath": "userId", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "ASCENDING"}
+      ]
+    }
+  ],
   "fieldOverrides": [
     {
       "collectionGroup": "roundSnaps",
       "fieldPath": "*",
+      "ttl": false,
       "indexes": []
     }
   ]

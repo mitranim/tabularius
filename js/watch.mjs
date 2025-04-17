@@ -237,5 +237,5 @@ async function watchBroadcast(eve) {
   if (!fb) return
 
   const {runId, roundId} = eve
-  os.runCmd(`upload -q ${u.paths.join(runId, roundId)}`)
+  os.runCmd(`upload ${u.paths.join(runId, roundId)}`)
 }

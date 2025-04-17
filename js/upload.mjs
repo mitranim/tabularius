@@ -69,22 +69,25 @@ cmdUpload.help = function cmdUploadHelp() {
 }
 
 export async function cmdUpload(proc) {
-  const args = u.splitCliArgs(proc.args)
+  const args = a.tail(u.splitCliArgs(proc.args))
   const persistent = u.arrRemoved(args, `-p`)
   const quiet = u.arrRemoved(args, `-q`)
+  const path = args[0]
 
-  if (args.length !== 2) return os.cmdHelpDetailed(cmdUpload)
-  if (isUploadingLocal()) return `already running`
+  if (!path) {
+    return u.LogParagraphs(`missing upload path`, os.cmdHelpDetailed(cmdUpload))
+  }
+  if (args.length > 1) {
+    return u.LogParagraphs(`too many inputs`, os.cmdHelpDetailed(cmdUpload))
+  }
+  if (isUploadingLocal()) return `[upload] already running`
 
   proc.desc = `acquiring lock`
   let unlock = await u.lockOpt(UPLOAD_LOCK_NAME)
   const {sig} = proc
 
-  if (unlock) {
-    if (!quiet) u.log.info(`[upload] starting`)
-  }
-  else {
-    if (!persistent) return `another process has a lock on uploading`
+  if (!unlock) {
+    if (!persistent) return `[upload] another process has a lock on uploading`
 
     const start = Date.now()
     u.log.verb(`[upload] another process has a lock on uploading, waiting until it stops`)
@@ -96,29 +99,36 @@ export async function cmdUpload(proc) {
   }
 
   proc.desc = `uploading backups to the cloud`
-  try {return await cmdUploadUnsync({sig, path: args[1], quiet, persistent})}
+  try {return await cmdUploadUnsync({sig, path, quiet, persistent})}
   finally {unlock()}
 }
 
-export async function cmdUploadUnsync({sig, path, quiet, persistent}) {
+export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent}) {
   u.reqSig(sig)
-  a.reqValidStr(path)
+  a.reqValidStr(srcPath)
   a.optBool(quiet)
   a.optBool(persistent)
 
   const root = await fs.reqHistoryDir(sig)
-  path = u.paths.clean(path)
-  if (path === `latest`) path = await fs.findLatestRunId(sig, root)
+  const [_, handle, path] = await fs.handleAtPathMagic(sig, root, srcPath)
 
   const userId = fb.reqFbUserId()
   const state = a.vac(!quiet) && o.obs({
+    done: false,
     status: ``,
     runsChecked: 0,
     roundsChecked: 0,
     roundsUploaded: 0,
   })
 
-  if (state) u.log.info(new UploadProgress(state))
+  if (state) {
+    if (fs.isFile(handle)) {
+      u.log.info(new FileUploadProgress(path, state))
+    }
+    else {
+      u.log.info(new DirUploadProgress(path || `/`, state))
+    }
+  }
   if (!persistent) return cmdUploadStep({sig, root, path, userId, state})
 
   let errs = 0
@@ -129,11 +139,16 @@ export async function cmdUploadUnsync({sig, path, quiet, persistent}) {
     catch (err) {
       if (u.errIs(err, u.isErrAbort)) return
       errs++
+
       if (errs >= UPLOAD_MAX_ERRS) {
+        state.status = `error`
         throw Error(`unexpected error; reached max error count ${errs}, exiting: ${err}`, {cause: err})
       }
+
       const sleep = UPLOAD_RETRY_INTERVAL_MS
       u.log.err(`[upload] unexpected error (${errs} in a row), retrying after ${sleep}ms: `, err)
+
+      state.status = `waiting before retrying`
       if (!await a.after(sleep, sig)) return
     }
   }
@@ -151,14 +166,14 @@ async function cmdUploadStep({sig, root, path, userId, state}) {
     for await (const dir of fs.readRunsAsc(sig, root)) {
       await uploadRun({sig, dir, userId, state})
     }
-    if (state) state.status = `done`
+    uploadDone(state)
     return
   }
 
   const dir = await fs.getDirectoryHandle(sig, root, segs.shift())
   if (!segs.length) {
     await uploadRun({sig, dir, userId, state})
-    if (state) state.status = `done`
+    uploadDone(state)
     return
   }
 
@@ -169,7 +184,7 @@ async function cmdUploadStep({sig, root, path, userId, state}) {
 
   const file = await fs.getFileHandle(sig, dir, segs.shift())
   await uploadRound({sig, file, runName: dir.name, userId, state})
-  if (state) state.status = `done`
+  uploadDone(state)
 }
 
 export async function uploadRun({sig, dir, userId, state}) {
@@ -240,16 +255,57 @@ export async function uploadRound({sig, file, runName, userId, state}) {
   if (state) state.roundsChecked++
 }
 
-export class UploadProgress extends u.ReacElem {
-  constructor(obs) {super().obs = obs}
+function uploadDone(state) {
+  if (!a.optObj(state)) return
+  state.done = true
+  state.status = `done`
+}
+
+export class FileUploadProgress extends u.ReacElem {
+  constructor(path, state) {
+    super()
+    this.path = a.reqStr(path)
+    this.state = a.reqObj(state)
+  }
 
   run() {
-    const {status, runsChecked, roundsChecked, roundsUploaded} = this.obs
-    E(this, {}, `upload progress:
-  status: ${status}
-  runs checked: ${runsChecked}
-  rounds checked: ${roundsChecked}
-  rounds uploaded: ${roundsUploaded}
-`)
+    const {path} = this
+    const {done, status, roundsChecked, roundsUploaded} = this.state
+
+    if (!done) {
+      // All round upload statuses include the file path, don't repeat it.
+      E(this, {}, `[upload] `, status || [`uploading `, a.show(path)])
+      return
+    }
+
+    if (roundsUploaded) {
+      E(this, {}, `[upload] uploaded `, a.show(path))
+      return
+    }
+
+    if (roundsChecked) {
+      E(this, {}, `[upload] checked `, a.show(path), `, no upload needed`)
+      return
+    }
+
+    E(this, {}, `[upload] tried to upload `, a.show(path), `, nothing done`)
+  }
+}
+
+export class DirUploadProgress extends FileUploadProgress {
+  run() {
+    const {path} = this
+    const {done, status, runsChecked, roundsChecked, roundsUploaded} = this.state
+
+    E(this, {},
+      `[upload] `, (done ? `uploaded` : `uploading`), ` `, a.show(path),
+      u.joinLines(
+        `: `,
+        `  status: ${status}`,
+        `  runs checked: ${runsChecked}`,
+        `  rounds checked: ${roundsChecked}`,
+        `  rounds uploaded: ${roundsUploaded}`,
+      ),
+    )
   }
 }

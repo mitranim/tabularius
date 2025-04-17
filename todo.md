@@ -967,7 +967,7 @@ In `plot` help, unusable / useless parameters should be shown but disabled (grey
 
 ---
 
-In help for various commands, prioritize "append to prompt" buttons over "run cmd" buttons.
+<!-- In help for various commands, prioritize "append to prompt" buttons over "run cmd" buttons. -->
 
 ---
 
@@ -979,7 +979,7 @@ Implement an easy rollback option.
 
 ---
 
-Make a rundown of features, with screenshots. Use it for the readme and for announcements.
+<!-- Make a rundown of features, with screenshots. Use it for the readme and for announcements. -->
 
 ---
 
@@ -992,3 +992,15 @@ Make a YouTube video guide. Maybe get Claude Code to analyze the app and write a
 ---
 
 <!-- Some convenient way to report issues and suggest improvements. -->
+
+---
+
+<!-- When auto-uploading a new round created by `watch`, log the fact of upload. Currently the incremental upload is completely silent, which is inconsistent with `watch` logging. -->
+
+---
+
+<!-- Better instructions in `init`. By default, it should print help (with explanations and suggested file paths). Progress file and history dir should be flags. Use two `os.BtnCmd` to init them separately. -->
+
+---
+
+<!-- Command `upload` should use `handleAtPathMagic`. -->

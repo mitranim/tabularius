@@ -898,6 +898,10 @@ export const paths = new class PathsPosix extends pt.PathsPosix {
   clean(src) {
     return a.stripPre(super.clean(src), this.dirSep)
   }
+
+  // Workaround for a minor bug in the original method, which always expects
+  // at least one input.
+  join(...src) {return src.length ? super.join(...src) : ``}
 }()
 
 export function filterWhere(src, where) {
@@ -1021,14 +1025,17 @@ function tableCellPad(src, len, max) {
   return src.padEnd(max | 0, ` `)
 }
 
-export async function optStartUploadAfterInit(sig) {
+export async function optStartUploadAfterInit() {
   const {fb} = await cloudFeatureImport
   if (!fb) return
+
+  // Use background signal; don't need cancelation here.
   if (!await fb.nextUser(sig)) {
     fb.recommendAuth()
     return
   }
-  await optStartUploadAfterAuth(sig)
+
+  await optStartUploadAfterAuth()
 }
 
 export async function optStartUploadAfterAuth() {

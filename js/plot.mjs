@@ -128,32 +128,49 @@ cmdPlot.help = function cmdPlotHelp() {
 }
 
 export function cmdPlot({sig, args}) {
-  if (!a.tail(u.splitCliArgs(args)).length) return cmdPlot.help()
+  const cliInp = u.stripPreSpaced(args, `plot`)
+  if (!cliInp) return cmdPlot.help()
   const inp = cmdPlotDecodeArgs(args)
   const cloud = u.dictPop(inp, `cloud`)
-  if (cloud) return cmdPlotCloud(sig, inp)
-  return cmdPlotLocal(sig, inp)
+  if (cloud) return cmdPlotCloud(sig, inp, cliInp)
+  return cmdPlotLocal(sig, inp, cliInp)
 }
 
-export async function cmdPlotLocal(sig, inp) {
+export async function cmdPlotLocal(sig, inp, cliInp) {
   const opt = s.validPlotAggOpt(inp)
   const {Z: Z_key, X: X_key, agg} = opt
   await d.datLoad(sig, d.DAT, opt)
 
+  let count = 0
+  const plotter = new LivePlotter(plotOpts)
+
   // TODO: on `DAT` events, don't update the plot if unaffected.
-  ui.MEDIA.add(new LivePlotter(function plotOpts() {
+  function plotOpts() {
     const facts = d.datQueryFacts(d.DAT, opt)
     const data = s.plotAggFromFacts({facts, Z_key, X_key, agg})
+
+    if (isPlotDataEmpty(data) && !count++) {
+      u.log.info(msgPlotDataEmpty(cliInp))
+      ui.MEDIA.delete(plotter)
+    }
     return plotOptsWith({data, inp})
-  }))
+  }
+  ui.MEDIA.add(plotter)
 }
 
-export async function cmdPlotCloud(sig, inp) {
+export async function cmdPlotCloud(sig, inp, cliInp) {
   const fb = await import(`./fb.mjs`)
+
   if (inp.userCurrent && !await fb.nextUser(sig)) {
-    throw [`filtering cloud data by current user requires authentication; run the `, os.BtnCmdWithHelp(`auth`), ` command`]
+    throw [
+      `filtering cloud data by current user requires authentication; run the `,
+      os.BtnCmdWithHelp(`auth`),
+      ` command`,
+    ]
   }
+
   const {data} = await u.wait(sig, fb.fbCall(`plotAgg`, inp))
+  if (isPlotDataEmpty(data)) return msgPlotDataEmpty(cliInp)
   ui.MEDIA.add(new Plotter(plotOptsWith({data, inp})))
 }
 
@@ -824,3 +841,9 @@ function supportedFilter(key) {
     : undefined
   )]
 }
+
+function isPlotDataEmpty(val) {
+  return !a.reqArr(val).length || !a.reqArr(val[0]).length
+}
+
+function msgPlotDataEmpty(inp) {return `no data found for ` + a.show(inp)}

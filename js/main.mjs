@@ -51,26 +51,78 @@ os.addCmd(cmdDeinit)
 
 os.addCmd(ui.cmdClear)
 
-export async function cmdInit({sig}) {
-  const hadFsAccess = await fs.loadedFileHandles()
-  if (!hadFsAccess && !await fs.initedFileHandles(sig)) return `FS access not initialized`
-  if (!await w.watchStarted()) return `FS watch not initialized`
-  if (!hadFsAccess) u.optStartUploadAfterInit(sig)
-  return `FS initialized`
+export async function cmdInit({sig, args}) {
+  args = a.tail(u.splitCliArgs(args))
+
+  const progInit = u.arrRemoved(args, `-p`)
+  const histInit = u.arrRemoved(args, `-h`)
+
+  const progHad = await fs.loadedProgressFile()
+  const histHad = await fs.loadedHistoryDir()
+
+  let progHave = progHad
+  let histHave = histHad
+
+  if (progInit) {
+    if ((progHave ||= await fs.initedProgressFile(sig))) {
+      u.log.info(`progress file: initialized`, a.vac(!histHave && !histInit) && [
+        `; next step: run `, os.BtnCmd(`init -h`), ` to grant access to history dir`,
+      ])
+    }
+    else {
+      u.log.info(`progress file: not initialized; rerun `, os.BtnCmd(`init -p`))
+    }
+  }
+
+  if (histInit) {
+    if ((histHave ||= await fs.initedHistoryDir(sig))) {
+      u.log.info(`history dir: initialized`, a.vac(!progHave) && [
+        `; next step: run `, os.BtnCmd(`init -p`), ` to grant access to progress file`,
+      ])
+    }
+    else {
+      u.log.info(`history dir: not initialized; rerun `, os.BtnCmd(`init -h`))
+    }
+  }
+
+  if (!histHad && histHave) u.optStartUploadAfterInit(sig)
+
+  if (progHave && histHave) {
+    if (!await w.watchStarted()) u.log.info(`FS watch: not initialized`)
+    else u.log.info(`FS watch: initialized`)
+  }
+  else if (!(progInit || histInit)) {
+    return [
+      `no flags provided, nothing done; run `,
+      os.BtnCmd(`init -p`), ` or `, os.BtnCmd(`init -h`),
+    ]
+  }
 }
 
 function cmdInitDesc() {
   return [
-    `grant FS access, start `, os.BtnCmdWithHelp(`watch`), ` for local backups, `,
-    `run `, os.BtnCmdWithHelp(`auth`), ` for cloud backups`,
+    `grant FS access, start `, os.BtnCmdWithHelp(`watch`), ` for local backups`,
   ]
 }
 
 function cmdInitHelp() {
   return u.LogParagraphs(
-    cmdInitDesc(),
-    [`enables the use of `, os.BtnCmdWithHelp(`plot`), ` for analyzing locally-stored runs`],
-    [`also see `, os.BtnCmdWithHelp(`auth`), ` for cloud backups`],
+    cmdInit.desc(),
+    [
+      `enables the use of `,
+      os.BtnCmdWithHelp(`plot`),
+      ` for analyzing locally-stored runs`,
+    ],
+
+    u.LogLines(
+      `run each of these once:`,
+      [`  `, os.BtnCmd(`init -p`), ` -- pick progress file`],
+      [`  `, os.BtnCmd(`init -h`), ` -- pick history dir`],
+    ),
+
+    fs.PROGRESS_FILE_LOCATION,
+    fs.HISTORY_DIR_LOCATION,
+    [`tip: also see `, os.BtnCmdWithHelp(`auth`), ` for cloud backups`],
   )
 }
 
