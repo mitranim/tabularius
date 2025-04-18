@@ -1,7 +1,9 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as u from './util.mjs'
 
-export const SCHEMA_VERSION = 1
+// TODO / missing: we need game versions in our stats.
+
+export const SCHEMA_VERSION = 2
 export const DATA_DEBUG = false
 
 export const COLL_ROUND_SNAPS      = `roundSnaps`
@@ -11,12 +13,12 @@ export const COLL_RUN_ROUNDS       = `runRounds`
 export const COLL_RUN_BUIS         = `runBuis`
 export const COLL_RUN_ROUND_BUIS   = `runRoundBuis`
 
-// TODO / missing: we need game versions in our stats.
-export const STAT_SCOPE_RUN_ACC = `runAcc`
-export const STAT_SCOPE_ROUND   = `round`
 export const STAT_TYPE_DMG_DONE = `dmgDone`
 export const STAT_TYPE_DMG_OVER = `dmgOver`
 export const STAT_TYPE_COST_EFF = `costEff`
+export const STAT_TYPE_DMG_DONE_ACC = `dmgDoneAcc`
+export const STAT_TYPE_DMG_OVER_ACC = `dmgOverAcc`
+export const STAT_TYPE_COST_EFF_ACC = `costEffAcc`
 
 export const FACT_ENT_TYPE_BUI = `runRoundBui`
 export const FACT_ENT_TYPE_CHI = `runRoundBuiChi`
@@ -55,13 +57,17 @@ export function datAddRound({dat, round, runId, runNum, userId}) {
   let DEBUG_LOGGED = false
   const runIds = {userId, runId}
 
+  const hero = round.HeroType
+  const diff = round.DifficultyLevel
+  const frontierDiff = round.CurrentExpertScore
+
   dat.runs.set(runId, {
     schemaVersion: SCHEMA_VERSION,
     ...runIds,
     runNum,
-    hero: round.HeroType,
-    diff: round.DifficultyLevel,
-    frontierLevel: round.CurrentExpertScore,
+    hero,
+    diff,
+    frontierDiff,
     frontierDoctrines: round.OwnedExpertSkills,
     // TODO game version!
   })
@@ -109,6 +115,9 @@ export function datAddRound({dat, round, runId, runNum, userId}) {
     const baseFact = {
       schemaVersion: SCHEMA_VERSION,
       ...runRoundBuiIds,
+      hero,
+      diff,
+      frontierDiff,
       runNum,
       roundNum,
       buiType,
@@ -160,9 +169,12 @@ export function datAddRound({dat, round, runId, runNum, userId}) {
 
     const buiWepTypes = new Set()
     const buiDumBulTypes = new Set()
+    const buiWepDisabled = a.Emp()
 
     for (const [ind, wep] of a.entries(bui.Weapons)) {
-      buiWepTypes.add(a.reqValidStr(wep.EntityID))
+      const key = a.reqValidStr(wep.EntityID)
+      buiWepTypes.add(key)
+      buiWepDisabled[key] = !a.reqBool(wep.Enabled)
 
       const dumBulType = wep.DummyBullet?.EntityID
       if (dumBulType) buiDumBulTypes.add(a.reqStr(dumBulType))
@@ -200,51 +212,67 @@ export function datAddRound({dat, round, runId, runNum, userId}) {
       }
 
       if (stats.DamageDone) {
-        const dmgRunAcc = a.reqFin(stats.DamageDone.valueThisGame)
-        if (buiWepTypes.has(chiType)) bui_dmgDone_runAcc_fromWepChi += dmgRunAcc
-        else bui_dmgDone_runAcc_fromOtherChi += dmgRunAcc
+        const statExists = !!a.reqFin(stats.DamageDone.valueThisGame)
 
-        dat.facts.push({
-          ...chiFact,
-          statType: STAT_TYPE_DMG_DONE,
-          statScope: STAT_SCOPE_RUN_ACC,
-          statValue: dmgRunAcc,
-        })
+        {
+          const statValue = a.reqFin(stats.DamageDone.valueThisGame)
+          if (buiWepTypes.has(chiType)) bui_dmgDone_runAcc_fromWepChi += statValue
+          else bui_dmgDone_runAcc_fromOtherChi += statValue
 
-        const dmgRound = a.reqFin(stats.DamageDone.valueThisWave)
-        if (buiWepTypes.has(chiType)) bui_dmgDone_round_fromWepChi += dmgRound
-        else bui_dmgDone_round_fromOtherChi += dmgRound
+          if (statExists || !buiWepDisabled[chiType]) {
+            dat.facts.push({
+              ...chiFact,
+              statType: STAT_TYPE_DMG_DONE_ACC,
+              statValue,
+            })
+          }
+        }
 
-        dat.facts.push({
-          ...chiFact,
-          statType: STAT_TYPE_DMG_DONE,
-          statScope: STAT_SCOPE_ROUND,
-          statValue: dmgRound,
-        })
+        {
+          const statValue = a.reqFin(stats.DamageDone.valueThisWave)
+          if (buiWepTypes.has(chiType)) bui_dmgDone_round_fromWepChi += statValue
+          else bui_dmgDone_round_fromOtherChi += statValue
+
+          if (statExists || !buiWepDisabled[chiType]) {
+            dat.facts.push({
+              ...chiFact,
+              statType: STAT_TYPE_DMG_DONE,
+              statValue,
+            })
+          }
+        }
       }
 
       if (stats.DamageOverkill) {
-        const dmgRunAcc = a.reqFin(stats.DamageOverkill.valueThisGame)
-        if (buiWepTypes.has(chiType)) bui_dmgOver_runAcc_fromWepChi += dmgRunAcc
-        else bui_dmgOver_runAcc_fromOtherChi += dmgRunAcc
+        const statExists = !!a.reqFin(stats.DamageOverkill.valueThisGame)
 
-        dat.facts.push({
-          ...chiFact,
-          statType: STAT_TYPE_DMG_OVER,
-          statScope: STAT_SCOPE_RUN_ACC,
-          statValue: dmgRunAcc,
-        })
+        {
+          const statValue = a.reqFin(stats.DamageOverkill.valueThisGame)
+          if (buiWepTypes.has(chiType)) bui_dmgOver_runAcc_fromWepChi += statValue
+          else bui_dmgOver_runAcc_fromOtherChi += statValue
 
-        const dmgRound = a.reqFin(stats.DamageOverkill.valueThisWave)
-        if (buiWepTypes.has(chiType)) bui_dmgOver_round_fromWepChi += dmgRound
-        else bui_dmgOver_round_fromOtherChi += dmgRound
+          if (statExists || !buiWepDisabled[chiType]) {
+            dat.facts.push({
+              ...chiFact,
+              statType: STAT_TYPE_DMG_OVER_ACC,
+              statValue: statValue,
+            })
+          }
+        }
 
-        dat.facts.push({
-          ...chiFact,
-          statType: STAT_TYPE_DMG_OVER,
-          statScope: STAT_SCOPE_ROUND,
-          statValue: dmgRound,
-        })
+        {
+          const statValue = a.reqFin(stats.DamageOverkill.valueThisWave)
+          if (buiWepTypes.has(chiType)) bui_dmgOver_round_fromWepChi += statValue
+          else bui_dmgOver_round_fromOtherChi += statValue
+
+          if (statExists || !buiWepDisabled[chiType]) {
+            dat.facts.push({
+              ...chiFact,
+              statType: STAT_TYPE_DMG_OVER,
+              statValue,
+            })
+          }
+        }
       }
     }
 
@@ -272,14 +300,12 @@ export function datAddRound({dat, round, runId, runNum, userId}) {
     if (bui_dmgDone_runAcc_final || !isNeutral) {
       dat.facts.push({
         ...buiFact,
-        statType: STAT_TYPE_DMG_DONE,
-        statScope: STAT_SCOPE_RUN_ACC,
+        statType: STAT_TYPE_DMG_DONE_ACC,
         statValue: bui_dmgDone_runAcc_final,
       })
       dat.facts.push({
         ...buiFact,
-        statType: STAT_TYPE_COST_EFF,
-        statScope: STAT_SCOPE_RUN_ACC,
+        statType: STAT_TYPE_COST_EFF_ACC,
         statValue: sellPrice ? bui_dmgDone_runAcc_final / sellPrice : 0,
       })
     }
@@ -288,13 +314,11 @@ export function datAddRound({dat, round, runId, runNum, userId}) {
       dat.facts.push({
         ...buiFact,
         statType: STAT_TYPE_DMG_DONE,
-        statScope: STAT_SCOPE_ROUND,
         statValue: bui_dmgDone_round_final,
       })
       dat.facts.push({
         ...buiFact,
         statType: STAT_TYPE_COST_EFF,
-        statScope: STAT_SCOPE_ROUND,
         statValue: sellPrice ? bui_dmgDone_round_final / sellPrice : 0,
       })
     }
@@ -302,8 +326,7 @@ export function datAddRound({dat, round, runId, runNum, userId}) {
     if (bui_dmgOver_runAcc_final || !isNeutral) {
       dat.facts.push({
         ...buiFact,
-        statType: STAT_TYPE_DMG_OVER,
-        statScope: STAT_SCOPE_RUN_ACC,
+        statType: STAT_TYPE_DMG_OVER_ACC,
         statValue: bui_dmgOver_runAcc_final,
       })
     }
@@ -312,7 +335,6 @@ export function datAddRound({dat, round, runId, runNum, userId}) {
       dat.facts.push({
         ...buiFact,
         statType: STAT_TYPE_DMG_OVER,
-        statScope: STAT_SCOPE_ROUND,
         statValue: bui_dmgOver_round_final,
       })
     }
@@ -375,6 +397,9 @@ export const ALLOWED_Y_STAT_TYPES = new Set([
   STAT_TYPE_DMG_DONE,
   STAT_TYPE_DMG_OVER,
   STAT_TYPE_COST_EFF,
+  STAT_TYPE_DMG_DONE_ACC,
+  STAT_TYPE_DMG_OVER_ACC,
+  STAT_TYPE_COST_EFF_ACC,
 ])
 
 /*
@@ -389,7 +414,6 @@ export const ALLOWED_X_KEYS = new Set([
   `buiTypeUpg`,
   // `entType`, // We currently enforce building-only aggregation; TODO un-hardcode.
   // `chiType`, // We currently enforce building-only aggregation; TODO un-hardcode.
-  `statScope`,
   `statType`,
 ])
 
@@ -408,7 +432,6 @@ export const ALLOWED_Z_KEYS = new Set([
   ...ALLOWED_X_KEYS,
 ])
 
-// Purely for informational purposes, to tell users which keys we can filter on.
 export const ALLOWED_FILTER_KEYS = new Set([
   `schemaVersion`,
   `userId`,
@@ -422,11 +445,9 @@ export const ALLOWED_FILTER_KEYS = new Set([
   `buiTypeUpg`,
   `entType`,
   `chiType`,
-  `statScope`,
-  `statValue`,
-
-  // As a special case, this filter is the Y parameter.
-  // `statType`,
+  `hero`,
+  `diff`,
+  `frontierDiff`,
 ])
 
 export const ALLOWED_RUN_FILTERS = new Set([
@@ -474,7 +495,6 @@ export function validPlotAggOpt(src) {
 
   out.where = a.Emp()
   out.where.statType = [Y]
-  out.where.statScope = [STAT_SCOPE_ROUND] // TODO un-hardcode.
   out.where.entType = [FACT_ENT_TYPE_BUI] // TODO un-hardcode.
 
   const where = u.dictPop(inp, `where`)

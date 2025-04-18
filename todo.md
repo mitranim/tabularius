@@ -1011,7 +1011,7 @@ Consider how to auto-update cloud-based plots.
 
 ---
 
-`schema.mjs`:
+<!-- `schema.mjs`:
 
 Dispence with `statScope`. Requires a migration.
 
@@ -1019,16 +1019,15 @@ Include more fields into `facts`, retroactively. Requires a migration.
 
 * `diff`
 * `hero`
-* `frontierLevel`
-* `frontierDoctrines`
+* `frontierLevel` -->
 
-Include our own `tabularius_createdAt` into `roundSnaps`. Requires a migration, derive it from `updatedAt`. Set it on the client when uploading.
+<!-- Include our own `tabularius_createdAt` into `roundSnaps`. Requires a migration, derive it from `updatedAt`. -->
 
-Migration may consider changing `tabularius_derivedSchemaVersion` in rounds, and should set it in other collections.
+<!-- Migration may consider changing `tabularius_derivedSchemaVersion` in rounds, and should set it in other collections. -->
 
 ---
 
-When not authed, `watch` should not print auth warnings for `upload`.
+<!-- When not authed, `watch` should not print auth warnings for `upload`. -->
 
 ---
 
@@ -1036,7 +1035,7 @@ When the first round is backed up, switch from default example plot to latest ru
 
 ---
 
-Filtering by `buiType` and `buiTypeUpg`: user needs to know codes. Maybe add to `show`. Or, better idea: support the human-readable ones, remap them internally to codes.
+<!-- Filtering by `buiType` and `buiTypeUpg`: user needs to know codes. Maybe add to `show`. Or, better idea: support the human-readable ones, remap them internally to codes. -->
 
 ---
 

@@ -244,11 +244,13 @@ export async function uploadRound({sig, file, runName, userId, state}) {
     try {
       const ref = fbs.doc(fb.store, s.COLL_ROUND_SNAPS, roundId)
 
-      /*
-      We'd like to provide `sig` here, but at the time of writing, the FB client
-      library supports it only for streaming requests, not for regular ones.
-      */
-      await fbs.setDoc(ref, round, {merge: true})
+      await fbs.setDoc(ref, {
+        ...round,
+        createdAt: (
+          fb.decodeTimestamp(round.LastUpdated) ||
+          fbs.serverTimestamp()
+        ),
+      }, {merge: true})
     }
     catch (err) {
       if (state) state.status = `unable to upload ${a.show(path)}, see the error`

@@ -317,3 +317,9 @@ export function recommendAuth() {
 }
 
 export function isDev() {return state.user?.email === `me@mitranim.com`}
+
+export function decodeTimestamp(src) {
+  if (!a.isValidStr(src)) return undefined
+  src = Date.parse(src)
+  return src ? fbs.Timestamp.fromMillis(src) : undefined
+}

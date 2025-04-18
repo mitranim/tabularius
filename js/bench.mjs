@@ -16,9 +16,8 @@ delete plotAggInp.src
 const plotAggOpt = s.validPlotAggOpt(plotAggInp)
 
 const sampleFact = {
-  statType: `dmgDone`,
-  statScope: `round`,
   entType: `runRoundBui`
+  statType: `dmgDone`,
 }
 
 const whereFields_compiled = u.whereFields(plotAggOpt.where)

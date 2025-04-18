@@ -18,7 +18,7 @@ s.datInit(DAT)
 // Used only for local data.
 export const USER_ID = `local_user`
 
-// Needed for / allows live data updates and plot updates.
+// Allows live plot updates on dat changes. See `LivePlotter`.
 u.listenMessage(u.BROAD, datOnBroadcast)
 
 export function datQueryFacts(dat, inp) {

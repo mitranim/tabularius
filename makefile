@@ -1,3 +1,5 @@
+-include .env.properties
+
 MAKEFLAGS := --silent --always-make
 MAKE_CONC := $(MAKE) -j 128 clear=$(or $(clear),false)
 TAR ?= .tar
@@ -32,6 +34,16 @@ fb:
 # May require some retries.
 fb.deploy:
 	firebase deploy
+
+fb.mig.emul: export FIREBASE_EMULATE := true
+fb.mig.emul: export DRY_RUN := $(dry)
+fb.mig.emul:
+	node funs/$(name).mjs
+
+fb.mig.real: export GOOGLE_APPLICATION_CREDENTIALS := $(GOOGLE_APPLICATION_CREDENTIALS)
+fb.mig.real: export DRY_RUN := $(dry)
+fb.mig.real:
+	node funs/$(name).mjs
 
 lint:
 	deno lint --rules-exclude=no-window,no-window-prefix,constructor-super
