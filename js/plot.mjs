@@ -301,6 +301,13 @@ export function cmdPlotDecodeArgs(src) {
       continue
     }
 
+    if (key === `frontierDiff`) {
+      const int = a.intOpt(val)
+      if (a.isNil(int)) throw Error(`"frontierDiff" must be an integer, got: ${a.show(val)}`)
+      u.dictPush(out.where, key, int)
+      continue
+    }
+
     u.reqEnum(`plot filters`, key, s.ALLOWED_FILTER_KEYS)
 
     if (key === `buiType`) {
