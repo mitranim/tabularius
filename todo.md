@@ -1056,3 +1056,5 @@ When the first round is backed up, switch from default example plot to latest ru
 Measure first. Get the execution times. Try querying facts from the client and compare.
 
 ---
+
+`plot`: support `latest` for rounds, like for runs.

@@ -273,17 +273,17 @@ export function cmdPlotDecodeArgs(src) {
       continue
     }
 
-    if (key === `runId`) {
-      out.runLatest ??= false
-      u.dictPush(out.where, key, val)
-      continue
-    }
-
     if (key === `runNum`) {
       out.runLatest ??= false
       const int = a.intOpt(val)
-      if (a.isNil(int)) throw Error(`"runNum" must be an integer, got: ${a.show(val)}`)
+      if (a.isNil(int)) throw Error(`${a.show(key)} must be an integer, got: ${a.show(val)}`)
       u.dictPush(out.where, key, int)
+      continue
+    }
+
+    if (key === `runId`) {
+      out.runLatest ??= false
+      u.dictPush(out.where, key, val)
       continue
     }
 
@@ -294,16 +294,14 @@ export function cmdPlotDecodeArgs(src) {
       continue
     }
 
-    if (key === `roundNum`) {
+    if (
+      key === `schemaVersion` ||
+      key === `diff` ||
+      key === `frontierDiff` ||
+      key === `roundNum`
+    ) {
       const int = a.intOpt(val)
-      if (a.isNil(int)) throw Error(`"roundNum" must be an integer, got: ${a.show(val)}`)
-      u.dictPush(out.where, key, int)
-      continue
-    }
-
-    if (key === `frontierDiff`) {
-      const int = a.intOpt(val)
-      if (a.isNil(int)) throw Error(`"frontierDiff" must be an integer, got: ${a.show(val)}`)
+      if (a.isNil(int)) throw Error(`${a.show(key)} must be an integer, got: ${a.show(val)}`)
       u.dictPush(out.where, key, int)
       continue
     }
