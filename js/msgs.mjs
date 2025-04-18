@@ -73,9 +73,9 @@ export async function cmdFeedback({sig, args}) {
   }
 
   if (list) {
-    const userId = fb.reqFbUserId()
+    const userId = fb.reqUserId()
     const query = fbs.query(
-      fbs.collection(fb.fbStore, COLL_MSGS),
+      fbs.collection(fb.store, COLL_MSGS),
       fbs.where(`userId`, `==`, userId),
       fbs.where(`tags`, `array-contains`, TAG_FEEDBACK),
       fbs.orderBy(`createdAt`, `asc`),
@@ -100,10 +100,10 @@ export async function msgCreate({text, tags, userIds, chanIds}) {
   userIds = u.arrOfUniqValidStr(userIds)
   chanIds = u.arrOfUniqValidStr(chanIds)
 
-  const userId = fb.reqFbUserId()
+  const userId = fb.reqUserId()
   if (!userIds.includes(userId)) userIds.push(userId)
 
-  const coll = fbs.collection(fb.fbStore, COLL_MSGS)
+  const coll = fbs.collection(fb.store, COLL_MSGS)
   return await fbs.addDoc(coll, {
     userId, text, tags, userIds, chanIds, createdAt: fbs.serverTimestamp(),
   })
@@ -111,7 +111,7 @@ export async function msgCreate({text, tags, userIds, chanIds}) {
 
 export function msgsListen() {
   const query = fbs.query(
-    fbs.collection(fb.fbStore, COLL_MSGS),
+    fbs.collection(fb.store, COLL_MSGS),
     fbs.orderBy(`createdAt`, `asc`),
   )
   fbs.onSnapshot(query, {

@@ -12,7 +12,7 @@ const dirs = ld.LiveDirs.of(
 )
 
 const liveDirs = ld.LiveDirs.of(
-  hd.dirRel(`.`, /(?:^\w+[.]html$|^sw[.]mjs$|^js[/]|^funs[/]util[.]mjs$|^funs[/]codes[.]mjs$|^funs[/]schema[.]mjs$)/),
+  hd.dirRel(`.`, isPathLive),
 )
 
 const dirAbs = hd.dirAbs()
@@ -48,4 +48,16 @@ our app works. For a SPA, the correspondence tends to be one-to-one.
 */
 for await (const val of liveDirs.watchLive()) {
   bro.writeEventJson(val)
+}
+
+function isPathLive(val) {
+  return (
+    /^\w+[.]html$/.test(val) ||
+    val.startsWith(`js/`) ||
+    val === `sw.mjs` ||
+    val === `funs/util.mjs` ||
+    val === `funs/codes.mjs` ||
+    val === `funs/schema.mjs` ||
+    /^local[/]\w+[.]mjs$/.test(val)
+  )
 }

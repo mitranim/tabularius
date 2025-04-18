@@ -112,7 +112,7 @@ export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent}) {
   const root = await fs.reqHistoryDir(sig)
   const [_, handle, path] = await fs.handleAtPathMagic(sig, root, srcPath)
 
-  const userId = fb.reqFbUserId()
+  const userId = fb.reqUserId()
   const state = a.vac(!quiet) && o.obs({
     done: false,
     status: ``,
@@ -242,7 +242,7 @@ export async function uploadRound({sig, file, runName, userId, state}) {
     if (state) state.status = `uploading ${a.show(path)}`
 
     try {
-      const ref = fbs.doc(fb.fbStore, s.COLL_ROUND_SNAPS, roundId)
+      const ref = fbs.doc(fb.store, s.COLL_ROUND_SNAPS, roundId)
 
       /*
       We'd like to provide `sig` here, but at the time of writing, the FB client

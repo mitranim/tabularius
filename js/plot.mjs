@@ -11,6 +11,7 @@ import * as d from './dat.mjs'
 import * as self from './plot.mjs'
 const tar = window.tabularius ??= a.Emp()
 tar.p = self
+tar.c = c
 a.patch(window, tar)
 
 document.head.append(E(`link`, {
@@ -128,15 +129,17 @@ cmdPlot.help = function cmdPlotHelp() {
 }
 
 export function cmdPlot({sig, args}) {
-  const cliInp = u.stripPreSpaced(args, `plot`)
-  if (!cliInp) return cmdPlot.help()
+  args = u.stripPreSpaced(args, cmdPlot.cmd)
+  if (!args) return cmdPlot.help()
+
   const inp = cmdPlotDecodeArgs(args)
   const cloud = u.dictPop(inp, `cloud`)
-  if (cloud) return cmdPlotCloud(sig, inp, cliInp)
-  return cmdPlotLocal(sig, inp, cliInp)
+
+  if (cloud) return cmdPlotCloud(sig, inp, args)
+  return cmdPlotLocal(sig, inp, args)
 }
 
-export async function cmdPlotLocal(sig, inp, cliInp) {
+export async function cmdPlotLocal(sig, inp, args) {
   const opt = s.validPlotAggOpt(inp)
   const {Z: Z_key, X: X_key, agg} = opt
   await d.datLoad(sig, d.DAT, opt)
@@ -150,7 +153,7 @@ export async function cmdPlotLocal(sig, inp, cliInp) {
     const data = s.plotAggFromFacts({facts, Z_key, X_key, agg})
 
     if (isPlotDataEmpty(data) && !count++) {
-      u.log.info(msgPlotDataEmpty(cliInp))
+      u.log.info(msgPlotDataEmpty(args))
       ui.MEDIA.delete(plotter)
     }
     return plotOptsWith({data, inp})
@@ -158,19 +161,20 @@ export async function cmdPlotLocal(sig, inp, cliInp) {
   ui.MEDIA.add(plotter)
 }
 
-export async function cmdPlotCloud(sig, inp, cliInp) {
+export async function cmdPlotCloud(sig, inp, args) {
   const fb = await import(`./fb.mjs`)
 
   if (inp.userCurrent && !await fb.nextUser(sig)) {
     throw [
       `filtering cloud data by current user requires authentication; run the `,
       os.BtnCmdWithHelp(`auth`),
-      ` command`,
+      ` command; alternatively, use `,
+      BtnAppend(`-c userId=all`),
     ]
   }
 
   const {data} = await u.wait(sig, fb.fbCall(`plotAgg`, inp))
-  if (isPlotDataEmpty(data)) return msgPlotDataEmpty(cliInp)
+  if (isPlotDataEmpty(data)) return msgPlotDataEmpty(args)
   ui.MEDIA.add(new Plotter(plotOptsWith({data, inp})))
 }
 
@@ -799,7 +803,7 @@ function labelValNode(val) {return val.childNodes[1]}
 
 function compareLabelSortable(one, two) {return two.val - one.val}
 
-function BtnAppend(val) {return ui.BtnPromptAppend(`plot`, val)}
+function BtnAppend(val) {return ui.BtnPromptAppend(cmdPlot.cmd, val)}
 
 function PresetHelp([key, val]) {
   return [

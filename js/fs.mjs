@@ -399,7 +399,7 @@ export async function listDirsFiles({sig}, path, info) {
 function BtnLsEntry(path, name, info) {
   path = u.paths.join(path, name)
   return u.Btn(name, function onClickLsEntry() {
-    u.copyToClipboard(path)
+    u.copyToClipboard(path).catch(u.logErr)
     u.log.info(`copied `, a.show(path), ` to clipboard`)
     os.runCmd(`ls ` + path + (info ? ` -i` : ``))
   })

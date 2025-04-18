@@ -34,21 +34,21 @@ Further reading:
   https://firebase.google.com/docs/web/setup/
   https://firebase.google.com/docs/web/setup/#available-libraries
 */
-export const fbConf = await u.fetchJson(new URL(`../firebase/firebase.json`, import.meta.url))
-export const fbApp = fb.initializeApp(fbConf)
-export const fbAuth = fba.getAuth(fbApp)
-export const fbStore = fbs.getFirestore(fbApp)
-export const fbFun = fbf.getFunctions(fbApp)
+export const conf = await u.fetchJson(new URL(`../firebase/firebase.json`, import.meta.url))
+export const app = fb.initializeApp(conf)
+export const auth = fba.getAuth(app)
+export const store = fbs.getFirestore(app)
+export const funs = fbf.getFunctions(app)
 fbConnectEmulatorSuite()
 
-export const fbObs = o.obs({
+export const state = o.obs({
   user: undefined,
   known: false
 })
 
-fba.onAuthStateChanged(fbAuth, function onAuthChange(user) {
-  fbObs.user = user
-  fbObs.known = true
+fba.onAuthStateChanged(auth, function onAuthChange(user) {
+  state.user = user
+  state.known = true
 
   if (u.LOG_VERBOSE) {
     u.log.verb(`auth state changed, see the browser devtools console`)
@@ -58,10 +58,10 @@ fba.onAuthStateChanged(fbAuth, function onAuthChange(user) {
 
 export function nextUser(sig) {
   u.reqSig(sig)
-  if (fbObs.known) return fbObs.user
+  if (state.known) return state.user
 
   return u.wait(sig, new Promise(function nextUserInit(done) {
-    const unsub = fba.onAuthStateChanged(fbAuth, function fbAuthOnChange(user) {
+    const unsub = fba.onAuthStateChanged(auth, function fbAuthOnChange(user) {
       unsub()
       done(user)
     })
@@ -101,22 +101,22 @@ export class AuthStatus extends u.ReacElem {
 }
 
 export function authStatus() {
-  const {user, known} = fbObs
+  const {user, known} = state
   if (!known) return `unknown, waiting for response`
   if (!user) return [`unauthenticated, run `, os.BtnCmdWithHelp(`auth`), ` to login`]
   return `logged in as ${user.uid}`
 }
 
 // TODO make async, use `nextUser`.
-export function reqFbUserId() {
-  const id = fbObs.user?.uid
+export function reqUserId() {
+  const id = state.user?.uid
   if (id) return id
   throw [`authentication required; run the `, os.BtnCmdWithHelp(`auth`), ` command`]
 }
 
 export function listRunsRounds({sig}, runId) {
   a.optStr(runId)
-  const userId = reqFbUserId()
+  const userId = reqUserId()
   if (!runId) return listRuns(sig, userId)
   return listRounds(sig, userId, runId)
 }
@@ -126,7 +126,7 @@ export async function listRuns(sig, userId) {
 
   try {
     const ids = snapIds(await u.wait(sig, fbs.getDocs(fbs.query(
-      fbs.collection(fbStore, s.COLL_RUNS),
+      fbs.collection(store, s.COLL_RUNS),
       fbs.where(`userId`, `==`, userId),
     ))))
 
@@ -154,7 +154,7 @@ export async function listRounds(sig, userId, runId) {
 
   try {
     const ids = snapIds(await u.wait(sig, fbs.getDocs(fbs.query(
-      fbs.collection(fbStore, s.COLL_RUN_ROUNDS),
+      fbs.collection(store, s.COLL_RUN_ROUNDS),
       fbs.and(
         fbs.where(`userId`, `==`, userId),
         fbs.where(`runId`, `==`, runId),
@@ -182,16 +182,16 @@ export async function listRounds(sig, userId, runId) {
 function BtnCloudRun(val) {
   a.reqValidStr(val)
   return u.Btn(val, function onClickCloudRun() {
-    u.copyToClipboard(val)
+    u.copyToClipboard(val).catch(u.logErr)
     u.log.info(`copied `, a.show(val), ` to clipboard`)
-    os.runCmd(`ls -c ` + val)
+    os.runCmd(`ls -c ` + val).catch(u.logErr)
   })
 }
 
 function BtnCloudRound(val) {
   a.reqValidStr(val)
   return u.Btn(val, function onClickCloudRound() {
-    u.copyToClipboard(val)
+    u.copyToClipboard(val).catch(u.logErr)
     u.log.info(`copied `, a.show(val), ` to clipboard`)
   })
 }
@@ -224,7 +224,7 @@ be missing.
 export async function loginGoogle(sig) {
   try {
     const provider = new fba.GoogleAuthProvider()
-    await fba.signInWithPopup(fbAuth, provider)
+    await fba.signInWithPopup(auth, provider)
     u.log.info(`logged in with Google`)
     u.optStartUploadAfterAuth(sig).catch(u.logErr)
   }
@@ -235,7 +235,7 @@ export async function loginGoogle(sig) {
 
 export async function logout() {
   try {
-    await fba.signOut(fbAuth)
+    await fba.signOut(auth)
     u.log.info(`logged out`)
     os.procKillOpt(`upload`)
   }
@@ -251,9 +251,9 @@ function fbConnectEmulatorSuite() {
 
   try {
     url.port = 9835
-    fba.connectAuthEmulator(fbAuth, url.toString(), {disableWarnings: true})
-    fbs.connectFirestoreEmulator(fbStore, url.hostname, 9836)
-    fbf.connectFunctionsEmulator(fbFun, url.hostname, 9837)
+    fba.connectAuthEmulator(auth, url.toString(), {disableWarnings: true})
+    fbs.connectFirestoreEmulator(store, url.hostname, 9836)
+    fbf.connectFunctionsEmulator(funs, url.hostname, 9837)
     u.log.verb(`connected FB emulator suite`)
   }
   catch (err) {
@@ -280,7 +280,7 @@ export function fbCall(name, inp) {
   */
   inp = a.jsonDecode(a.jsonEncode(inp))
 
-  return fbf.httpsCallable(fbFun, name)(inp)
+  return fbf.httpsCallable(funs, name)(inp)
 }
 
 // TODO dedup.
@@ -290,12 +290,12 @@ export function recommendAuthIfNeeded() {
     u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`auth`))
   }
 
-  if (fbObs.known) {
-    onKnown(fbObs.user)
+  if (state.known) {
+    onKnown(state.user)
     return
   }
 
-  const unsub = fba.onAuthStateChanged(fbAuth, function onAuthChange(user) {
+  const unsub = fba.onAuthStateChanged(auth, function onAuthChange(user) {
     unsub()
     onKnown(user)
   })
@@ -316,4 +316,4 @@ export function recommendAuth() {
   u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`auth`))
 }
 
-export function isDev() {return fbObs.user?.email === `me@mitranim.com`}
+export function isDev() {return state.user?.email === `me@mitranim.com`}
