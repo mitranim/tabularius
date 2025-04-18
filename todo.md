@@ -1004,3 +1004,56 @@ Make a YouTube video guide. Maybe get Claude Code to analyze the app and write a
 ---
 
 <!-- Command `upload` should use `handleAtPathMagic`. -->
+
+---
+
+Consider how to auto-update cloud-based plots.
+
+---
+
+`schema.mjs`:
+
+Dispence with `statScope`. Requires a migration.
+
+Include more fields into `facts`, retroactively. Requires a migration.
+
+* `diff`
+* `hero`
+* `frontierLevel`
+* `frontierDoctrines`
+
+Include our own `tabularius_createdAt` into `roundSnaps`. Requires a migration, derive it from `updatedAt`. Set it on the client when uploading.
+
+Migration may consider changing `tabularius_derivedSchemaVersion` in rounds, and should set it in other collections.
+
+---
+
+When not authed, `watch` should not print auth warnings for `upload`.
+
+---
+
+When the first round is backed up, switch from default example plot to latest run plot.
+
+---
+
+Filtering by `buiType` and `buiTypeUpg`: user needs to know codes. Maybe add to `show`. Or, better idea: support the human-readable ones, remap them internally to codes.
+
+---
+
+`plot`: more presets.
+
+---
+
+`plot`: filters should support `< <= >= >` for numeric ranges, such as `roundNum`, `runNum`, maybe `statValue`.
+
+---
+
+`plot`: log the execution time of `plotAgg`, or find if the time is already logged in Google Cloud logs.
+
+---
+
+`plotAgg`: if execution is slow or if function latency is always high, we might be able to reduce it by caching plot datas, storing them as documents in their own collection. We can generate a canonical key from the input parameters. When requesting data from a client, we build that key and `Promise.race` two things: querying for an existing plot data document, and calling `plotAgg`. In `plotAgg`, we also try to use an existing doc, falling back on aggregating and then storing the resulting data (asynchronously).
+
+Measure first. Get the execution times. Try querying facts from the client and compare.
+
+---

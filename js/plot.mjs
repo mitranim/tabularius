@@ -12,6 +12,7 @@ import * as self from './plot.mjs'
 const tar = window.tabularius ??= a.Emp()
 tar.p = self
 tar.c = c
+tar.s = s
 a.patch(window, tar)
 
 document.head.append(E(`link`, {
