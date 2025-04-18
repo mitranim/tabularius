@@ -1,4 +1,4 @@
-export const COMMANDERS_SHORT = {
+export const CODES_TO_COMMANDERS_SHORT = {
   F1H01: `Anysia`,
   F1H02: `Silnio`,
   F1H03: `Tander`,
@@ -31,7 +31,9 @@ export const COMMANDERS_SHORT = {
   F3H10: `Scarlett`,
 }
 
-export const COMMANDERS = {
+export const COMMANDERS_TO_CODES_SHORT = invert(CODES_TO_COMMANDERS_SHORT)
+
+export const CODES_TO_COMMANDERS = {
   F1H01: `Commissar Anysia`,
   F1H02: `Master of Ordnance Silnio`,
   F1H03: `Marshal Tander`,
@@ -64,7 +66,9 @@ export const COMMANDERS = {
   F3H10: `Captain Scarlett`,
 }
 
-export const BUILDINGS_SHORT = {
+export const COMMANDERS_TO_CODES = invert(CODES_TO_COMMANDERS)
+
+export const CODES_TO_BUILDINGS_SHORT = {
   CB01: `Bunker`,
   CB01R: `Bunker+`,
   CB02: `Bastion`,
@@ -148,7 +152,17 @@ export const BUILDINGS_SHORT = {
   SB08: `DemoCharge`,
 }
 
-export const CODES_SHORT = {
-  ...COMMANDERS_SHORT,
-  ...BUILDINGS_SHORT,
+export const BUILDINGS_TO_CODES_SHORT = invert(CODES_TO_BUILDINGS_SHORT)
+
+export const CODES_TO_NAMES_SHORT = {
+  ...CODES_TO_COMMANDERS_SHORT,
+  ...CODES_TO_BUILDINGS_SHORT,
+}
+
+export const NAMES_TO_CODES_SHORT = invert(CODES_TO_NAMES_SHORT)
+
+function invert(src) {
+  const out = {}
+  for (const [key, val] of Object.entries(src)) out[val] = key
+  return out
 }

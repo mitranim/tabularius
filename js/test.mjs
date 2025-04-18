@@ -251,6 +251,24 @@ t.test(function test_cmdPlotDecodeArgs() {
 
   fail(`plot one`, `plot args must be one of: "-flag", "-flag=val", or "field=val", got "one"`)
 
+  test(`plot buiType=Mirador`, {
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    userCurrent: true, runLatest: true,
+    where: {buiType: [`CB15`]},
+  })
+
+  test(`plot buiTypeUpg=Mirador`, {
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    userCurrent: true, runLatest: true,
+    where: {buiTypeUpg: [`CB15`]},
+  })
+
+  test(`plot buiTypeUpg=Mirador_AAA`, {
+    cloud: false, X: `roundNum`, Y: `dmgDone`, Z: `buiTypeUpg`, agg: `sum`,
+    userCurrent: true, runLatest: true,
+    where: {buiTypeUpg: [`CB15_AAA`]},
+  })
+
   {
     const inp = p.cmdPlotDecodeArgs()
     delete inp.cloud

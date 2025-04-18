@@ -184,7 +184,7 @@ export function plotOptsWith({data, inp}) {
 
   const agg = s.AGGS.get(inp.agg)
   const [X_row, Z_labels, Z_X_Y_arr] = data
-  const Z_rows = a.map(Z_labels, plotLabelTitle).map((val, ind) => serieWithAgg(val, ind, agg))
+  const Z_rows = a.map(Z_labels, codedToTitled).map((val, ind) => serieWithAgg(val, ind, agg))
 
   // Hide the total serie by default.
   // TODO: when updating a live plot, preserve series show/hide state.
@@ -208,10 +208,11 @@ cloud function calls. See `validPlotAggOpt` which validates and converts this
 to the final representation used by querying functions.
 */
 export function cmdPlotDecodeArgs(src) {
+  src = u.stripPreSpaced(src, cmdPlot.cmd)
   const out = a.Emp()
   out.where = a.Emp()
 
-  for (const [key, val] of a.tail(u.cliDecode(src))) {
+  for (let [key, val] of u.cliDecode(src)) {
     if (key === `-c`) {
       u.assUniq(out, `cloud`, `-c`, u.cliBool(key, val))
       continue
@@ -304,6 +305,13 @@ export function cmdPlotDecodeArgs(src) {
     }
 
     u.reqEnum(`plot filters`, key, s.ALLOWED_FILTER_KEYS)
+
+    if (key === `buiType`) {
+      val = c.BUILDINGS_TO_CODES_SHORT[val] || val
+    }
+    else if (key === `buiTypeUpg`) {
+      val = titledToCoded(val) || val
+    }
 
     /*
     Inputs: `one=two one=three four=five`.
@@ -769,9 +777,18 @@ generate and store those names statically, but doing this dynamically seems
 more reliable, considering that new entities may be added later. Updating the
 table of codes is easier than updating the data.
 */
-export function plotLabelTitle(val) {
-  const [pre, ...suf] = a.laxStr(val).split(`_`)
-  return u.joinKeys(c.CODES_SHORT[pre] || pre, ...suf)
+export function codedToTitled(src) {
+  const [pre, ...suf] = a.laxStr(src).split(`_`)
+  return u.joinKeys(c.CODES_TO_NAMES_SHORT[pre] || pre, ...suf)
+}
+
+/*
+Inverse of `codedToTitled`. Should be used to convert user-readable filters such
+as `buiType=Bunker` into coded ones that match the actual fact fields.
+*/
+export function titledToCoded(src) {
+  const [pre, ...suf] = a.laxStr(src).split(`_`)
+  return u.joinKeys(c.NAMES_TO_CODES_SHORT[pre] || pre, ...suf)
 }
 
 export function sortPlotLabels(plot) {
