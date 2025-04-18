@@ -145,21 +145,17 @@ export async function cmdPlotLocal(sig, inp, args) {
   const {Z: Z_key, X: X_key, agg} = opt
   await d.datLoad(sig, d.DAT, opt)
 
-  let count = 0
-  const plotter = new LivePlotter(plotOpts)
+  const opts = plotOpts()
+  if (isPlotDataEmpty(opts.data)) return msgPlotDataEmpty(args)
+
+  ui.MEDIA.add(new LivePlotter(opts, plotOpts))
 
   // TODO: on `DAT` events, don't update the plot if unaffected.
   function plotOpts() {
     const facts = d.datQueryFacts(d.DAT, opt)
     const data = s.plotAggFromFacts({facts, Z_key, X_key, agg})
-
-    if (isPlotDataEmpty(data) && !count++) {
-      u.log.info(msgPlotDataEmpty(args))
-      ui.MEDIA.delete(plotter)
-    }
     return plotOptsWith({data, inp})
   }
-  ui.MEDIA.add(plotter)
 }
 
 export async function cmdPlotCloud(sig, inp, args) {
@@ -456,9 +452,9 @@ export class Plotter extends u.Elem {
 }
 
 export class LivePlotter extends Plotter {
-  constructor(fun) {
-    super(fun())
-    this.fun = fun
+  constructor(opts, fun) {
+    super(opts || fun())
+    this.fun = a.reqFun(fun)
   }
 
   init() {
