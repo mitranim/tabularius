@@ -234,7 +234,7 @@ async function watchBroadcast(eve) {
   u.broadcastToAllTabs(eve)
 
   const {fb} = await u.cloudFeatureImport
-  if (!fb) return
+  if (!fb?.fbObs?.user) return
 
   const {runId, roundId} = eve
   os.runCmd(`upload ${u.paths.join(runId, roundId)}`)
