@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 37
+const VERSION = 38
 let INITED
 
 /*
@@ -332,7 +332,7 @@ function onKeydownGlobal(eve) {
   */
   if (
     (eve.key === `k` && !eve.altKey && !eve.ctrlKey && eve.metaKey && !eve.shiftKey) ||
-    (eve.key === `l` && !eve.altKey && eve.ctrlKey && !eve.metaKey && !eve.shiftKey)
+    (eve.key === `k` && !eve.altKey && eve.ctrlKey && !eve.metaKey && !eve.shiftKey)
   ) {
     a.eventKill(eve)
     u.log.clear()
@@ -403,7 +403,7 @@ cmdClear.help = function cmdClearHelp() {
       [`  `, os.BtnCmd(`clear -l`)],
       [`  `, os.BtnCmd(`clear -m`)],
     ),
-    [E(`b`, {}, `pro tip`), `: can also clear the log by pressing "ctrl+l" or "cmd+k"`],
+    [E(`b`, {}, `pro tip`), `: can also clear the log by pressing "ctrl+k" or "cmd+k"`],
   )
 }
 
