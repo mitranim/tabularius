@@ -469,10 +469,10 @@ export async function cmdShow({sig, args}) {
   const paths = []
 
   for (const [key, val] of a.tail(u.cliDecode(args))) {
-    if (key === `-c`) u.assUniq(opt, `copy`, `-c`, u.cliBool(key, val))
-    else if (key === `-l`) u.assUniq(opt, `log`, `-l`, u.cliBool(key, val))
-    else if (key === `-w`) u.assUniq(opt, `write`, `-w`, u.cliBool(key, val))
-    else if (key === `-p`) u.assUniq(opt, `pretty`, `-p`, u.cliBool(key, val))
+    if (key === `-c`) opt.copy = u.cliBool(key, val)
+    else if (key === `-l`) opt.log = u.cliBool(key, val)
+    else if (key === `-w`) opt.write = u.cliBool(key, val)
+    else if (key === `-p`) opt.pretty = u.cliBool(key, val)
     else if (!key) paths.push(val)
     else return u.LogParagraphs(`unrecognized flag ${a.show(key)}`, os.cmdHelpDetailed(cmdShow))
   }

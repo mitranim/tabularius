@@ -45,9 +45,9 @@ export async function datLoad(sig, dat, inp) {
 
   const where = a.laxDict(inp.where)
   const root = await fs.reqHistoryDir(sig)
-  const runIds = u.compactSet(where.runId)
-  const runNums = u.compactSet(where.runNum)
-  const roundNums = u.compactSet(where.roundNum)
+  const runIds = new Set(a.optArr(where.runId))
+  const runNums = new Set(a.optArr(where.runNum))
+  const roundNums = new Set(a.optArr(where.roundNum))
 
   if (inp.runLatest) {
     const id = await fs.findLatestRunId(sig, root)

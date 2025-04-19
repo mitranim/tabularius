@@ -181,9 +181,6 @@ export const LOG_LINE_HEIGHT = `leading-[1.25]`
 export const LOG_SPACE_Y = `space-y-[1.25em]`
 export const LOG_GAP_Y = `gap-y-[1.25em]`
 
-// Delete old entry (renamed). TODO drop this line.
-storageSet(localStorage, `tabularius_log_width`)
-
 /*
 Should be used when invoking any async function in sync context. In other words,
 at the top level of async invocation. Logs the error and suppresses the
@@ -418,6 +415,7 @@ function LogPrefix() {
   )
 }
 
+export function LogWords(...chi) {return intersperse(chi, ` `)}
 export function LogLines(...chi) {return intersperse(chi, LogNewline)}
 export function LogParagraphs(...chi) {return intersperse(chi, LogNewlines)}
 export function LogNewline() {return `\n`}
@@ -434,6 +432,7 @@ function logShow(val) {
   if (a.isNil(val) || val === ``) return undefined
   if (a.isStr(val)) return val
   if (a.isNode(val)) return val
+  if (a.isInst(val, ErrLog)) return val.nodes
   return a.show(val)
 }
 
@@ -636,6 +635,17 @@ function isErrAbortAny(val) {
 }
 
 /*
+Gets special treatment in the log, which appends the error's original nodes
+instead of its message.
+*/
+export class ErrLog extends Err {
+  constructor(...nodes) {
+    super(E(`pre`, {}, ...nodes).textContent)
+    this.nodes = nodes
+  }
+}
+
+/*
 We only deal with data collections. Covering other JSON cases, particularly
 numbers, could produce false positives for some base64 text. We're avoiding
 try/catch parsing because it interferes with debugging.
@@ -739,22 +749,13 @@ export function cliBool(key, val) {
 
 const CLI_BOOL = new Set([``, `true`, `false`])
 
-export function assUniq(tar, key, desc, val) {
-  a.reqDict(tar)
-  a.reqValidStr(key)
-  a.reqValidStr(desc)
-  if (key in tar) throw Error(`redundant ${a.show(desc)}`)
-  tar[key] = val
-}
-
-export function reqUniq(key, has) {
-  if (!has) return
-  throw Error(`redundant ${a.show(key)}`)
-}
-
 export function reqEnum(key, val, coll) {
   if (coll.has(val)) return val
-  throw Error(`${a.show(key)} must be one of: ${a.show(a.keys(coll))}, got: ${a.show(val)}`)
+  throw a.str(
+    a.show(key), ` must be one of: `,
+    a.show(a.keys(coll)),
+    `, got: `, show(val),
+  )
 }
 
 // For super simple boolean CLI flags.
@@ -936,9 +937,10 @@ function whereField([key, src]) {
   return `(` + out.join(` || `) + `)`
 }
 
-export function intersperse(src, fun) {
+export function intersperse(src, val) {
+  a.reqSome(val)
   const buf = []
-  for (src of a.values(src)) buf.push(src, callOpt(fun))
+  for (src of a.values(src)) buf.push(src, callOpt(val))
   buf.pop()
   return buf
 }

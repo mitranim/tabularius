@@ -266,7 +266,7 @@ export function cmdHelp({args}) {
       [
         E(`b`, {}, `pro tip`),
         `: can run commands on startup via URL query parameters; for example, try appending to the URL: `,
-        u.BtnUrlAppend(`?run=plot -c userId=all run=latest`),
+        u.BtnUrlAppend(`?run=plot -c userId=all runId=latest`),
       ],
     )
   }

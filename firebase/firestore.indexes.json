@@ -8,6 +8,46 @@
         {"fieldPath": "userId", "order": "ASCENDING"},
         {"fieldPath": "createdAt", "order": "ASCENDING"}
       ]
+    },
+    {
+      "collectionGroup": "runBuis",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "schemaVersion", "order": "ASCENDING"},
+        {"fieldPath": "frontierLevel", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "runRoundBuis",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "schemaVersion", "order": "ASCENDING"},
+        {"fieldPath": "frontierLevel", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "runRounds",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "schemaVersion", "order": "ASCENDING"},
+        {"fieldPath": "frontierLevel", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "runs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "schemaVersion", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "runs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "schemaVersion", "order": "ASCENDING"},
+        {"fieldPath": "frontierLevel", "order": "ASCENDING"}
+      ]
     }
   ],
   "fieldOverrides": [
@@ -16,6 +56,12 @@
       "fieldPath": "*",
       "ttl": false,
       "indexes": []
+    },
+    {
+      "collectionGroup": "roundSnaps",
+      "fieldPath": "tabularius_derivedSchemaVersion",
+      "ttl": false,
+      "indexes": [{"order": "ASCENDING", "queryScope": "COLLECTION"}]
     }
   ]
 }

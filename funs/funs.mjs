@@ -54,7 +54,7 @@ export const plotAgg = ffh.onCall(async function plotAgg(req) {
 
   if (runLatest) {
     where.runId ??= []
-    where.runId.push(...await uf.latestRunIds(db, req.data.where))
+    where.runId.push(...await uf.latestRunIds(db, Z_key, where.userId))
   }
 
   if (userCurrent) {

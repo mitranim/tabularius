@@ -7,7 +7,6 @@ import * as faf from 'firebase-admin/firestore'
 import * as log from 'firebase-functions/logger'
 import * as a from '@mitranim/js/all.mjs'
 import * as fs from 'fs/promises'
-import * as u from './util.mjs'
 import * as s from './schema.mjs'
 
 export const EMULATE = a.boolOpt(process.env.FIREBASE_EMULATE)
@@ -105,24 +104,56 @@ export function roundBatch(db, roundRef, round) {
   return batch
 }
 
-export async function latestRunIds(db, where) {
-  const {userId, runId: _, ...rest} = a.pickKeys(where, s.ALLOWED_RUN_FILTERS)
-  const userIds = u.compactSet(userId)
+export async function latestRunIds(db, Z, userIds) {
+  a.reqValidStr(Z)
+  userIds = new Set(a.optArr(userIds))
+  const queryBase = db.collection(s.COLL_RUNS)
 
-  if (!userIds.size) {
-    const query = queryLatest(queryWhere(db.collection(s.COLL_RUNS), rest))
-    const snap = await query.get()
-    return a.map(snap.docs, docId)
+  if (Z !== `userId`) {
+    if (!userIds.size) {
+      const query = queryLatest(queryBase)
+      const snap = await query.get()
+      return a.map(snap.docs, docId)
+    }
+
+    const out = []
+    for (const id of userIds) {
+      const query = queryLatest(queryBase.where(`userId`, `==`, id))
+      const snap = await query.get()
+      out.push(...a.map(snap.docs, docId))
+    }
+    return out
   }
 
-  const out = []
-  for (const id of userIds) {
-    const query = queryWhere(db.collection(s.COLL_RUNS), rest).where(`userId`, `==`, id)
-    const snap = await query.get()
-    out.push(...a.map(snap.docs, docId))
+  /*
+  Goal:
+  - When latest run AND group by `userId` AND no `userId` filter is provided,
+    then fetch latest run for every user.
+  - Makes the following possible: `plot -c userId=all runId=latest -z=userId`.
+  - Makes it possible to compare totals for multiple users.
+
+  Note that when we're not querying latest runs, and no user id filter was
+  provided (such as current user), then querying for all users is just the
+  default behavior, and no special action is needed.
+
+  This implementation won't scale. TODO optimize. We need a faster way to access
+  all user ids, and the latest run for every user.
+  */
+  const ind = a.Emp()
+  for await (const snaps of documentSnapBatches(queryBase)) {
+    for (const snap of snaps) {
+      const run = snap.data()
+      const {userId, runId, runNum} = run
+      if (!a.isValidStr(userId) || !a.isValidStr(runId) || !a.isInt(runNum)) {
+        continue
+      }
+      if (!ind[userId] || runNum > ind[userId].runNum) ind[userId] = run
+    }
   }
-  return out
+  return a.map(ind, getRunId)
 }
+
+function getRunId(src) {return src.runId}
 
 export function queryWhere(query, where) {
   for (const val of a.mapCompact(a.entries(where), whereOr)) {
@@ -150,7 +181,7 @@ export function decodeTimestamp(src) {
   return src ? faf.Timestamp.fromMillis(src) : undefined
 }
 
-export async function* documentBatches(baseQuery) {
+export async function* documentSnapBatches(baseQuery) {
   const batchSize = BATCH_SIZE_MAX
   let startAfter
 

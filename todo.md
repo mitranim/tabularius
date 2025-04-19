@@ -2,17 +2,17 @@
 
 <!-- (Done) Serve with GitHub Pages. If build/deploy is necessary, use GitHub Actions. -->
 
-Firebase: maybe DB-side aggregations for clients, for analytics.
+<!-- Firebase: maybe DB-side aggregations for clients, for analytics. -->
 
-Snapshots include user ID, from Firebase authentication.
+<!-- Snapshots include user ID, from Firebase authentication. -->
 
-Snapshots include run ID (auto-generate it). Also consider a local run index, for easier ordering, and a run timestamp, which equals to the timestamp of the first round.
+<!-- Snapshots include run ID (auto-generate it). Also consider a local run index, for easier ordering, and a run timestamp, which equals to the timestamp of the first round. -->
 
 In case of defeat, last snapshot indicates defeat.
 
 <!-- (Done) The SPA asks for permissions for the save directory (or just progress file), and for the run history directory. The SPA watches the progress file by periodically checking timestamps. On changes, it also checks the round index or run ID. On changes, it cleans up the data and stores it in the run history directory. -->
 
-The SPA lets you view run history, per round, per run.
+<!-- The SPA lets you view run history, per round, per run. -->
 
 The SPA may provide an option to roll back the save.
 
@@ -69,7 +69,7 @@ After reading a progress file:
 
 Also: consider uploading runs concurrently.
 
-### Cleanup
+<!-- ### Cleanup
 
 We store snapshots without cleanup, because any changes might break the game in case of rollbacks.
 
@@ -81,7 +81,7 @@ Maybe before uploading to Firebase, remove stuff not useful for analytics, like 
 
 Upgrades: convert to the `ABA`-style format.
 
-Convert long field names to shortened ones for smaller sizes. Choose well, because we're stuck with them. Semi-abbreviated field names are fine.
+Convert long field names to shortened ones for smaller sizes. Choose well, because we're stuck with them. Semi-abbreviated field names are fine. -->
 
 ### Fields
 
@@ -150,7 +150,7 @@ Why bother with weapon stats instead of just building stats? Because upgrades ch
 
 ### Querying
 
-We want many options for filtering, grouping, aggregating.
+<!-- We want many options for filtering, grouping, aggregating.
 
 * Group by user
 * Group by run
@@ -181,7 +181,7 @@ plot run=123 -m=eff
 plot -x=roundNum -y=dmgDone -z=buiTypeUpg
 plot -x=roundNum -y=dmgOver -z=buiTypeUpg
 plot -x=roundNum -y=dmgEff -z=buiTypeUpg -a=avg
-```
+``` -->
 
 <!-- Should be possible to specify arbitrary stat types and scopes. But their full names are long. Probably end up with some aliases for commonly used fields, like `dmg` means `statType = dmg && statScope = round`. -->
 
@@ -191,14 +191,14 @@ Should be possible to specify one filter and then multiple other options, for mu
 
 <!-- Consider using Firestore's `getAggregateFromServer`. It supports multiple aggregates over one query, but only returns one aggregate for each. Not as good / convenient / performant as rolling our own aggregating cloud function, but might be faster to get started with. But hundreds of requests per plot is probably not viable. -->
 
-### Flatting
+<!-- ### Flatting
 
 * [x] Considering flatting the data to a much flatter, simpler format. Various considerations:
   * Could be a list of atomic facts (datoms).
   * Could be an event log (similar to the above).
   * Probably want to pre-compute some aggregates for later ease.
 
-Went with a star schema. No pre-computed aggregates (yet).
+Went with a star schema. No pre-computed aggregates (yet). -->
 
 ## Forks
 
@@ -215,7 +215,7 @@ Maybe something like:
 
 Could even not bother with indexing, and just set a boolean `isOutdated = true`.
 
-## Permissions
+<!-- ## Permissions
 
 In the Firebase rules, we set restrictions. A user is only allowed to upload snapshots with their own user ID, the snapshots are immutable except for that one field (branch index or "outdated") which is mutable.
 
@@ -240,7 +240,7 @@ Sell data upload by mentioning that this gives you your personal run history, in
 
 Should use the FB Local Emulator Suite for development: https://firebase.google.com/docs/emulator-suite
 
-Also see https://firebase.google.com/docs/rules/simulator for testing security rules.
+Also see https://firebase.google.com/docs/rules/simulator for testing security rules. -->
 
 ## Bot integration
 
@@ -311,16 +311,16 @@ Wild idea for later: integrate an LLM (e.g. OpenAI API) where we send it the cod
 
 Make the pseudo-terminal font properly crisp. Compare to native terminal.
 
-Viable commands:
+<!-- Viable commands:
 
 * `help`
 * `help <cmd>`
 * `ps`
 * `ls <dir>` (permission must be granted)
 * `cat <file>` (permission must be granted)
-* `...`
+* `...` -->
 
-The notice "N older messages removed" should just be a regular message (but grey).
+<!-- The notice "N older messages removed" should just be a regular message (but grey). -->
 
 <!-- In the log, when logging something multi-line, align the lines. (Seems already done.) -->
 
@@ -334,22 +334,22 @@ The notice "N older messages removed" should just be a regular message (but grey
 
 <!-- Command `clear` should clear the log. -->
 
-Preserve the output log in `sessionStorage` (primary) and/or `IndexedDB` (fallback). Each entry should be labeled with a type: "inf" or "err".
+Preserve the output log in `sessionStorage` (primary) and/or `IndexedDB` (fallback). Each entry should be labeled with a type: "info" or "err".
 * DOM elements inside messages should be either excluded from this, or saved as text (`.textContent`).
 
 ---
 
-Command history:
+<!-- Command history:
 
 We have a dual command history: one local in `sessionStorage`, and one global in either `localStorage` or `IndexedDB`.
 
 When executing a command, add it to _both_ histories (`try/catch` each).
 
-When the app loads, it looks for the history in `sessionStorage`. If there is none, it falls back on the other storage.
+When the app loads, it looks for the history in `sessionStorage`. If there is none, it falls back on the other storage. -->
 
 ---
 
-Log width: store in both `sessionStorage` and `localStorage`, like `LOG_VERBOSE`.
+<!-- Log width: store in both `sessionStorage` and `localStorage`, like `LOG_VERBOSE`. -->
 
 ---
 
@@ -387,7 +387,7 @@ Log width: store in both `sessionStorage` and `localStorage`, like `LOG_VERBOSE`
 
 ---
 
-Unfuck the bot's code style.
+<!-- Unfuck the bot's code style. -->
 
 ---
 
@@ -407,7 +407,9 @@ Unfuck the bot's code style.
 
 ---
 
-Refactor quotes into backticks. Automate with `eslint`. Can't use `dprint` or `deno fmt` (which uses `dprint`) because they don't support it.
+<!-- Refactor quotes into backticks. -->
+
+Automate with `eslint`. Can't use `dprint` or `deno fmt` (which uses `dprint`) because they don't support it.
 
 ---
 
@@ -443,7 +445,7 @@ Log: only scroll to bottom if already scrolled to bottom. Meaning, if scrolled u
 
 ---
 
-`runCmd` currently adds a history entry even when invoked programmatically. Gotcha? Useful? Unsure.
+<!-- `runCmd` currently adds a history entry even when invoked programmatically. Gotcha? Useful? Unsure. -->
 
 ---
 
@@ -455,7 +457,7 @@ Consistently prefix command logging with current command name. Find places in th
 
 ---
 
-When round index is increased in `handleBackupScenario`, when we log "Created backup for new round", the next and prev rounds are logged the same. Expected behavior: correctly log the prev round. Avoid doing math.
+<!-- When round index is increased in `handleBackupScenario`, when we log "Created backup for new round", the next and prev rounds are logged the same. Expected behavior: correctly log the prev round. Avoid doing math. -->
 
 ---
 
@@ -477,15 +479,15 @@ An option to backup all save files, not just the progress file.
 
 ---
 
-An option to unpack a file, or a run, or all backups, from `.gd` to JSON.
+<!-- An option to unpack a file, or a run, or all backups, from `.gd` to JSON.
 
-(Partially implemented as a specialized `decode` command. Needs to be more flexible.)
+(Partially implemented as a specialized `decode` command. Needs to be more flexible.) -->
 
 ---
 
-An option to unpack the source progress file to a JSON file on disk.
+<!-- An option to unpack the source progress file to a JSON file on disk. -->
 
-(Partially done, but not quite: the `decode` command can show a specific backup file, but not the source progress file.)
+<!-- (Partially done, but not quite: the `decode` command can show a specific backup file, but not the source progress file.) -->
 
 An option to overwrite the source progress file with the content of the given output JSON file (after manual editing, for example).
 
@@ -493,7 +495,7 @@ We could also store a global var, user could edit it in the browser console, the
 
 ---
 
-`decode` should have run and round modes. If a run is specified, decode the whole run. If a round in a run is specified, decode only that round.
+<!-- `decode` should have run and round modes. If a run is specified, decode the whole run. If a round in a run is specified, decode only that round. -->
 
 ---
 
@@ -513,11 +515,11 @@ We could also store a global var, user could edit it in the browser console, the
 
 ---
 
-When generating monotonic ids, ensure they're ordered within the same millisecond, most likely by using an in-memory counter. Look into how Firebase generates its ids and learn from that. This also reduces the likelihood of collisions between ids generated by different instances of the app.
+<!-- When generating monotonic ids, ensure they're ordered within the same millisecond, most likely by using an in-memory counter. Look into how Firebase generates its ids and learn from that. This also reduces the likelihood of collisions between ids generated by different instances of the app. -->
 
 ---
 
-Replace random ids with fixed ordinals, pad to 6 digits, parse when reading. They're our local run and round ids. Upon insertion into DB, they'll be stored as `ord` and remain unique per player.
+<!-- Replace random ids with fixed ordinals, pad to 6 digits, parse when reading. They're our local run and round ids. Upon insertion into DB, they'll be stored as `ord` and remain unique per player. -->
 
 ---
 
@@ -525,7 +527,7 @@ Replace random ids with fixed ordinals, pad to 6 digits, parse when reading. The
 
 ---
 
-Catching and logging errors seems to lose their stack traces, possibly due to multiple async steps. Debugging currently requires using the browser debugger to pause on exceptions. Would be nice to get at the actual traces.
+<!-- Catching and logging errors seems to lose their stack traces, possibly due to multiple async steps. Debugging currently requires using the browser debugger to pause on exceptions. Would be nice to get at the actual traces. -->
 
 ---
 
@@ -558,11 +560,11 @@ TODO:
 
 ---
 
-Polyfill for customized built-in elements: https://github.com/ungap/custom-elements.
+<!-- Polyfill for customized built-in elements: https://github.com/ungap/custom-elements. -->
 
 ---
 
-When the File System API is not available, give the users a descriptive error.
+<!-- When the File System API is not available, give the users a descriptive error. -->
 
 ---
 
@@ -584,7 +586,7 @@ https://github.com/leeoniya/uPlot/issues?q=dark%20
 
 ---
 
-Plot: totals should be calculated only for the currently _visible_ ranges in the chart, when zoomed in.
+Plot: when zoomed-in, totals should be calculated only for the currently _visible_ ranges in the chart.
 
 ---
 
@@ -649,7 +651,7 @@ Should probably revert this. When logging large chunks of text, using proper sen
 
 ---
 
-Building damages need to use `.ChildLiveStats` to include troop damage, similar to what the game UI does.
+<!-- Building damages need to use `.ChildLiveStats` to include troop damage, similar to what the game UI does. -->
 
 ---
 
@@ -679,7 +681,7 @@ console.log(fs)
 
 <!-- Consider supporting non-string run and round indexes. For example, run `000000` should be considered same as `0` locally. -->
 
-Consider supporting relative run and round indexes. For example, a user's first run fetched from cloud storage should be indexed as `0`, and so on.
+<!-- Consider supporting relative run and round indexes. For example, a user's first run fetched from cloud storage should be indexed as `0`, and so on. -->
 
 ---
 
@@ -829,11 +831,11 @@ Upon inspection, it seems like after being defeated and clicking "back", the sav
 
 ---
 
-Add a command to decode and show the progress file itself. Could be a mode of `show`.
+<!-- Add a command to decode and show the progress file itself. Could be a mode of `show`. -->
 
-Add a command that decodes and shows _all_ files in the save dir. Could be a mode of `show`. Could pick that directory on demand without storing the handle. Maybe instead of picking the progress file, we pick the whole save dir. Maybe we pick the whole save dir, but also have an option to pick a specific progress file. The `init` command could have flags or subcommands.
+<!-- Add a command that decodes and shows _all_ files in the save dir. Could be a mode of `show`. Could pick that directory on demand without storing the handle. Maybe instead of picking the progress file, we pick the whole save dir. Maybe we pick the whole save dir, but also have an option to pick a specific progress file. The `init` command could have flags or subcommands. -->
 
-(Added `show_saves`.)
+<!-- (Added `show_saves`.) -->
 
 The various FS-walking commands, such as `ls`, should let you choose between the save folder and the history dir. How?
 
@@ -843,7 +845,7 @@ Support multiple CLI commands in one line. We may consider shell-style `&&` and 
 
 ---
 
-The alias "latest" (should rename to "last") should work for both runs and rounds, in all commands. It should be viable to type `show last` or `show last/last` and have it work.
+<!-- The alias "latest" (should rename to "last") should work for both runs and rounds, in all commands. It should be viable to type `show last` or `show last/last` and have it work. -->
 
 ---
 
@@ -867,11 +869,11 @@ The `analyze` command (now `plot`) should support specifying multiple runs, run 
 
 ---
 
-`datAddRound` should have either a smaller equivalent or a mode, where it only creates facts and doesn't bother with dimensions, for local analysis (since we just use facts now).
+<!-- `datAddRound` should have either a smaller equivalent or a mode, where it only creates facts and doesn't bother with dimensions, for local analysis (since we just use facts now). -->
 
 ---
 
-Add an FS function that takes an arbitrary path, walks all round files, and yields only _facts_, with the proper user, run, round ids embedded in them. This is done by: generalizing `datLoadRun`/`datLoadRound` to support an arbitrary path (via a higher-level function); then returning all facts from `DAT`. Ah, it seems like we don't need a generator function here, we just need a more general version of `datLoad*` that loads all rounds from any path including root.
+<!-- Add an FS function that takes an arbitrary path, walks all round files, and yields only _facts_, with the proper user, run, round ids embedded in them. This is done by: generalizing `datLoadRun`/`datLoadRound` to support an arbitrary path (via a higher-level function); then returning all facts from `DAT`. Ah, it seems like we don't need a generator function here, we just need a more general version of `datLoad*` that loads all rounds from any path including root. -->
 
 ---
 
@@ -879,7 +881,7 @@ When plotting over all cloud data, we should have an option to limit to only the
 
 ---
 
-Drop command `test`, just use a query parameter.
+<!-- Drop command `test`, just use a query parameter. -->
 
 ---
 
@@ -908,14 +910,14 @@ Make plot titles human-readable.
 
 ---
 
-Consolidate initialization and status (FS and auth).
+<!-- Consolidate initialization and status (FS and auth). -->
 
 ---
 
-Support special identifier `latest` in more commands. Add this to their help, as a button.
+<!-- Support special identifier `latest` in more commands. Add this to their help, as a button.
 * [x] `show`
 * [x] `decode`
-* [x] `upload`
+* [x] `upload` -->
 
 ---
 
@@ -1031,7 +1033,7 @@ Include more fields into `facts`, retroactively. Requires a migration.
 
 ---
 
-When the first round is backed up, switch from default example plot to latest run plot.
+When the very first round backup is made by `watch`, switch from default example plot to latest run plot.
 
 ---
 
@@ -1058,3 +1060,32 @@ Measure first. Get the execution times. Try querying facts from the client and c
 ---
 
 `plot`: support `latest` for rounds, like for runs.
+
+---
+
+`plot`: support bar charts to allow non-numeric X or Y.
+
+* https://leeoniya.github.io/uPlot/demos/bars-grouped-stacked.html
+* https://leeoniya.github.io/uPlot/demos/multi-bars.html
+
+---
+
+The command `show` needs to support cloud sources.
+
+---
+
+`plot`: provide more detailed help on possible values of various filters. Should be collapsed by default.
+- [ ] `buiType`
+- [ ] `buiTypeUpg`
+- [ ] `entType`
+- [ ] `chiType`
+- [ ] `statType`
+- [ ] `hero`
+
+---
+
+<!-- `plot`: forbid plotting building and child facts together. -->
+
+---
+
+`plot`: when plotting child facts, include their types into labels.

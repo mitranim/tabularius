@@ -31,7 +31,6 @@ export function indent(src) {return a.optStr(src) ? `  ` + src : ``}
 export function indentChi(src) {return a.vac(src) && [`  `, src]}
 
 export function joinKeys(...src) {return a.joinOptLax(src, `_`)}
-export function joinSpaced(...src) {return a.joinOptLax(src, ` `)}
 export function joinLines(...src) {return a.joinLinesOptLax(src)}
 export function joinParagraphs(...src) {return a.joinOptLax(src, `\n\n`)}
 
@@ -113,16 +112,12 @@ export function dictPush(tar, key, val) {
   tar[key].push(val)
 }
 
-export function compactSet(src) {return new Set(a.compact(src))}
-
 export function mapUniq(src, fun) {
   a.reqFun(fun)
   const set = new Set()
   for (src of a.values(src)) set.add(fun(src))
   return a.arr(set)
 }
-
-export function uniqArr(src) {return a.arr(compactSet(src))}
 
 export function arrOfUniqValidStr(src) {
   const out = new Set()

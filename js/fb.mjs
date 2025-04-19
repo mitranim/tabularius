@@ -93,7 +93,7 @@ export function cmdAuth({sig, args}) {
   const mode = a.reqValidStr(args[1])
   if (mode === `google`) return loginGoogle(sig)
   if (mode === `logout`) return logout(sig)
-  throw `unknown auth mode ${a.show(mode)}`
+  throw Error(`unknown auth mode ${a.show(mode)}`)
 }
 
 export class AuthStatus extends u.ReacElem {
@@ -111,7 +111,9 @@ export function authStatus() {
 export function reqUserId() {
   const id = state.user?.uid
   if (id) return id
-  throw [`authentication required; run the `, os.BtnCmdWithHelp(`auth`), ` command`]
+  throw new u.ErrLog(
+    `authentication required; run the `, os.BtnCmdWithHelp(`auth`), ` command`,
+  )
 }
 
 export function listRunsRounds({sig}, runId) {

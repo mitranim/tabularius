@@ -23,43 +23,40 @@ document.head.append(E(`link`, {
 cmdPlot.cmd = `plot`
 cmdPlot.desc = `analyze data, visualizing with a plot 📈📉`
 
+// TODO: use `<details>` to collapse sections.
 cmdPlot.help = function cmdPlotHelp() {
   return u.LogParagraphs(
     u.callOpt(cmdPlot.desc),
-    `flags:`,
+    `build your query by clicking the buttons below!`,
 
     [
       BtnAppend(`-c`),
-      ` -- use cloud data; may require the `,
-      os.BtnCmdWithHelp(`auth`), ` command; `,
-      `the default without `, BtnAppend(`-c`),
-      ` is to use local data, which requires the `,
+      ` -- use cloud data; may require `,
+      os.BtnCmdWithHelp(`auth`),
+      `; the default is to use local data, which requires `,
       os.BtnCmdWithHelp(`init`),
-      ` command to grant access to the history directory`,
+      ` to grant access to the history directory`,
     ],
 
     u.LogLines(
-      [
-        BtnAppend(`-p`),
-        ` -- preset; can be overridden with other flags; supported values:`,
-      ],
-      ...a.map(a.entries(PLOT_PRESETS), PresetHelp).map(u.indentChi),
+      [BtnAppend(`-p`), ` -- preset; supported values:`],
+      ...a.map(a.entries(PLOT_PRESETS), Help_preset).map(u.indentChi),
     ),
 
     u.LogLines(
       [
         BtnAppend(`-x`),
-        ` -- X axis; supported values:`,
+        ` -- X axis (progress); supported values:`,
       ],
-      ...FlagAppendBtns(s.ALLOWED_X_KEYS, `-x`, PLOG_AGG_OPT_DEF_X).map(u.indentChi),
+      ...a.map(a.keys(s.ALLOWED_X_KEYS), Help_X).map(u.indentChi),
     ),
 
     u.LogLines(
       [
         BtnAppend(`-y`),
-        ` -- Y axis; supported values:`,
+        ` -- Y axis (stat type); supported values:`,
       ],
-      ...FlagAppendBtns(s.ALLOWED_Y_STAT_TYPES, `-y`, PLOG_AGG_OPT_DEF_Y).map(u.indentChi),
+      ...a.map(a.keys(s.ALLOWED_STAT_TYPE_FILTERS), Help_Y).map(u.indentChi),
     ),
 
     u.LogLines(
@@ -67,7 +64,7 @@ cmdPlot.help = function cmdPlotHelp() {
         BtnAppend(`-z`),
         ` -- Z axis (plot series); supported values:`,
       ],
-      ...FlagAppendBtns(s.ALLOWED_Z_KEYS, `-z`, PLOG_AGG_OPT_DEF_Z).map(u.indentChi),
+      ...a.map(a.keys(s.ALLOWED_Z_KEYS), Help_Z).map(u.indentChi),
     ),
 
     u.LogLines(
@@ -75,37 +72,17 @@ cmdPlot.help = function cmdPlotHelp() {
         BtnAppend(`-a`),
         ` -- aggregation mode; supported values:`,
       ],
-      ...FlagAppendBtns(s.AGGS, `-a`, PLOG_AGG_OPT_DEF_AGG).map(u.indentChi),
+      ...FlagAppendBtns(s.AGGS, `-a`, DEFAULT_AGG).map(u.indentChi),
     ),
 
     u.LogLines(
       `supported filters:`,
-      ...a.map(s.ALLOWED_FILTER_KEYS, supportedFilter) .map(u.indentChi),
-    ),
-
-    u.LogLines(
-      [
-        `special filter `,
-        BtnAppend(`run=`),
-        ` works for both "runId" and "runNum" if the input is an integer; examples:`,
-      ],
-      [`  `, BtnAppend(`run=1`)],
-      [`  `, BtnAppend(`run=0001`)],
-    ),
-
-    u.LogLines(
-      [
-        `special filter `,
-        BtnAppend(`round=`),
-        ` works for both "roundId" and "roundNum" if the input is an integer; examples:`,
-      ],
-      [`  `, BtnAppend(`round=1`)],
-      [`  `, BtnAppend(`round=0001`)],
+      ...a.map(a.keys(s.ALLOWED_FILTER_KEYS), Help_filter).map(u.indentChi),
     ),
 
     u.LogLines(
       [`tip: repeat a filter to combine via logical "OR"; examples:`],
-      [`  `, BtnAppend(`run=1 run=2`), ` -- first and second runs`],
+      [`  `, BtnAppend(`runNum=1 runNum=2`), ` -- first and second runs`],
       [`  `, BtnAppend(`roundNum=1 roundNum=2`), ` -- first and second rounds`],
     ),
 
@@ -115,16 +92,8 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       `more examples:`,
-      [`  `, BtnAppend(`-c`)],
-      [`  `, BtnAppend(`-p=dmg`)],
-      [`  `, BtnAppend(`-p=eff`)],
-      [`  `, BtnAppend(`-c -p=dmg`)],
-      [`  `, BtnAppend(`-c -p=eff`)],
-      [`  `, BtnAppend(`run=all -x=runNum`)],
-      [`  `, BtnAppend(`run=all -x=runNum -z=userId`)],
-      [`  `, BtnAppend(`run=all -x=runNum -y=costEff -z=buiTypeUpg -a=avg`)],
-      [`  `, BtnAppend(`-c run=latest userId=all`)],
-      [`  `, BtnAppend(`-c run=latest userId=all -p=eff`)],
+      [`  `, BtnAppend(`-c userId=all`)],
+      [`  `, BtnAppend(`-c userId=all -z=userId`)],
     ),
   )
 }
@@ -133,7 +102,7 @@ export function cmdPlot({sig, args}) {
   args = u.stripPreSpaced(args, cmdPlot.cmd)
   if (!args) return cmdPlot.help()
 
-  const inp = cmdPlotDecodeArgs(args)
+  const inp = plotDecodeCliArgs(args)
   const cloud = u.dictPop(inp, `cloud`)
 
   if (cloud) return cmdPlotCloud(sig, inp, args)
@@ -162,17 +131,17 @@ export async function cmdPlotCloud(sig, inp, args) {
   const fb = await import(`./fb.mjs`)
 
   if (inp.userCurrent && !await fb.nextUser(sig)) {
-    throw [
+    throw new u.ErrLog(
       `filtering cloud data by current user requires authentication; run the `,
       os.BtnCmdWithHelp(`auth`),
       ` command; alternatively, use `,
-      BtnAppend(`-c userId=all`),
-    ]
+      BtnAppend(`userId=all`),
+    )
   }
 
   const {data} = await u.wait(sig, fb.fbCall(`plotAgg`, inp))
   if (isPlotDataEmpty(data)) return msgPlotDataEmpty(args)
-  ui.MEDIA.add(new Plotter(plotOptsWith({data, inp})))
+  ui.MEDIA.add(new Plotter(plotOptsWith({data: consistentNil(data), inp})))
 }
 
 export function plotOptsWith({data, inp}) {
@@ -187,11 +156,17 @@ export function plotOptsWith({data, inp}) {
   // TODO: when updating a live plot, preserve series show/hide state.
   if (Z_rows[0]) Z_rows[0].show = false
 
+  const title = (
+    inp.Z === `statType`
+    ? `${inp.agg} per ${inp.Z} per ${inp.X}`
+    : `${inp.agg} of ${inp.Y} per ${inp.Z} per ${inp.X}`
+  )
+
   return {
     ...LINE_PLOT_OPTS,
     plugins: plugins(),
     // TODO human readability.
-    title: `${inp.agg} of ${inp.Y} per ${inp.Z} per ${inp.X}`,
+    title,
     series: [{label: inp.X}, ...Z_rows],
     data: [X_row, ...a.arr(Z_X_Y_arr)],
     axes: axes(inp.X, inp.Y),
@@ -201,43 +176,37 @@ export function plotOptsWith({data, inp}) {
 /*
 Converts CLI args to a format suitable for the cloud function `plotAgg` or its
 local equivalent. This is an intermediary data format suitable for JSON for
-cloud function calls. See `validPlotAggOpt` which validates and converts this
+cloud function calls. See `s.validPlotAggOpt` which validates and converts this
 to the final representation used by querying functions.
 */
-export function cmdPlotDecodeArgs(src) {
+export function plotDecodeCliArgs(src) {
   src = u.stripPreSpaced(src, cmdPlot.cmd)
   const out = a.Emp()
   out.where = a.Emp()
 
-  for (let [key, val] of u.cliDecode(src)) {
+  for (let [key, val] of plotCliDecodeWithPresets(src)) {
     if (key === `-c`) {
-      u.assUniq(out, `cloud`, `-c`, u.cliBool(key, val))
-      continue
-    }
-
-    if (key === `-p`) {
-      const preset = PLOT_PRESETS.get(u.reqEnum(key, val, PLOT_PRESETS))
-      a.patch(out, preset)
+      out.cloud = u.cliBool(key, val)
       continue
     }
 
     if (key === `-x`) {
-      u.assUniq(out, `X`, `-x`, u.reqEnum(key, val, s.ALLOWED_X_KEYS))
+      out.X = reqEnum(key, val, s.ALLOWED_X_KEYS)
       continue
     }
 
     if (key === `-y`) {
-      u.assUniq(out, `Y`, `-y`, u.reqEnum(key, val, s.ALLOWED_Y_STAT_TYPES))
+      out.Y = reqEnum(key, val, s.ALLOWED_STAT_TYPE_FILTERS)
       continue
     }
 
     if (key === `-z`) {
-      u.assUniq(out, `Z`, `-z`, u.reqEnum(key, val, s.ALLOWED_Z_KEYS))
+      out.Z = reqEnum(key, val, s.ALLOWED_Z_KEYS)
       continue
     }
 
     if (key === `-a`) {
-      u.assUniq(out, `agg`, `-a`, u.reqEnum(key, val, s.AGGS))
+      out.agg = reqEnum(key, val, s.AGGS)
       continue
     }
 
@@ -245,31 +214,35 @@ export function cmdPlotDecodeArgs(src) {
       throw Error(`plot args must be one of: "-flag", "-flag=val", or "field=val", got ${a.show(val)}`)
     }
 
+    if (!s.ALLOWED_FILTER_KEYS.has(key)) {
+      throw new u.ErrLog(
+        `plot filters must be among: `,
+        ...u.LogWords(
+          ...a.map(a.keys(s.ALLOWED_FILTER_KEYS), BtnAppendEq),
+        ),
+        `, got: `, key, `=`,
+      )
+    }
+
     if (key === `userId`) {
       out.userCurrent ??= false
+      if (val === `all`) continue
       if (val === `current`) {
         out.userCurrent = true
         continue
       }
-      if (val === `all`) continue
       u.dictPush(out.where, key, val)
       continue
     }
 
-    if (key === `run` || key === `runId`) {
+    if (key === `runId`) {
       out.runLatest ??= false
+      if (val === `all`) continue
       if (val === `latest`) {
         out.runLatest = true
         continue
       }
-      if (val === `all`) continue
-    }
-
-    if (key === `run`) {
-      out.runLatest ??= false
-      const int = a.intOpt(val)
-      if (a.isSome(int)) u.dictPush(out.where, `runNum`, int)
-      else u.dictPush(out.where, `runId`, val)
+      u.dictPush(out.where, key, val)
       continue
     }
 
@@ -281,21 +254,7 @@ export function cmdPlotDecodeArgs(src) {
       continue
     }
 
-    if (key === `runId`) {
-      out.runLatest ??= false
-      u.dictPush(out.where, key, val)
-      continue
-    }
-
-    if (key === `round`) {
-      const int = a.intOpt(val)
-      if (a.isSome(int)) u.dictPush(out.where, `roundNum`, int)
-      else u.dictPush(out.where, `roundId`, val)
-      continue
-    }
-
     if (
-      key === `schemaVersion` ||
       key === `diff` ||
       key === `frontierDiff` ||
       key === `roundNum`
@@ -306,13 +265,14 @@ export function cmdPlotDecodeArgs(src) {
       continue
     }
 
-    u.reqEnum(`plot filters`, key, s.ALLOWED_FILTER_KEYS)
-
     if (key === `buiType`) {
       val = c.BUILDINGS_TO_CODES_SHORT[val] || val
     }
     else if (key === `buiTypeUpg`) {
       val = titledToCoded(val) || val
+    }
+    else if (key === `hero`) {
+      val = c.COMMANDERS_TO_CODES_SHORT[val] || val
     }
 
     /*
@@ -324,23 +284,77 @@ export function cmdPlotDecodeArgs(src) {
   }
 
   out.cloud ??= false
-  out.X ||= PLOG_AGG_OPT_DEF_X
-  out.Y ||= PLOG_AGG_OPT_DEF_Y
-  out.Z ||= PLOG_AGG_OPT_DEF_Z
-  out.agg ||= PLOG_AGG_OPT_DEF_AGG
-  out.userCurrent ??= true
-  out.runLatest ??= true
+  out.X ||= DEFAULT_X
+  out.Y ||= DEFAULT_Y
+  out.Z ||= DEFAULT_Z
+  out.agg ||= DEFAULT_AGG
+  out.userCurrent ??= !a.len(out.userId) && out.Z !== `userId`
+
+  out.runLatest ??= (
+    !a.len(out.runId) && !a.len(out.runNum) &&
+    out.Z !== `runId` && out.Z !== `runNum`
+  )
+
+  // SYNC[plot_group_ent_type_no_mixing].
+  if (!a.len(out.where.entType)) {
+    out.where.entType = [s.FACT_ENT_TYPE_BUI]
+  }
+  else if (a.len(out.where.entType) > 1 && out.Z !== `entType`) {
+    throw new u.ErrLog(
+      `only one `, BtnAppend(`entType=`),
+      ` is allowed, unless `, BtnAppend(`-z=entType`),
+    )
+  }
+
   return out
 }
 
-export const PLOG_AGG_OPT_DEF_X = `roundNum`
-export const PLOG_AGG_OPT_DEF_Y = s.STAT_TYPE_DMG_DONE
-export const PLOG_AGG_OPT_DEF_Z = `buiTypeUpg`
-export const PLOG_AGG_OPT_DEF_AGG = a.head(a.keys(s.AGGS))
+export const DEFAULT_X = `roundNum`
+export const DEFAULT_Y = s.STAT_TYPE_DMG_DONE
+export const DEFAULT_Z = `buiTypeUpg`
+export const DEFAULT_AGG = `sum`
 
 export const PLOT_PRESETS = new Map()
-  .set(`dmg`, {X: PLOG_AGG_OPT_DEF_X, Y: s.STAT_TYPE_DMG_DONE, Z: PLOG_AGG_OPT_DEF_Z, agg: `sum`})
-  .set(`eff`, {X: PLOG_AGG_OPT_DEF_X, Y: s.STAT_TYPE_COST_EFF, Z: PLOG_AGG_OPT_DEF_Z, agg: `avg`})
+  .set(`dmg`, {
+    args: `-x=${DEFAULT_X} -y=${s.STAT_TYPE_DMG_DONE} -z=${DEFAULT_Z} -a=sum`,
+    help: `-- default`,
+  })
+  .set(`eff`, {
+    args: `-x=${DEFAULT_X} -y=${s.STAT_TYPE_COST_EFF} -z=${DEFAULT_Z} -a=avg`,
+  })
+  .set(`dmgOver`, {
+    args: `-x=${DEFAULT_X} -y=${s.STAT_TYPE_DMG_OVER} -z=${DEFAULT_Z} -a=sum`,
+  })
+  .set(`dmgRuns`, {
+    args: `-x=runNum -y=${s.STAT_TYPE_DMG_DONE} -a=sum runId=all`,
+  })
+  .set(`roundStats`, {
+    args: `-x=${DEFAULT_X} -z=statType -a=sum`,
+  })
+  .set(`runStats`, {
+    args: `-x=runNum -z=statType -a=sum runId=all`,
+  })
+  .set(`chiDmg`, {
+    args: `-x=${DEFAULT_X} -z=chiType -a=sum entType=${s.FACT_ENT_TYPE_CHI}`,
+  })
+
+function plotCliDecodeWithPresets(src) {
+  const out = []
+
+  for (const pair of u.cliDecode(src)) {
+    const [key, val] = pair
+
+    if (key !== `-p`) {
+      out.push(pair)
+      continue
+    }
+
+    const {args} = PLOT_PRESETS.get(reqEnum(key, val, PLOT_PRESETS))
+    out.push(...u.cliDecode(args))
+  }
+  return out
+}
+
 
 /*
 Goal: if FS is inited and we have an actual latest run, show its analysis.
@@ -349,7 +363,7 @@ Otherwise, show a sample run for prettiness sake.
 export async function plotDefault({sig}) {
   try {
     if (await fs.loadedHistoryDir()) {
-      await cmdPlot({sig, args: `plot run=latest`})
+      await cmdPlot({sig, args: `plot runId=latest`})
       return
     }
   }
@@ -374,7 +388,7 @@ export async function plotExampleRun() {
     s.datAddRound({dat, round, runId, runNum: 0, userId: d.USER_ID})
   }
 
-  const inp = cmdPlotDecodeArgs()
+  const inp = plotDecodeCliArgs()
   delete inp.cloud
 
   const {Z: Z_key, X: X_key, where, agg} = s.validPlotAggOpt(inp)
@@ -824,12 +838,8 @@ function compareLabelSortable(one, two) {return two.val - one.val}
 
 function BtnAppend(val) {return ui.BtnPromptAppend(cmdPlot.cmd, val)}
 
-function PresetHelp([key, val]) {
-  return [
-    BtnAppend(`-p=${key}`),
-    ` -- same as `,
-    BtnAppend(`-x=${val.X} -y=${val.Y} -z=${val.Z} -a=${val.agg}`),
-  ]
+function BtnAppendEq(key) {
+  return BtnAppend(a.reqValidStr(key) + `=`)
 }
 
 function FlagAppendBtns(src, flag, def) {
@@ -841,28 +851,147 @@ function FlagAppendBtns(src, flag, def) {
   ])
 }
 
-function supportedFilter(key) {
-  return [BtnAppend(`${key}=`), (
-    key === `userId`
-    ? [
-      ` (default `,
-      BtnAppend(`userId=current`),
-      `, disable via `,
-      BtnAppend(`userId=all`),
-      `)`,
+function Help_preset([key, {args, help}]) {
+  return [
+    BtnAppend(`-p=${key}`), ` -- same as `, BtnAppend(args),
+    a.vac(help) && [` `, help],
+  ]
+}
+
+// SYNC[plot_help_X].
+function Help_X(key) {
+  a.reqValidStr(key)
+  const btn = BtnAppend(`-x=${key}`)
+
+  if (key === `runNum`) {
+    return [
+      btn,
+      ` (recommendation: `, BtnAppend(`runId=all`), `)`,
     ]
-    : key === `runId`
-    ? [
-      ` (default `,
-      BtnAppend(`runId=latest`),
-      `, disable via `,
-      BtnAppend(`runId=all`),
-      `)`,
+  }
+
+  if (key === DEFAULT_X) {
+    return [
+      btn,
+      ` (default unless `, BtnAppend(`-z=statType`), `)`,
     ]
-    : key === `runNum`
-    ? [`  (disables default `, BtnAppend(`runId=latest`), `)`]
-    : undefined
-  )]
+  }
+
+  return btn
+}
+
+function Help_Z(key) {
+  a.reqValidStr(key)
+  const btn = BtnAppend(`-z=${key}`)
+
+  if (key === `userId`) {
+    return [
+      btn,
+      ` (disables default `, BtnAppend(`userId=current`), `)`,
+    ]
+  }
+
+  if (key === `runId`) {
+    return [
+      btn,
+      ` (disables default `, BtnAppend(`runId=latest`), `)`,
+    ]
+  }
+
+  if (key === `runNum`) {
+    return [
+      btn,
+      ` (disables default `, BtnAppend(`runId=latest`), `)`,
+    ]
+  }
+
+  if (key === `roundNum`) {
+    return [
+      btn,
+      ` (recommendation: `, BtnAppend(`-x=runNum runId=all`), `)`,
+    ]
+  }
+
+  if (key === `statType`) {
+    // SYNC[plot_group_stat_type_no_mixing].
+    return [btn, ` (disables `, BtnAppend(`-y`), `)`]
+  }
+
+  if (key === DEFAULT_Z) {
+    return [btn, ` (default)`]
+  }
+
+  return btn
+}
+
+// SYNC[plot_help_filters].
+function Help_Y(key) {
+  a.reqValidStr(key)
+  const btn = BtnAppend(`-y=${key}`)
+  if (key === DEFAULT_Y) {
+    return [btn, ` (default unless `, BtnAppend(`-z=statType`), `)`]
+  }
+  return btn
+}
+
+function Help_filter(key) {
+  a.reqValidStr(key)
+  const btn = BtnAppend(`${key}=`)
+
+  if (key === `userId`) {
+    return [
+      btn,
+      ` (default `, BtnAppend(`userId=current`),
+      ` unless `, BtnAppend(`-z=userId`),
+      `, disable via `, BtnAppend(`userId=all`), `)`,
+    ]
+  }
+
+  if (key === `runId`) {
+    return [
+      btn,
+      ` (default `, BtnAppend(`runId=latest`),
+      ` unless `, BtnAppend(`-z=runId`), ` or `, BtnAppend(`-z=runNum`),
+      `, disable via `, BtnAppend(`runId=all`), `)`,
+    ]
+  }
+
+  if (key === `runNum`) {
+    return [
+      btn,
+      ` (disables default `, BtnAppend(`runId=latest`), `)`,
+    ]
+  }
+
+  if (key === `buiType`) {
+    return [
+      btn,
+      ` (short name, like `, BtnAppend(`buiType=MedMort`), `)`,
+    ]
+  }
+
+  if (key === `buiTypeUpg`) {
+    return [
+      btn,
+      ` (short name, like `, BtnAppend(`buiTypeUpg=MedMort_ABA`), `)`,
+    ]
+  }
+
+  if (key === `entType`) {
+    return [
+      btn,
+      ` (default `, BtnAppend(`entType=${s.FACT_ENT_TYPE_BUI}`), `)`,
+    ]
+  }
+
+  if (key === `hero`) {
+    return [
+      btn,
+      ` (short name, like `, BtnAppend(`hero=Anysia`), `)`,
+    ]
+  }
+
+  return btn
 }
 
 function isPlotDataEmpty(val) {
@@ -870,3 +999,29 @@ function isPlotDataEmpty(val) {
 }
 
 function msgPlotDataEmpty(inp) {return `no data found for ` + a.show(inp)}
+
+function reqEnum(key, val, coll) {
+  if (coll.has(val)) return val
+
+  function show(val) {return BtnAppend(key + `=` + a.renderLax(val))}
+
+  throw new u.ErrLog(
+    a.show(key), ` must be one of: `,
+    ...u.LogWords(...a.map(a.keys(coll), show)),
+    `, got: `, key, `=`, val,
+  )
+}
+
+/*
+Workaround for a problem in Uplot. Contrary to what the documentation claims,
+it seems to only support missing values when they're `undefined`, but not
+when they're `null`. When generating data locally, we always use `undefined`
+for missing values. But when receiving plot-ready data from a cloud function,
+`undefined` becomes `null` due to limitations of JSON. So we have to convert
+this back.
+*/
+export function consistentNil(val) {
+  if (a.isNil(val)) return undefined
+  if (a.isArr(val)) return a.map(val, consistentNil)
+  return val
+}

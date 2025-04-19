@@ -1,8 +1,11 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as u from './util.mjs'
 
-// TODO / missing: we need game versions in our stats.
+/*
+TODO / missing: we need game versions in our stats.
 
+TODO: on next schema revision, include `chiType: null` into all non-chi facts.
+*/
 export const SCHEMA_VERSION = 2
 export const DATA_DEBUG = false
 
@@ -389,11 +392,13 @@ export const AGGS = new Map()
   .set(`count`, u.accCount)
 
 /*
+The "real" Y axis in our plots is always `.statValue` of facts. Meanwhile, the
+"fake" Y axis is
+
 The Y axis in our plots always corresponds to a number aggregated from the field
-`.statValue` of facts. We don't really care which stats the client requests, but
-it's useful to tell the client which stat types actually exist.
+`.statValue` of facts.
 */
-export const ALLOWED_Y_STAT_TYPES = new Set([
+export const ALLOWED_STAT_TYPE_FILTERS = new Set([
   STAT_TYPE_DMG_DONE,
   STAT_TYPE_DMG_OVER,
   STAT_TYPE_COST_EFF,
@@ -406,15 +411,26 @@ export const ALLOWED_Y_STAT_TYPES = new Set([
 The X axis in our plots needs to be bounded, a closed set of reasonable size.
 It can't be derived from a field where the set of possible values is unbounded,
 for example from various auto-generated ids.
+
+In addition, it needs to be a number or timestamp, as we currently only support
+line charts.
+
+SYNC[plot_help_X].
 */
 export const ALLOWED_X_KEYS = new Set([
-  `runNum`,
   `roundNum`,
+  `runNum`,
+
+  /*
+  TODO: this seems to require bar plots.
+  We currently only implement line plots.
+
   `buiType`,
   `buiTypeUpg`,
-  // `entType`, // We currently enforce building-only aggregation; TODO un-hardcode.
-  // `chiType`, // We currently enforce building-only aggregation; TODO un-hardcode.
   `statType`,
+  `entType`, // We currently enforce building-only aggregation; TODO un-hardcode.
+  `chiType`, // We currently enforce building-only aggregation; TODO un-hardcode.
+  */
 ])
 
 /*
@@ -423,17 +439,25 @@ as a line. A typical example is "building type" or "building type with upgrade".
 For now we allow arbitrary ids here, but that's going to be a problem later.
 We'll either restrict this to closed sets, or introduce pagination-style limits
 where only the top series are kept.
+
+SYNC[plot_help_Z].
 */
 export const ALLOWED_Z_KEYS = new Set([
   `userId`,
   `runId`,
   `roundId`,
   `runBuiId`,
-  ...ALLOWED_X_KEYS,
+  `runNum`,
+  `roundNum`,
+  `buiType`,
+  `buiTypeUpg`,
+  `entType`,
+  `chiType`,
+  `statType`,
 ])
 
+// SYNC[plot_help_filters].
 export const ALLOWED_FILTER_KEYS = new Set([
-  `schemaVersion`,
   `userId`,
   `runId`,
   `runNum`,
@@ -445,15 +469,10 @@ export const ALLOWED_FILTER_KEYS = new Set([
   `buiTypeUpg`,
   `entType`,
   `chiType`,
+  `statType`,
   `hero`,
   `diff`,
   `frontierDiff`,
-])
-
-export const ALLOWED_RUN_FILTERS = new Set([
-  `userId`,
-  `runId`,
-  `runNum`,
 ])
 
 export function validPlotAggOpt(src) {
@@ -462,40 +481,43 @@ export function validPlotAggOpt(src) {
     throw TypeError(`plot agg opts must be a dict, got ${a.show(src)}`)
   }
 
+  const errs = []
   const inp = u.dict(src)
   const out = a.Emp()
-  const errs = []
+  out.where = a.Emp()
 
   const X = u.dictPop(inp, `X`)
   if (!a.isValidStr(X)) {
     errs.push(`opt "X" must be a valid field name`)
   }
   else if (!ALLOWED_X_KEYS.has(X)) {
-    errs.push(`opt "X" must be one of: ${a.show(a.arr(ALLOWED_X_KEYS))}, got ${X}`)
+    errs.push(`opt "X" must be one of: ${a.show(a.keys(ALLOWED_X_KEYS))}, got ${X}`)
   }
   out.X = X
-
-  const Y = u.dictPop(inp, `Y`)
-  if (!a.isValidStr(Y)) {
-    errs.push(`opt "Y" must be a valid stat type`)
-  }
-  else if (!ALLOWED_Y_STAT_TYPES.has(Y)) {
-    errs.push(`opt "Y" must be one of: ${a.show(a.arr(ALLOWED_Y_STAT_TYPES))}, got ${Y}`)
-  }
-  out.Y = Y
 
   const Z = u.dictPop(inp, `Z`)
   if (!a.isValidStr(Z)) {
     errs.push(`opt "Z" must be a valid field name`)
   }
   else if (!ALLOWED_Z_KEYS.has(Z)) {
-    errs.push(`opt "Z" must be one of: ${a.show(a.arr(ALLOWED_Z_KEYS))}, got ${Z}`)
+    errs.push(`opt "Z" must be one of: ${a.show(a.keys(ALLOWED_Z_KEYS))}, got ${Z}`)
   }
   out.Z = Z
 
-  out.where = a.Emp()
-  out.where.statType = [Y]
-  out.where.entType = [FACT_ENT_TYPE_BUI] // TODO un-hardcode.
+  const Y = u.dictPop(inp, `Y`)
+  const errMsgY = `opt "Y" must be a valid stat type, unless "Z=statType"`
+
+  // SYNC[plot_group_stat_type_no_mixing].
+  if (Z !== `statType`) {
+    if (!a.isValidStr(Y)) errs.push(errMsgY)
+    else if (!ALLOWED_STAT_TYPE_FILTERS.has(Y)) {
+      errs.push(`opt "Y" must be one of: ${a.show(a.keys(ALLOWED_STAT_TYPE_FILTERS))}, got ${Y}`)
+    }
+    else {
+      out.Y = Y
+      u.dictPush(out.where, `statType`, Y)
+    }
+  }
 
   const where = u.dictPop(inp, `where`)
   if (a.isSome(where)) {
@@ -506,20 +528,28 @@ export function validPlotAggOpt(src) {
       // SYNC[field_pattern].
       for (const [key, fil] of a.entries(where)) {
         if (!ALLOWED_FILTER_KEYS.has(key)) {
-          errs.push(`unrecognized where key ${a.show(key)}, must be one of: ${a.show(a.arr(ALLOWED_FILTER_KEYS))}`)
+          errs.push(`unrecognized "where" key ${a.show(key)}, must be one of: ${a.show(a.keys(ALLOWED_FILTER_KEYS))}`)
           continue
         }
 
         if (a.isNil(fil)) continue
 
         if (!a.isArr(fil)) {
-          errs.push(`every where entry must have a list of possible values, got ${a.show(fil)}`)
+          errs.push(`every "where" entry must have a list of possible values, got ${a.show(fil)}`)
           continue
         }
 
         for (const val of fil) u.dictPush(out.where, key, val)
       }
     }
+  }
+
+  // SYNC[plot_group_ent_type_no_mixing].
+  if (!a.len(out.where.entType)) {
+    out.where.entType = [FACT_ENT_TYPE_BUI]
+  }
+  else if (a.len(out.where.entType) > 1 && out.Z !== `entType`) {
+    errs.push(`only one "entType=" is allowed, unless "Z=entType"`)
   }
 
   const runLatest = u.dictPop(inp, `runLatest`)
@@ -556,7 +586,6 @@ export function validPlotAggOpt(src) {
     errs.push(`unrecognized plot agg opts: ${a.show(keys)}`)
   }
   if (errs.length) throw Error(errs.join(`; `))
-
   return out
 }
 

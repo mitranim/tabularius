@@ -27,8 +27,12 @@ run.w:
 run:
 	$(DENO_RUN) $(run)
 
-fb:
+fb.emul:
 	firebase emulators:start --log-verbosity QUIET
+
+# Output should be placed in `firebase/firestore.indexes.json`.
+fb.ind:
+	firebase firestore:indexes
 
 # Requires `gcloud auth login` or equivalent.
 # May require some retries.

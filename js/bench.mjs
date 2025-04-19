@@ -11,12 +11,12 @@ import * as p from './plot.mjs'
 // Some tricky cases need a loop inside a benchmark to bench true.
 const REPEAT_COUNT = 65_536
 
-const plotAggInp = p.cmdPlotDecodeArgs(``)
+const plotAggInp = p.plotDecodeCliArgs()
 delete plotAggInp.src
 const plotAggOpt = s.validPlotAggOpt(plotAggInp)
 
 const sampleFact = {
-  entType: `runRoundBui`
+  entType: `runRoundBui`,
   statType: `dmgDone`,
 }
 

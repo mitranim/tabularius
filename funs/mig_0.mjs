@@ -37,12 +37,12 @@ async function rebuildDerivedDocs() {
   const query = db.collection(s.COLL_ROUND_SNAPS)
     .where(`tabularius_derivedSchemaVersion`, `<`, s.SCHEMA_VERSION)
 
-  for await (const docs of uf.documentBatches(query)) {
-    for (const doc of docs) {
-      const round = doc.data()
+  for await (const snaps of uf.documentSnapBatches(query)) {
+    for (const snap of snaps) {
+      const round = snap.data()
       if (!round) continue
 
-      const batch = uf.roundBatch(db, doc.ref, round)
+      const batch = uf.roundBatch(db, snap.ref, round)
       if (!batch) continue
 
       if (uf.DRY_RUN) {
@@ -50,7 +50,7 @@ async function rebuildDerivedDocs() {
       }
       else {
         const count = a.len(await batch.commit())
-        log.debug(`derived ${count - 1} documents from ${doc.ref.path}`)
+        log.debug(`derived ${count - 1} documents from ${snap.ref.path}`)
       }
     }
   }
@@ -61,13 +61,13 @@ async function deleteOutdatedFields(collName) {
     .where(`schemaVersion`, `==`, s.SCHEMA_VERSION)
     .where(`frontierLevel`, `!=`, null)
 
-  for await (const docs of uf.documentBatches(query)) {
-    a.reqArr(docs)
-    log.debug(`in ${collName}, found ${docs.length} to delete outdated fields on`)
+  for await (const snaps of uf.documentSnapBatches(query)) {
+    a.reqArr(snaps)
+    log.debug(`in ${collName}, found ${snaps.length} to delete outdated fields on`)
 
     const batch = db.batch()
-    for (const doc of docs) {
-      batch.update(doc.ref, {frontierLevel: faf.FieldValue.delete()})
+    for (const snap of snaps) {
+      batch.update(snap.ref, {frontierLevel: faf.FieldValue.delete()})
     }
 
     if (uf.DRY_RUN) {
@@ -84,12 +84,12 @@ async function deleteOutdatedDocs(collName) {
   const query = db.collection(collName)
     .where(`schemaVersion`, `<`, s.SCHEMA_VERSION)
 
-  for await (const docs of uf.documentBatches(query)) {
-    a.reqArr(docs)
-    log.debug(`in ${collName}, found ${docs.length} outdated docs to delete`)
+  for await (const snaps of uf.documentSnapBatches(query)) {
+    a.reqArr(snaps)
+    log.debug(`in ${collName}, found ${snaps.length} outdated docs to delete`)
 
     const batch = db.batch()
-    for (const doc of docs) batch.delete(doc.ref)
+    for (const snap of snaps) batch.delete(snap.ref)
 
     if (uf.DRY_RUN) {
       log.debug(`skipping batch commit`)
