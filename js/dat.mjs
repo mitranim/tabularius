@@ -21,17 +21,17 @@ export const USER_ID = `local_user`
 // Allows live plot updates on dat changes. See `LivePlotter`.
 u.listenMessage(u.BROAD, datOnBroadcast)
 
-export function datQueryFacts(dat, inp) {
+export function datQueryFacts(dat, opt) {
   a.reqStruct(dat)
-  return u.filterWhere(dat.facts, datQueryWhere(dat, inp))
+  return u.filterWhere(dat.facts, datQueryWhere(dat, opt))
 }
 
-export function datQueryWhere(dat, inp) {
+export function datQueryWhere(dat, opt) {
   a.reqStruct(dat)
-  inp = a.laxDict(inp)
-  if (!inp.runLatest) return inp.where
+  opt = a.laxStruct(opt)
+  if (!opt.runLatest) return opt.where
 
-  const out = u.dict(inp.where)
+  const out = u.dict(opt.where)
   const id = a.head(a.sort(dat.runs, compareRunByNumDesc))?.runId
   if (id) out.runId = a.concat(out.runId, [id])
   return out
@@ -39,17 +39,17 @@ export function datQueryWhere(dat, inp) {
 
 function compareRunByNumDesc(one, two) {return two.runNum - one.runNum}
 
-export async function datLoad(sig, dat, inp) {
+export async function datLoad(sig, dat, opt) {
   a.reqStruct(dat)
-  inp = a.laxDict(inp)
+  opt = a.laxStruct(opt)
 
-  const where = a.laxDict(inp.where)
+  const where = a.laxDict(opt.where)
   const root = await fs.reqHistoryDir(sig)
   const runIds = new Set(a.optArr(where.runId))
   const runNums = new Set(a.optArr(where.runNum))
   const roundNums = new Set(a.optArr(where.roundNum))
 
-  if (inp.runLatest) {
+  if (opt.runLatest) {
     const id = await fs.findLatestRunId(sig, root)
     if (id) runIds.add(id)
   }

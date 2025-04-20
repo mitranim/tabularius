@@ -475,6 +475,16 @@ export const ALLOWED_FILTER_KEYS = new Set([
   `frontierDiff`,
 ])
 
+export class PlotAggOpt extends a.Emp {
+  X = undefined
+  Y = undefined
+  Z = undefined
+  agg = undefined
+  where = a.Emp()
+  runLatest = undefined
+  userCurrent = undefined
+}
+
 export function validPlotAggOpt(src) {
   src ??= a.Emp()
   if (!a.isDict(src)) {
@@ -483,8 +493,7 @@ export function validPlotAggOpt(src) {
 
   const errs = []
   const inp = u.dict(src)
-  const out = a.Emp()
-  out.where = a.Emp()
+  const out = new PlotAggOpt()
 
   const X = u.dictPop(inp, `X`)
   if (!a.isValidStr(X)) {
@@ -589,32 +598,31 @@ export function validPlotAggOpt(src) {
   return out
 }
 
-export function plotAggFromFacts({facts, Z_key, X_key, agg}) {
-  a.reqArr(facts)
-  a.reqValidStr(Z_key)
-  a.reqValidStr(X_key)
-  a.reqFun(agg)
-
-  const Z_X_Y = a.Emp()
-  const X_set = new Set()
-  plotAggAddFacts({facts, Z_X_Y, X_set, Z_key, X_key, agg})
-  return plotWithTotals(...plotAggCompact(Z_X_Y, X_set), agg)
+export class PlotAggState extends a.Emp {
+  Z_X_Y = a.Emp()
+  X_set = new Set()
 }
 
-export function plotAggAddFacts({facts, Z_X_Y, X_set, Z_key, X_key, agg}) {
-  a.reqDict(Z_X_Y)
-  a.reqSet(X_set)
-  a.reqKey(Z_key)
-  a.reqKey(X_key)
-  a.reqFun(agg)
+export function plotAggFromFacts({facts, opt}) {
+  a.reqInst(opt, PlotAggOpt)
+  const state = new PlotAggState()
+  plotAggAddFacts({facts, state, opt})
+  return plotAggWithTotals({...plotAggCompact(state), agg: opt.agg})
+}
+
+export function plotAggAddFacts({facts, state, opt}) {
+  a.reqInst(state, PlotAggState)
+  a.reqInst(opt, PlotAggOpt)
 
   for (const fact of a.laxArr(facts)) {
-    plotAggAddFact({fact, Z_X_Y, X_set, Z_key, X_key, agg})
+    plotAggAddFact({fact, state, opt})
   }
 }
 
-export function plotAggAddFact({fact, Z_X_Y, X_set, Z_key, X_key, agg}) {
+export function plotAggAddFact({fact, state, opt}) {
   a.reqDict(fact)
+  const {Z_X_Y, X_set} = a.reqInst(state, PlotAggState)
+  const {Z: Z_key, X: X_key, agg} = a.reqInst(opt, PlotAggOpt)
 
   const Z = fact[Z_key]
   if (!a.isKey(Z)) return
@@ -636,7 +644,7 @@ export function plotAggAddFact({fact, Z_X_Y, X_set, Z_key, X_key, agg}) {
   X_set.add(X)
 }
 
-export function plotAggCompact(Z_X_Y, X_set) {
+export function plotAggCompact({Z_X_Y, X_set}) {
   a.reqDict(Z_X_Y)
   a.reqSet(X_set)
 
@@ -658,10 +666,10 @@ export function plotAggCompact(Z_X_Y, X_set) {
   Each sub-array index corresponds to an index in X_row.
   Each sub-array value is the Y for that Z and X.
   */
-  const Z_X_Y_arr = a.map(Z_labels, Z => a.map(X_row, X => a.head(Z_X_Y[Z][X])))
+  Z_X_Y = a.map(Z_labels, Z => a.map(X_row, X => a.head(Z_X_Y[Z][X])))
 
-  dropZeroRows(Z_labels, Z_X_Y_arr)
-  return [X_row, Z_labels, Z_X_Y_arr]
+  dropZeroRows(Z_labels, Z_X_Y)
+  return {X_row, Z_labels, Z_X_Y}
 }
 
 export function dropZeroRows(Z, Z_X_Y) {
@@ -684,10 +692,13 @@ export function dropZeroRows(Z, Z_X_Y) {
   }
 }
 
-export function plotWithTotals(X_row, Z_labels, Z_X_Y_arr, agg) {
+export function plotAggWithTotals({X_row, Z_labels, Z_X_Y, agg}) {
+  a.reqArr(X_row)
+  a.reqArr(Z_labels)
+  a.reqArr(Z_X_Y)
   Z_labels.unshift(`Total`)
-  Z_X_Y_arr.unshift(totals(Z_X_Y_arr, agg))
-  return [X_row, Z_labels, Z_X_Y_arr]
+  Z_X_Y.unshift(totals(Z_X_Y, agg))
+  return {X_row, Z_labels, Z_X_Y}
 }
 
 export function totals(Z_X_Y, agg) {

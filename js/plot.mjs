@@ -122,12 +122,16 @@ export async function cmdPlotLocal(sig, inp, args) {
   // TODO: on `DAT` events, don't update the plot if unaffected.
   function plotOpts() {
     const facts = d.datQueryFacts(d.DAT, opt)
-    const data = s.plotAggFromFacts({facts, Z_key, X_key, agg})
-    return plotOptsWith({data, inp})
+    const data = s.plotAggFromFacts({facts, opt})
+    return plotOptsWith({...data, inp})
   }
 }
 
 export async function cmdPlotCloud(sig, inp, args) {
+  u.reqSig(sig)
+  a.reqDict(inp)
+  a.reqDict(inp.where)
+
   const fb = await import(`./fb.mjs`)
 
   if (inp.userCurrent && !await fb.nextUser(sig)) {
@@ -140,16 +144,17 @@ export async function cmdPlotCloud(sig, inp, args) {
   }
 
   const {data} = await u.wait(sig, fb.fbCall(`plotAgg`, inp))
-  if (isPlotDataEmpty(data)) return msgPlotDataEmpty(args)
-  ui.MEDIA.add(new Plotter(plotOptsWith({data: consistentNil(data), inp})))
+  if (isPlotAggEmpty(data)) return msgPlotDataEmpty(args)
+  ui.MEDIA.add(new Plotter(plotOptsWith({...consistentNil(data), inp})))
 }
 
-export function plotOptsWith({data, inp}) {
-  a.reqArr(data)
+export function plotOptsWith({X_row, Z_labels, Z_X_Y, inp}) {
+  a.reqArr(X_row)
+  a.reqArr(Z_labels)
+  a.reqArr(Z_X_Y)
   a.reqDict(inp)
 
   const agg = s.AGGS.get(inp.agg)
-  const [X_row, Z_labels, Z_X_Y_arr] = data
   const Z_rows = a.map(Z_labels, codedToTitled).map((val, ind) => serieWithAgg(val, ind, agg))
 
   // Hide the total serie by default.
@@ -168,7 +173,7 @@ export function plotOptsWith({data, inp}) {
     // TODO human readability.
     title,
     series: [{label: inp.X}, ...Z_rows],
-    data: [X_row, ...a.arr(Z_X_Y_arr)],
+    data: [X_row, ...a.arr(Z_X_Y)],
     axes: axes(inp.X, inp.Y),
   }
 }
@@ -390,11 +395,10 @@ export async function plotExampleRun() {
 
   const inp = plotDecodeCliArgs()
   delete inp.cloud
-
-  const {Z: Z_key, X: X_key, where, agg} = s.validPlotAggOpt(inp)
-  const facts = d.datQueryFacts(dat, where)
-  const data = s.plotAggFromFacts({facts, Z_key, X_key, agg})
-  const opts = plotOptsWith({data, inp})
+  const opt = s.validPlotAggOpt(inp)
+  const facts = d.datQueryFacts(dat, opt)
+  const data = s.plotAggFromFacts({facts, opt})
+  const opts = plotOptsWith({...data, inp})
 
   opts.title = `example run analysis: ` + opts.title
   ui.MEDIA.add(new Plotter(opts))
@@ -994,8 +998,19 @@ function Help_filter(key) {
   return btn
 }
 
-function isPlotDataEmpty(val) {
-  return !a.reqArr(val).length || !a.reqArr(val[0]).length
+function isPlotAggEmpty({X_row, Z_labels, Z_X_Y}) {
+  return isPlotDataEmpty([X_row, Z_labels, Z_X_Y])
+}
+
+/*
+Our cloud function returns this as a dict, while the plot library we use
+requires this as an array.
+*/
+function isPlotDataEmpty([X_row, Z_labels, Z_X_Y]) {
+  a.optArr(X_row)
+  a.optArr(Z_labels)
+  a.optArr(Z_X_Y)
+  return a.isEmpty(X_row)
 }
 
 function msgPlotDataEmpty(inp) {return `no data found for ` + a.show(inp)}
@@ -1023,5 +1038,13 @@ this back.
 export function consistentNil(val) {
   if (a.isNil(val)) return undefined
   if (a.isArr(val)) return a.map(val, consistentNil)
+  if (a.isDict(val)) return a.mapDict(val, consistentNil)
   return val
+}
+
+// For REPL convenience.
+export function plotArgsToAggOpt(src) {
+  src = plotDecodeCliArgs(src)
+  delete src.cloud
+  return s.validPlotAggOpt(src)
 }

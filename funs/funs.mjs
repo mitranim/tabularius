@@ -47,26 +47,28 @@ TODO:
   - Time elapsed.
 */
 export const plotAgg = ffh.onCall(async function plotAgg(req) {
-  let inp
-  try {inp = s.validPlotAggOpt(req.data)}
-  catch (err) {throw new ffh.HttpsError(`invalid-argument`, err, inp)}
-  const {X: X_key, Z: Z_key, where, runLatest, userCurrent, agg} = inp
+  const src = req.data
+  let opt
+  try {opt = s.validPlotAggOpt(src)}
+  catch (err) {throw new ffh.HttpsError(`invalid-argument`, err, src)}
 
-  if (runLatest) {
-    where.runId ??= []
-    where.runId.push(...await uf.latestRunIds(db, Z_key, where.userId))
+  if (opt.runLatest) {
+    opt.where.runId ??= []
+    opt.where.runId.push(...await uf.latestRunIds(db, opt.Z, opt.where.userId))
   }
 
-  if (userCurrent) {
+  if (opt.userCurrent) {
     const id = req.auth?.uid
     if (!id) return []
-    u.dictPush(where, `userId`, id)
+    u.dictPush(opt.where, `userId`, id)
   }
 
-  where.schemaVersion = [s.SCHEMA_VERSION]
+  opt.where.schemaVersion = [s.SCHEMA_VERSION]
+  const query = uf.queryWhere(db.collection(s.COLL_FACTS), opt.where)
+  const state = new s.PlotAggState()
 
-  const query = uf.queryWhere(db.collection(s.COLL_FACTS), where)
-  const snap = await query.get()
-  const facts = a.map(snap.docs, uf.docData)
-  return s.plotAggFromFacts({facts, Z_key, X_key, agg})
+  for await (const [_ref, fact] of uf.streamDocuments(query)) {
+    s.plotAggAddFact({fact, state, opt})
+  }
+  return s.plotAggWithTotals({...s.plotAggCompact(state), agg: opt.agg})
 })

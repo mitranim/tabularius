@@ -325,3 +325,28 @@ export function decodeTimestamp(src) {
   src = Date.parse(src)
   return src ? fbs.Timestamp.fromMillis(src) : undefined
 }
+
+export function query(coll, inp) {
+  a.reqValidStr(coll)
+
+  const {orderBy, limit, ...rest} = a.laxDict(inp)
+  const inps = []
+  const and = a.mapCompact(a.entries(rest), whereOr)
+  if (and.length) inps.push(fbs.and(...inps))
+
+  if (a.optArr(orderBy)) {
+    const key = a.reqValidStr(orderBy[0])
+    const dir = a.reqValidStr(orderBy[1])
+    inps.push(fbs.orderBy(key, dir))
+  }
+
+  if (a.optInt(limit)) inps.push(fbs.limit(limit))
+  return fbs.getDocs(fbs.query(fbs.collection(store, coll), ...inps))
+}
+
+function whereOr([key, val]) {
+  a.reqValidStr(key)
+  const out = []
+  for (val of a.laxArr(val)) out.push(fbs.where(key, `==`, a.reqPrim(val)))
+  return out.length ? fbs.or(...out) : undefined
+}

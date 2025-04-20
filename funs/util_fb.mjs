@@ -11,7 +11,20 @@ import * as s from './schema.mjs'
 
 export const EMULATE = a.boolOpt(process.env.FIREBASE_EMULATE)
 export const DRY_RUN = a.boolOpt(process.env.DRY_RUN)
-export const BATCH_SIZE_MAX = 500
+
+/*
+We're allowed to query fairly arbitrary amounts of documents. The real
+restrictions are cloud function memory limits, request timeouts, and maybe
+more. Sometimes we need to read documents in limited-size batches to allow
+GC to discard unneeded data. The optimum batch size for that is unknown.
+At the time of writing, cloud functions using Node seem to be limited to
+256 MB of memory, which can be easily reached when querying a mere hundred
+thousands of documents.
+*/
+export const BATCH_SIZE_READ = 5000
+
+// According to Firestore docs, batches support up to 500 operations.
+export const BATCH_SIZE_WRITE = 500
 
 export function getDb() {
   return EMULATE ? dbEmulated() : dbReal()
@@ -181,22 +194,28 @@ export function decodeTimestamp(src) {
   return src ? faf.Timestamp.fromMillis(src) : undefined
 }
 
-export async function* documentSnapBatches(baseQuery) {
-  const batchSize = BATCH_SIZE_MAX
+export async function* streamDocuments(baseQuery, batchSize) {
+  for await (const snaps of documentSnapBatches(baseQuery, batchSize)) {
+    for (const snap of snaps) yield [snap.ref, snap.data()]
+  }
+}
+
+export async function* documentSnapBatches(baseQuery, batchSize) {
+  batchSize = a.optNat(batchSize) || BATCH_SIZE_READ
+  baseQuery = baseQuery.limit(batchSize)
   let startAfter
 
   for (;;) {
     let query = baseQuery
     if (startAfter) query = query.startAfter(startAfter)
-    query = query.limit(batchSize)
 
-    const snap = await query.get()
-    const docs = a.laxArr(snap.docs)
-    if (!docs.length) break
+    const collSnap = await query.get()
+    const docSnaps = a.laxArr(collSnap.docs)
+    if (!docSnaps.length) break
 
-    yield docs
+    yield docSnaps
 
-    if (docs.length < batchSize) break
-    startAfter = a.last(docs)
+    if (docSnaps.length < batchSize) break
+    startAfter = a.last(docSnaps)
   }
 }

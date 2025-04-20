@@ -37,7 +37,7 @@ async function rebuildDerivedDocs() {
   const query = db.collection(s.COLL_ROUND_SNAPS)
     .where(`tabularius_derivedSchemaVersion`, `<`, s.SCHEMA_VERSION)
 
-  for await (const snaps of uf.documentSnapBatches(query)) {
+  for await (const snaps of uf.documentSnapBatches(query, uf.BATCH_SIZE_WRITE)) {
     for (const snap of snaps) {
       const round = snap.data()
       if (!round) continue
@@ -61,7 +61,7 @@ async function deleteOutdatedFields(collName) {
     .where(`schemaVersion`, `==`, s.SCHEMA_VERSION)
     .where(`frontierLevel`, `!=`, null)
 
-  for await (const snaps of uf.documentSnapBatches(query)) {
+  for await (const snaps of uf.documentSnapBatches(query, uf.BATCH_SIZE_WRITE)) {
     a.reqArr(snaps)
     log.debug(`in ${collName}, found ${snaps.length} to delete outdated fields on`)
 
@@ -84,7 +84,7 @@ async function deleteOutdatedDocs(collName) {
   const query = db.collection(collName)
     .where(`schemaVersion`, `<`, s.SCHEMA_VERSION)
 
-  for await (const snaps of uf.documentSnapBatches(query)) {
+  for await (const snaps of uf.documentSnapBatches(query, uf.BATCH_SIZE_WRITE)) {
     a.reqArr(snaps)
     log.debug(`in ${collName}, found ${snaps.length} outdated docs to delete`)
 

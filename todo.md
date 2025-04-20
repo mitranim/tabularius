@@ -1089,3 +1089,7 @@ The command `show` needs to support cloud sources.
 ---
 
 `plot`: when plotting child facts, include their types into labels.
+
+---
+
+Replace Firestore with a DB actually suitable for aggregation and analytics.
