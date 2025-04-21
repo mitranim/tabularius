@@ -1,0 +1,42 @@
+app = "tabularius"
+primary_region = "iad"
+
+[build]
+dockerfile = "dockerfile"
+
+[http_service]
+internal_port = 8080
+force_https = true
+auto_start_machines = true
+auto_stop_machines = "suspend"
+min_machines_running = 0
+processes = ["app"]
+
+[processes]
+app = "run -A --no-check ./server/srv.mjs"
+
+# Volume must be created manually:
+#   fly volume create tabularius_data -r iad -n 1
+[mounts]
+source = "tabularius_data"
+destination = "/app/data"
+
+[env]
+PORT = "8080"
+LOG_DEBUG = "true"
+DATA_DIR = "/app/data"
+DB_FILE = "/app/data/tabularius.duckdb"
+TMP_DIR = ".tmp"
+
+[[statics]]
+url_prefix = "/client"
+guest_path = "./client"
+
+[[statics]]
+url_prefix = "/shared"
+guest_path = "./shared"
+
+[vm]
+cpu_kind = "shared"
+cpus = 8
+memory_mb = 8_192

@@ -1,3 +1,5 @@
+(Commented-out entries are either done or rejected.)
+
 ## Setup
 
 <!-- (Done) Serve with GitHub Pages. If build/deploy is necessary, use GitHub Actions. -->
@@ -10,11 +12,11 @@
 
 In case of defeat, last snapshot indicates defeat.
 
-<!-- (Done) The SPA asks for permissions for the save directory (or just progress file), and for the run history directory. The SPA watches the progress file by periodically checking timestamps. On changes, it also checks the round index or run ID. On changes, it cleans up the data and stores it in the run history directory. -->
+<!-- (Done) The app asks for permissions for the save directory (or just progress file), and for the run history directory. The app watches the progress file by periodically checking timestamps. On changes, it also checks the round index or run ID. On changes, it cleans up the data and stores it in the run history directory. -->
 
-<!-- The SPA lets you view run history, per round, per run. -->
+<!-- The app lets you view run history, per round, per run. -->
 
-The SPA may provide an option to roll back the save.
+The app may provide an option to roll back the save.
 
 <!-- Detect multiple concurrent instances of the app, only one should deal with files. -->
 
@@ -209,7 +211,7 @@ Maybe something like:
 * current branch has index 0
 * when adding a round, check if there is already that round in the current run
 * if true, get that round and all higher rounds, assign them index + 1, and stash them in a folder with the current run ID and the index + 1
-* in the Firebase data, update those rounds, assigning them index + 1
+* in the cloud data, update those rounds, assigning them index + 1
 * when querying all data, we include old branches
 * when querying a specific run, include only rounds with index 0
 
@@ -280,8 +282,6 @@ We use the OpenAI API directly from the client. If we need a default API key and
 Correction to the above: we'll simply use FB GenKit or VertexAI.
 
 ## Misc
-
-(Commented-out entries are either done or rejected.)
 
 Consider if there's a danger of the browser tab being unloaded, which would disable the file watching, backups, data upload.
 
@@ -590,7 +590,7 @@ Plot: when zoomed-in, totals should be calculated only for the currently _visibl
 
 ---
 
-Plot auto-updating. First from local data, then from Firebase. Demos:
+Plot auto-updating. First from local data, then from cloud data. Demos:
 
 https://leeoniya.github.io/uPlot/demos/stream-data.html
 https://leeoniya.github.io/uPlot/demos/pixel-align.html
@@ -599,7 +599,7 @@ https://leeoniya.github.io/uPlot/demos/sine-stream.html
 The file watcher needs to send new data to the plot.
 
 * [x] Local.
-* [ ] Remote.
+* [ ] Cloud.
 
 ---
 
@@ -707,9 +707,14 @@ A way to "stick" a run id, round id, building id for subsequent commands. Persis
 
 ---
 
-A command for viewing stats super zoomed-in, for a particular round > building > child / weapon.
-
 A media UI for showing building, child, weapon stats in a nice format. Flattening the data and printing JSON is an okay start, but we can do better.
+
+Viable stats:
+- Damage this round.
+- Damage this run.
+- Various weapon stats (damage, RoF, AoE, and more).
+
+A way of viewing stats super zoomed-in, for a particular round > building > child / weapon.
 
 ---
 
@@ -726,6 +731,8 @@ Also: we could include even more stats per cell.
 So in a general case, every cell is an entity with fields. Our data is N-dimensional.
 
 Near the table, there could be a list of fields, one of them always selected, that's what shows up per cell.
+
+Maybe the weapon stats mentioned above also go here. Needs plenty of filters.
 
 ---
 
@@ -1043,19 +1050,21 @@ When the very first round backup is made by `watch`, switch from default example
 
 `plot`: more presets.
 
+TODO learn the lesson: we tried having defaults on various plot agg parameters, in the name of convenience and efficiency, and then we ended up with covariance between defaults and various options that disable various defaults, and the complexity blew up in our face. Not only was it hard to maintain across the codebase, since we have multiple querying implementations that had to support the defaults, but more importantly, it would be harder for the users to intuit how that stuff even works. Moral of the story: never use defaults, always use full presets; every feature is off by default, in every system, every time.
+
 ---
 
 `plot`: filters should support `< <= >= >` for numeric ranges, such as `roundNum`, `runNum`, maybe `statValue`.
 
 ---
 
-`plot`: log the execution time of `plotAgg`, or find if the time is already logged in Google Cloud logs.
+<!-- `plot`: log the execution time of `plotAgg`, or find if the time is already logged in Google Cloud logs. -->
 
 ---
 
-`plotAgg`: if execution is slow or if function latency is always high, we might be able to reduce it by caching plot datas, storing them as documents in their own collection. We can generate a canonical key from the input parameters. When requesting data from a client, we build that key and `Promise.race` two things: querying for an existing plot data document, and calling `plotAgg`. In `plotAgg`, we also try to use an existing doc, falling back on aggregating and then storing the resulting data (asynchronously).
+<!-- `plotAgg`: if execution is slow or if function latency is always high, we might be able to reduce it by caching plot datas, storing them as documents in their own collection. We can generate a canonical key from the input parameters. When requesting data from a client, we build that key and `Promise.race` two things: querying for an existing plot data document, and calling `plotAgg`. In `plotAgg`, we also try to use an existing doc, falling back on aggregating and then storing the resulting data (asynchronously).
 
-Measure first. Get the execution times. Try querying facts from the client and compare.
+Measure first. Get the execution times. Try querying facts from the client and compare. -->
 
 ---
 
@@ -1092,4 +1101,189 @@ The command `show` needs to support cloud sources.
 
 ---
 
-Replace Firestore with a DB actually suitable for aggregation and analytics.
+<!-- Replace Firestore with a DB actually suitable for aggregation and analytics. -->
+
+Done.
+
+---
+
+An option to have plots side-by-side.
+
+---
+
+`plot`: when `run_id` or `round_id` is specified, disregard `user_id` instead of filtering by current user.
+
+Note: we're migrating to a new system where `run_id` and `round_id` are ephemeral, and only exist in client data. The server might end up with special cases for them, decomposing them into composite keys. It needs to observe the same rule.
+
+---
+
+`index.html`: more metadata for previews and search indexing.
+
+---
+
+`plot`: truncate long series labels. Ideally, only the user id component is truncated with an ellipsis; other components of a label are kept.
+
+---
+
+`plot`: consider _not_ sorting labels on cursor hover / series selection.
+
+---
+
+`plot`: when rendering a plot, show additional metadata such as:
+- Set of unique `user_id` in the facts.
+- Set of unique `run_id` in the facts.
+- Set of unique `round_id` in the facts.
+
+---
+
+Bundle and minify for production.
+
+---
+
+Change the color scheme (both light and dark) to what I use in ST.
+
+---
+
+Verify that the `BUI_COSTS` are accurate.
+
+---
+
+`plot.mjs`: more diverse distribution of `FG_COLORS`.
+
+---
+
+Goal: migrate from Firebase (Auth, Firestore, Cloud Functions) to our own Deno server with a local DuckDB, using a locally-mounted volume for persistence, deployed on `fly.io`.
+
+* [x] Store uploaded rounds and derived facts.
+  * [x] Rounds are stored as files, structured as: `<user_id>/<run_num>/<round_num>.json.gz`.
+  * [x] Facts are stored in DuckDB.
+    * [x] Schema definition.
+    * [x] Endpoint that derives and stores.
+  * [x] API endpoint for round upload.
+    * [x] Validate round structure.
+    * [x] Derive facts.
+    * [x] Store round file.
+    * [x] Store derived facts.
+    * [x] Ensure either atomicity / transactionality of storing both, or the ability to recover data consistency if the app is shut down between the writes.
+* [x] Endpoint for querying.
+  * Maybe take a plot args string, combine parsing and validating into one.
+* [x] `validPlotAggOpt`: keep `agg`, add `aggFun`.
+* [x] Reorg JS files:
+  * `shared`
+  * `server`
+  * `client`
+* [x] Server: read / migrate from data dir on startup and schema change.
+  * [x] No schema change: nothing to do.
+  * [x] Schema missing or changed: drop DB and re-create from data dir.
+  * [x] Make data dir path configurable.
+  * [x] Make DB file path configurable.
+  * [x] Verify behavior with persistent DB file path (in data dir).
+* [x] API integration:
+  * [x] Client calls the correct API URLs in development.
+  * [x] Client calls the correct API URLs in production.
+* [x] Authentication:
+  * [x] Before committing to the strategy below, ask bots for review and suggestions.
+  * [x] Probably something like asymmetric public/private key.
+  * [x] The `auth` command requests a passphrase or password.
+  * [x] When requesting:
+    * [x] Change the prompt input to `type=password` and changes its visual appearance.
+    * [x] Change the placeholder to something like: "type a passphrase or press Esc to cancel".
+      * [x] Esc is a global-once event listener, dismissed either when invoked, or on prompt submit.
+      * [x] Either way reverts the input to the normal state.
+  * [x] On password / passphrase submit:
+    * [x] Don't submit if empty.
+    * [x] Don't submit if has leading / trailing space (print a message).
+    * [x] Request confirmation once.
+    * [x] Derive crypto seed.
+    * [x] Generate private and public key.
+    * [x] Store both.
+  * [x] The private key is a byte sequence, derived deterministically from the passphrase via a cryptographically secure hashing algorithm (or hashing-like, there are variations).
+  * [x] The public key is a reasonably short string, derived from the private key. It's the user id.
+  * [x] When making requests that need authentication, send the public key and a signature as headers. The server verifies that they match.
+  * ~~[x] Maybe the `auth` command has different "register" and "login" modes, where the "register" mode asks the server if the resulting user id already exists.~~
+    * ~~[x] The server would have to store a list of known user ids. A JSON file with a list of strings would do. Alternatively, query `facts` in DB.~~
+  * [x] Make new auth status reactive, like `AuthStatus` in `client/fb.mjs`. Create a similar reactive component. In `cmdStatus`, simply `new` that component; move the markup into it.
+  * [x] In `cmdAuthHelp`, display auth status reactively via `AuthStatus`, similar to how it was in `client/fb.mjs`.
+  * [x] In `PromptInput`, replace `.isPasswordMode` with `this.type === 'password'` to avoid redundancy.
+  * [x] Merge `logout` into `auth`. Make `login` and `logout` two modes / subcommands of the `auth` command, similar to how it was in `client/fb.mjs`.
+  * [x] The `auth` command should instruct the user to write down their passphrase/password, and to let the browser's password manager store it.
+  * [x] Review and cleanup `auth.mjs` and `ui.mjs`.
+  * [x] Update `task.md` to reflect the current task progress.
+* [x] `auth`: when already authed, indicate that, and mention `auth logout`.
+* [x] `auth`: forbid more than one space in a row.
+* [x] Whenever we're authed and have the history dir inited, run `upload /`.
+* [x] `cmdLs` needs to support browsing cloud runs.
+  * [x] Backend API.
+  * [x] Client uses new backend API.
+* [x] Port other missing features from `fb.mjs`.
+* [x] Before messing with downloaded round data, verify that decoding and encoding is still reversible in Deno, like in browsers. Also verify if we can just store gzip without base64, if that's reversible.
+* [x] Count upgrade prices (hardcoded dict) into building sell prices.
+  * [x] Define various upgrade prices in `game_const.mjs`.
+  * [x] Use them to calculate and store modified `sell_price` in `schema.mjs`.
+* [ ] Deployment. Once the Deno server and DB is done:
+    * ~~[x] Try Oracle again.~~
+    * [x] Redo `fly.io` from scratch.
+  * [x] `html.mjs`:
+    * [x] `if (import.meta.main) await makeHtml()`.
+    * [x] In development, generates `index.html` on the fly.
+    * [x] Un-hardcode `index.html`.
+  * [x] `srv.mjs`:
+    * [x] Serve from `$(TAR)`.
+    * [x] Set caching headers in production.
+  * [x] Bundle and minify for production.
+    * [x] Make: `build: build_html build_script`.
+    * [x] `build_html: $(DENO_RUN) server/html.mjs`.
+    * [x] `build_script: esbuild <flags> client/main.mjs -o $(TAR)/main.mjs`.
+      * [x] Use Deno-oriented `esbuild` plugin for URL imports.
+    * [x] Server: in production mode, serve from `$(TAR)`, falling back on local files.
+    * [x] `fly.toml`: run `make build` during build.
+    * ~~[x] GH Pages: add a YAML workflow, reconfigure to serve from that folder.~~
+  * [x] Give up on client build, revert those changes. Not worth it.
+  * [x] Get `flyctl` so we don't have to bother with their GUI (and a bot can use it).
+  * [x] Make sure our `fly.io` machine has DuckDB dylibs. Might have to write a dockerfile. (Handled by `@duckdb/node-api`.)
+  * [x] Configure `fly.io` to run our Deno server as the entry point.
+  * [x] Configure our Deno server to set file caching headers in production.
+  * [x] We stick with GitHub Pages as the primary means of serving the app, making only the necessary requests to `fly.io`, to avoid keeping the machine alive.
+  * [x] Make sure `fly.io` is configured to use exactly one machine with exactly one persistent volume.
+  * [x] Deploy to `fly.io`.
+  * [x] Migrate old data, by re-uploading from client code. Requires only client changes, no need to migrate data from Firebase.
+    * [x] When checking files for upload, detect if the file is outdated, as in, it uses a Firebase user id instead of the new one. Should probably introduce something similar to schema versioning there as well.
+      * [x] If so, re-upload with the new user id, and rewrite the user id inside the file with the new one.
+      * Didn't bother to detect user id format; used versioning.
+    * [x] Really petty: rewrite `tabularius_camelCase` fields in rounds into `tabularius_snake_case` (delete the old ones).
+* [x] Drop Go code (probably `git rm`).
+* [x] Drop all Firebase stuff from the repo.
+* [x] For development purposes, make the live server a separate process; when restarting the server, signal to the client when to reload _after_ the server is running.
+* [x] Rename the various encoding/decoding functions. Claude _really_ doesn't like the current naming.
+* [x] Cleanup various redundant wrapper functions added by Claude.
+* [x] Update all sample data to use new `tabularius_` fields.
+* [x] Freeze all new dependencies.
+  * [x] `tweetnacl`
+  * [x] `npm:@duckdb/node-api`
+  * [x] `npm:@duckdb/node-bindings`
+  * [x] DuckDB itself, if needed. (Apparently the bindings library does that.)
+* [x] Deploy.
+* [x] Some easy way to view app logs on `fly.io`, preferably in realtime `tail -f` style.
+* [x] Merge this into `todo.md`. Split the incomplete entries into their own.
+
+---
+
+Use a bot to update `docs/` due to above.
+
+---
+
+`plot`: truncate long series labels (user ids) for display purposes.
+
+---
+
+`watch`: not reliable enough, needs to retry local files harder.
+
+---
+
+In various Discord posts referencing our app, update the links, to use the newer plot parameters.
+
+---
+
+If calling API endpoints on `fly.io` involves preflight requests, configure a custom subdomain to avoid that.
+
+https://fly.io/docs/networking/custom-domain/

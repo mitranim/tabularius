@@ -1,0 +1,18 @@
+{
+  "imports": {
+    "@mitranim/js/": "https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.62/",
+    "@duckdb/node-api": "npm:@duckdb/node-api@1.2.2-alpha.18",
+    "@duckdb/node-bindings": "npm:@duckdb/node-bindings@1.2.2-alpha.18",
+    "tweetnacl": "https://cdn.skypack.dev/tweetnacl@1.0.3"
+  },
+  "lint": {
+    "rules": {
+      "exclude": [
+        "no-window",
+        "no-window-prefix",
+        "constructor-super",
+        "no-empty"
+      ]
+    }
+  }
+}

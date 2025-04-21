@@ -4,6 +4,8 @@ Normally, browsers do cache external assets, but unload them periodically, like
 once every few hours, which can be inconvenient when working without internet
 access. This also bypasses "disable cache". In production this is unnecessary
 but should be harmless.
+
+Must be served from site root, not from subpath.
 */
 
 self.onfetch = onFetch

@@ -1,0 +1,1035 @@
+import * as a from '@mitranim/js/all.mjs'
+import Plot from 'uplot'
+import * as gc from '../shared/game_const.mjs'
+import * as s from '../shared/schema.mjs'
+import {E} from './util.mjs'
+import * as u from './util.mjs'
+import * as ui from './ui.mjs'
+import * as fs from './fs.mjs'
+import * as d from './dat.mjs'
+import * as au from './auth.mjs'
+
+import * as self from './plot.mjs'
+const tar = window.tabularius ??= a.Emp()
+tar.p = self
+tar.gc = gc
+tar.s = s
+a.patch(window, tar)
+
+document.head.append(E(`link`, {
+  rel: `stylesheet`,
+  href: `https://esm.sh/uplot@1.6.27/dist/uPlot.min.css`,
+}))
+
+cmdPlot.cmd = `plot`
+cmdPlot.desc = `analyze data, visualizing with a plot 📈📉`
+
+// TODO: use `<details>` to collapse sections.
+cmdPlot.help = function cmdPlotHelp() {
+  return u.LogParagraphs(
+    u.callOpt(cmdPlot.desc),
+    `build your query by clicking the buttons below!`,
+
+    [
+      BtnAppend(`-c`),
+      ` -- use cloud data; the default without "-c" is to use local data, which`,
+      ` requires granting access to the history directory via `,
+      os.BtnCmdWithHelp(`init -h`),
+      `; also see `, BtnAppend(`-f`), ` for fetching specific files`,
+    ],
+
+    u.LogLines(
+      [BtnAppend(`-p`), ` -- preset; supported values:`],
+      u.LogParagraphs(
+        ...a.map(a.entries(PLOT_PRESETS), Help_preset).map(u.indentChi),
+      ),
+    ),
+
+    u.LogLines(
+      [
+        BtnAppend(`-x`),
+        ` -- X axis (progress); supported values:`,
+      ],
+      ...FlagAppendBtns(a.keys(s.ALLOWED_X_KEYS), `-x`).map(u.indentChi),
+    ),
+
+    u.LogLines(
+      [
+        BtnAppend(`-y`),
+        ` -- Y axis (stat type); supported values:`,
+      ],
+      ...FlagAppendBtns(a.keys(s.ALLOWED_STAT_TYPE_FILTERS), `-y`).map(u.indentChi),
+    ),
+
+    u.LogLines(
+      [
+        BtnAppend(`-z`),
+        ` -- Z axis (plot series); supported values:`,
+      ],
+      ...a.map(a.keys(s.ALLOWED_Z_KEYS), Help_Z).map(u.indentChi),
+    ),
+
+    u.LogLines(
+      [
+        BtnAppend(`-a`),
+        ` -- aggregation mode; supported values:`,
+      ],
+      ...FlagAppendBtns(a.keys(s.AGGS), `-a`).map(u.indentChi),
+    ),
+
+    u.LogLines(
+      [
+        BtnAppend(`-f`),
+        ` -- fetch a run file / rounds file from the given URL; overrides `,
+        BtnAppend(`-c`), `; examples:`
+      ],
+      [`  `, BtnAppend(`-f=samples/example_run.gd`)],
+      [`  `, BtnAppend(`-f=samples/example_runs.gd`)],
+    ),
+
+    u.LogLines(
+      `supported filters:`,
+      ...a.map(a.keys(s.ALLOWED_FILTER_KEYS), Help_filter).map(u.indentChi),
+    ),
+
+    u.LogLines(
+      [`tip: repeat a filter to combine via logical "OR"; examples:`],
+      [`  `, BtnAppend(`run_num=1 run_num=2`), ` -- first and second runs`],
+      [`  `, BtnAppend(`round_num=1 round_num=2`), ` -- first and second rounds`],
+    ),
+
+    `tip: try ctrl+click / cmd+click / shift+click on plot labels`,
+    [`tip: `, os.BtnCmdWithHelp(`verbose`), ` mode shows full opts after expanding presets`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud runs`],
+
+    u.LogLines(
+      `more examples:`,
+      [`  `, BtnAppend(`-c -p=dmg user_id=all`), ` -- building damages in latest run`],
+      [`  `, BtnAppend(`-c -p=chi_dmg user_id=all`), ` -- weapon damages in latest run`],
+      [`  `, BtnAppend(`-c -p=eff user_id=all run_id=all`), ` -- building efficiency across all runs and all users`],
+      [`  `, BtnAppend(`-c -p=eff user_id=all run_id=all -z=bui_type`), ` -- simplified building efficiency`],
+      [`  `, BtnAppend(`-c -p=dmg_runs user_id=all -z=user_id`), ` -- user damage trajectory`],
+      [`  `, BtnAppend(`-c -p=eff_runs user_id=all -z=user_id`), ` -- user efficiency trajectory`],
+    ),
+  )
+}
+
+export function cmdPlot({sig, args}) {
+  args = u.stripPreSpaced(args, cmdPlot.cmd)
+  if (!args) return cmdPlot.help()
+
+  const opt = decodePlotAggOpt(args)
+  if (opt.cloud) return cmdPlotCloud(sig, opt, args)
+  if (opt.fetch) return cmdPlotFetch(sig, opt, args)
+  return cmdPlotLocal(sig, opt, args)
+}
+
+export async function cmdPlotLocal(sig, opt, args) {
+  opt = s.validPlotAggOpt(opt)
+  await d.datLoad(sig, d.DAT, opt)
+
+  const opts = plotOpts()
+  if (isPlotDataEmpty(opts.data)) return msgPlotDataEmpty(args, opt)
+
+  ui.MEDIA.add(new LivePlotter(opts, plotOpts))
+
+  // TODO: on `DAT` events, don't update the plot if unaffected.
+  function plotOpts() {
+    const facts = d.datQueryFacts(d.DAT, opt)
+    const data = s.plotAggFromFacts({facts, opt})
+    return plotOptsWith({...data, opt})
+  }
+}
+
+export async function cmdPlotFetch(sig, opt, args) {
+  const opts = await cmdPlotFetchOpts(sig, opt)
+  if (isPlotDataEmpty(opts.data)) return msgPlotDataEmpty(args, opt)
+  ui.MEDIA.add(new Plotter(opts))
+}
+
+export async function cmdPlotFetchOpts(sig, opt) {
+  const src = a.reqValidStr(opt.fetch)
+  const rounds = await u.decodeGdStr(await u.fetchText(src, {signal: sig}))
+  if (!a.len(rounds)) throw Error(`no rounds in ${a.show(src)}`)
+
+  const dat = a.Emp()
+
+  // TODO drop support for outdated fields.
+  for (const round of rounds) {
+    const user_id = (
+      a.optStr(round.tabularius_userId) ||
+      a.optStr(round.tabularius_user_id) ||
+      d.USER_ID
+    )
+
+    const run_num = (
+      a.optNat(round.tabularius_runNum) ||
+      a.optNat(round.tabularius_run_num) ||
+      0
+    )
+
+    s.datAddRound({dat, round, run_num, user_id, composite: true})
+  }
+
+  opt = s.validPlotAggOpt(opt)
+
+  // SYNC[plot_user_current].
+  if (opt.userCurrent) {
+    u.dictPush(opt.where, `user_id`, plotReqUserId())
+    opt.userCurrent = false
+  }
+
+  const facts = d.datQueryFacts(dat, opt)
+  const data = s.plotAggFromFacts({facts, opt})
+  return plotOptsWith({...data, opt})
+}
+
+export async function cmdPlotCloud(sig, opt, args) {
+  u.reqSig(sig)
+  opt = s.validPlotAggOpt(opt)
+
+  if (opt.userCurrent && !au.STATE.userId) {
+    // SYNC[plot_user_current_err_msg].
+    throw new u.ErrLog(
+      `filtering cloud data by current user requires authentication; run `,
+      os.BtnCmdWithHelp(`auth`), ` or use `, BtnAppend(`user_id=all`),
+    )
+  }
+
+  let data = await apiPlotAgg(sig, opt)
+  if (isPlotAggEmpty(data)) return msgPlotDataEmpty(args, opt)
+  data = s.plotAggStd({...data, totalFun: opt.totalFun})
+  data = u.consistentNil_undefined(data)
+  ui.MEDIA.add(new Plotter(plotOptsWith({...data, opt})))
+}
+
+function plotReqUserId() {
+  const id = au.STATE.userId
+  if (id) return id
+  throw new u.ErrLog(
+    `filtering plot data by `,
+    BtnAppend(`user_id=current`),
+    ` requires `, os.BtnCmdWithHelp(`auth`),
+    `; alternatively, use `, BtnAppend(`user_id=all`),
+  )
+}
+
+export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt}) {
+  a.reqArr(X_vals)
+  a.reqArr(Z_vals)
+  a.reqArr(Z_X_Y)
+  a.reqDict(opt)
+
+  const agg = s.AGGS.get(opt.agg)
+  const Z_rows = a.map(Z_vals, codedToTitled).map((val, ind) => serieWithAgg(val, ind, agg))
+
+  // Hide the total serie by default.
+  // TODO: when updating a live plot, preserve series show/hide state.
+  if (Z_rows[0]) Z_rows[0].show = false
+
+  const title = (
+    opt.Z === `stat_type`
+    ? `${opt.agg} per ${opt.Z} per ${opt.X}`
+    : `${opt.agg} of ${opt.Y} per ${opt.Z} per ${opt.X}`
+  )
+
+  const tooltipOpt = (
+    opt.agg === `count` ? {preY: `count of `} : undefined
+  )
+
+  return {
+    ...LINE_PLOT_OPTS,
+
+    /*
+    Minor note on plot plugins: we used to have one for sorting series by values
+    descending, which worked but didn't seem like an UX improvement, because
+    frequent reordering of series, as you hover the plot, makes it harder to
+    find specific series you're looking for. So, give up on that idea.
+    */
+    plugins: [new TooltipPlugin(tooltipOpt).opts()],
+
+    // TODO human readability.
+    title,
+    series: [{label: opt.X}, ...Z_rows],
+    data: [X_vals, ...a.arr(Z_X_Y)],
+    axes: axes(opt.X, opt.Y),
+  }
+}
+
+/*
+Converts CLI args to a format suitable as an input for `s.validPlotAggOpt`,
+which is what's actually used by the various plotting functions.
+*/
+export function decodePlotAggOpt(src) {
+  src = u.stripPreSpaced(src, cmdPlot.cmd)
+  const out = a.Emp()
+  out.where = a.Emp()
+
+  const srcPairs = a.reqArr(u.cliDecode(src))
+  const outPairs = a.reqArr(plotAggOptExpandPresets(srcPairs))
+
+  if (u.LOG_VERBOSE && srcPairs.length !== outPairs.length) {
+    const opts = a.map(outPairs, u.cliEncodePair).join(` `)
+    if (opts) u.log.verb(`[plot] expanded opts: `, BtnAppend(opts))
+  }
+
+  for (let [key, val] of outPairs) {
+    if (key === `-c`) {
+      out.cloud = u.cliBool(key, val)
+      continue
+    }
+
+    if (key === `-x`) {
+      out.X = reqEnum(key, val, s.ALLOWED_X_KEYS)
+      continue
+    }
+
+    if (key === `-y`) {
+      out.Y = reqEnum(key, val, s.ALLOWED_STAT_TYPE_FILTERS)
+      continue
+    }
+
+    if (key === `-z`) {
+      out.Z = reqEnum(key, val, s.ALLOWED_Z_KEYS)
+      continue
+    }
+
+    if (key === `-a`) {
+      out.agg = reqEnum(key, val, s.AGGS)
+      continue
+    }
+
+    if (key === `-f`) {
+      if (!val) {
+        throw Error(`plot opt "-f" must be a non-empty path or URL pointing to a ".gd" or ".json" file which must contain a sequence of rounds to be aggregated and analyzed`)
+      }
+      out.fetch = val
+      continue
+    }
+
+    // A secret option for comparing DB querying modes.
+    if (key === `-m`) {
+      out.mode = val
+      continue
+    }
+
+    if (!key) {
+      throw Error(`plot args must be one of: "-flag", "-flag=val", or "field=val", got ${a.show(val)}`)
+    }
+
+    if (!s.ALLOWED_FILTER_KEYS.has(key)) {
+      throw new u.ErrLog(
+        `plot filters must be among: `,
+        ...u.LogWords(
+          ...a.map(a.keys(s.ALLOWED_FILTER_KEYS), BtnAppendEq),
+        ),
+        `, got: `, key, `=`,
+      )
+    }
+
+    if (key === `user_id`) {
+      if (val === `all`) {
+        out.userCurrent = false
+        continue
+      }
+      if (val === `current`) {
+        out.userCurrent = true
+        continue
+      }
+      u.dictPush(out.where, key, val)
+      continue
+    }
+
+    // SYNC[plot_default_run_latest].
+    if (key === `run_id`) {
+      if (val === `all`) {
+        out.runLatest = false
+        continue
+      }
+      if (val === `latest`) {
+        out.runLatest = true
+        continue
+      }
+      u.dictPush(out.where, key, val)
+      continue
+    }
+
+    // SYNC[plot_default_run_latest].
+    if (key === `run_num`) {
+      out.runLatest ??= false
+      const int = a.intOpt(val)
+      if (a.isNil(int)) throw Error(`${a.show(key)} must be an integer, got: ${a.show(val)}`)
+      u.dictPush(out.where, key, int)
+      continue
+    }
+
+    if (
+      key === `diff` ||
+      key === `frontier_diff` ||
+      key === `round_num`
+    ) {
+      const int = a.intOpt(val)
+      if (a.isNil(int)) throw Error(`${a.show(key)} must be an integer, got: ${a.show(val)}`)
+      u.dictPush(out.where, key, int)
+      continue
+    }
+
+    if (key === `bui_type`) {
+      val = gc.BUIS_TO_CODES_SHORT[val] || val
+    }
+    else if (key === `bui_type_upg`) {
+      val = titledToCoded(val) || val
+    }
+    else if (key === `hero`) {
+      val = gc.HEROS_TO_CODES_SHORT[val] || val
+    }
+
+    /*
+    Inputs: `one=two one=three four=five`.
+    Outputs: `{one: ["two", "three"], four: ["five"]}`.
+    SYNC[field_pattern].
+    */
+    u.dictPush(out.where, key, val)
+  }
+
+  // SYNC[plot_agg_z_chi_type].
+  if (out.Z === `chi_type` && !a.includes(out.where.ent_type, s.FACT_ENT_TYPE_CHI)) {
+    throw new u.ErrLog(
+      BtnAppend(`-z=chi_type`),
+      ` requires `,
+      BtnAppend(`ent_type=` + s.FACT_ENT_TYPE_CHI),
+      a.vac(out.where.ent_type) && [
+        `, got `,
+        FlagAppendBtns(out.where.ent_type, `ent_type`),
+      ],
+    )
+  }
+
+  // SYNC[plot_agg_cost_eff_only_bui].
+  if (
+    (out.Y === s.STAT_TYPE_COST_EFF || out.Y === s.STAT_TYPE_COST_EFF_ACC) &&
+    !a.includes(out.where.ent_type, s.FACT_ENT_TYPE_BUI)
+  ) {
+    const got = FlagAppendBtns(out.where.ent_type, `ent_type`)
+    throw new u.ErrLog(
+      BtnAppend(`-y=` + out.Y), ` requires `,
+      BtnAppend(`ent_type=` + s.FACT_ENT_TYPE_BUI),
+      a.vac(got) && `, got `, got,
+    )
+  }
+
+  return out
+}
+
+export const PLOT_PRESETS = new Map()
+  // SYNC[plot_agg_opt_dmg].
+  .set(`dmg`, {
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+  })
+  .set(`chi_dmg`, {
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
+  })
+  .set(`eff`, {
+    args: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+  })
+  .set(`dmg_over`, {
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=bui_type_upg -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+  })
+  .set(`dmg_runs`, {
+    args: `-x=run_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+  })
+  .set(`eff_runs`, {
+    args: `-x=run_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+  })
+  .set(`round_stats`, {
+    args: `-x=round_num -z=stat_type -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+  })
+  .set(`run_stats`, {
+    args: `-x=run_num -z=stat_type -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+  })
+  .set(`run_stats_all`, {
+    args: `-x=run_num -z=stat_type -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} run_id=all`,
+  })
+
+function plotAggOptExpandPresets(src) {
+  const out = []
+  const over = new Set()
+
+  for (const [key] of src) if (key) over.add(key)
+
+  for (const pair of src) {
+    const [key, val] = pair
+    if (key !== `-p`) {
+      out.push(pair)
+      continue
+    }
+
+    reqEnum(`-p`, val, PLOT_PRESETS)
+    const {args} = PLOT_PRESETS.get(val)
+
+    for (const prePair of u.cliDecode(args)) {
+      if (over.has(prePair[0])) continue
+      out.push(prePair)
+    }
+  }
+  return out
+}
+
+/*
+Goal: if FS is inited and we have an actual latest run, show its analysis.
+Otherwise, show a sample run for prettiness sake.
+*/
+export async function plotDefault({sig}) {
+  try {
+    if (await fs.loadedHistoryDir()) {
+      await cmdPlot({sig, args: `plot -p=dmg run_id=latest`})
+      return
+    }
+  }
+  catch (err) {
+    if (u.LOG_VERBOSE) u.log.err(`error analyzing latest run: `, err)
+    u.log.verb(`unable to plot latest run, plotting example run`)
+  }
+  await plotExampleRun(sig)
+}
+
+export async function plotExampleRun(sig) {
+  const url = new URL(`../samples/example_run.gd`, import.meta.url)
+  const opt = decodePlotAggOpt(`-f=${url} -p=dmg user_id=all`)
+  const opts = await cmdPlotFetchOpts(sig, opt)
+  opts.title = `example run analysis: ` + opts.title
+  ui.MEDIA.add(new Plotter(opts))
+}
+
+/*
+Interfaces:
+  https://github.com/leeoniya/uPlot/blob/master/dist/uPlot.d.ts
+
+Source:
+  https://github.com/leeoniya/uPlot/blob/master/src/uPlot.js
+
+Demos:
+  https://leeoniya.github.io/uPlot/demos/index.html
+
+Dark mode demo:
+  https://leeoniya.github.io/uPlot/demos/line-paths.html
+
+Usage examples:
+
+  E(document.body, {}, new pl.Plotter(opts))
+  ui.MEDIA.add(new pl.Plotter(opts))
+*/
+export class Plotter extends u.Elem {
+  constructor(opts) {
+    super()
+    this.opts = a.reqDict(opts)
+    this.resObs = new ResizeObserver(this.onResize.bind(this))
+    this.className = `block w-full`
+  }
+
+  init() {
+    this.deinit()
+    this.plot = new Plot({...this.opts, ...this.sizes()})
+    this.appendChild(this.plot.root)
+    this.resObs.observe(this)
+    u.darkModeMediaQuery.addEventListener(`change`, this)
+  }
+
+  deinit() {
+    u.darkModeMediaQuery.removeEventListener(`change`, this)
+    this.resObs.disconnect()
+    this.plot?.root?.remove()
+    this.plot?.destroy()
+    this.plot = undefined
+  }
+
+  connectedCallback() {
+    // Need to wait a tick for the element's geometry to be determined.
+    const init = () => {if (this.isConnected) this.init()}
+    window.requestAnimationFrame(init)
+  }
+
+  disconnectedCallback() {this.deinit()}
+
+  resizing = false
+  onResize() {
+    // Precaution against recursively triggering resize.
+    if (this.resizing) return
+    this.resizing = true
+    const done = () => {this.resizing = false}
+    window.requestAnimationFrame(done)
+    this.plot?.setSize(this.sizes())
+  }
+
+  sizes() {
+    return {
+      width: this.offsetWidth,
+      height: this.offsetWidth/(16/9), // Golden ratio.
+    }
+  }
+
+  handleEvent(eve) {if (eve.type === `change` && eve.media) this.init()}
+}
+
+export class LivePlotter extends Plotter {
+  constructor(opts, fun) {
+    super(opts || fun())
+    this.fun = a.reqFun(fun)
+  }
+
+  init() {
+    super.init()
+    this.unsub = u.listenMessage(d.DAT, this.onDatMsg.bind(this))
+  }
+
+  deinit() {
+    this.unsub?.()
+    super.deinit()
+  }
+
+  onDatMsg(src) {
+    if (!this.isConnected) {
+      console.error(`internal: ${a.show(this)} received a dat event when not connected to the DOM`)
+      return
+    }
+
+    const opts = this.fun(src)
+    if (!opts) return
+
+    this.opts = opts
+    this.init()
+  }
+}
+
+export const SCALE_X = {time: false}
+export const SCALE_Y = SCALE_X
+export const SCALES = {x: SCALE_X, y: SCALE_Y}
+
+export const LINE_PLOT_OPTS = {
+  axes: axes(),
+  scales: SCALES,
+  legend: {
+    // Apply colors directly to serie labels instead of showing dedicated icons.
+    markers: {show: false},
+
+    /*
+    Inverts the default behavior of clicking legend labels.
+
+    Default:
+    - Click: disable or enable.
+    - Ctrl+click or Cmd+click: isolate: disable other series.
+    - Shift+click: add or remove a serie from the current group.
+
+    With `isolate: true`:
+    - Click: isolate: disable other series.
+    - Ctrl+click or Cmd+click: add or remove a serie from the current group.
+    - Shift+click: replace the current group with the clicked serie.
+
+    The default behavior makes it easy to disable individual series.
+    The inverted behavior makes it easy to disable everything else
+    and select a few. The best thing about the inverted behavior is
+    that the useful operations don't involve Shift, so you don't end
+    up with accidental text selection ranges.
+    */
+    isolate: true,
+  },
+
+  /*
+  TODO: more clearly indicate the currently hovered series, maybe with an outline.
+  Then we don't have to make other series unreadable.
+  */
+  focus: {alpha: 0.3},
+
+  cursor: {
+    /*
+    When the setting `../focus/alpha` is enabled, hovering near a datapoint
+    applies the opacity to all other series. This setting determines the
+    proximity threshold.
+    */
+    focus: {prox: 8},
+  },
+}
+
+export function axes(nameX, nameY) {
+  return [
+    // This one doesn't have a label, not even an empty string, because that
+    // causes the plot library to waste space.
+    {
+      scale: `x`,
+      stroke: axisStroke,
+      secretName: nameX,
+    },
+    // This one does have an empty label to prevent the numbers from clipping
+    // through the left side of the container.
+    {
+      scale: `y`,
+      label: ``,
+      stroke: axisStroke,
+      secretName: nameY,
+    },
+  ]
+}
+
+export function axisStroke() {
+  return u.darkModeMediaQuery.matches ? `white` : `black`
+}
+
+export function serieWithAgg(label, ind, agg) {
+  a.reqFun(agg)
+
+  return {
+    ...serie(label, ind),
+    value(plot, val, ind) {
+      return serieFormatVal(plot, val, ind, agg)
+    },
+  }
+}
+
+export function serie(label, ind) {
+  return {label, stroke: nextFgColor(ind), width: 2, value: formatVal}
+}
+
+export function serieFormatVal(plot, val, seriesInd, agg) {
+  a.reqInt(seriesInd)
+  a.reqFun(agg)
+  const ind = plot.cursor.idx
+  return formatVal(a.laxFin(
+    a.isInt(ind) && ind >= 0
+    ? val
+    : plot.data[seriesInd].reduce(agg, 0)
+  ))
+}
+
+// Our default value formatter, which should be used for all plot values.
+export function formatVal(val) {
+  if (!a.isNum(val)) return val
+  return formatNumCompact(val)
+}
+
+/*
+We could also use `Intl.NumberFormat` with `notation: "compact"`.
+This `k`, `kk`, `kkk` notation is experimental.
+*/
+export function formatNumCompact(val) {
+  a.reqNum(val)
+  let scale = 0
+  const mul = 1000
+  while (a.isFin(val) && Math.abs(val) > mul) {
+    scale++
+    val /= mul
+  }
+  return numFormat.format(val) + `k`.repeat(scale)
+}
+
+export const numFormat = new Intl.NumberFormat(`en-US`, {
+  maximumFractionDigits: 1,
+  roundingMode: `halfExpand`,
+})
+
+let COLOR_INDEX = -1
+
+export function resetColorIndex() {COLOR_INDEX = -1}
+
+export function nextFgColor(ind) {
+  ind = a.optNat(ind) ?? ++COLOR_INDEX
+  ind %= FG_COLORS.length
+  return FG_COLORS[ind]
+}
+
+/*
+Copy-paste, reordered, of `*-500` color variants from:
+
+  https://tailwindcss.com/docs/colors#default-color-palette-reference
+*/
+const FG_COLORS = [
+  `oklch(0.637 0.237 25.331)`,  // red
+  `oklch(0.623 0.214 259.815)`, // blue
+  `oklch(0.723 0.219 149.579)`, // green
+  `oklch(0.705 0.213 47.604)`,  // orange
+  `oklch(0.715 0.143 215.221)`, // cyan
+  `oklch(0.769 0.188 70.08)`,   // amber
+  `oklch(0.585 0.233 277.117)`, // indigo
+  `oklch(0.795 0.184 86.047)`,  // yellow
+  `oklch(0.768 0.233 130.85)`,  // lime
+  `oklch(0.696 0.17 162.48)`,   // emerald
+  `oklch(0.704 0.14 182.503)`,  // teal
+  `oklch(0.685 0.169 237.323)`, // sky
+  `oklch(0.606 0.25 292.717)`,  // violet
+  `oklch(0.627 0.265 303.9)`,   // purple
+  `oklch(0.667 0.295 322.15)`,  // fuchsia
+  `oklch(0.656 0.241 354.308)`, // pink
+  `oklch(0.645 0.246 16.439)`,  // rose
+  `oklch(0.554 0.046 257.417)`, // slate
+  `oklch(0.551 0.027 264.364)`, // gray
+  `oklch(0.552 0.016 285.938)`, // zinc
+  `oklch(0.556 0 0)`,           // neutral
+  `oklch(0.553 0.013 58.071)`,  // stone
+]
+
+/*
+Plugin interface:
+
+  export interface Plugin {
+    opts?: (plot: uPlot, opts: Options) => void | Options
+    hooks: Hooks.ArraysOrFuncs
+  }
+
+Hooks (paraphrased):
+
+  interface Hooks {
+    init?:       func | func[]
+    addSeries?:  func | func[]
+    delSeries?:  func | func[]
+    setScale?:   func | func[]
+    setCursor?:  func | func[]
+    setLegend?:  func | func[]
+    setSelect?:  func | func[]
+    setSeries?:  func | func[]
+    setData?:    func | func[]
+    setSize?:    func | func[]
+    drawClear?:  func | func[]
+    drawAxes?:   func | func[]
+    drawSeries?: func | func[]
+    draw?:       func | func[]
+    ready?:      func | func[]
+    destroy?:    func | func[]
+    syncRect?:   func | func[]
+  }
+
+Relevant demos with tooltips:
+
+  https://leeoniya.github.io/uPlot/demos/tooltips.html
+  https://leeoniya.github.io/uPlot/demos/tooltips-closest.html
+*/
+export class TooltipPlugin extends a.Emp {
+  // Index of currenly hovered series.
+  indS = undefined
+
+  // Additional options if any.
+  opt = undefined
+
+  constructor(opt) {
+    super()
+    this.opt = a.optObj(opt)
+  }
+
+  opts() {
+    return {
+      hooks: {
+        // Called when a cursor hovers a particular series.
+        setSeries: this.setSeries.bind(this),
+        // Called on any cursor movement.
+        setCursor: this.draw.bind(this),
+      }
+    }
+  }
+
+  /*
+  Known gotcha / limitation: when multiple series _overlap_ on a data point,
+  either completely, or at least visually, we still select just one series,
+  instead of grouping them and including all in the tooltip.
+  */
+  setSeries(plot, ind) {
+    this.indS = ind
+    this.draw(plot)
+  }
+
+  draw(plot) {
+    const {indS} = this
+    const indX = plot.cursor.idx
+    if (a.isNil(indS) || a.isNil(indX)) {
+      this.tooltip?.remove()
+      return
+    }
+
+    const series = plot.series[indS]
+    const valX = plot.data[0][indX]
+    const valY = plot.data[indS][indX]
+    const posX = plot.valToPos(valX, `x`, false)
+    const posY = plot.valToPos(valY, `y`, false)
+
+    if (!a.isFin(valX) || !a.isFin(valY) || !a.isFin(posX) || !a.isFin(posY)) {
+      this.tooltip?.remove()
+      return
+    }
+
+    const preX = a.laxStr(this.opt?.preX)
+    const preY = a.laxStr(this.opt?.preY)
+    const axisNameX = preX + (plot.axes?.[0]?.secretName || `X`)
+    const axisNameY = preY + (plot.axes?.[1]?.secretName || `Y`)
+    const nameSuf = `: `
+    const nameLen = nameSuf.length + Math.max(axisNameX.length, axisNameY.length)
+
+    const tar = this.tooltip ??= this.makeTooltip()
+    const wid = plot.over.offsetWidth / 2
+    const hei = plot.over.offsetHeight / 2
+    const isRig = posX > wid
+    const isBot = posY > hei
+
+    tar.style.transform = `translate(${isRig ? -100 : 0}%, ${isBot ? -100 : 0}%)`
+    tar.style.left = posX + `px`
+    tar.style.top = posY + `px`
+    tar.textContent = u.joinLines(
+      series.label,
+      (axisNameX + nameSuf).padEnd(nameLen, ` `) + formatVal(valX),
+      (axisNameY + nameSuf).padEnd(nameLen, ` `) + formatVal(valY),
+    )
+    plot.over.appendChild(tar)
+  }
+
+  makeTooltip() {
+    return E(`div`, {
+      // TODO convert inline styles to Tailwind classes.
+      style: {
+        padding: `0.3rem`,
+        pointerEvents: `none`,
+        position: `absolute`,
+        background: `oklch(0.45 0.31 264.05 / 0.1)`,
+        whiteSpace: `pre`,
+      },
+    })
+  }
+}
+
+/*
+Converts labels such as `CB01_ABA` into the likes of `Bunker_ABA`. We could
+generate and store those names statically, but doing this dynamically seems
+more reliable, considering that new entities may be added later. Updating the
+table of codes is easier than updating the data.
+*/
+export function codedToTitled(src) {
+  // Z labels are sometimes numbers.
+  if (!a.isStr(src)) return src
+  const [pre, ...suf] = a.laxStr(src).split(`_`)
+  return u.joinKeys(gc.CODES_TO_NAMES_SHORT[pre] || pre, ...suf)
+}
+
+/*
+Inverse of `codedToTitled`. Should be used to convert user-readable filters such
+as `bui_type=Bunker` into coded ones that match the actual fact fields.
+*/
+export function titledToCoded(src) {
+  const [pre, ...suf] = a.laxStr(src).split(`_`)
+  return u.joinKeys(gc.NAMES_TO_CODES_SHORT[pre] || pre, ...suf)
+}
+
+function BtnAppend(val) {return ui.BtnPromptAppend(cmdPlot.cmd, val)}
+
+function BtnAppendEq(key) {
+  return BtnAppend(a.reqValidStr(key) + `=`)
+}
+
+function FlagAppendBtns(src, flag) {
+  return a.map(src, key => BtnAppend(a.str(flag, `=`, key)))
+}
+
+function Help_preset([key, {args, help}]) {
+  return [
+    BtnAppend(`-p=${key}`), ` -- `, BtnAppend(args),
+    a.vac(help) && [` `, help],
+  ]
+}
+
+function Help_Z(key) {
+  a.reqValidStr(key)
+  const btn = BtnAppend(`-z=${key}`)
+  if (key === `round_num`) {
+    return [btn, ` (recommended: `, BtnAppend(`-x=run_num`), `)`]
+  }
+  if (key === `stat_type`) {
+    // SYNC[plot_group_stat_type_z_versus_y].
+    return [btn, ` (disables `, BtnAppend(`-y`), `)`]
+  }
+  return btn
+}
+
+function Help_filter(key) {
+  a.reqValidStr(key)
+  const btn = BtnAppend(`${key}=`)
+  if (key === `user_id`) {
+    return [btn, ` (special: `, BtnAppend(`user_id=all`), ` `, BtnAppend(`user_id=current`), `)`]
+  }
+  if (key === `run_id`) {
+    return [btn, ` (special: `, BtnAppend(`run_id=all`), ` `, BtnAppend(`run_id=latest`), `)`]
+  }
+  if (key === `bui_type`) {
+    return [btn, ` (short name, like `, BtnAppend(`bui_type=MedMort`), `)`]
+  }
+  if (key === `bui_type_upg`) {
+    return [btn, ` (short name, like `, BtnAppend(`bui_type_upg=MedMort_ABA`), `)`]
+  }
+  // SYNC[plot_group_ent_type_no_mixing].
+  if (key === `ent_type`) {
+    return [btn, ` (exactly one is required unless `, BtnAppend(`-z=ent_type`), `)`]
+  }
+  if (key === `hero`) {
+    return [btn, ` (short name, like `, BtnAppend(`hero=Anysia`), `)`]
+  }
+  return btn
+}
+
+function isPlotAggEmpty({X_vals, Z_vals, Z_X_Y}) {
+  return isPlotDataEmpty([X_vals, Z_vals, Z_X_Y])
+}
+
+/*
+The plot library we use requires this as an array, while internally across the
+system we prefer named fields.
+*/
+function isPlotDataEmpty([X_vals, Z_vals, Z_X_Y]) {
+  a.optArr(X_vals)
+  a.optArr(Z_vals)
+  a.optArr(Z_X_Y)
+  return a.isEmpty(X_vals)
+}
+
+function msgPlotDataEmpty(args, opt) {
+  a.reqStr(args)
+  return u.LogParagraphs(
+    [`no data found for `, BtnAppend(args)],
+    a.vac(opt.userCurrent) && [
+      `data was filtered by `, BtnAppend(`user_id=current`),
+      `, consider `, BtnAppend(`user_id=all`),
+    ],
+    a.vac(opt.runLatest) && [
+      `data was filtered by `, BtnAppend(`run_id=latest`),
+      `, consider `, BtnAppend(`run_id=all`),
+    ],
+  )
+}
+
+function reqEnum(key, val, coll) {
+  if (coll.has(val)) return val
+
+  function show(val) {return BtnAppend(key + `=` + a.renderLax(val))}
+
+  throw new u.ErrLog(
+    a.show(key), ` must be one of: `,
+    ...u.LogWords(...a.map(a.keys(coll), show)),
+    `, got: `, key, `=`, val,
+  )
+}
+
+export function plotArgsToAggOpt(src) {
+  return s.validPlotAggOpt(decodePlotAggOpt(src))
+}
+
+const PLOT_AGG_MODE = u.QUERY.get(`plot_agg_mode`)
+
+const PLOT_AGG_HEADERS = (
+  PLOT_AGG_MODE
+  ? a.append(a.HEADERS_JSON_INOUT, [`plot_agg_mode`, PLOT_AGG_MODE])
+  : a.HEADERS_JSON_INOUT
+)
+
+export function apiPlotAgg(sig, body) {
+  const url = u.paths.join(u.API_URL, `plot_agg`)
+  const opt = {
+    signal: u.reqSig(sig),
+    method: a.POST,
+    headers: a.concat(PLOT_AGG_HEADERS, au.authHeadersOpt()),
+    body: JSON.stringify(body),
+  }
+  return u.fetchJson(url, opt)
+}

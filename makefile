@@ -1,61 +1,136 @@
+-include .env.default.properties
 -include .env.properties
 
 MAKEFLAGS := --silent --always-make
 MAKE_CONC := $(MAKE) -j 128 clear=$(or $(clear),false)
-TAR ?= .tar
 CLEAR ?= $(if $(filter false,$(clear)),, )
 DENO_FLAGS ?= --node-modules-dir=false
 DENO_RUN ?= deno run -A --no-check $(DENO_FLAGS)
 DENO_WATCH ?= $(DENO_RUN) --watch $(if $(CLEAR),,--no-clear-screen)
+PROJECT ?= tabularius
+DOCKER_LABEL ?= label=project=$(PROJECT)
+DOCKER_TAG_LATEST_DEV ?= $(PROJECT):latest_dev
+DOCKER_TAG_LATEST ?= $(PROJECT):latest
+DOCKER_ENV ?= --env-file=.env.default.properties
+DOCKER_VOL_PWD ?= -v=$(PWD):/app
+DOCKER_VOL_DATA ?= -v=$(PWD)/$(DATA_DIR):/app/$(DATA_DIR)
+DOCKER_PORTS ?= -p=$(PORT):$(PORT)
+DOCKER_BUILD := docker build --build-arg=PROJECT=$(PROJECT)
+DOCKER_RUN := docker run --init -it $(DOCKER_ENV)
+SRV := server/srv.mjs
 
 help:
 	echo "Select one of the following commands."
 	echo "Run \`make -n <command_name>\` to see its definition."
+	echo "Recommended default for development: \`make dev_w\`."
 	echo
 	for val in $(MAKEFILE_LIST); do grep -E '^\S+:' $$val; done | sed 's/:.*//' | sort | uniq
 
-clean:
-	rm -rf firebase-debug.log firestore-debug.log "$(TAR)"
+dev_w dev: export DEV := $(or $(DEV),true)
 
-srv: export TAR := $(TAR)
+dev_w:
+	$(MAKE_CONC) live srv_w
+
+dev:
+	$(MAKE_CONC) live srv
+
+dev_w dev: export DEV := $(DEV)
+srv_w srv: export PORT := $(PORT)
+srv_w srv: export LIVE_PORT := $(LIVE_PORT)
+srv_w srv: export LOG_DEBUG := $(LOG_DEBUG)
+srv_w srv: export DATA_DIR := $(DATA_DIR)
+srv_w srv: export DB_FILE := $(DB_FILE)
+srv_w srv: export TMP_DIR := $(TMP_DIR)
+
+srv_w:
+	$(DENO_WATCH) $(SRV)
+
 srv:
-	$(DENO_RUN) cmd_srv.mjs
+	$(DENO_RUN) $(SRV)
 
-run.w:
+live: export LIVE_PORT := $(LIVE_PORT)
+live:
+	$(DENO_RUN) server/live.mjs
+
+run_w:
 	$(DENO_WATCH) $(run)
 
 run:
 	$(DENO_RUN) $(run)
 
-fb.emul:
-	firebase emulators:start --log-verbosity QUIET
+clean:
+	rm -rf $(TMP_DIR)
 
-# Output should be placed in `firebase/firestore.indexes.json`.
-fb.ind:
-	firebase firestore:indexes
+server_test_w: export LOG_DEBUG := $(LOG_DEBUG)
+server_test_w:
+	$(DENO_WATCH) server/test.mjs
 
-# Requires `gcloud auth login` or equivalent.
-# May require some retries.
-fb.deploy:
-	firebase deploy
+server_test: export LOG_DEBUG := $(LOG_DEBUG)
+server_test:
+	$(DENO_RUN) server/test.mjs
 
-fb.mig.emul: export FIREBASE_EMULATE := true
-fb.mig.emul: export DRY_RUN := $(dry)
-fb.mig.emul:
-	node funs/$(name).mjs
+server_bench_w:
+	$(DENO_WATCH) server/bench.mjs
 
-fb.mig.real: export GOOGLE_APPLICATION_CREDENTIALS := $(GOOGLE_APPLICATION_CREDENTIALS)
-fb.mig.real: export DRY_RUN := $(dry)
-fb.mig.real:
-	node funs/$(name).mjs
+server_bench:
+	$(DENO_RUN) server/bench.mjs
+
+shared_test_w:
+	$(DENO_WATCH) shared/test.mjs
+
+shared_test:
+	$(DENO_RUN) shared/test.mjs
+
+shared_bench_w:
+	$(DENO_WATCH) shared/bench.mjs
+
+shared_bench:
+	$(DENO_RUN) shared/bench.mjs
+
+repl:
+	deno repl $(DENO_FLAGS) $(args)
+
+duck:
+	duckdb $(DB_FILE)
 
 lint:
-	deno lint --rules-exclude=no-window,no-window-prefix,constructor-super
+	deno lint
 
+docker.build.dev:
+	$(DOCKER_BUILD) -t=$(DOCKER_TAG_LATEST_DEV) -f=dockerfile_dev
+
+docker.build:
+	$(DOCKER_BUILD) -t=$(DOCKER_TAG_LATEST) -f=dockerfile
+
+# The `--init` flag seems required for killing this with Ctrl+C.
+# FS watching and change detection doesn't seem to work here.
+# Restarting the server requires restarting the container.
+docker.srv.dev:
+	$(DOCKER_RUN) $(DOCKER_PORTS) $(DOCKER_VOL_PWD) $(DOCKER_TAG_LATEST_DEV) run -A $(SRV)
+
+# The `--init` flag seems required for killing this with Ctrl+C.
+docker.srv:
+	$(DOCKER_RUN) $(DOCKER_PORTS) $(DOCKER_VOL_DATA) $(DOCKER_TAG_LATEST) run -A $(SRV)
+
+docker.sh:
+	docker run --init -it $(DOCKER_ENV) $(DOCKER_VOL_DATA) --entrypoint=/bin/ash $(DOCKER_TAG_LATEST)
+
+docker.clean:
+	docker image prune -f --filter $(DOCKER_LABEL)
+
+docker.ls:
+	docker images --filter $(DOCKER_LABEL)
+
+deploy:
+	fly deploy --yes
+
+# Keeps .dockerignore in sync with .gitignore.
+#
 # Trims trailing whitespace from all tracked files.
 # The `-i ''` is required on MacOS, do not remove.
 define HOOK_PRE_COMMIT_CODE
 #!/bin/sh
+cp .gitignore .dockerignore &&
 git ls-files | xargs sed -i '' 's/[[:space:]]*$$//' &&
 git add -u
 endef

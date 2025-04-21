@@ -250,11 +250,15 @@ Treat `null` and `undefined` identically, by using the function `a.isNil`.
 
 ## App-specific special cases
 
-Code is run directly and must be browser-compatible.
+Shared code in dir `shared` must be directly runnable in Deno and browsers.
+
+Server code in dir `server` must be directly runnable in Deno.
+
+Client code in dir `client` must be directly runnable in browsers.
 
 JS file names end with `.mjs`.
 
-All logging must be done via the element `log` in `./js/util.mjs`; errors are logged with `log.err`, other messages with `log.info`.
+All client-side logging must be done via the element `log` in `./client/util.mjs`; errors are logged with `log.err`, other messages with `log.info`.
 
 Deconstruct imports for the function `E`; avoid import deconstruction in other cases:
 

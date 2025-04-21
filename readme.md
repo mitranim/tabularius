@@ -4,13 +4,15 @@ Tabularius is a companion app for Tower Dominion. Automatic backups (local and c
 
 ➡️ https://mitranim/com/tabularius/ 🚀
 
+(The feature lists below are mostly bot-generated. Not how I would write it, but fairly accurate.)
+
 ## Key Features
 
 - Terminal-style interface with command system
 - Automatic game save file tracking and backup
 - Local and cloud storage of game history
 - Interactive data visualization and analytics
-- Firebase integration for global data comparison
+- Cloud DB integration for global data comparison
 - Cross-tab synchronization
 - Dark mode support, no flashbang!
 
@@ -73,9 +75,34 @@ And more!
 
 ### Cloud Features
 
-- Google authentication
-- Upload of local runs to Firestore
+- Easy authentication
+- Upload of local runs to cloud DB
 - Global data querying and comparison
 - User data isolation and security
 - Manual and automatic cloud synchronization
-- Rudimentary feedback system
+
+## Development
+
+When hacking on this repo, you might need some setup.
+
+Make sure your system has `make` and `deno`.
+
+On app launch, `deno` will auto-fetch some JS libs as needed, as well as DuckDB dylibs. No manual installation needed.
+
+Create the data directory; default location:
+
+```sh
+mkdir data
+```
+
+Running in development mode:
+
+```sh
+make dev_w
+```
+
+Running in production mode:
+
+```sh
+make srv
+```

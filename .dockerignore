@@ -7,7 +7,6 @@
 !/*.json
 !/*.toml
 !/*.yaml
-!/docker*
 !/.env.default.properties
 !/makefile
 !/readme.md
