@@ -1280,10 +1280,36 @@ Use a bot to update `docs/` due to above.
 
 ---
 
-In various Discord posts referencing our app, update the links, to use the newer plot parameters.
+<!-- In various Discord posts referencing our app, update the links, to use the newer plot parameters. -->
 
 ---
 
-If calling API endpoints on `fly.io` involves preflight requests, configure a custom subdomain to avoid that.
+<!-- If calling API endpoints on `fly.io` involves preflight requests, configure a custom subdomain to avoid that.
 
-https://fly.io/docs/networking/custom-domain/
+https://fly.io/docs/networking/custom-domain/ -->
+
+---
+
+Various `plot` enhancements.
+
+* [ ] `plot_link` generates a link.
+  * [ ] Copy to clipboard.
+  * [ ] Print to log, something like: `plot URL <url> copied to clipboard` where the URL is clickable (tarblan) with an indicator that it's external.
+  * [ ] By default, it orders multiple plots, with various presets, for the same filter, which is the current user's latest cloud run.
+  * [ ] Takes arbitrary plot options as overrides.
+  * [ ] If no override on `user_id=current`, `run_id=latest`, or no `run_num`, then request the latest cloud run from the server.
+* [ ] `upload`:
+  * [ ] Print run plot link when run ends.
+    * [ ] Detection 1: when new run begins.
+    * [ ] Detection 2: when run reaches last wave for that difficulty.
+    * [ ] Avoid duplication.
+* [ ] `plot`:
+  * [ ] Show various info about the found data (only when data is found):
+    * Which `user_id`, `run_id`, `run_num` were found. Maybe more.
+    * [ ] Print in terminal.
+    * [ ] Maybe show in plot (under, or in title).
+    * [ ] Consider making this optional (a toggle).
+    * [ ] Server: support in `apiPlotAgg`. Make it optional.
+    * [ ] Client: support in various places where we build and query `dat`.
+  * [ ] When waiting for plot agg data (either cloud or local), indicate that in the media.
+* [ ] `main.mjs`: be less insistent on printing help at the start, to avoid crowding the terminal when a plot is fetched on startup.

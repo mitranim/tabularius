@@ -4,6 +4,27 @@ import * as ld from '@mitranim/js/live_deno.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
 import * as uc from './util_conf.mjs'
 
+export class Res extends Response {
+  constructor(...src) {
+    super(...src)
+    this.withCors()
+  }
+
+  withCors() {
+    this.headers.append(`access-control-allow-origin`, `*`)
+    this.headers.append(`access-control-allow-methods`, a.OPTIONS)
+    this.headers.append(`access-control-allow-methods`, a.HEAD)
+    this.headers.append(`access-control-allow-methods`, a.GET)
+    this.headers.append(`access-control-allow-methods`, a.POST)
+    this.headers.append(`access-control-allow-headers`, `*`)
+    this.headers.append(`access-control-allow-headers`, `authorization`)
+    this.headers.append(`access-control-allow-headers`, `cache-control`)
+    this.headers.append(`access-control-allow-headers`, `content-type`)
+    this.headers.append(`access-control-allow-headers`, `content-encoding`)
+    return this
+  }
+}
+
 export async function reqBodyJson(req) {return JSON.parse(await reqBodyText(req))}
 
 /*
@@ -47,7 +68,7 @@ export function withLiveClient(res) {
 
   const path = `:${uc.LIVE_PORT}${ld.LIVE_PATH}/live_client.mjs`
 
-  return new Response(
+  return new Res(
     io.ConcatStreamSource.stream(res.body, `
 <script type="module">
   const tar = document.createElement("script")

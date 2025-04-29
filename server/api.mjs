@@ -20,7 +20,7 @@ export function apiRes(ctx, rou) {
 }
 
 export async function apiUploadRound(ctx, req) {
-  return new Response(JSON.stringify(await uploadRound(ctx, req)))
+  return new u.Res(JSON.stringify(await uploadRound(ctx, req)))
 }
 
 export async function uploadRound(ctx, req) {
@@ -99,7 +99,7 @@ export async function uploadRound(ctx, req) {
 
 export async function apiPlotAgg(ctx, req) {
   const data = await plotAgg(ctx, req)
-  return new Response(JSON.stringify(data, jsonReplacer))
+  return new u.Res(JSON.stringify(data, jsonReplacer))
 }
 
 /*
@@ -312,7 +312,7 @@ Missing feature: converting `/` to `\` on Windows. Not necessary.
 export async function apiLs(ctx, path) {
   path = u.gameFilePathFakeToReal(path)
   path = io.paths.join(ctx.userRunsDir, path)
-  return new Response(JSON.stringify(await apiLsEntry(path)))
+  return new u.Res(JSON.stringify(await apiLsEntry(path)))
 }
 
 /*

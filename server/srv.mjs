@@ -11,12 +11,6 @@ const DIRS = hd.Dirs.of(
   hd.dirRel(`.`, /^client[/]|^shared[/]|^samples[/]|^index[.]html$|^sw[.]mjs$/),
 )
 
-const CORS_HEADERS = [
-  ...a.HEADERS_CORS_PROMISCUOUS,
-  [a.HEADER_NAME_CORS_HEADERS, `authorization`],
-  [a.HEADER_NAME_CORS_HEADERS, `content-encoding`],
-]
-
 if (import.meta.main) await main()
 
 async function main() {
@@ -40,10 +34,10 @@ function serve(ctx) {
       console.log(`[srv] listening on http://${hostname}:${port}?local=true`)
     },
     onError(err) {
-      if (a.isErrAbort(err)) return new Response()
-      if (a.isInst(err, u.ErrHttp)) return new Response(err, {status: err.status})
+      if (a.isErrAbort(err)) return new u.Res()
+      if (a.isInst(err, u.ErrHttp)) return new u.Res(err, {status: err.status})
       console.error(err)
-      return new Response(err, {status: 500})
+      return new u.Res(err, {status: 500})
     },
   })
 }
@@ -51,11 +45,8 @@ function serve(ctx) {
 async function respond(ctx, req) {
   const rou = a.toReqRou(req)
 
-  if (rou.preflight()) {
-    return new Response(undefined, {headers: CORS_HEADERS})
-  }
-
-  const res = await (
+  return await (
+    (rou.preflight() && new u.Res()) ||
     (rou.pre(`/api`) && api.apiRes(ctx, rou)) ||
     (
       a.vac(DIR_ABS) &&
@@ -67,6 +58,4 @@ async function respond(ctx, req) {
     ) ||
     rou.notFound()
   )
-  for (const [key, val] of CORS_HEADERS) res.headers.append(key, val)
-  return res
 }
