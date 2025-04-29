@@ -1313,3 +1313,7 @@ Various `plot` enhancements.
     * [ ] Client: support in various places where we build and query `dat`.
   * [ ] When waiting for plot agg data (either cloud or local), indicate that in the media.
 * [ ] `main.mjs`: be less insistent on printing help at the start, to avoid crowding the terminal when a plot is fetched on startup.
+
+---
+
+Assign unique random ids to runs.

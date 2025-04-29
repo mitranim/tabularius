@@ -62,8 +62,8 @@ export async function uploadRound(ctx, req) {
   }
 
   const run_num = round.tabularius_run_num
-  if (!a.isIntPos(run_num)) {
-    throw new u.ErrHttp(`round upload: run number must be a positive integer, got ${a.show(run_num)}`, {status: 400})
+  if (!a.isNat(run_num)) {
+    throw new u.ErrHttp(`round upload: run number must be a natural integer, got ${a.show(run_num)}`, {status: 400})
   }
 
   const outDir = io.paths.join(ctx.userRunsDir, user_id, u.intPadded(run_num))

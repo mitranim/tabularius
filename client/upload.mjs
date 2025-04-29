@@ -248,7 +248,9 @@ export async function uploadRound({sig, file, runName, userId, state}) {
   if (state) state.status = `uploading ${a.show(path)}`
 
   try {
-    const info = await apiUploadRound(sig, gzipByteArr)
+    const isGzip = u.QUERY.get(`upload_mode`) !== `json`
+    const body = isGzip ? gzipByteArr : jsonStr
+    const info = await apiUploadRound(sig, {body, isGzip})
     if (info?.redundant) {
       u.log.info(`server: skipped redundant upload of ${a.show(path)}`)
     }
@@ -326,17 +328,17 @@ export class DirUploadProgress extends FileUploadProgress {
   }
 }
 
-export function apiUploadRound(sig, body) {
+export function apiUploadRound(sig, {body, isGzip}) {
   const url = u.paths.join(u.API_URL, `upload_round`)
   const opt = {
     signal: u.reqSig(sig),
     method: a.POST,
-    headers: [
+    headers: a.compact([
       ...au.authHeadersOpt(),
-      [`content-encoding`, `gzip`],
       [`content-type`, `application/json`],
-    ],
-    body: a.reqInst(body, Uint8Array),
+      a.vac(isGzip) && [`content-encoding`, `gzip`],
+    ]),
+    body,
   }
   return u.fetchJson(url, opt)
 }
