@@ -949,6 +949,33 @@ t.test(function test_stripPreSpaced() {
   test(`onetwo`, `one`, `onetwo`)
 })
 
+t.test(function test_legendDisplay() {
+  function test(src, exp) {
+    const out = p.legendDisplay(src)
+    t.is(out, exp)
+  }
+
+  test(
+    `edcbcb24533b40a0b50b1bb02a8fd399_e28739dc15b941268787b241805a9247_47a3ede7179844cf89bd59d0a5ef422e`,
+    `edcbcb24533b40a0…9bd59d0a5ef422e`,
+  )
+
+  test(
+    `93938a24661743e89604ff8cd930c479_cfac75910a1449719bf91d4c10ce3473`,
+    `93938a24661743e8…bf91d4c10ce3473`,
+  )
+
+  test(
+    `ca7c02bdd9324f0599a4b2e8f1940f13`,
+    `ca7c02bdd9324f0599a4b2e8f1940f13`,
+  )
+
+  test(
+    `3ff8707299374189`,
+    `3ff8707299374189`,
+  )
+})
+
 // TODO test generic XYZ aggregation; see `schema.mjs`.
 //
 // t.test(function test_agg() {

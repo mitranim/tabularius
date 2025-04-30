@@ -222,7 +222,7 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt}) {
   a.reqDict(opt)
 
   const agg = s.AGGS.get(opt.agg)
-  const Z_rows = a.map(Z_vals, codedToTitled).map((val, ind) => serieWithAgg(val, ind, agg))
+  const Z_rows = a.map(Z_vals, legendDisplay).map((val, ind) => serieWithAgg(val, ind, agg))
 
   // Hide the total serie by default.
   // TODO: when updating a live plot, preserve series show/hide state.
@@ -517,8 +517,8 @@ Dark mode demo:
 
 Usage examples:
 
-  E(document.body, {}, new pl.Plotter(opts))
-  ui.MEDIA.add(new pl.Plotter(opts))
+  E(document.body, {}, new p.Plotter(opts))
+  ui.MEDIA.add(new p.Plotter(opts))
 */
 export class Plotter extends u.Elem {
   constructor(opts) {
@@ -892,6 +892,14 @@ export class TooltipPlugin extends a.Emp {
   }
 }
 
+export const LEGEND_LEN_MAX = 32
+
+export function legendDisplay(src) {
+  // Z labels are sometimes numbers.
+  if (!a.isStr(src)) return src
+  return u.ellMid(codedToTitled(src), LEGEND_LEN_MAX)
+}
+
 /*
 Converts labels such as `CB01_ABA` into the likes of `Bunker_ABA`. We could
 generate and store those names statically, but doing this dynamically seems
@@ -901,8 +909,7 @@ table of codes is easier than updating the data.
 export function codedToTitled(src) {
   // Z labels are sometimes numbers.
   if (!a.isStr(src)) return src
-  const [pre, ...suf] = a.laxStr(src).split(`_`)
-  return u.joinKeys(gc.CODES_TO_NAMES_SHORT[pre] || pre, ...suf)
+  return u.joinKeys(...u.splitKeys(src).map(codeToName))
 }
 
 /*
@@ -910,9 +917,11 @@ Inverse of `codedToTitled`. Should be used to convert user-readable filters such
 as `bui_type=Bunker` into coded ones that match the actual fact fields.
 */
 export function titledToCoded(src) {
-  const [pre, ...suf] = a.laxStr(src).split(`_`)
-  return u.joinKeys(gc.NAMES_TO_CODES_SHORT[pre] || pre, ...suf)
+  return u.joinKeys(...u.splitKeys(src).map(nameToCode))
 }
+
+function codeToName(src) {return gc.CODES_TO_NAMES_SHORT[a.reqStr(src)] || src}
+function nameToCode(src) {return gc.NAMES_TO_CODES_SHORT[a.reqStr(src)] || src}
 
 function BtnAppend(val) {return ui.BtnPromptAppend(cmdPlot.cmd, val)}
 

@@ -49,9 +49,32 @@
 
     /* Overrides for the chart-rendering library Uplot. */
     .uplot {font-family: inherit !important}
+    .uplot.u-hz {width: 100%}
     .u-title {padding: 0.5rem}
     @media(prefers-color-scheme: dark) {
       .u-select:not(:root) {background: rgba(255, 255, 255, 0.07)}
+    }
+
+    table.u-legend.u-inline {
+      display: block;
+      width: 100%;
+      overflow: hidden;
+
+      tbody {
+        display: inline-flex;
+        width: 100%;
+        overflow: hidden;
+        flex-wrap: wrap;
+        justify-content: center;
+
+        tr {
+          flex: 0 1 auto; /* Don't grow, but allow shrinking. */
+          min-width: 0; /* Enable shrinking below intrinsic size. */
+          overflow: hidden;
+          white-space: nowrap; /* Single line. */
+          text-overflow: ellipsis; /* Doesn't seem to work. */
+        }
+      }
     }
   </style>
 
