@@ -2,6 +2,7 @@ import * as a from '@mitranim/js/all.mjs'
 import * as pt from '@mitranim/js/path.mjs'
 import * as ld from '@mitranim/js/live_deno.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
+import * as su from '../shared/util.mjs'
 import * as uc from './util_conf.mjs'
 
 export class Res extends Response {
@@ -22,6 +23,14 @@ export class Res extends Response {
     this.headers.append(`access-control-allow-headers`, `content-type`)
     this.headers.append(`access-control-allow-headers`, `content-encoding`)
     return this
+  }
+}
+
+export class ErrHttp extends su.Err {
+  constructor(msg, opt) {
+    a.reqObj(opt)
+    super(msg, opt)
+    this.status = a.reqIntPos(opt.status)
   }
 }
 

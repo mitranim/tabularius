@@ -167,11 +167,11 @@ t.test(function test_auth() {
     fail(broken, tokenTs, `auth token: signature doesn't match claims`)
   }
 
-  test(tokenTs - a.minToMs(1))
-  test(tokenTs + a.minToMs(1))
+  test(tokenTs - u.AUTH_TS_EXP)
+  test(tokenTs + u.AUTH_TS_EXP)
 
-  fail(token, tokenTs - a.minToMs(1) - 1, `auth token: timestamp too far in the future`)
-  fail(token, tokenTs + a.minToMs(1) + 1, `auth token: timestamp too far in the past`)
+  fail(token, tokenTs - u.AUTH_TS_EXP - 1, `auth token: timestamp too far in the future`)
+  fail(token, tokenTs + u.AUTH_TS_EXP + 1, `auth token: timestamp too far in the past`)
 })
 
 await t.test(async function test_uploadRound() {

@@ -111,14 +111,6 @@ export async function* walkRoundFiles(src) {
   }
 }
 
-export class ErrHttp extends su.Err {
-  constructor(msg, opt) {
-    a.reqObj(opt)
-    super(msg, opt)
-    this.status = a.reqIntPos(opt.status)
-  }
-}
-
 export function jsonLines(src) {
   src = a.laxArr(src)
   return a.mapCompact(src, a.jsonEncode).join(`\n`)

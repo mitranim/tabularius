@@ -2,13 +2,16 @@ import * as a from '@mitranim/js/all.mjs'
 import nc from 'tweetnacl'
 import * as su from '../shared/util.mjs'
 import * as uc from './util_conf.mjs'
+import * as us from './util_srv.mjs'
+
+export const AUTH_TS_EXP = a.hourToMs(24)
 
 export function reqAuth(req) {
   a.reqInst(req, Request)
   const token = a.stripPre(req.headers.get(`authorization`), `Bearer `).trim()
   let id
   try {id = auth(token)}
-  catch (err) {throw new ErrHttp(err, {cause: err, status: 401})}
+  catch (err) {throw new us.ErrHttp(err, {cause: err, status: 401})}
   return id
 }
 
@@ -43,11 +46,10 @@ export function auth(src, now) {
   */
   now ??= Date.now()
   const diff = now - ts
-  const lim = a.minToMs(1)
-  if (diff > lim) {
+  if (diff > AUTH_TS_EXP) {
     throw Error(`auth token: timestamp too far in the past`)
   }
-  else if (diff < -lim) {
+  else if (diff < -AUTH_TS_EXP) {
     throw Error(`auth token: timestamp too far in the future`)
   }
 
