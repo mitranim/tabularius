@@ -49,11 +49,11 @@ cmdUpload.help = function cmdUploadHelp() {
     ),
     u.LogLines(
       `upload one arbitrary run:`,
-      `  upload <run_id>`,
+      `  upload <run_dir>`,
     ),
     u.LogLines(
       `upload one arbitrary round:`,
-      `  upload <run_id>/<round_id>`,
+      `  upload <run_dir>/<round_file>`,
     ),
     u.LogLines(
       `flags:`,

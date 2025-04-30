@@ -284,8 +284,19 @@ export function initWordlistOpt() {return initWordlist().catch(wordlistInitErr)}
 
 export async function initWordlist() {
   if (WORDLIST) return WORDLIST
-  const src = await u.fetchText(new URL(`wordlist.txt`, import.meta.url))
-  return WORDLIST = a.lines(src)
+
+  const text = new Text(`loading wordlist...`)
+  u.log.info(text)
+
+  try {
+    const src = await u.fetchText(new URL(`wordlist.txt`, import.meta.url))
+    text.textContent += ` loaded`
+    return WORDLIST = a.lines(src)
+  }
+  catch (err) {
+    text.remove()
+    throw err
+  }
 }
 
 function wordlistInitErr(err) {u.log.err(`unable to init wordlist: `, err)}
