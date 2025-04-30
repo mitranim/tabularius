@@ -1,4 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
+import * as s from './schema.mjs'
 import * as u from './util.mjs'
 
 const DRY_RUN = false
@@ -35,7 +36,7 @@ async function updateExampleRuns() {
       userId = TEST_PUB
     }
 
-    if (!u.roundMigrated(round, userId, runNum)) {
+    if (!s.roundMigrated(round, userId, runNum)) {
       console.log(`round data ${ind} unmodified, skipping`)
       continue
     }

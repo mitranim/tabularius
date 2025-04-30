@@ -163,7 +163,8 @@ export const CODES_TO_NAMES_SHORT = dict({
 
 export const NAMES_TO_CODES_SHORT = invert(CODES_TO_NAMES_SHORT)
 
-export const COST_AIR_COM = 1500
+const COST_AIR_COM = 1500
+const BUI_CODE_SMOK_SIG = `CB12A`
 
 /*
 As a special case, all Tech costs are 0. That's because their values are so low
@@ -205,7 +206,7 @@ export const BUI_COSTS = dict({
   CB10: {base: 1200, upg: [[200, 450], [600, 600], [0, 750]]},
   CB11: {base: 1400, upg: [[450, 350], [2200, 400], [0, 4500]]},
   CB12: {base: COST_AIR_COM, upg: [[550, 100], [0, 300], [350, 1500]]},
-  CB12A: {base: COST_AIR_COM},
+  [BUI_CODE_SMOK_SIG]: {base: COST_AIR_COM + 5},
   CB13: {base: 2200, upg: [[400, 300], [350, 700], [0, 1250]]},
   CB14: {base: 2000, upg: [[2500, 1000], [750, 400], [3500, 5500]]},
   CB15: {base: 200, upg: [[150, 190], [140, 1100], [325, 350]]},
@@ -231,6 +232,15 @@ BUI_COSTS.CB15R = a.reqObj(BUI_COSTS.CB15)
 BUI_COSTS.CB17R = a.reqObj(BUI_COSTS.CB17)
 BUI_COSTS.CB18R = a.reqObj(BUI_COSTS.CB18)
 BUI_COSTS.F101R = a.reqObj(BUI_COSTS.F101)
+
+export const DIFF_MAX_ROUND_NUM = new Map()
+  .set(0, 25)
+  .set(1, 28)
+  .set(2, 32)
+  .set(4, 35)
+  .set(5, 35)
+
+export const MAX_KNOWN_ROUND_NUM = 35
 
 function dict(val) {return Object.assign(Object.create(null), val)}
 

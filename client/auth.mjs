@@ -37,6 +37,11 @@ cmdAuth.help = function cmdAuthHelp() {
       [`  `, os.BtnCmd(`auth`), `        -- make credentials`],
       [`  `, os.BtnCmd(`auth logout`), ` -- clear credentials`],
     ),
+    [
+      `note: runs are identified by user_id + run_num; avoid using the same`,
+      ` passphrase (user_id) on multiple machines simultaneously,`,
+      ` because that may cause run_num to overlap, merging runs and skewing stats`,
+    ],
     [`status: `, new AuthStatusMini()],
   )
 }

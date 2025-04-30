@@ -134,7 +134,7 @@ define HOOK_PRE_COMMIT_CODE
 #!/bin/sh
 cp .gitignore .dockerignore &&
 git ls-files | xargs sed -i '' 's/[[:space:]]*$$//' &&
-git add -u
+git add $(git diff --cached --name-only)
 endef
 export HOOK_PRE_COMMIT_CODE
 HOOK_PRE_COMMIT_FILE := .git/hooks/pre-commit

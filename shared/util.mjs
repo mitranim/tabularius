@@ -421,37 +421,3 @@ export function consistentNil_null(val) {
   if (a.isDict(val)) return a.mapDict(val, consistentNil_null)
   return val
 }
-
-export const ROUND_TABULARIUS_FIELDS_SCHEMA_VERSION = 1
-
-export function roundMigrated(round, userId, runNum) {
-  a.reqObj(round)
-  a.reqValidStr(userId)
-  a.reqInt(runNum)
-
-  let out = false
-  if (changed(round, `tabularius_fields_schema_version`, ROUND_TABULARIUS_FIELDS_SCHEMA_VERSION)) out = true
-  if (changed(round, `tabularius_user_id`, userId)) out = true
-  if (changed(round, `tabularius_run_num`, runNum)) out = true
-  if (deleted(round, `tabularius_userId`)) out = true
-  if (deleted(round, `tabularius_runId`)) out = true
-  if (deleted(round, `tabularius_runNum`)) out = true
-  if (deleted(round, `tabularius_roundId`)) out = true
-  if (deleted(round, `tabularius_createdAt`)) out = true
-  if (deleted(round, `tabularius_derivedSchemaVersion`)) out = true
-  if (deleted(round, `tabularius_upload_api_version`)) out = true
-
-  // Optional field:
-  // round.tabularius_uploaded_at ??= undefined
-  return out
-}
-
-function changed(tar, key, val) {
-  a.reqObj(tar), a.reqStr(key)
-  return !a.is(tar[key], (tar[key] = val))
-}
-
-function deleted(tar, key) {
-  a.reqObj(tar), a.reqStr(key)
-  return key in tar && delete tar[key]
-}

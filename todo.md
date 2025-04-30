@@ -1293,12 +1293,13 @@ https://fly.io/docs/networking/custom-domain/ -->
 Various `plot` enhancements.
 
 * [ ] `plot_link` generates a link.
-  * [ ] Copy to clipboard.
-  * [ ] Print to log, something like: `plot URL <url> copied to clipboard` where the URL is clickable (tarblan) with an indicator that it's external.
-  * [ ] By default, it orders multiple plots, with various presets, for the same filter, which is the current user's latest cloud run.
+  * [ ] By default, orders multiple plots, with various presets, for the same filter, which is the current user's latest cloud run (but with fixed `run_num` or `run_id`).
   * [ ] Takes arbitrary plot options as overrides.
-  * [ ] If no override on `user_id=current`, `run_id=latest`, or no `run_num`, then request the latest cloud run from the server.
-* [ ] `upload`:
+  * [ ] An override on `user_id` cancels the default `user_id=current`.
+  * [ ] An override on `run_id` or `run_num` cancels the default `run_id=latest`.
+  * [ ] Copy link to clipboard.
+  * [ ] Print to log, something like: `plot URL <url> copied to clipboard` where the link is clickable (tarblan) with an indicator that it's external.
+* [ ] `watch`:
   * [ ] Print run plot link when run ends.
     * [ ] Detection 1: when new run begins.
     * [ ] Detection 2: when run reaches last wave for that difficulty.
@@ -1316,4 +1317,16 @@ Various `plot` enhancements.
 
 ---
 
-Assign unique random ids to runs.
+Consider how to prevent accidental merging of runs, when the same "user" uploads rounds from multiple machines, where run nums overlap.
+
+---
+
+Cost calculation: add currency conversion rates. 1 Recon = 2 Supply. 1 Tech = ??? Supply.
+
+---
+
+Consider supporting `-h` and `--help` flags in all commands. Some users may be likely to try those.
+
+---
+
+Find out where the game stores its "foes in current run" information.

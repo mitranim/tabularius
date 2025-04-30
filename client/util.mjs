@@ -586,6 +586,10 @@ export function boundInd(ind, len) {
   return len
 }
 
+/*
+Unlike the old `document.execCommand` API, this can be used programmatically
+at any time while the document is focused.
+*/
 export function copyToClipboard(src) {
   return navigator.clipboard.writeText(a.render(src))
 }

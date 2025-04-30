@@ -204,7 +204,6 @@ async function watchStep(sig, state) {
 
     await fs.writeDirFile(sig, dir, nextFileName, content)
     await state.setRoundFile(nextFileName)
-
     watchBroadcast(event)
     return
   }

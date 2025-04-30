@@ -836,9 +836,6 @@ efficiency _with_ upgrades.
 export function buiCost(type, upg) {
   a.reqStr(type)
 
-  // Smoke signal gets special treatment.
-  if (type === `CB12A`) return gc.COST_AIR_COM + 5
-
   const costs = gc.BUI_COSTS[type]
 
   if (!costs) {
@@ -888,4 +885,38 @@ export function buiCost(type, upg) {
     out += a.reqFin(upgCost)
   }
   return out
+}
+
+export const ROUND_TABULARIUS_FIELDS_SCHEMA_VERSION = 1
+
+export function roundMigrated(round, userId, runNum) {
+  a.reqObj(round)
+  a.reqValidStr(userId)
+  a.reqInt(runNum)
+
+  let out = false
+  if (changed(round, `tabularius_fields_schema_version`, ROUND_TABULARIUS_FIELDS_SCHEMA_VERSION)) out = true
+  if (changed(round, `tabularius_user_id`, userId)) out = true
+  if (changed(round, `tabularius_run_num`, runNum)) out = true
+  if (deleted(round, `tabularius_userId`)) out = true
+  if (deleted(round, `tabularius_runId`)) out = true
+  if (deleted(round, `tabularius_runNum`)) out = true
+  if (deleted(round, `tabularius_roundId`)) out = true
+  if (deleted(round, `tabularius_createdAt`)) out = true
+  if (deleted(round, `tabularius_derivedSchemaVersion`)) out = true
+  if (deleted(round, `tabularius_upload_api_version`)) out = true
+
+  // Optional field:
+  // round.tabularius_uploaded_at ??= undefined
+  return out
+}
+
+function changed(tar, key, val) {
+  a.reqObj(tar), a.reqStr(key)
+  return !a.is(tar[key], (tar[key] = val))
+}
+
+function deleted(tar, key) {
+  a.reqObj(tar), a.reqStr(key)
+  return key in tar && delete tar[key]
 }
