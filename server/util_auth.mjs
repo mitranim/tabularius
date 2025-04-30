@@ -1,6 +1,7 @@
 import * as a from '@mitranim/js/all.mjs'
 import nc from 'tweetnacl'
 import * as su from '../shared/util.mjs'
+import * as uc from './util_conf.mjs'
 
 export function reqAuth(req) {
   a.reqInst(req, Request)
@@ -11,8 +12,15 @@ export function reqAuth(req) {
   return id
 }
 
-export function auth(src) {
-  if (!a.optStr(src)) return undefined
+export function auth(src, now) {
+  a.optStr(src)
+  a.optFin(now)
+
+  if (a.isSome(now) && !uc.TEST) {
+    throw Error(`unexpected auth "now" timestamp in non-test mode`)
+  }
+
+  if (!src) return undefined
 
   const parts = src.split(`.`)
   if (parts.length !== 3) {
@@ -27,6 +35,20 @@ export function auth(src) {
   const ts = a.intOpt(tsStr)
   if (!a.isFin(ts)) {
     throw SyntaxError(`auth token: malformed timestamp: ${a.show(tsStr)}`)
+  }
+
+  /*
+  Requiring a fresh timestamp should prevent replay attacks,
+  because the timestamp is part of the signed data.
+  */
+  now ??= Date.now()
+  const diff = now - ts
+  const lim = a.minToMs(1)
+  if (diff > lim) {
+    throw Error(`auth token: timestamp too far in the past`)
+  }
+  else if (diff < -lim) {
+    throw Error(`auth token: timestamp too far in the future`)
   }
 
   /*

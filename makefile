@@ -61,7 +61,9 @@ run:
 clean:
 	rm -rf $(TMP_DIR)
 
-server_test_w: export LOG_DEBUG := $(LOG_DEBUG)
+server_test_w server_test shared_test_w shared_test: export TEST := true
+server_test_w server_test shared_test_w shared_test: export LOG_DEBUG := $(LOG_DEBUG)
+
 server_test_w:
 	$(DENO_WATCH) server/test.mjs
 

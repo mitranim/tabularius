@@ -1,6 +1,7 @@
 import * as a from '@mitranim/js/all.mjs'
 
 export const DEV = a.boolOpt(getEnv(`DEV`, `false`))
+export const TEST = a.boolOpt(getEnv(`TEST`, `false`))
 export const LIVE_PORT = a.vac(DEV) && a.intOpt(getEnv(`LIVE_PORT`, ``))
 export const LOG_DEBUG = a.boolOpt(getEnv(`LOG_DEBUG`, `false`))
 

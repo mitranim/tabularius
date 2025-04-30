@@ -125,40 +125,53 @@ t.test(function test_hexStr_to_byteArr() {
 })
 
 t.test(function test_auth() {
-  function fail(src, msg) {t.throws(() => u.auth(src), Error, msg)}
+  function fail(src, ts, msg) {t.throws(() => u.auth(src, ts), Error, msg)}
 
-  fail(`one`, `auth token must be <pub>.<ts>.<sig>, got "one"`)
-  fail(`one.two`, `auth token must be <pub>.<ts>.<sig>, got "one.two"`)
-  fail(`one.two.three.`, `auth token must be <pub>.<ts>.<sig>, got "one.two.three."`)
-  fail(`one.two.three.four`, `auth token must be <pub>.<ts>.<sig>, got "one.two.three.four"`)
-  fail(`one.two.three`, `auth token: malformed pub key: "one", expected a 64-char hex string`)
+  fail(`one`, 0, `auth token must be <pub>.<ts>.<sig>, got "one"`)
+  fail(`one.two`, 0, `auth token must be <pub>.<ts>.<sig>, got "one.two"`)
+  fail(`one.two.three.`, 0, `auth token must be <pub>.<ts>.<sig>, got "one.two.three."`)
+  fail(`one.two.three.four`, 0, `auth token must be <pub>.<ts>.<sig>, got "one.two.three.four"`)
+  fail(`one.two.three`, 0, `auth token: malformed pub key: "one", expected a 64-char hex string`)
   const pub = a.uuid() + a.uuid()
-  fail(pub + `..two`, `auth token: malformed timestamp: ""`)
-  fail(pub + `.two.three`, `auth token: malformed timestamp: "two"`)
-  fail(pub + `.NaN.three`, `auth token: malformed timestamp: "NaN"`)
+  fail(pub + `..two`, 0, `auth token: malformed timestamp: ""`)
+  fail(pub + `.two.three`, 0, `auth token: malformed timestamp: "two"`)
+  fail(pub + `.NaN.three`, 0, `auth token: malformed timestamp: "NaN"`)
 
   t.is(u.auth(), undefined)
   t.is(u.auth(``), undefined)
 
   const token = u.authToken(TEST_PUBLIC_KEY, TEST_SECRET_KEY, 0)
-  t.is(token, TEST_PUB + `.0.07888c60b1d711e2eb045b0845773e39e78886a5a2ef5115a17a9d3fe5837189dd0c5fc84cab48db553d2d49f8c684ee2a87ec4c314f906d38889b73967bb305`)
-  t.is(u.auth(token), u.byteArr_to_hexStr(TEST_PUBLIC_KEY))
-  t.is(u.auth(token), TEST_PUB)
+  const tokenTs = 0
+  t.is(token, TEST_PUB + `.` + tokenTs + `.07888c60b1d711e2eb045b0845773e39e78886a5a2ef5115a17a9d3fe5837189dd0c5fc84cab48db553d2d49f8c684ee2a87ec4c314f906d38889b73967bb305`)
+
+  function test(ts) {
+    const out = u.auth(token, ts)
+    t.is(out, TEST_PUB)
+    t.is(out, u.byteArr_to_hexStr(TEST_PUBLIC_KEY))
+  }
+
+  test(tokenTs)
 
   {
     const broken = `00` + token.slice(2)
-    fail(broken, `auth token: signature doesn't match claims`)
+    fail(broken, tokenTs, `auth token: signature doesn't match claims`)
   }
 
   {
     const broken = token.replace(`.0.`, `.1.`)
-    fail(broken, `auth token: signature doesn't match claims`)
+    fail(broken, tokenTs, `auth token: signature doesn't match claims`)
   }
 
   {
     const broken = token.slice(0, -2) + `00`
-    fail(broken, `auth token: signature doesn't match claims`)
+    fail(broken, tokenTs, `auth token: signature doesn't match claims`)
   }
+
+  test(tokenTs - a.minToMs(1))
+  test(tokenTs + a.minToMs(1))
+
+  fail(token, tokenTs - a.minToMs(1) - 1, `auth token: timestamp too far in the future`)
+  fail(token, tokenTs + a.minToMs(1) + 1, `auth token: timestamp too far in the past`)
 })
 
 await t.test(async function test_uploadRound() {
