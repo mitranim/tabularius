@@ -684,7 +684,7 @@ export function plotAggFromFacts({facts, opt}) {
   plotAggStateInit(state)
   plotAggAddFacts({facts, state, opt})
   const {totalFun} = opt
-  return plotAggStd({...plotAggCompact(state), totalFun})
+  return plotAggWithTotals({...plotAggCompact(state), totalFun})
 }
 
 export function plotAggAddFacts({facts, state, opt}) {
@@ -709,12 +709,23 @@ export function plotAggAddFact({fact, state, opt}) {
   const X_Y = Z_X_Y[Z] ??= a.Emp()
   const Y = fact.stat_val
 
-  if (!X_Y[X]) {
-    X_Y[X] = [aggFun(undefined, Y, 0), 0]
-  }
-  else {
-    X_Y[X][1]++
-    X_Y[X][0] = aggFun(X_Y[X][0], Y, X_Y[X][1])
+  /*
+  We must skip nils to match SQL semantics, where aggregations skip unknown /
+  missing data points. A sequence of values in a series can be disjoint, with
+  values interspersed with nulls. We must count only the values, ignoring the
+  nulls. Otherwise, rolling averages end up with wrong results, because they'd
+  be averaging N values over M [values + nulls].
+
+  SYNC[fold_not_nil].
+  */
+  if (a.isSome(Y)) {
+    if (!X_Y[X]) {
+      X_Y[X] = [aggFun(undefined, Y, 0), 0]
+    }
+    else {
+      X_Y[X][1]++
+      X_Y[X][0] = aggFun(X_Y[X][0], Y, X_Y[X][1])
+    }
   }
 
   X_set.add(X)
@@ -772,11 +783,7 @@ export function dropZeroRows(Z, Z_X_Y) {
   }
 }
 
-export function plotAggStd(src) {
-  return plotAggWithTotals(plotAggOrderByTotals(src))
-}
-
-export function plotAggOrderByTotals({X_vals, Z_vals, Z_X_Y, totalFun}) {
+export function plotAggWithTotals({X_vals, Z_vals, Z_X_Y, totalFun}) {
   a.reqArr(X_vals)
   a.reqArr(Z_vals)
   a.reqArr(Z_X_Y)
@@ -786,30 +793,27 @@ export function plotAggOrderByTotals({X_vals, Z_vals, Z_X_Y, totalFun}) {
     throw Error(`internal: different length between Z_vals (${Z_vals.length}) and ${Z_X_Y} (${Z_X_Y.length}) in plot aggregate`)
   }
 
-  const totals = a.map(Z_X_Y, val => val.reduce(totalFun, 0))
-  const sorted = Z_vals.map((Z, ind) => ({Z, X_Y: Z_X_Y[ind], total: totals[ind]})).sort(compareByTotal)
+  const Z_totals = a.map(Z_X_Y, val => u.foldSome(val, 0, totalFun))
+  const sortedCombined = Z_vals
+    .map((Z, ind) => ({Z, X_Y: Z_X_Y[ind], total: Z_totals[ind]}))
+    .sort(compareByTotal)
 
   Z_vals = []
   Z_X_Y = []
-  for (const {Z, X_Y} of sorted) {
+  for (const {Z, X_Y} of sortedCombined) {
     Z_vals.push(Z)
     Z_X_Y.push(X_Y)
   }
-  return {X_vals, Z_vals, Z_X_Y, totalFun}
+
+  const X_total = Z_X_totals(Z_X_Y, totalFun)
+  Z_vals = a.prepend(Z_vals, `Total`)
+  Z_X_Y = a.prepend(Z_X_Y, X_total)
+  return {X_vals, Z_vals, Z_X_Y}
 }
 
 function compareByTotal(one, two) {return two.total - one.total}
 
-export function plotAggWithTotals({X_vals, Z_vals, Z_X_Y, totalFun}) {
-  a.reqArr(X_vals)
-  a.reqArr(Z_vals)
-  a.reqArr(Z_X_Y)
-  Z_vals.unshift(`Total`)
-  Z_X_Y.unshift(totals(Z_X_Y, totalFun))
-  return {X_vals, Z_vals, Z_X_Y}
-}
-
-export function totals(Z_X_Y, totalFun) {
+export function Z_X_totals(Z_X_Y, totalFun) {
   a.reqArrOf(Z_X_Y, a.isArr)
   a.reqFun(totalFun)
 
@@ -822,7 +826,7 @@ export function totals(Z_X_Y, totalFun) {
   while (++X < X_len) {
     let Z = -1
     while (++Z < Z_len) Y_col[Z] = Z_X_Y[Z][X]
-    Z_X_totals[X] = Y_col.reduce(totalFun, 0)
+    Z_X_totals[X] = u.foldSome(Y_col, 0, totalFun)
   }
   return Z_X_totals
 }

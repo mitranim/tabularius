@@ -199,7 +199,7 @@ export async function cmdPlotCloud(sig, opt, args) {
 
   let data = await apiPlotAgg(sig, opt)
   if (isPlotAggEmpty(data)) return msgPlotDataEmpty(args, opt)
-  data = s.plotAggStd({...data, totalFun: opt.totalFun})
+  data = s.plotAggWithTotals({...data, totalFun: opt.totalFun})
   data = u.consistentNil_undefined(data)
   ui.MEDIA.add(new Plotter(plotOptsWith({...data, opt})))
 }
@@ -697,7 +697,8 @@ export function serieFormatVal(plot, val, seriesInd, agg) {
   return formatVal(a.laxFin(
     a.isInt(ind) && ind >= 0
     ? val
-    : plot.data[seriesInd].reduce(agg, 0)
+    // SYNC[fold_not_nil].
+    : u.foldSome(plot.data[seriesInd], 0, agg)
   ))
 }
 

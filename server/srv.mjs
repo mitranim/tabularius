@@ -31,7 +31,8 @@ function serve(ctx) {
     handler: a.bind(respond, ctx),
     onListen({port, hostname}) {
       if (hostname === `0.0.0.0`) hostname = `localhost`
-      console.log(`[srv] listening on http://${hostname}:${port}?local=true`)
+      const local = u.DEV ? `?local=true` : ``
+      console.log(`[srv] listening on http://${hostname}:${port}${local}`)
     },
     onError(err) {
       if (a.isErrAbort(err)) return new u.Res()

@@ -105,13 +105,33 @@ export function accSum(one, two) {return a.laxFin(one) + a.laxFin(two)}
 
 export function accAvg(acc, val, ind) {
   acc = a.laxFin(acc)
-  val = a.laxFin(val)
+  a.reqFin(val)
   a.reqNat(ind)
   return acc + (val - acc) / (ind + 1)
 }
 
 export function accCount(_, __, ind) {
   return a.isInt(ind) ? ind + 1 : 0
+}
+
+/*
+Hybrid of the JS `Array..reduce` behavior, and the SQL aggregation behavior,
+where nils / nulls are ignored.
+
+SYNC[fold_not_nil].
+*/
+export function foldSome(src, acc, fun) {
+  src = a.values(src)
+  a.reqFun(fun)
+
+  let count = 0
+  let ind = -1
+  while (++ind < src.length) {
+    const val = src[ind]
+    if (a.isNil(val)) continue
+    acc = fun(acc, val, count++)
+  }
+  return acc
 }
 
 export function dict(val) {return a.assign(a.Emp(), val)}
