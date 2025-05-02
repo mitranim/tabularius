@@ -89,6 +89,7 @@ TODO add internal sanity checks:
 
   `round.tabularius_user_id === user_id`
   `round.tabularius_run_num === run_num`
+  `round.tabularius_run_ms === run_ms`
 
 If there's a mismatch, log it without throwing.
 */
@@ -105,7 +106,6 @@ export async function initDataFromRounds(ctx, conn) {
 
   for await (const {name: user_id, isDirectory} of Deno.readDir(rootDirPath)) {
     if (!isDirectory) continue
-
     const dirPath = io.paths.join(rootDirPath, user_id)
 
     for await (const {name, run_num} of u.walkRunDirs(dirPath)) {

@@ -749,12 +749,15 @@ async function loadFixtureFromRounds(conn, src) {
 
 function datFromRounds(src) {
   const dat = a.Emp()
+
   for (const round of src) {
     a.reqObj(round)
     const user_id = a.reqValidStr(round.tabularius_user_id)
     const run_num = a.reqInt(round.tabularius_run_num)
+    const run_ms = a.reqInt(round.tabularius_run_ms)
+
     s.datAddRound({
-      dat, round, run_num, user_id, composite: u.SCHEMA_FACTS_COMPOSITE,
+      dat, round, user_id, run_num, run_ms, composite: u.SCHEMA_FACTS_COMPOSITE,
       tables: {facts: true},
     })
   }

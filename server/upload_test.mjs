@@ -10,25 +10,30 @@ import * as api from './api.mjs'
 const TEST_PROGRESS_BIG = await Deno.readTextFile(new URL(`../samples/example_progress_big.json`, import.meta.url))
 
 await t.test(async function test_duckdb_import_json_gz() {
+  const ctx = new tu.TestCtx()
+  const progPath = io.paths.join(ctx.tmpDir, `example_progress_big.json.gz`)
   const srcData = JSON.parse(TEST_PROGRESS_BIG)
-  const outUrl = new URL(`../local/example_progress_big.json.gz`, import.meta.url)
   const outBin = await u.data_to_json_to_gzipByteArr(srcData)
-  await Deno.writeFile(outUrl, outBin)
+  await Deno.writeFile(progPath, outBin)
 
   const dat = a.Emp()
   s.datAddRound({
-    dat, round: srcData, run_num: 1, user_id: `local_user`,
+    dat,
+    round: srcData,
+    user_id: `local_user`,
+    run_num: 1,
+    run_ms: Date.parse(srcData.LastUpdated),
     composite: u.SCHEMA_FACTS_COMPOSITE,
     tables: {facts: true},
   })
 
-  const url = new URL(`../local/example_facts.json.gz`, import.meta.url)
-  await Deno.writeFile(url, await u.str_to_gzipByteArr(u.jsonLines(dat.facts)))
+  const factsPath = io.paths.join(ctx.tmpDir, `example_facts.json.gz`)
+  await Deno.writeFile(factsPath, await u.str_to_gzipByteArr(u.jsonLines(dat.facts)))
 
   const dbInst = await u.DuckDb.create(`:memory:`)
   const conn = await dbInst.connect()
   await db.initSchema(conn)
-  await conn.run(`copy facts from ${u.sqlStr(url.href)}`)
+  await conn.run(`copy facts from ${u.sqlStr(factsPath)}`)
   const fact = await conn.queryDoc(`select * from facts limit 1`)
 
   a.reqDict(fact)
@@ -75,24 +80,33 @@ await t.test(async function test_uploadRound() {
   await fail(req(round, {headers: auth}), `round upload: missing user id`)
   round.tabularius_user_id = `123`
 
+  const user_id = tu.TEST_PUB
   await fail(
     req(round, {headers: auth}),
-    `user id mismatch: required ${a.show(a.reqValidStr(tu.TEST_PUB))}, got "123"`,
+    `user id mismatch: required ${a.show(a.reqValidStr(user_id))}, got "123"`,
   )
-  round.tabularius_user_id = tu.TEST_PUB
+  round.tabularius_user_id = user_id
 
   await fail(
     req(round, {headers: auth}),
     `round upload: run number must be a natural integer, got undefined`,
   )
-  round.tabularius_run_num = 1
+  const run_num = 1
+  round.tabularius_run_num = run_num
+
+  await fail(
+    req(round, {headers: auth}),
+    `round upload: run timestamp must be a natural integer, got undefined`,
+  )
+  const run_ms = Date.parse(round.LastUpdated)
+  round.tabularius_run_ms = run_ms
 
   await test(req(round, {headers: auth}), {factCount: 422})
   await test(req(round, {headers: auth}), {redundant: true})
 
-  const runName = u.intPadded(round.tabularius_run_num)
+  const runName = s.makeRunName(run_num, run_ms)
   const roundName = u.intPadded(round.RoundIndex)
-  const path = io.paths.join(ctx.userRunsDir, tu.TEST_PUB, runName, roundName + `.json.gz`)
+  const path = io.paths.join(ctx.userRunsDir, user_id, runName, roundName + `.json.gz`)
   const roundRead = await u.readDecodeGameFile(path)
   t.eq(roundRead, round)
 })

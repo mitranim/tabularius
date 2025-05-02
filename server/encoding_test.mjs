@@ -1,5 +1,7 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
+import * as io from '@mitranim/js/io_deno.mjs'
+import * as tu from './test_util.mjs'
 import * as u from './util.mjs'
 
 const TEST_PROGRESS = await Deno.readTextFile(new URL(`../samples/example_progress.gd`, import.meta.url))
@@ -16,14 +18,15 @@ await t.test(async function test_decoding_encoding_roundtrip() {
 })
 
 await t.test(async function test_gzip_roundtrip() {
+  const ctx = new tu.TestCtx()
   const srcData = await u.decodeGdStr(TEST_PROGRESS)
   a.reqDict(srcData)
   a.reqInt(srcData.RoundIndex)
 
-  const outUrl = new URL(`../local/example_progress.json.gz`, import.meta.url)
+  const outPath = io.paths.join(ctx.tmpDir, `example_progress.json.gz`)
   const outBin = await u.data_to_json_to_gzipByteArr(srcData)
-  await Deno.writeFile(outUrl, outBin)
-  const outData = await u.byteArr_to_ungzip_to_unjsonData(await Deno.readFile(outUrl))
+  await Deno.writeFile(outPath, outBin)
+  const outData = await u.byteArr_to_ungzip_to_unjsonData(await Deno.readFile(outPath))
   a.reqDict(outData)
   a.reqInt(outData.RoundIndex)
 })

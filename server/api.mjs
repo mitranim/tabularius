@@ -71,12 +71,18 @@ export async function uploadRound(ctx, req) {
     throw new u.ErrHttp(`round upload: run number must be a natural integer, got ${a.show(run_num)}`, {status: 400})
   }
 
-  const outDir = io.paths.join(ctx.userRunsDir, user_id, u.intPadded(run_num))
+  const run_ms = round.tabularius_run_ms
+  if (!a.isNat(run_ms)) {
+    throw new u.ErrHttp(`round upload: run timestamp must be a natural integer, got ${a.show(run_ms)}`, {status: 400})
+  }
+
+  const runName = s.makeRunName(run_num, run_ms)
+  const outDir = io.paths.join(ctx.userRunsDir, user_id, runName)
   const outPath = io.paths.join(outDir, u.intPadded(round_num) + u.GAME_FILE_EXT_REAL)
   const info = await io.FileInfo.statOpt(outPath)
 
   if (info) {
-    const round_id = s.makeRoundId(user_id, run_num, round_num)
+    const round_id = s.makeRoundId(user_id, run_num, run_ms, round_num)
     if (!info.isFile) {
       throw new u.ErrHttp(`round upload: internal error: existing round ${a.show(round_id)} is not a file`, {status: 400})
     }
@@ -85,7 +91,7 @@ export async function uploadRound(ctx, req) {
 
   const dat = a.Emp()
   s.datAddRound({
-    dat, round, run_num, user_id, composite: u.SCHEMA_FACTS_COMPOSITE,
+    dat, round, user_id, run_num, run_ms, composite: u.SCHEMA_FACTS_COMPOSITE,
     tables: {facts: true},
   })
 

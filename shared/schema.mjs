@@ -41,14 +41,13 @@ The `composite` mode adds fields which are composite keys.
 On the client, they're necessary. On the server, they may be optional.
 */
 export function datAddRound({
-  dat, round, run_id, run_num, user_id, composite,
+  dat, round, user_id, run_num, run_ms, composite,
   tables: {runs, run_rounds, run_buis, run_round_buis, facts} = DAT_TABLES_ALL,
 }) {
-  if (run_id) throw Error(`deprecated option "run_id"`)
-
   a.reqObj(dat)
   a.reqDict(round)
   a.reqInt(run_num)
+  a.reqNat(run_ms)
   a.reqValidStr(user_id)
   a.optBool(composite)
 
@@ -59,7 +58,7 @@ export function datAddRound({
   // Rounds with num 0 never have useful stats.
   if (!round_num) return
 
-  run_id = makeRunId(user_id, run_num)
+  const run_id = makeRunId(user_id, run_num, run_ms)
   const runIds = {user_id}
   if (composite) runIds.run_id = run_id
 
@@ -75,6 +74,7 @@ export function datAddRound({
       time_ms,
       ...runIds,
       run_num,
+      run_ms,
       hero,
       diff,
       frontier_diff,
@@ -83,7 +83,7 @@ export function datAddRound({
     })
   }
 
-  const round_id = makeRoundId(user_id, run_num, round.RoundIndex)
+  const round_id = makeRoundId(user_id, run_num, run_ms, round.RoundIndex)
   const roundIds = runIds
   if (composite) roundIds.round_id = round_id
 
@@ -386,12 +386,17 @@ export function datAddRound({
 // Below 100, we don't really care.
 function isDamageSimilar(one, two) {return (a.laxNum(one) - a.laxNum(two)) < 100}
 
-export function makeRunId(user_id, run_num) {
-  return u.joinKeys(a.reqValidStr(user_id), u.intPadded(run_num))
+// Must be used for run directories inside user directories.
+export function makeRunName(run_num, run_ms) {
+  return u.joinKeys(u.intPadded(run_num), a.reqNat(run_ms))
 }
 
-export function makeRoundId(user_id, run_num, round_num) {
-  return u.joinKeys(a.reqValidStr(user_id), u.intPadded(run_num), u.intPadded(round_num))
+export function makeRunId(user_id, run_num, run_ms) {
+  return u.joinKeys(a.reqValidStr(user_id), makeRunName(run_num, run_ms))
+}
+
+export function makeRoundId(user_id, run_num, run_ms, round_num) {
+  return u.joinKeys(makeRunId(user_id, run_num, run_ms, u.intPadded(round_num)))
 }
 
 // See `test_encodeUpgrade`.

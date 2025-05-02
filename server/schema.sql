@@ -11,7 +11,7 @@ create table schema_version (
 There is no primary key because facts are always aggregated and never referenced.
 
 The constraints are for dev/debug purposes. TODO avoid them in production.
-We validate those fields in JS before creating facts(see `datAddRound`),
+We validate those fields in JS before creating facts (see `datAddRound`),
 so the DB-level constraints are redundant and waste performance.
 
 TODO consider supporting (not in the data, but in the code) the ability to group

@@ -1,5 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
+import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
 
 const SCHEMA_PREV = 1
@@ -110,7 +111,7 @@ export async function migrateUserRuns(ctx) {
         continue
       }
 
-      const runNameNext = u.joinKeys(runName, runMs)
+      const runNameNext = s.makeRunName(runName, runMs)
       const runDirNext = io.paths.join(userDir, runNameNext)
 
       await Deno.rename(runDir, runDirNext)
