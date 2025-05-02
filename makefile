@@ -132,11 +132,17 @@ deploy:
 # Keeps .dockerignore in sync with .gitignore.
 #
 # Trims trailing whitespace from all tracked files.
+# Bots such as Claude Code spam trailing whitespace.
 # The `-i ''` is required on MacOS, do not remove.
+#
+# `bash` (or `zsh`) is needed for process substitution: <(cmd).
 define HOOK_PRE_COMMIT_CODE
-#!/bin/sh
+#!/bin/bash
 cp .gitignore .dockerignore &&
-git ls-files | xargs sed -i '' 's/[[:space:]]*$$//' &&
+
+comm -23 <(git ls-files | sort) <(git ls-files --deleted | sort) |
+	xargs sed -i '' 's/[[:space:]]*$$//' &&
+
 git add $(git diff --cached --name-only)
 endef
 export HOOK_PRE_COMMIT_CODE
