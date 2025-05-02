@@ -1290,8 +1290,37 @@ https://fly.io/docs/networking/custom-domain/ -->
 
 ---
 
+Change progress file handle to saves dir handle (`init -s`).
+
+Still load the old progress file handle and use it and show in status, but call it "legacy mode" and recommend `init -s`.
+
+`show` for `saves` requires `init -s` and doesn't need a picker every time.
+
+`ls /` now lists contents of _both_ `saves` and `history`; those are special names which can be used as the first element of a path to list just that dir.
+
+`ls -c /` now lists user dirs; `ls -c current` lists the current user's runs.
+
+---
+
+* [ ] Prevent accidental merging of runs, when the same "user" uploads rounds from multiple machines, where run nums overlap.
+  * [ ] For each run: `run_id = user_id + run_num + run_ms` where `run_ms` is the timestamp of the first round in the run.
+  * [ ] `apiPlotAgg`: `qLatestRunId`: use `run_ms`.
+  * [ ] `srv.mjs`: on startup, migrate user run dirs:
+    * [ ] For each run dir: read first round file, get `.LastUpdated`, set `tabularius_run_ms`, update every other round in that dir, then rename dir, appending timestamp.
+    * [ ] Make it semi-lazy: for each user, check last run and round, and exit that user if they're compliant. Otherwise migrate from the first.
+    * [ ] Only needs to be done once. We'll simply disable it after the first deploy.
+  * [ ] `apiUploadRound`: validate that `run_ms` is present and use it; if not present, suggest updating the client by reloading the page.
+  * [ ] `watch`: when creating new run dir, append `run_ms` to name.
+  * [ ] `main.mjs`: on startup, if FS inited, before running `watch`, run a new process (name pending) which migrates the existing run history dirs similar to the server-side migration. We'll disable it later, but keep the code for future migrations, if any.
+    * [ ] The process is lazy: it starts by checking the _last_ run dir, and the _last_ round file. If both are compliant with new schema, then exit. If not, migrate from the _first_ run dir and round file.
+  * [ ] `schema.mjs`: increment version, causing server-side DB rebuild.
+
+---
+
 Various `plot` enhancements.
 
+* [ ] When waiting for plot agg data (either cloud or local), indicate that in the media.
+  * The sample plot placeholder has a method to increment or decrement the count of pending plots; when count > 0, it says "plot loading" or something like that. `cmdPlot` uses `try/finally` to modify the count.
 * [ ] `plot_link` generates a link.
   * [ ] By default, orders multiple plots, with various presets, for the same filter, which is the current user's latest cloud run (but with fixed `run_num` or `run_id`).
   * [ ] Takes arbitrary plot options as overrides.
@@ -1312,12 +1341,7 @@ Various `plot` enhancements.
     * [ ] Consider making this optional (a toggle).
     * [ ] Server: support in `apiPlotAgg`. Make it optional.
     * [ ] Client: support in various places where we build and query `dat`.
-  * [ ] When waiting for plot agg data (either cloud or local), indicate that in the media.
 * [ ] `main.mjs`: be less insistent on printing help at the start, to avoid crowding the terminal when a plot is fetched on startup.
-
----
-
-Consider how to prevent accidental merging of runs, when the same "user" uploads rounds from multiple machines, where run nums overlap.
 
 ---
 
