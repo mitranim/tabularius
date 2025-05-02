@@ -156,11 +156,7 @@ export async function cmdPlotFetchOpts(sig, opt) {
   const dat = a.Emp()
 
   for (const round of rounds) {
-    const user_id = (
-      a.optStr(round.tabularius_user_id) ||
-      d.USER_ID
-    )
-
+    const user_id = a.optStr(round.tabularius_user_id) || d.USER_ID
     const run_num = round.tabularius_run_num ?? 1
     const run_ms = round.tabularius_run_ms ?? Date.now()
     s.datAddRound({dat, round, user_id, run_num, run_ms, composite: true})
@@ -477,7 +473,7 @@ Otherwise, show a sample run for prettiness sake.
 export async function plotDefault({sig}) {
   try {
     if (await fs.loadedHistoryDir()) {
-      await cmdPlot({sig, args: `plot -p=dmg run_id=latest`})
+      await cmdPlot({sig, args: `plot -p=dmg user_id=all run_id=latest`})
       return
     }
   }
@@ -490,7 +486,7 @@ export async function plotDefault({sig}) {
 
 export async function plotExampleRun(sig) {
   const url = new URL(`../samples/example_run.gd`, import.meta.url)
-  const opt = decodePlotAggOpt(`-f=${url} -p=dmg user_id=all`)
+  const opt = decodePlotAggOpt(`-f=${url} -p=dmg user_id=all run_id=all`)
   const opts = await cmdPlotFetchOpts(sig, opt)
   opts.title = `example run analysis: ` + opts.title
   ui.MEDIA.add(new Plotter(opts))
