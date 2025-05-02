@@ -8,10 +8,9 @@ import * as gc from './game_const.mjs'
 
 /*
 TODO / missing: we need game versions in our stats.
-
-SYNC[schema_version].
 */
-export const SCHEMA_VERSION = 3
+export const DATA_SCHEMA_VERSION = 3
+export const ROUND_FIELDS_SCHEMA_VERSION = 2
 export const DATA_DEBUG = false
 
 export const STAT_TYPE_DMG_DONE = `dmg_done`
@@ -72,7 +71,7 @@ export function datAddRound({
   if (runs) {
     dat.runs ??= new Map()
     dat.runs.set(run_id, {
-      // schema_version: SCHEMA_VERSION,
+      // schema_version: DATA_SCHEMA_VERSION,
       time_ms,
       ...runIds,
       run_num,
@@ -91,7 +90,7 @@ export function datAddRound({
   if (run_rounds) {
     dat.run_rounds ??= new Map()
     dat.run_rounds.set(round_id, {
-      // schema_version: SCHEMA_VERSION,
+      // schema_version: DATA_SCHEMA_VERSION,
       time_ms,
       ...roundIds,
       round_num,
@@ -113,7 +112,7 @@ export function datAddRound({
     if (run_buis) {
       dat.run_buis ??= new Map()
       dat.run_buis.set(run_bui_id, {
-        // schema_version: SCHEMA_VERSION,
+        // schema_version: DATA_SCHEMA_VERSION,
         ...runBuiIds,
         bui_type,
         bui_kind,
@@ -129,7 +128,7 @@ export function datAddRound({
     if (run_round_buis) {
       dat.run_round_buis ??= new Map()
       dat.run_round_buis.set(run_round_bui_id, {
-        // schema_version: SCHEMA_VERSION,
+        // schema_version: DATA_SCHEMA_VERSION,
         ...runRoundBuiIds,
         bui_upg,
         bui_type_upg,
@@ -142,7 +141,7 @@ export function datAddRound({
     dat.facts ??= []
 
     const baseFact = {
-      // schema_version: SCHEMA_VERSION,
+      // schema_version: DATA_SCHEMA_VERSION,
       time_ms,
       ...runRoundBuiIds,
       hero,
@@ -891,8 +890,6 @@ export function buiCost(type, upg) {
   return out
 }
 
-export const ROUND_TABULARIUS_FIELDS_SCHEMA_VERSION = 2
-
 export function roundMigrated({round, userId, runNum, runMs}) {
   a.reqObj(round)
   a.reqValidStr(userId)
@@ -900,10 +897,12 @@ export function roundMigrated({round, userId, runNum, runMs}) {
   a.reqInt(runMs)
 
   let out = false
-  if (changed(round, `tabularius_fields_schema_version`, ROUND_TABULARIUS_FIELDS_SCHEMA_VERSION)) out = true
+
+  if (changed(round, `tabularius_fields_schema_version`, ROUND_FIELDS_SCHEMA_VERSION)) out = true
   if (changed(round, `tabularius_user_id`, userId)) out = true
   if (changed(round, `tabularius_run_num`, runNum)) out = true
   if (changed(round, `tabularius_run_ms`, runMs)) out = true
+
   if (deleted(round, `tabularius_userId`)) out = true
   if (deleted(round, `tabularius_runId`)) out = true
   if (deleted(round, `tabularius_runNum`)) out = true

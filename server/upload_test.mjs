@@ -62,23 +62,31 @@ await t.test(async function test_uploadRound() {
 
   await fail(req(), `round upload requires authentication`)
   await fail(req(round), `round upload requires authentication`)
-  await fail(req(round, {headers: auth}), `round upload: missing user id`)
 
+  await fail(req(round, {headers: auth}), `round upload: Tabularius schema version mismatch: expected schema version ${s.ROUND_FIELDS_SCHEMA_VERSION}, got schema version undefined; suggestion: update your client by reloading the page`)
+  round.tabularius_fields_schema_version = s.ROUND_FIELDS_SCHEMA_VERSION - 1
+
+  await fail(req(round, {headers: auth}), `round upload: Tabularius schema version mismatch: expected schema version ${s.ROUND_FIELDS_SCHEMA_VERSION}, got schema version ${s.ROUND_FIELDS_SCHEMA_VERSION - 1}; suggestion: update your client by reloading the page`)
+  round.tabularius_fields_schema_version = s.ROUND_FIELDS_SCHEMA_VERSION + 1
+
+  await fail(req(round, {headers: auth}), `round upload: Tabularius schema version mismatch: expected schema version ${s.ROUND_FIELDS_SCHEMA_VERSION}, got schema version ${s.ROUND_FIELDS_SCHEMA_VERSION + 1}; suggestion: update your client by reloading the page`)
+  round.tabularius_fields_schema_version = s.ROUND_FIELDS_SCHEMA_VERSION
+
+  await fail(req(round, {headers: auth}), `round upload: missing user id`)
   round.tabularius_user_id = `123`
 
   await fail(
     req(round, {headers: auth}),
     `user id mismatch: required ${a.show(a.reqValidStr(tu.TEST_PUB))}, got "123"`,
   )
-
   round.tabularius_user_id = tu.TEST_PUB
 
   await fail(
     req(round, {headers: auth}),
     `round upload: run number must be a natural integer, got undefined`,
   )
-
   round.tabularius_run_num = 1
+
   await test(req(round, {headers: auth}), {factCount: 422})
   await test(req(round, {headers: auth}), {redundant: true})
 

@@ -12,12 +12,12 @@ import * as ud from './util_db.mjs'
 
 export async function migrate(ctx) {
   const version = await dbGetSchemaVersion(await ctx.conn())
-  if (version >= s.SCHEMA_VERSION) {
+  if (version >= s.DATA_SCHEMA_VERSION) {
     console.log(`[mig] DB schema already up to date`)
     return
   }
 
-  console.log(`[mig] target schema version: ${s.SCHEMA_VERSION}, schema version in DB: ${version}, migrating`)
+  console.log(`[mig] target schema version: ${s.DATA_SCHEMA_VERSION}, schema version in DB: ${version}, migrating`)
 
   const conn = await ctx.connect()
   await conn.run(`begin`)
@@ -40,7 +40,7 @@ export async function migrate(ctx) {
 
   {
     const version = await dbGetSchemaVersion(await ctx.conn())
-    if (version !== s.SCHEMA_VERSION) {
+    if (version !== s.DATA_SCHEMA_VERSION) {
       throw Error(`internal: unexpected DB schema version after migration: ${a.show(version)}`)
     }
   }
@@ -78,7 +78,7 @@ async function dbGetSchemaVersion(conn) {
 
 async function dbSetSchemaVersion(conn) {
   const {text, args} = u.sql`
-    insert into schema_version (val) values (${s.SCHEMA_VERSION})
+    insert into schema_version (val) values (${s.DATA_SCHEMA_VERSION})
     on conflict do update set val = excluded.val
   `
   await conn.run(text, args)

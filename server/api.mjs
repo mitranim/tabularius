@@ -34,17 +34,22 @@ export async function uploadRound(ctx, req) {
     throw new u.ErrHttp(`round upload: request body must be a JSON object`, {status: 400})
   }
 
+  const gameVer = round.Version
+  if (gameVer !== 1) {
+    throw new u.ErrHttp(`round upload: game schema version mismatch: only schema version 1 is supported, got schema version ${a.show(gameVer)}`, {status: 400})
+  }
+
+  const tabVer = round.tabularius_fields_schema_version
+  if (tabVer !== s.ROUND_FIELDS_SCHEMA_VERSION) {
+    throw new u.ErrHttp(`round upload: Tabularius schema version mismatch: expected schema version ${s.ROUND_FIELDS_SCHEMA_VERSION}, got schema version ${tabVer}; suggestion: update your client by reloading the page`, {status: 400})
+  }
+
   const user_id = round.tabularius_user_id
   if (!user_id) {
     throw new u.ErrHttp(`round upload: missing user id`, {status: 400})
   }
   if (user_id !== reqUserId) {
     throw new u.ErrHttp(`round upload: user id mismatch: required ${a.show(reqUserId)}, got ${a.show(user_id)}`, {status: 400})
-  }
-
-  const ver = round.Version
-  if (ver !== 1) {
-    throw new u.ErrHttp(`round upload: only game schema version 1 is supported, got version ${a.show(ver)}`, {status: 400})
   }
 
   const round_num = round.RoundIndex
