@@ -19,6 +19,9 @@ DOCKER_BUILD := docker build --build-arg=PROJECT=$(PROJECT)
 DOCKER_RUN := docker run --init -it $(DOCKER_ENV)
 SRV := server/srv.mjs
 
+# SYNC[test_tmp_dir]
+TEST_TMP_DIR := .test_tmp
+
 help:
 	echo "Select one of the following commands."
 	echo "Run \`make -n <command_name>\` to see its definition."
@@ -59,7 +62,7 @@ run:
 	$(DENO_RUN) $(run)
 
 clean:
-	rm -rf $(TMP_DIR)
+	rm -rf $(TMP_DIR) $(TEST_TMP_DIR)
 
 server_test_w server_test shared_test_w shared_test: export TEST := true
 server_test_w server_test shared_test_w shared_test: export LOG_DEBUG := $(LOG_DEBUG)
