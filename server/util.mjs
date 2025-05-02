@@ -111,6 +111,72 @@ export async function* walkRoundFiles(src) {
   }
 }
 
+export async function readRunDirs(src) {
+  return a.map(await readDirAll(src, isEntryRunDir), getName)
+}
+
+export async function readRoundFiles(src) {
+  return a.map(await readDirAll(src, isEntryRoundFile), getName)
+}
+
+export async function readDirs(src) {
+  return a.map(await readDirAll(src, isEntryDir), getName)
+}
+
+export async function readFiles(src) {
+  return a.map(await readDirAll(src, isEntryFile), getName)
+}
+
+function getName(src) {return src.name}
+
+/*
+The insulting thing about this function is that internally, `Deno.readDir`
+gets an array of entries from an underlying Rust call, then artificially
+makes an async iterator, and then we have to build the array back...
+Twice as much memory is used, not counting the async iteration overhead,
+and a lot of CPU is wasted.
+*/
+export async function readDirAll(src, fun) {
+  a.optFun(fun)
+  const out = []
+  for await (const entry of Deno.readDir(src)) {
+    if (fun && !fun(entry)) continue
+    out.push(entry)
+  }
+  return out
+}
+
+export function isEntryDir(val) {return val?.isDirectory}
+export function isEntryFile(val) {return val?.isFile}
+
+export function isEntryRunDir(val) {
+  return isEntryDir(val) && su.hasIntPrefix(val.name)
+}
+
+export function isEntryRoundFile(val) {
+  return isEntryFile(val) &&
+    isGameFileName(val.name) &&
+    su.hasIntPrefix(val.name)
+}
+
+export function compareDirEntriesAsc(one, two) {
+  return compareDirEntries(one, two, su.compareAsc)
+}
+
+export function compareDirEntriesDesc(one, two) {
+  return compareDirEntries(one, two, su.compareDesc)
+}
+
+export function compareDirEntries(one, two, fun) {
+  return fun(a.reqStr(one.name), a.reqStr(two.name))
+}
+
+// Rough equivalent of `cp -r`.
+export async function cpDirRec(src, out) {
+  const {copy} = await import(`https://deno.land/std/fs/mod.ts`)
+  await copy(src, out, {overwrite: true})
+}
+
 export function jsonLines(src) {
   src = a.laxArr(src)
   return a.mapCompact(src, a.jsonEncode).join(`\n`)

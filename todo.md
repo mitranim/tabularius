@@ -1313,6 +1313,8 @@ Still load the old progress file handle and use it and show in status, but call 
   * [ ] `watch`: when creating new run dir, append `run_ms` to name.
   * [ ] `main.mjs`: on startup, if FS inited, before running `watch`, run a new process (name pending) which migrates the existing run history dirs similar to the server-side migration. We'll disable it later, but keep the code for future migrations, if any.
     * [ ] The process is lazy: it starts by checking the _last_ run dir, and the _last_ round file. If both are compliant with new schema, then exit. If not, migrate from the _first_ run dir and round file.
+    * [ ] The browser FS API doesn't seem to provide a way to rename a dir. We might have to recursively copy into a new dir, then remove the old dir.
+      * Use `try/finally` to delete incomplete new dir if there's a failure in the middle.
   * [ ] `schema.mjs`: increment version, causing server-side DB rebuild.
 
 ---

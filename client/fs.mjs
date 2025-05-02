@@ -710,11 +710,11 @@ export async function findLatestRunId(sig, root) {
 
 export function isHandleRunDir(handle) {
   a.reqInst(handle, FileSystemHandle)
-  return isDir(handle) && a.isSome(u.toIntOpt(handle.name))
+  return isDir(handle) && u.hasIntPrefix(handle.name)
 }
 
 export function isHandleRoundFile(handle) {
-  return isGameFileName(handle.name) && a.isSome(u.toIntOpt(handle.name))
+  return isGameFileName(handle.name) && u.hasIntPrefix(handle.name)
 }
 
 export function isHandleGameFile(handle) {

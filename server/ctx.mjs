@@ -4,7 +4,9 @@ import * as ud from './util_db.mjs'
 
 /*
 Stateful app configuration used by server code and testing code.
-Allows use to modify the behavior of server code in tests.
+Allows to modify the behavior of server code in tests.
+
+SYNC[ctx_iface].
 */
 export class Ctx extends a.Emp {
   constructor({dbFile, dataDir, tmpDir}) {
