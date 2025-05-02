@@ -1,6 +1,6 @@
 ## Overview
 
-Tabularius is a companion app for Tower Dominion. Automatic backups (local and cloud), flexible data analysis, fancy plots!
+Tabularius is a companion app for Tower Dominion. Automatic backups (local and cloud), run history, flexible data analysis, fancy plots!
 
 ➡️ https://mitranim/com/tabularius/ 🚀
 
