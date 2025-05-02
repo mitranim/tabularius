@@ -132,6 +132,9 @@ docker.ls:
 deploy:
 	fly deploy --yes
 
+fly.repl:
+	fly ssh console -a tabularius
+
 # Keeps .dockerignore in sync with .gitignore.
 #
 # Trims trailing whitespace from all tracked files.

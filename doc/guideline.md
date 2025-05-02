@@ -7,7 +7,6 @@
 - **Single Responsibility**: Functions and components do one thing well
 - **Composition**: Small, reusable parts
 - **SMALL BRICKS**: Small building blocks, composed hierarchically
-- **Explicitness**: Make behavior and intent clear
 - **Fail Fast**: Validate inputs, fail early and loudly
 
 ## Development Approach

@@ -97,11 +97,13 @@ export async function datLoad(sig, dat, opt) {
     if (id) runIds.add(id)
   }
 
-  const runIter = runIds.size
+  const runHandles = await (
+    runIds.size
     ? fs.readRunsByIdsAscOpt(sig, root, runIds)
     : fs.readRunsAsc(sig, root)
+  )
 
-  for await (const dir of runIter) {
+  for (const dir of runHandles) {
     const [run_num, run_ms] = s.splitRunName(dir.name)
     if (runNums.size && !runNums.has(run_num)) continue
 

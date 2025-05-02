@@ -10,6 +10,8 @@ const SCHEMA_NEXT = 2
 Assumes the current dir structure (at the time of writing). If we change the
 naming format to something entirely incompatible in the future, this may
 no longer be idempotent or valid. Should be run only once.
+
+SYNC[fs_mig].
 */
 export async function migrateUserRuns(ctx) {
   const out = a.Emp()
@@ -22,7 +24,6 @@ export async function migrateUserRuns(ctx) {
 
   const baseDir = ctx.userRunsDir
 
-  userLoop:
   for await (const userId of await u.readDirs(baseDir)) {
     out.userCheck++
 
@@ -52,7 +53,7 @@ export async function migrateUserRuns(ctx) {
             verb(`[fs_mig] skipping run: latest round up to date:`, a.show(roundFile))
             out.runCheck++
             out.roundCheck++
-            continue userLoop
+            continue
           }
         }
       }
@@ -63,6 +64,7 @@ export async function migrateUserRuns(ctx) {
     for (const runName of runDirs) {
       out.runCheck++
       const runDir = io.paths.join(userDir, runName)
+      const runNum = u.toIntOpt(runName)
       let runRoundsChecked = 0
       let runRoundsMigrated = 0
       let runMs
@@ -80,6 +82,7 @@ export async function migrateUserRuns(ctx) {
           continue
         }
 
+        // SYNC[tabularius_fields_diff].
         round.tabularius_fields_schema_version = SCHEMA_NEXT
         round.tabularius_run_ms = runMs
 
@@ -111,7 +114,7 @@ export async function migrateUserRuns(ctx) {
         continue
       }
 
-      const runNameNext = s.makeRunName(runName, runMs)
+      const runNameNext = s.makeRunName(runNum, runMs)
       const runDirNext = io.paths.join(userDir, runNameNext)
 
       await Deno.rename(runDir, runDirNext)
@@ -148,7 +151,7 @@ function isRoundNew(round) {
   return round.tabularius_fields_schema_version === SCHEMA_NEXT
 }
 
-function isRoundUnknown(round) {
+function _isRoundUnknown(round) {
   return !isRoundOld(round) && !isRoundNew(round)
 }
 

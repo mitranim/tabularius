@@ -647,15 +647,14 @@ export async function findHandleByIntPrefixOpt(sig, dir, int) {
   return undefined
 }
 
-export async function* readRunsAsc(sig, root) {
-  for (const val of await readDirAsc(sig, root)) {
-    if (isHandleRunDir(val)) yield val
-  }
+export async function readRunsAsc(sig, root) {
+  return (await readDirAsc(sig, root)).filter(isHandleRunDir)
 }
 
-export async function* readRunsByIdsAscOpt(sig, root, ids) {
+export async function readRunsByIdsAscOpt(sig, root, ids) {
   u.reqSig(sig)
   a.reqInst(root, FileSystemDirectoryHandle)
+  const out = []
 
   for (const id of a.values(ids)) {
     let dir
@@ -666,17 +665,9 @@ export async function* readRunsByIdsAscOpt(sig, root, ids) {
       if (err?.cause?.name === `NotFoundError`) continue
       throw err
     }
-    yield dir
+    out.push(dir)
   }
-}
-
-export async function* readRunsByIdsAsc(sig, root, ids) {
-  u.reqSig(sig)
-  a.reqInst(root, FileSystemDirectoryHandle)
-
-  for (const id of a.values(ids)) {
-    yield await getDirectoryHandle(sig, root, id)
-  }
+  return out
 }
 
 export async function* readRunRoundsAsc(sig, dir) {
@@ -694,6 +685,10 @@ export async function* readRunRounds(sig, dir) {
 
 export async function readRunRoundHandlesAsc(sig, dir) {
   return (await u.asyncIterCollect(sig, readRunRoundHandles(sig, dir))).sort(compareHandlesAsc)
+}
+
+export async function readRunRoundHandlesDesc(sig, dir) {
+  return (await u.asyncIterCollect(sig, readRunRoundHandles(sig, dir))).sort(compareHandlesDesc)
 }
 
 // The iteration order is undefined and unstable.
@@ -1016,11 +1011,11 @@ export async function migOpt() {
 
   try {
     const fm = await import(`./fs_mig.mjs`)
-    const out = await fm.migrateUserRuns()
+    const out = await fm.migrateRuns()
     u.storageSet(store, storeKey, verNext)
-    u.log.verb(`updated run history from schema version ${verPrev} to ${verNext}, summary:`, out)
+    u.log.verb(`updated run history from schema version ${verPrev} to ${verNext}, summary: `, out)
   }
   catch (err) {
-    u.log.err(`unable to update run history schema:`, err)
+    u.log.err(`unable to update run history schema: `, err)
   }
 }

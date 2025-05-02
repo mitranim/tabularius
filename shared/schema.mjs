@@ -9,7 +9,7 @@ import * as gc from './game_const.mjs'
 /*
 TODO / missing: we need game versions in our stats.
 */
-export const DATA_SCHEMA_VERSION = 3
+export const DATA_SCHEMA_VERSION = 4
 export const ROUND_FIELDS_SCHEMA_VERSION = 2
 export const DATA_DEBUG = false
 
@@ -143,6 +143,7 @@ export function datAddRound({
     const baseFact = {
       // schema_version: DATA_SCHEMA_VERSION,
       time_ms,
+      run_ms,
       ...runRoundBuiIds,
       hero,
       diff,

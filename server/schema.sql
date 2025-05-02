@@ -33,7 +33,7 @@ create table facts (
   user_id          text   not null,
   run_id           text   not null,
   run_num          int    not null,
-  -- run_ms           bigint not null, -- FIXME add
+  run_ms           bigint not null,
   round_id         text   not null,
   round_num        int    not null,
   bui_inst         int    not null,

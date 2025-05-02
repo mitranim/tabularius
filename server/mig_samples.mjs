@@ -4,9 +4,6 @@ import * as u from './util.mjs'
 
 const DRY_RUN = false
 
-// SYNC[test_pub].
-const TEST_PUB = `e6db4b849dfc5c3c5a3870fa4b01a5855c5424eee3ac9e55f7deeb31e40d4231`
-
 if (import.meta.main) await migSamples()
 
 async function migSamples() {await migExampleRuns()}

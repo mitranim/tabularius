@@ -20,11 +20,9 @@ async function main() {
   const ctx = new c.Ctx({dataDir, dbFile, tmpDir})
 
   // Should be run exactly once. TODO enable, deploy, disable.
-  if (false) {
-    const mf = await import(`./fs_mig.mjs`)
-    const out = await mf.migrateUserRuns(ctx)
-    console.log(`[fs_mig] done:`, out)
-  }
+  const mf = await import(`./fs_mig.mjs`)
+  const out = await mf.migrateUserRuns(ctx)
+  console.log(`[fs_mig] done:`, out)
 
   await db.migrate(ctx)
   serve(ctx)

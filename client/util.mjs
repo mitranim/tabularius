@@ -292,19 +292,18 @@ export const log = new class Log extends Elem {
     return msg
   }
 
-  /*
-  TODO: when appending a new message, scroll to bottom ONLY if already at the
-  bottom. If scrolled up, don't scroll to bottom.
-
-  TODO: don't scroll to bottom for messages printed on app startup.
-  */
   scrollToBottom() {
     const log = this.messageLog
     const chi = log.lastChild
     if (!chi) return
 
     const diff = chi.getBoundingClientRect().bottom - log.getBoundingClientRect().bottom
-    if (diff > 0) log.scrollBy(0, diff * 2)
+
+    /*
+    Scroll to bottom if log is reasonably close to last msg, but not if user has
+    scrolled up out of reach.
+    */
+    if (diff <= 64) log.scrollBy(0, diff * 2)
   }
 
   resizePointerdown(eve) {
@@ -500,6 +499,8 @@ cancelation. The signal assertion prevents programmer errors such as
 accidentally passing a non-signal. Usage:
 
   await u.wait(sig, someAsyncFun())
+
+When cancelation is undesirable, use `u.sig`.
 */
 export function wait(sig, ...src) {
   reqSig(sig)

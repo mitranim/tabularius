@@ -161,8 +161,8 @@ export async function cmdPlotFetchOpts(sig, opt) {
       d.USER_ID
     )
 
-    const run_num = round.tabularius_run_num
-    const run_ms = round.tabularius_run_ms
+    const run_num = round.tabularius_run_num ?? 1
+    const run_ms = round.tabularius_run_ms ?? Date.now()
     s.datAddRound({dat, round, user_id, run_num, run_ms, composite: true})
   }
 

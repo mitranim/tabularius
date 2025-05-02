@@ -1314,9 +1314,9 @@ Still load the old progress file handle and use it and show in status, but call 
     * [x] Validate that `run_ms` is present and use it.
   * [x] `watch`:
     * [x] When creating new run dir, append `run_ms` to name.
-  * [ ] `main.mjs`: on startup, if FS inited, before running `watch`, run a function which migrates the existing run history dirs similar to the server-side migration.
-    * [ ] The process is lazy: it starts by checking the _last_ run dir, and the _last_ round file. If both are compliant with new schema, then exit. If not, migrate from the _first_ run dir and round file.
-    * [ ] The browser FS API doesn't seem to provide a way to rename a dir. We might have to recursively copy into a new dir, then remove the old dir.
+  * [x] `main.mjs`: on startup, if FS inited, before running `watch`, run a function which migrates the existing run history dirs similar to the server-side migration.
+    * [x] The process is lazy: it starts by checking the _last_ run dir, and the _last_ round file. If both are compliant with new schema, then exit. If not, migrate from the _first_ run dir and round file.
+    * [x] The browser FS API doesn't seem to provide a way to rename a dir. We might have to recursively copy into a new dir, then remove the old dir.
       * Use `try/finally` to delete incomplete new dir if there's a failure in the middle.
   * [ ] `schema.mjs`: increment data schema version, causing server-side DB rebuild.
 
@@ -1359,3 +1359,11 @@ Consider supporting `-h` and `--help` flags in all commands. Some users may be l
 ---
 
 Find out where the game stores its "foes in current run" information.
+
+---
+
+Client: bundle for production.
+
+Bundling is a pain, but it avoids another pain: our modules other than `client/main.mjs` tend to be cached by browsers, which often causes them to be not properly updated on deployments.
+
+Alternatively, get around that with `sw.mjs`.

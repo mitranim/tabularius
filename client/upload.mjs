@@ -161,7 +161,7 @@ async function cmdUploadStep({sig, root, path, userId, state}) {
   const segs = u.paths.split(path)
   if (!segs.length) {
     if (state) state.status = `uploading all runs`
-    for await (const dir of fs.readRunsAsc(sig, root)) {
+    for (const dir of await fs.readRunsAsc(sig, root)) {
       await uploadRun({sig, dir, userId, state})
     }
     uploadDone(state)
