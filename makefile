@@ -92,6 +92,9 @@ shared_bench_w:
 shared_bench:
 	$(DENO_RUN) shared/bench.mjs
 
+mig_samples:
+	$(DENO_RUN) server/mig_samples.mjs
+
 repl:
 	deno repl $(DENO_FLAGS) $(args)
 

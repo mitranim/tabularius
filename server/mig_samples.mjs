@@ -1,5 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as s from './schema.mjs'
+import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
 
 const DRY_RUN = false
@@ -7,36 +7,24 @@ const DRY_RUN = false
 // SYNC[test_pub].
 const TEST_PUB = `e6db4b849dfc5c3c5a3870fa4b01a5855c5424eee3ac9e55f7deeb31e40d4231`
 
-if (import.meta.main) await updateExampleRuns()
+if (import.meta.main) await migSamples()
 
-async function updateExampleRuns() {
+async function migSamples() {await migExampleRuns()}
+
+async function migExampleRuns() {
   const url = new URL(`../samples/example_runs.gd`, import.meta.url)
   const rounds = await u.decodeGdStr(await Deno.readTextFile(url))
   let changed = false
 
+  const runId_to_runMs = a.Emp()
+
   for (const [ind, round] of a.reqArr(rounds).entries()) {
-    let userId = (
-      round.tabularius_user_id ??
-      round.tabularius_userId
-    )
+    const userId = a.reqValidStr(round.tabularius_user_id)
+    const runNum = a.reqInt(round.tabularius_run_num)
+    const runId = u.joinKeys(userId, runNum)
+    const runMs = runId_to_runMs[runId] ??= a.reqInt(Date.parse(round.LastUpdated))
 
-    const runNum = (
-      round.tabularius_run_num ??
-      round.tabularius_runNum
-    )
-
-    /*
-    This sample data was originally uploaded to Firestore, resulting in
-    Firebase user ids. Now that we're migrating to DuckDB and custom auth,
-    we rewrite the user id to make it compatible with our own auth, which
-    allows our tests to verify that filtering by the current user works
-    properly.
-    */
-    if (userId === `jYr87InSS5RL5z4wwHsdSPk247e2`) {
-      userId = TEST_PUB
-    }
-
-    if (!s.roundMigrated(round, userId, runNum)) {
+    if (!s.roundMigrated({round, userId, runNum, runMs})) {
       console.log(`round data ${ind} unmodified, skipping`)
       continue
     }

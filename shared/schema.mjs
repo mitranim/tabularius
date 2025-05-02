@@ -891,17 +891,19 @@ export function buiCost(type, upg) {
   return out
 }
 
-export const ROUND_TABULARIUS_FIELDS_SCHEMA_VERSION = 1
+export const ROUND_TABULARIUS_FIELDS_SCHEMA_VERSION = 2
 
-export function roundMigrated(round, userId, runNum) {
+export function roundMigrated({round, userId, runNum, runMs}) {
   a.reqObj(round)
   a.reqValidStr(userId)
   a.reqInt(runNum)
+  a.reqInt(runMs)
 
   let out = false
   if (changed(round, `tabularius_fields_schema_version`, ROUND_TABULARIUS_FIELDS_SCHEMA_VERSION)) out = true
   if (changed(round, `tabularius_user_id`, userId)) out = true
   if (changed(round, `tabularius_run_num`, runNum)) out = true
+  if (changed(round, `tabularius_run_ms`, runMs)) out = true
   if (deleted(round, `tabularius_userId`)) out = true
   if (deleted(round, `tabularius_runId`)) out = true
   if (deleted(round, `tabularius_runNum`)) out = true
