@@ -1004,3 +1004,23 @@ export function errFsApi() {
 export function errHandleKind(val) {
   return `unrecognized handle kind ${a.show(val)}`
 }
+
+export const STORAGE_KEY_FS_SCHEMA_VERSION = `tabularius.fs_schema_version`
+
+export async function migOpt() {
+  const store = localStorage
+  const storeKey = STORAGE_KEY_FS_SCHEMA_VERSION
+  const verNext = s.ROUND_FIELDS_SCHEMA_VERSION
+  const verPrev = a.intOpt(store.getItem(storeKey))
+  if (verPrev >= verNext) return
+
+  try {
+    const fm = await import(`./fs_mig.mjs`)
+    const out = await fm.migrateUserRuns()
+    u.storageSet(store, storeKey, verNext)
+    u.log.verb(`updated run history from schema version ${verPrev} to ${verNext}, summary:`, out)
+  }
+  catch (err) {
+    u.log.err(`unable to update run history schema:`, err)
+  }
+}

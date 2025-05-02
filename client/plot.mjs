@@ -155,21 +155,15 @@ export async function cmdPlotFetchOpts(sig, opt) {
 
   const dat = a.Emp()
 
-  // TODO drop support for outdated fields.
   for (const round of rounds) {
     const user_id = (
-      a.optStr(round.tabularius_userId) ||
       a.optStr(round.tabularius_user_id) ||
       d.USER_ID
     )
 
-    const run_num = (
-      a.optNat(round.tabularius_runNum) ||
-      a.optNat(round.tabularius_run_num) ||
-      0
-    )
-
-    s.datAddRound({dat, round, run_num, user_id, composite: true})
+    const run_num = round.tabularius_run_num
+    const run_ms = round.tabularius_run_ms
+    s.datAddRound({dat, round, user_id, run_num, run_ms, composite: true})
   }
 
   opt = s.validPlotAggOpt(opt)

@@ -102,14 +102,13 @@ export async function datLoad(sig, dat, opt) {
     : fs.readRunsAsc(sig, root)
 
   for await (const dir of runIter) {
-    const run_id = dir.name
-    const run_num = u.toIntReq(run_id)
+    const [run_num, run_ms] = s.splitRunName(dir.name)
     if (runNums.size && !runNums.has(run_num)) continue
 
     for (const file of await fs.readRunRoundHandlesAsc(sig, dir)) {
       const round_num = u.toIntReq(file.name)
       if (roundNums.size && !roundNums.has(round_num)) continue
-      await datLoadRoundFromHandle(sig, dat, file, run_num)
+      await datLoadRoundFromHandle({sig, dat, file, run_num, run_ms})
     }
   }
 }
@@ -124,17 +123,16 @@ export async function datLoadRunFromHandle(sig, dat, dir) {
   a.reqStruct(dat)
   a.reqInst(dir, FileSystemDirectoryHandle)
 
-  const run_num = u.toIntReq(dir.name)
+  const [run_num, run_ms] = s.splitRunName(dir.name)
   for (const file of await fs.readRunRoundHandlesAsc(sig, dir)) {
-    await datLoadRoundFromHandle(sig, dat, file, run_num)
+    await datLoadRoundFromHandle({sig, dat, file, run_num, run_ms})
   }
 }
 
-export async function datLoadRoundFromHandle(sig, dat, file, run_num) {
+export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms}) {
   a.reqStruct(dat)
   a.reqInst(file, FileSystemFileHandle)
-
-  const round_id = s.makeRoundId(USER_ID, run_num, u.toIntOpt(file.name))
+  const round_id = s.makeRoundId(USER_ID, run_num, run_ms, u.toIntOpt(file.name))
 
   /*
   For better performance, we must load rounds idempotently. We assume that
@@ -144,14 +142,15 @@ export async function datLoadRoundFromHandle(sig, dat, file, run_num) {
   if (dat.run_rounds?.has(round_id)) return
 
   const round = await fs.readDecodeGameFile(sig, file)
-  s.datAddRound({dat, round, run_num, user_id: USER_ID, composite: true})
+  s.datAddRound({dat, round, user_id: USER_ID, run_num, run_ms, composite: true})
 }
 
 function datOnBroadcast(src) {
   const type = src?.type
   if (type !== `new_round`) return
-
-  const {round, run_num} = src
-  s.datAddRound({dat: DAT, round, run_num, user_id: USER_ID, composite: true})
+  const {round, run_num, run_ms} = src
+  s.datAddRound({
+    dat: DAT, round, user_id: USER_ID, run_num, run_ms, composite: true,
+  })
   u.dispatchMessage(DAT, src)
 }

@@ -84,7 +84,10 @@ export async function cmdInit({sig, args}) {
     }
   }
 
-  if (!histHad && histHave) up.optStartUploadAfterInit()?.catch?.(u.logErr)
+  if (!histHad && histHave) {
+    await fs.migOpt().catch(u.logErr)
+    up.optStartUploadAfterInit()?.catch?.(u.logErr)
+  }
 
   if (progHave && histHave) {
     if (!await w.watchStarted()) u.log.info(`FS watch: not initialized`)
@@ -226,12 +229,17 @@ export function cmdLs(proc) {
 async function main() {
   ui.init()
 
-  // Attempt to load the FS handles before running anything else.
-  // Can be convenient for URL query "run" commands which rely on FS.
+  /*
+  Attempt to load the FS handles before running anything else. Needed for FS
+  migrations, and convenient for URL query "run" commands which rely on FS.
+  */
   const [loadedProg, loadedHist] = await Promise.all([
     fs.loadedProgressFile(),
     fs.loadedHistoryDir(),
   ]).catch(u.logErr)
+
+  // Other code relies on up-to-date FS state, so FS migrations run first.
+  await fs.migOpt().catch(u.logErr)
 
   let imported = 0
   let ran = 0

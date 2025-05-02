@@ -173,26 +173,27 @@ async function watchStep(sig, state) {
 
   const prevTime = prevFile?.lastModified
   if (prevTime >= nextTime) {
-    u.log.verb(`[watch] skipping: progress file unmodified`)
+    // u.log.verb(`[watch] skipping: progress file unmodified`)
     return
   }
 
   const prevRoundNum = u.toIntOpt(roundFileName)
   if (prevRoundNum === nextRoundNum) {
-    u.log.verb(`[watch] skipping: round is still ${prevRoundNum}`)
+    // u.log.verb(`[watch] skipping: round is still ${prevRoundNum}`)
     return
   }
 
-  const prevDirNum = u.toIntOpt(runDirName)
+  const [prevRunNum, prevRunMs] = s.splitRunName(runDirName)
   const nextFileName = u.intPadded(nextRoundNum) + u.paths.ext(state.progressFileHandle.name)
 
   const event = {
     type: `new_round`,
-    run_id: runDirName,
-    run_num: prevDirNum,
-    round_id: nextFileName,
-    round_num: nextRoundNum,
+    runDirName,
+    roundFileName: nextFileName,
     round: roundData,
+    run_num: prevRunNum,
+    run_ms: prevRunMs,
+    round_num: nextRoundNum,
   }
 
   if (prevRoundNum < nextRoundNum) {
@@ -215,24 +216,27 @@ async function watchStep(sig, state) {
     u.log.info(`[watch] round is now ${nextRoundNum}, assuming new run`)
   }
 
-  const nextDirNum = a.isNil(prevDirNum) ? 0 : prevDirNum + 1
-  const nextDirName = u.intPadded(nextDirNum)
-  const dir = await fs.getDirectoryHandle(sig, state.historyDirHandle, nextDirName, {create: true})
-  state.setRunDir(nextDirName)
+  const nextRunNum = a.isNil(prevRunNum) ? 0 : prevRunNum + 1
+  const nextRunMs = Date.parse(round.LastUpdated)
+  if (!a.isNat(nextRunMs)) {
+    u.log.err(`internal error: round ${nextRoundNum} has missing or invalid timestamp ${a.show(round.LastUpdated)}`)
+  }
+
+  const nextRunDirName = s.makeRunName(nextRunNum, nextRunMs)
+  const dir = await fs.getDirectoryHandle(sig, state.historyDirHandle, nextRunDirName, {create: true})
+  state.setRunDir(nextRunDirName)
   await fs.writeDirFile(sig, dir, nextFileName, content)
   state.setRoundFile(nextFileName)
   u.log.info(`[watch] backed up run ${dir.name} > file ${nextFileName}`)
 
-  event.prev_run_id = event.run_id
-  event.run_id = nextDirName
-  event.run_num = nextDirNum
-  event.round_id = nextFileName
+  event.prev_run_num = event.run_num
+  event.run_num = nextRunNum
   watchBroadcast(event)
 }
 
 function watchBroadcast(eve) {
   u.broadcastToAllTabs(eve)
   if (!au.STATE.userId) return
-  const {run_id, round_id} = eve
-  os.runCmd(`upload ${u.paths.join(run_id, round_id)}`).catch(u.logErr)
+  const {runDirName, roundFileName} = eve
+  os.runCmd(`upload ${u.paths.join(runDirName, roundFileName)}`).catch(u.logErr)
 }

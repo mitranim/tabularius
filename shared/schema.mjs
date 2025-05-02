@@ -401,7 +401,7 @@ export function makeRunId(user_id, run_num, run_ms) {
 }
 
 export function makeRoundId(user_id, run_num, run_ms, round_num) {
-  return u.joinKeys(makeRunId(user_id, run_num, run_ms, u.intPadded(round_num)))
+  return u.joinKeys(makeRunId(user_id, run_num, run_ms), u.intPadded(round_num))
 }
 
 // See `test_encodeUpgrade`.

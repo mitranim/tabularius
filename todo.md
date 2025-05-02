@@ -1312,7 +1312,8 @@ Still load the old progress file handle and use it and show in status, but call 
   * [x] `apiUploadRound`:
     * [x] Validate schema version match; on mismatch, suggest updating the client by reloading the page.
     * [x] Validate that `run_ms` is present and use it.
-  * [ ] `watch`: when creating new run dir, append `run_ms` to name.
+  * [x] `watch`:
+    * [x] When creating new run dir, append `run_ms` to name.
   * [ ] `main.mjs`: on startup, if FS inited, before running `watch`, run a function which migrates the existing run history dirs similar to the server-side migration.
     * [ ] The process is lazy: it starts by checking the _last_ run dir, and the _last_ round file. If both are compliant with new schema, then exit. If not, migrate from the _first_ run dir and round file.
     * [ ] The browser FS API doesn't seem to provide a way to rename a dir. We might have to recursively copy into a new dir, then remove the old dir.
