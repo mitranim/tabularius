@@ -106,18 +106,21 @@ export async function initDataFromRounds(ctx, conn) {
 
   for await (const {name: user_id, isDirectory} of Deno.readDir(rootDirPath)) {
     if (!isDirectory) continue
-    const dirPath = io.paths.join(rootDirPath, user_id)
+    const userDir = io.paths.join(rootDirPath, user_id)
 
-    for await (const {name, run_num} of u.walkRunDirs(dirPath)) {
-      const subDirPath = io.paths.join(dirPath, name)
+    for (const runName of await u.readRunDirs(userDir)) {
+      const runDir = io.paths.join(userDir, runName)
+      const [run_num, run_ms] = s.splitRunName(runName)
 
-      for await (const {name} of u.walkRoundFiles(subDirPath)) {
-        const filePath = io.paths.join(subDirPath, name)
-        const round = await u.readDecodeGameFile(filePath, name)
+      for (const roundName of await u.readRoundFiles(runDir)) {
+        const roundFile = io.paths.join(runDir, roundName)
+        const round = await u.readDecodeGameFile(roundFile, name)
 
         dat ??= a.Emp()
+
         s.datAddRound({
-          dat, round, run_num, user_id, composite: ud.SCHEMA_FACTS_COMPOSITE,
+          dat, round, user_id, run_num, run_ms,
+          composite: ud.SCHEMA_FACTS_COMPOSITE,
           tables: {facts: true},
         })
 

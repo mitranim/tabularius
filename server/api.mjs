@@ -91,7 +91,8 @@ export async function uploadRound(ctx, req) {
 
   const dat = a.Emp()
   s.datAddRound({
-    dat, round, user_id, run_num, run_ms, composite: u.SCHEMA_FACTS_COMPOSITE,
+    dat, round, user_id, run_num, run_ms,
+    composite: u.SCHEMA_FACTS_COMPOSITE,
     tables: {facts: true},
   })
 

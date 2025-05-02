@@ -93,24 +93,6 @@ function validGameFileGzName(name) {
   throw Error(`internal: unexpected game file name ${a.show(name)}`)
 }
 
-export async function* walkRunDirs(src) {
-  for await (const {name, isDirectory} of Deno.readDir(src)) {
-    if (!isDirectory) continue
-    const run_num = su.toIntOpt(name)
-    if (a.isNil(run_num)) continue
-    yield {name, run_num}
-  }
-}
-
-export async function* walkRoundFiles(src) {
-  for await (const {name, isFile} of Deno.readDir(src)) {
-    if (!isFile) continue
-    const round_num = su.toIntOpt(name)
-    if (a.isNil(round_num)) continue
-    yield {name, round_num}
-  }
-}
-
 export async function readRunDirs(src) {
   return a.map(await readDirAll(src, isEntryRunDir), getName)
 }
