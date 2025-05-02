@@ -238,7 +238,7 @@ export async function uploadRound({sig, file, runName, userId, state}) {
     return
   }
 
-  const runNum = u.toIntReq(runName)
+  const [runNum, runMs] = s.splitRunName(runName)
   s.roundMigrated({round, userId, runNum, runMs})
   round.tabularius_uploaded_at = Date.now()
 

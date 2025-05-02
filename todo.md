@@ -1305,10 +1305,10 @@ Still load the old progress file handle and use it and show in status, but call 
 * [ ] Prevent accidental merging of runs, when the same "user" uploads rounds from multiple machines, where run nums overlap.
   * [x] For each run: `run_id = user_id + run_num + run_ms` where `run_ms` is the timestamp of the first round in the run.
   * [ ] `apiPlotAgg`: `qLatestRunId`: use `run_ms`.
-  * [ ] `srv.mjs`: on startup, migrate user run dirs:
+  * [x] `srv.mjs`: on startup, migrate user run dirs:
     * [x] For each run dir: read first round file, get `.LastUpdated`, set `tabularius_run_ms`, update every other round in that dir, then rename dir, appending timestamp.
     * [x] Make it semi-lazy: for each user, check last run and round, and exit that user if they're compliant. Otherwise migrate from the first.
-    * [ ] Only needs to be done once. We'll simply disable it after the first deploy.
+    * [x] Only needs to be done once. We'll simply disable it after the first deploy.
   * [x] `apiUploadRound`:
     * [x] Validate schema version match; on mismatch, suggest updating the client by reloading the page.
     * [x] Validate that `run_ms` is present and use it.
@@ -1318,7 +1318,7 @@ Still load the old progress file handle and use it and show in status, but call 
     * [x] The process is lazy: it starts by checking the _last_ run dir, and the _last_ round file. If both are compliant with new schema, then exit. If not, migrate from the _first_ run dir and round file.
     * [x] The browser FS API doesn't seem to provide a way to rename a dir. We might have to recursively copy into a new dir, then remove the old dir.
       * Use `try/finally` to delete incomplete new dir if there's a failure in the middle.
-  * [ ] `schema.mjs`: increment data schema version, causing server-side DB rebuild.
+  * [x] `schema.mjs`: increment data schema version, causing server-side DB rebuild.
 
 ---
 
@@ -1367,3 +1367,7 @@ Client: bundle for production.
 Bundling is a pain, but it avoids another pain: our modules other than `client/main.mjs` tend to be cached by browsers, which often causes them to be not properly updated on deployments.
 
 Alternatively, get around that with `sw.mjs`.
+
+---
+
+`make`: get rid of useless `deno lint`, use `eslint`.
