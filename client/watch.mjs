@@ -217,9 +217,9 @@ async function watchStep(sig, state) {
   }
 
   const nextRunNum = a.isNil(prevRunNum) ? 0 : prevRunNum + 1
-  const nextRunMs = Date.parse(round.LastUpdated)
+  const nextRunMs = Date.parse(roundData.LastUpdated)
   if (!a.isNat(nextRunMs)) {
-    u.log.err(`internal error: round ${nextRoundNum} has missing or invalid timestamp ${a.show(round.LastUpdated)}`)
+    u.log.err(`internal error: round ${nextRoundNum} has missing or invalid timestamp ${a.show(roundData.LastUpdated)}`)
   }
 
   const nextRunDirName = s.makeRunName(nextRunNum, nextRunMs)
