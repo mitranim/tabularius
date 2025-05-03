@@ -279,31 +279,19 @@ export const log = new class Log extends Elem {
   }
 
   addMsg(props, ...chi) {
-    const msg = LogMsg.init(props, ...chi)
-    if (!msg) return msg
+    const nextMsg = LogMsg.init(props, ...chi)
+    if (!nextMsg) return nextMsg
 
-    const log = this.messageLog
-    log.lastElementChild?.unsetLatest?.()
-
-    msg.setLatest()
-    log.appendChild(msg)
-    this.scrollToBottom()
+    const msgLog = this.messageLog
+    msgLog.lastElementChild?.unsetLatest?.()
+    nextMsg.setLatest()
+    msgLog.appendChild(nextMsg)
     this.enforceMessageLimit()
-    return msg
-  }
 
-  scrollToBottom() {
-    const log = this.messageLog
-    const chi = log.lastChild
-    if (!chi) return
+    // Scroll all the way to the bottom.
+    msgLog.scrollTop = msgLog.scrollHeight
 
-    const diff = chi.getBoundingClientRect().bottom - log.getBoundingClientRect().bottom
-
-    /*
-    Scroll to bottom if log is reasonably close to last msg, but not if user has
-    scrolled up out of reach.
-    */
-    if (diff <= 64) log.scrollBy(0, diff * 2)
+    return nextMsg
   }
 
   resizePointerdown(eve) {
