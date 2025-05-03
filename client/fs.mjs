@@ -506,8 +506,8 @@ export async function cmdShow({sig, args}) {
 export function showSavesOrDirOrFile({sig, root, path, opt}) {
   u.reqSig(sig)
   path = u.paths.clean(path)
-  const [dirName, restPath] = u.paths.split1(path)
-  if (dirName === `saves`) {
+  const [maybeDir, restPath] = u.paths.split1(path)
+  if (maybeDir === `saves`) {
     return showSaves({sig, root, path: restPath, opt})
   }
   return showDirOrFile({sig, root, path, opt})
@@ -536,7 +536,10 @@ export async function showDir({sig, root, dir, path, opt}) {
 }
 
 export async function showFile({sig, root, file, path, opt}) {
-  if (!isHandleGameFile(file)) return
+  if (!isHandleGameFile(file)) {
+    u.log.info(`unable to show file ${a.show(path || file.name)}: unknown format`)
+    return
+  }
   const data = await readDecodeGameFile(sig, file)
   await showData({sig, root, path, data, opt})
 }
@@ -709,24 +712,24 @@ export function isHandleRunDir(handle) {
 }
 
 export function isHandleRoundFile(handle) {
-  return isGameFileName(handle.name) && u.hasIntPrefix(handle.name)
+  return u.isGameFileName(handle.name) && u.hasIntPrefix(handle.name)
 }
 
 export function isHandleGameFile(handle) {
   a.reqInst(handle, FileSystemHandle)
   if (!isFile(handle)) return false
-  return isGameFileName(handle.name)
+  return u.isGameFileName(handle.name)
 }
 
-export function isGameFileName(val) {
-  a.reqStr(val)
-  return val.endsWith(`.gd`) || val.endsWith(`.json`)
-}
+// SYNC[decode_game_file].
+export async function readDecodeGameFile(sig, file) {
+  if (file.name.endsWith(`.json.gz`)) {
+    const src = await readFileByteArr(sig, file)
+    return JSON.parse(await u.byteArr_to_ungzip_to_str(src))
+  }
 
-export async function readDecodeGameFile(sig, src) {
-  src = await readFile(sig, src)
-  src = await u.decodeGdStr(src)
-  return src
+  const src = await readFileText(sig, file)
+  return u.decodeGdStr(src)
 }
 
 export async function writeEncodeGameFile(sig, tar, src) {
@@ -751,10 +754,16 @@ export function compareHandles(one, two, fun) {
   return fun(one.name, two.name)
 }
 
-export async function readFile(sig, src) {
+export async function readFileText(sig, src) {
   src = await getFile(sig, src)
   src = await u.wait(sig, src.text())
   return src
+}
+
+export async function readFileByteArr(sig, src) {
+  src = await getFile(sig, src)
+  src = await u.wait(sig, await src.arrayBuffer())
+  return new Uint8Array(src)
 }
 
 /*

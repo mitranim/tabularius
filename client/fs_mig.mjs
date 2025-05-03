@@ -168,7 +168,7 @@ async function migrateRunDir({
       // TODO generalize into `fs.cpFile`.
       await fs.writeDirFile(
         sig, dirHandleNext, file.name,
-        await fs.readFile(sig, file),
+        await fs.readFileText(sig, file),
       )
       console.timeEnd(`writing_file`)
     }

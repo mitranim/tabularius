@@ -441,3 +441,8 @@ export function consistentNil_null(val) {
   if (a.isDict(val)) return a.mapDict(val, consistentNil_null)
   return val
 }
+
+export function isGameFileName(val) {
+  a.reqStr(val)
+  return val.endsWith(`.gd`) || val.endsWith(`.json`) || val.endsWith(`.json.gz`)
+}

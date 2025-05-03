@@ -42,19 +42,15 @@ export function pathToName(src) {
   throw a.errConv(src, `file or directory name`)
 }
 
+/*
+On the client, we preserve `.gd` files as-is; underneath they're actually
+`.json.gz.base64`, although sometimes they can be simply `.json` underneath.
+On the server, we simplify them into `.json.gz` for efficiency, saving about
+1/3rd space and some CPU time. When reporting file names in `/api/ls`, we lie
+about the extensions. See `apiLs`.
+*/
 export const GAME_FILE_EXT_REAL = `.json.gz`
 export const GAME_FILE_EXT_FAKE = `.gd`
-
-/*
-On the client, we only support `.gd` and `.json`. Both are text formats.
-`.json` is convenient in development, and `.gd` is the original format.
-On the server, for efficiency, we prefer `.json.gz`, which saves about
-1/3rd space compared to `.gd` and is cheaper to decode.
-*/
-export function isGameFileName(val) {
-  a.reqStr(val)
-  return val.endsWith(GAME_FILE_EXT_FAKE) || val.endsWith(`.json`) || val.endsWith(GAME_FILE_EXT_REAL)
-}
 
 export function gameFilePathRealToFake(val) {
   a.reqStr(val)
@@ -72,10 +68,11 @@ export function gameFilePathFakeToReal(val) {
   return val
 }
 
+// SYNC[decode_game_file].
 export async function readDecodeGameFile(path, name) {
   name = a.optStr(name) || pathToName(path)
 
-  if (name.endsWith(`.gz`)) {
+  if (name.endsWith(GAME_FILE_EXT_REAL)) {
     validGameFileGzName(name)
     return JSON.parse(await su.byteArr_to_ungzip_to_str(await Deno.readFile(path)))
   }
@@ -137,7 +134,7 @@ export function isEntryRunDir(val) {
 
 export function isEntryRoundFile(val) {
   return isEntryFile(val) &&
-    isGameFileName(val.name) &&
+    su.isGameFileName(val.name) &&
     su.hasIntPrefix(val.name)
 }
 
