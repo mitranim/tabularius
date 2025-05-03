@@ -1302,9 +1302,9 @@ Still load the old progress file handle and use it and show in status, but call 
 
 ---
 
-* [ ] Prevent accidental merging of runs, when the same "user" uploads rounds from multiple machines, where run nums overlap.
+* [x] Prevent accidental merging of runs, when the same "user" uploads rounds from multiple machines, where run nums overlap.
   * [x] For each run: `run_id = user_id + run_num + run_ms` where `run_ms` is the timestamp of the first round in the run.
-  * [ ] `apiPlotAgg`: `qLatestRunId`: use `run_ms`.
+  * [x] `apiPlotAgg`: `qLatestRunId`: use `run_ms`.
   * [x] `srv.mjs`: on startup, migrate user run dirs:
     * [x] For each run dir: read first round file, get `.LastUpdated`, set `tabularius_run_ms`, update every other round in that dir, then rename dir, appending timestamp.
     * [x] Make it semi-lazy: for each user, check last run and round, and exit that user if they're compliant. Otherwise migrate from the first.

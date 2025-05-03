@@ -290,13 +290,13 @@ function qLatestRunId(opt) {
     return [
       u.sql`
         latest_runs as (
-          select user_id, max(run_num) as run_num
+          select user_id, max(run_ms) as run_ms
           from facts
           ${u.SqlWhere.fromDict({user_id: opt.where.user_id})}
           group by user_id
         ),
       `,
-      u.sql`inner join latest_runs using (user_id, run_num)`,
+      u.sql`inner join latest_runs using (user_id, run_ms)`,
     ]
   }
 
@@ -305,13 +305,13 @@ function qLatestRunId(opt) {
   return [
     u.sql`
       latest_runs as (
-        select user_id, run_num
+        select run_id
         from facts
-        order by time_ms desc, run_num desc
+        order by run_ms desc, time_ms desc, run_num desc
         limit 1
       ),
     `,
-    u.sql`inner join latest_runs using (user_id, run_num)`
+    u.sql`inner join latest_runs using (run_id)`
   ]
 }
 
