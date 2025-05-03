@@ -70,6 +70,7 @@ export async function cmdUpload(proc) {
   const args = a.tail(u.splitCliArgs(proc.args))
   const persistent = u.arrRemoved(args, `-p`)
   const quiet = u.arrRemoved(args, `-q`)
+  const force = u.arrRemoved(args, `-f`)
   const path = args[0]
 
   if (!path) {
@@ -97,15 +98,16 @@ export async function cmdUpload(proc) {
   }
 
   proc.desc = `uploading backups to the cloud`
-  try {return await cmdUploadUnsync({sig, path, quiet, persistent})}
+  try {return await cmdUploadUnsync({sig, path, quiet, persistent, force})}
   finally {unlock()}
 }
 
-export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent}) {
+export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent, force}) {
   u.reqSig(sig)
   a.reqValidStr(srcPath)
   a.optBool(quiet)
   a.optBool(persistent)
+  a.optBool(force)
 
   const root = await fs.reqHistoryDir(sig)
   const [_, handle, path] = await fs.handleAtPathMagic(sig, root, srcPath)
@@ -127,12 +129,12 @@ export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent}) {
       u.log.info(new DirUploadProgress(path || `/`, state))
     }
   }
-  if (!persistent) return cmdUploadStep({sig, root, path, userId, state})
+  if (!persistent) return cmdUploadStep({sig, root, path, userId, state, force})
 
   let errs = 0
   while (!sig.aborted) {
     try {
-      return await cmdUploadStep({sig, root, path, userId, state})
+      return await cmdUploadStep({sig, root, path, userId, state, force})
     }
     catch (err) {
       if (u.errIs(err, u.isErrAbort)) return
@@ -152,17 +154,18 @@ export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent}) {
   }
 }
 
-async function cmdUploadStep({sig, root, path, userId, state}) {
+async function cmdUploadStep({sig, root, path, userId, state, force}) {
   u.reqSig(sig)
   a.reqStr(path)
   a.reqValidStr(userId)
   a.optObj(state)
+  a.optBool(force)
 
   const segs = u.paths.split(path)
   if (!segs.length) {
     if (state) state.status = `uploading all runs`
     for (const dir of await fs.readRunsAsc(sig, root)) {
-      await uploadRun({sig, dir, userId, state})
+      await uploadRun({sig, dir, userId, state, force})
     }
     uploadDone(state)
     return
@@ -170,7 +173,7 @@ async function cmdUploadStep({sig, root, path, userId, state}) {
 
   const dir = await fs.getDirectoryHandle(sig, root, segs.shift())
   if (!segs.length) {
-    await uploadRun({sig, dir, userId, state})
+    await uploadRun({sig, dir, userId, state, force})
     uploadDone(state)
     return
   }
@@ -181,11 +184,11 @@ async function cmdUploadStep({sig, root, path, userId, state}) {
   }
 
   const file = await fs.getFileHandle(sig, dir, segs.shift())
-  await uploadRound({sig, file, runName: dir.name, userId, state})
+  await uploadRound({sig, file, runName: dir.name, userId, state, force})
   uploadDone(state)
 }
 
-export async function uploadRun({sig, dir, userId, state}) {
+export async function uploadRun({sig, dir, userId, state, force}) {
   a.reqInst(dir, FileSystemDirectoryHandle)
   const runName = dir.name
 
@@ -201,14 +204,15 @@ export async function uploadRun({sig, dir, userId, state}) {
   }
 
   for (const file of await fs.readRunRoundHandlesAsc(sig, dir)) {
-    await uploadRound({sig, file, runName, userId, state})
+    await uploadRound({sig, file, runName, userId, state, force})
   }
 }
 
-export async function uploadRound({sig, file, runName, userId, state}) {
+export async function uploadRound({sig, file, runName, userId, state, force}) {
   a.reqInst(file, FileSystemFileHandle)
   a.reqValidStr(runName)
   a.reqValidStr(userId)
+  a.optBool(force)
 
   const path = u.paths.join(runName, file.name)
 
@@ -233,7 +237,7 @@ export async function uploadRound({sig, file, runName, userId, state}) {
     return
   }
 
-  if (round.tabularius_uploaded_at) {
+  if (round.tabularius_uploaded_at && !force) {
     if (state) state.roundsChecked++
     return
   }

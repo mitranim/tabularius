@@ -91,11 +91,11 @@ function validGameFileGzName(name) {
 }
 
 export async function readRunDirs(src) {
-  return a.map(await readDirAll(src, isEntryRunDir), getName)
+  return a.map(await readDirAll(src, isEntryRunDir), getName).sort(su.compareAsc)
 }
 
 export async function readRoundFiles(src) {
-  return a.map(await readDirAll(src, isEntryRoundFile), getName)
+  return a.map(await readDirAll(src, isEntryRoundFile), getName).sort(su.compareAsc)
 }
 
 export async function readDirs(src) {

@@ -1372,3 +1372,5 @@ Alternatively, get around that with `sw.mjs`.
 ---
 
 `make`: replace `deno lint` with `eslint`.
+
+---

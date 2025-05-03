@@ -135,6 +135,9 @@ deploy:
 fly.repl:
 	fly ssh console -a tabularius
 
+fly.file:
+	fly ssh sftp get -a tabularius /app/data/$(src_file) ./local/$(out_file)
+
 # Keeps .dockerignore in sync with .gitignore.
 #
 # Trims trailing whitespace from all tracked files.
