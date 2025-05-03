@@ -218,11 +218,14 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt}) {
   // TODO: when updating a live plot, preserve series show/hide state.
   if (Z_rows[0]) Z_rows[0].show = false
 
-  const title = (
+  const titlePre = E(`b`, {}, opt.agg)
+  const titleSuf = [` per `, E(`b`, {}, opt.Z), ` per `, E(`b`, {}, opt.X)]
+  const titleElem = E(`span`, {}, titlePre,
     opt.Z === `stat_type`
-    ? `${opt.agg} per ${opt.Z} per ${opt.X}`
-    : `${opt.agg} of ${opt.Y} per ${opt.Z} per ${opt.X}`
+    ? titleSuf
+    : [` of `, E(`b`, {}, opt.Y), ...titleSuf]
   )
+  const title = titleElem.textContent
 
   const tooltipOpt = (
     opt.agg === `count` ? {preY: `count of `} : undefined
@@ -241,6 +244,7 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt}) {
 
     // TODO human readability.
     title,
+    titleElem,
     series: [{label: opt.X}, ...Z_rows],
     data: [X_vals, ...a.arr(Z_X_Y)],
     axes: axes(opt.X, opt.Y),
@@ -522,6 +526,7 @@ export class Plotter extends u.Elem {
     this.deinit()
     this.plot = new Plot({...this.opts, ...this.sizes()})
     this.appendChild(this.plot.root)
+    this.updatePlotDom()
     this.resObs.observe(this)
     u.darkModeMediaQuery.addEventListener(`change`, this)
   }
@@ -560,6 +565,30 @@ export class Plotter extends u.Elem {
   }
 
   handleEvent(eve) {if (eve.type === `change` && eve.media) this.init()}
+
+  closeBtn = undefined
+
+  // Invoked by `MEDIA`.
+  addCloseBtn(btn) {this.closeBtn = a.reqElement(btn)}
+
+  updatePlotDom() {
+    const root = this.plot?.root
+    if (!root) return
+
+    const title = root.firstElementChild
+    if (!title) return
+
+    const titleElem = (
+      a.optElement(this.opts.titleElem) ||
+      E(`span`, {text: `font-bold`}, title.textContent)
+    )
+    titleElem.classList.add(`flex-1`, `text-center`)
+
+    E(title, {class: `flex justify-between gap-2 p-2`},
+      titleElem,
+      this.closeBtn,
+    )
+  }
 }
 
 export class LivePlotter extends Plotter {

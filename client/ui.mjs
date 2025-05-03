@@ -144,11 +144,20 @@ export const MEDIA = new class MediaPanel extends u.Elem {
 
   add(val) {
     a.reqElement(val)
-    val.classList.add(...u.splitCliArgs(MEDIA_CHI_CLS), `relative`)
-    val.appendChild(BtnKill({
-      class: `absolute top-2 right-2`,
-      onclick() {MEDIA.delete(val)},
-    }))
+    u.addClasses(val, MEDIA_CHI_CLS)
+
+    const onclick = () => {this.delete(val)}
+    const btn = BtnKill({onclick})
+
+    if (a.hasMeth(val, `addCloseBtn`)) {
+      val.addCloseBtn(btn)
+    }
+    else {
+      val.classList.add(`relative`)
+      btn.classList.add(`absolute`, `top-2`, `right-2`)
+      val.appendChild(btn)
+    }
+
     MEDIA_PLACEHOLDER.remove()
     this.prepend(val)
     this.append(PROCESS_LIST)
