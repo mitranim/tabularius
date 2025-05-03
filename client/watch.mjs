@@ -227,8 +227,10 @@ async function watchStep(sig, state) {
   state.setRunDir(nextRunDirName)
   await fs.writeDirFile(sig, dir, nextFileName, content)
   state.setRoundFile(nextFileName)
-  u.log.info(`[watch] backed up run ${dir.name} > file ${nextFileName}`)
+  u.log.info(`[watch] backed up ${a.show(u.paths.join(dir.name, nextFileName))}`)
 
+  event.runDirName = nextRunDirName
+  event.roundFileName = nextFileName
   event.prev_run_num = event.run_num
   event.run_num = nextRunNum
   watchBroadcast(event)
