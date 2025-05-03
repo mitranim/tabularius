@@ -13,7 +13,7 @@ it's not worth generalizing. When we next need an FS migration, we'll change it.
 await t.test(async function test_migrateUserRuns() {
   const ctx = new tu.TestCtx()
 
-  await u.cpDirRec(
+  await cpDirRec(
     new URL(`../data/user_runs`, import.meta.url),
     ctx.userRunsDir,
   )
@@ -90,6 +90,13 @@ async function testNotExists(path) {
   const info = await io.FileInfo.statOpt(path)
   if (!info) return
   throw Error(`unexpected file or dir at ${a.show(path)}: ${a.show(info)}`)
+}
+
+// Rough equivalent of `cp -r`.
+// TODO reimplement to avoid big dependency.
+async function cpDirRec(src, out) {
+  const {copy} = await import(`https://deno.land/std/fs/mod.ts`)
+  await copy(src, out, {overwrite: true})
 }
 
 console.log(`[fs_mig_test] done`)

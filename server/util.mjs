@@ -150,12 +150,6 @@ export function compareDirEntries(one, two, fun) {
   return fun(a.reqStr(one.name), a.reqStr(two.name))
 }
 
-// Rough equivalent of `cp -r`.
-export async function cpDirRec(src, out) {
-  const {copy} = await import(`https://deno.land/std/fs/mod.ts`)
-  await copy(src, out, {overwrite: true})
-}
-
 export function jsonLines(src) {
   src = a.laxArr(src)
   return a.mapCompact(src, a.jsonEncode).join(`\n`)

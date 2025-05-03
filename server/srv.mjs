@@ -22,7 +22,7 @@ async function main() {
   // // Should be run exactly once. TODO enable, deploy, disable.
   // const mf = await import(`./fs_mig.mjs`)
   // const out = await mf.migrateUserRuns(ctx)
-  // console.log(`[fs_mig] done:`, out)
+  // console.log(`[fs_mig] done:`, a.show(out))
 
   await db.migrate(ctx)
   serve(ctx)
