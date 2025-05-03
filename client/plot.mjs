@@ -116,10 +116,10 @@ cmdPlot.help = function cmdPlotHelp() {
 }
 
 export function cmdPlot({sig, args}) {
-  args = u.stripPreSpaced(args, cmdPlot.cmd)
-  if (!args) return cmdPlot.help()
+  const inp = u.stripPreSpaced(args, cmdPlot.cmd)
+  if (!inp) return cmdPlot.help()
 
-  const opt = decodePlotAggOpt(args)
+  const opt = decodePlotAggOpt(inp)
   if (opt.cloud) return cmdPlotCloud(sig, opt, args)
   if (opt.fetch) return cmdPlotFetch(sig, opt, args)
   return cmdPlotLocal(sig, opt, args)
@@ -1016,7 +1016,7 @@ function isPlotDataEmpty([X_vals, Z_vals, Z_X_Y]) {
 function msgPlotDataEmpty(args, opt) {
   a.reqStr(args)
   return u.LogParagraphs(
-    [`no data found for `, BtnAppend(args)],
+    [`no data found for `, ui.BtnPromptReplace(args)],
     a.vac(opt.userCurrent) && [
       `data was filtered by `, BtnAppend(`user_id=current`),
       `, consider `, BtnAppend(`user_id=all`),
@@ -1060,5 +1060,70 @@ export function apiPlotAgg(sig, body) {
     headers: a.concat(PLOT_AGG_HEADERS, au.authHeadersOpt()),
     body: JSON.stringify(body),
   }
+  return u.fetchJson(url, opt)
+}
+
+cmdPlotLink.cmd = `plot_link`
+cmdPlotLink.desc = `make shareable plot link for latest run`
+
+cmdPlotLink.help = function cmdPlotLinkHelp() {
+  return u.LogParagraphs(
+    u.callOpt(cmdPlotLink.desc),
+    `usage:`,
+    [
+      `  `,
+      os.BtnCmd(`plot_link`),
+      ` -- get shareable plot link for latest run of current user; requires `,
+      os.BtnCmdWithHelp(`auth`),
+    ],
+    [
+      `  `,
+      `plot_link <user_id>`,
+      ` -- get shareable plot link for specific user`,
+    ],
+  )
+}
+
+export async function cmdPlotLink({sig, args}) {
+  args = a.tail(u.splitCliArgs(args))
+  if (args.length > 1) {
+    return u.LogParagraphs(`too many inputs`, os.cmdHelpDetailed(cmdPlotLink))
+  }
+
+  const userId = args[0] || au.reqUserId()
+  const current = !args[0] || args[0] === au.STATE.userId
+
+  const run = await apiLatestRun(sig, userId)
+  if (!run) {
+    return [`no runs found for user `, userId, a.vac(current) && ` (current)`]
+  }
+
+  const runId = a.reqValidStr(run.run_id)
+  const url = new URL(window.location)
+  url.hash = ``
+  url.search = ``
+  url.searchParams.append(`run`, plotLinkPlot(runId, `dmg`))
+  url.searchParams.append(`run`, plotLinkPlot(runId, `chi_dmg`))
+  url.searchParams.append(`run`, plotLinkPlot(runId, `eff`))
+
+  const href = url.href.replaceAll(`+`, `%20`)
+  const copied = await u.copyToClipboard(href).catch(u.logErr)
+
+  return u.LogParagraphs(
+    `plot link:`,
+    E(`a`, {href, class: u.INLINE_BTN_CLS, ...ui.TARBLAN}, href),
+    a.vac(copied) && `copied link to clipboard`,
+  )
+}
+
+function plotLinkPlot(runId, preset) {
+  a.reqValidStr(runId)
+  reqEnum(`-p`, preset, PLOT_PRESETS)
+  return `plot -c -p=${preset} user_id=all run_id=${runId}`
+}
+
+export function apiLatestRun(sig, user) {
+  const url = u.paths.join(u.API_URL, `latest_run`, a.laxStr(user))
+  const opt = {signal: u.reqSig(sig)}
   return u.fetchJson(url, opt)
 }

@@ -579,8 +579,9 @@ export function boundInd(ind, len) {
 Unlike the old `document.execCommand` API, this can be used programmatically
 at any time while the document is focused.
 */
-export function copyToClipboard(src) {
-  return navigator.clipboard.writeText(a.render(src))
+export async function copyToClipboard(src) {
+  await navigator.clipboard.writeText(a.render(src))
+  return true
 }
 
 export async function asyncIterCollect(sig, src) {

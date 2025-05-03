@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 48
+const VERSION = 49
 let INITED
 
 /*
@@ -38,7 +38,7 @@ export function init() {
   INITED = true
 }
 
-const tarblan = Object.freeze({
+export const TARBLAN = Object.freeze({
   target: `_blank`,
   rel: `noopener noreferrer`,
 })
@@ -49,7 +49,7 @@ export const TITLEBAR = E(
 
   // Left side with title.
   E(`h1`, {}, `Tabularius — book-keeper for `,
-    E(`a`, {href: `https://store.steampowered.com/app/3226530`, ...tarblan, class: u.INLINE_BTN_CLS},
+    E(`a`, {href: `https://store.steampowered.com/app/3226530`, ...TARBLAN, class: u.INLINE_BTN_CLS},
       `Tower Dominion`,
     ),
   ),
@@ -59,8 +59,8 @@ export const TITLEBAR = E(
   // TODO: collapse into icons.
   E(`div`, {class: `flex gap-4`},
     E(`span`, {class: `text-gray-600 dark:text-gray-400`}, `v` + VERSION),
-    E(`a`, {href: `https://github.com/mitranim/tabularius`, ...tarblan, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `GitHub`),
-    E(`a`, {href: `https://discord.gg/upPxCEVxgD`, ...tarblan, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `Discord`)
+    E(`a`, {href: `https://github.com/mitranim/tabularius`, ...TARBLAN, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `GitHub`),
+    E(`a`, {href: `https://discord.gg/upPxCEVxgD`, ...TARBLAN, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `Discord`)
   ),
 )
 

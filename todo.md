@@ -1326,13 +1326,14 @@ Various `plot` enhancements.
 
 * [ ] When waiting for plot agg data (either cloud or local), indicate that in the media.
   * The sample plot placeholder has a method to increment or decrement the count of pending plots; when count > 0, it says "plot loading" or something like that. `cmdPlot` uses `try/finally` to modify the count.
-* [ ] `plot_link` generates a link.
-  * [ ] By default, orders multiple plots, with various presets, for the same filter, which is the current user's latest cloud run (but with fixed `run_num` or `run_id`).
-  * [ ] Takes arbitrary plot options as overrides.
-  * [ ] An override on `user_id` cancels the default `user_id=current`.
-  * [ ] An override on `run_id` or `run_num` cancels the default `run_id=latest`.
-  * [ ] Copy link to clipboard.
-  * [ ] Print to log, something like: `plot URL <url> copied to clipboard` where the link is clickable (tarblan) with an indicator that it's external.
+* [x] `plot_link` generates a link.
+  * [x] By default, orders multiple plots, with various presets, for the same filter, which is the current user's latest cloud run (but with fixed `run_num` or `run_id`).
+  * ~~[ ] Takes arbitrary plot options as overrides.~~
+  * ~~[ ] An override on `user_id` cancels the default `user_id=current`.~~
+  * ~~[ ] An override on `run_id` or `run_num` cancels the default `run_id=latest`.~~
+  * [x] Copy link to clipboard.
+  * [x] Print to log, something like: `plot URL <url> copied to clipboard` where the link is clickable (tarblan) with an indicator that it's external.
+* [ ] Cloud-based plots should have a shareable link somewhere.
 * [ ] `watch`:
   * [ ] Print run plot link when run ends.
     * [ ] Detection 1: when new run begins.
@@ -1370,4 +1371,4 @@ Alternatively, get around that with `sw.mjs`.
 
 ---
 
-`make`: get rid of useless `deno lint`, use `eslint`.
+`make`: replace `deno lint` with `eslint`.

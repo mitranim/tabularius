@@ -15,12 +15,16 @@ export function apiRes(ctx, rou) {
       rou.pre(`/api/ls`) &&
       apiLs(ctx, pt.posix.relTo(rou.url.pathname, `/api/ls`))
     ) ||
+    (
+      rou.get(/^[/]api[/]latest_run(?:[/](?<user>\w+))?$/) &&
+      apiLatestRun(ctx, rou.params?.user)
+    ) ||
     rou.notFound()
   )
 }
 
 export async function apiUploadRound(ctx, req) {
-  return new u.Res(JSON.stringify(await uploadRound(ctx, req)))
+  return new u.Res(a.jsonEncode(await uploadRound(ctx, req)))
 }
 
 export async function uploadRound(ctx, req) {
@@ -111,7 +115,7 @@ export async function uploadRound(ctx, req) {
 
 export async function apiPlotAgg(ctx, req) {
   const data = await plotAgg(ctx, req)
-  return new u.Res(JSON.stringify(data, jsonReplacer))
+  return new u.Res(a.jsonEncode(data, jsonReplacer))
 }
 
 /*
@@ -324,7 +328,7 @@ Missing feature: converting `/` to `\` on Windows. Not necessary.
 export async function apiLs(ctx, path) {
   path = u.gameFilePathFakeToReal(path)
   path = io.paths.join(ctx.userRunsDir, path)
-  return new u.Res(JSON.stringify(await apiLsEntry(path)))
+  return new u.Res(a.jsonEncode(await apiLsEntry(path)))
 }
 
 /*
@@ -363,4 +367,31 @@ We could define a DB value converter, but this is much terser and easier.
 function jsonReplacer(_, val) {
   if (a.isBigInt(val)) return Number(val)
   return val
+}
+
+async function apiLatestRun(ctx, userId) {
+  a.optStr(userId)
+  const conn = await ctx.conn()
+  const where = userId ? u.sql`where user_id = ${userId}` : u.sqlRaw()
+  const {text, args} = u.sql`
+    select
+      user_id,
+      run_id,
+      run_num,
+      run_ms
+    from facts
+    ${where}
+    order by run_ms desc, time_ms desc, run_num desc
+    limit 1
+  `
+
+  /*
+  `reader.getRowObjectsJS()` parses `bigint` into JS `BigInt`.
+  But our millisecond timestamps always fit into JS floats.
+  TODO solve this in a general way. Maybe just use floats for timestamps.
+  */
+  const out = await conn.queryDoc(text, args)
+  if (out) out.run_ms = Number(out.run_ms)
+
+  return new u.Res(a.jsonEncode(out))
 }

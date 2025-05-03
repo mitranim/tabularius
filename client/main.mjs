@@ -27,6 +27,7 @@ os.addCmd(cmdInit)
 
 os.addCmd(au.cmdAuth)
 os.addCmd(p.cmdPlot)
+os.addCmd(p.cmdPlotLink)
 
 cmdLs.cmd = `ls`
 cmdLs.desc = cmdLsDesc
