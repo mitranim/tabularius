@@ -1374,3 +1374,5 @@ Alternatively, get around that with `sw.mjs`.
 `make`: replace useless `deno lint` (fails to detect missing variable definitions) with `eslint`.
 
 ---
+
+`plot`: consider removing the default `user_id=current` and `run_id=all` filters from all presets, and altering the warnings.
