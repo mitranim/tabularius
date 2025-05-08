@@ -79,8 +79,8 @@ await t.test(async function test_plotAgg() {
     const dataJsAgg = u.consistentNil_null(await call(PLOT_AGG_OPT, {mode: `js`}))
     const dataDbAgg = await call(PLOT_AGG_OPT, {mode: `db`})
 
-    t.eq(a.keys(dataJsAgg), [`X_vals`, `Z_vals`, `Z_X_Y`])
-    t.eq(a.keys(dataDbAgg), [`X_vals`, `Z_vals`, `Z_X_Y`])
+    t.eq(a.keys(dataJsAgg), [`X_vals`, `Z_vals`, `Z_X_Y`, `totals`])
+    t.eq(a.keys(dataDbAgg), [`X_vals`, `Z_vals`, `Z_X_Y`, `totals`])
 
     const X_vals = a.range(1, 36)
     t.eq(dataJsAgg.X_vals, X_vals)

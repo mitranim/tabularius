@@ -8,6 +8,11 @@ import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
 import * as p from './plot.mjs'
 
+const tar = window.tabularius ??= a.Emp()
+tar.lib ??= a.Emp()
+tar.lib.t = t
+a.patch(window, tar)
+
 /*
 Tests for small utility functions should be placed here.
 The app can be switched into test mode via the `test` command.
@@ -99,57 +104,184 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
 
   fail(
     ``,
-    `opt "-x" must be a valid identifier, got undefined; opt "-z" must be a valid identifier, got undefined; opt "-y" must be a valid identifier unless "-z=stat_type", got undefined; opt "-a" must be a valid aggregate name`,
+    `errors in plot:
+
+missing -x, consider using a preset such as -p=dmg
+
+missing -z, consider using a preset such as -p=dmg
+
+missing -y, consider using a preset such as -p=dmg
+
+missing -a, consider using a preset such as -p=dmg`,
   )
 
   fail(
     `plot one`,
-    `plot args must be one of: "-flag", "-flag=val", or "field=val", got "one"`,
+    `errors in plot one:
+
+unrecognized one, plot args must be in one of the following forms: "-flag", "-flag=val", or "field=val", see help plot for available options
+
+missing -x, consider using a preset such as -p=dmg
+
+missing -z, consider using a preset such as -p=dmg
+
+missing -y, consider using a preset such as -p=dmg
+
+missing -a, consider using a preset such as -p=dmg`,
   )
 
   fail(
     `plot one=`,
-    `plot filters must be among: ${withEqs(a.keys(s.ALLOWED_FILTER_KEYS))}, got: one=`,
+    `errors in plot one=:
+
+unrecognized filter one=, filters must be among:
+${filterLines(a.keys(s.ALLOWED_FILTER_KEYS))}
+
+missing -x, consider using a preset such as -p=dmg
+
+missing -z, consider using a preset such as -p=dmg
+
+missing -y, consider using a preset such as -p=dmg
+
+missing -a, consider using a preset such as -p=dmg`,
   )
 
   fail(
     `plot one=two`,
-    `plot filters must be among: ${withEqs(a.keys(s.ALLOWED_FILTER_KEYS))}, got: one=`,
+    `errors in plot one=two:
+
+unrecognized filter one=two, filters must be among:
+${filterLines(a.keys(s.ALLOWED_FILTER_KEYS))}
+
+missing -x, consider using a preset such as -p=dmg
+
+missing -z, consider using a preset such as -p=dmg
+
+missing -y, consider using a preset such as -p=dmg
+
+missing -a, consider using a preset such as -p=dmg`,
   )
 
   fail(
     `plot -w`,
-    `plot filters must be among: ${withEqs(a.keys(s.ALLOWED_FILTER_KEYS))}, got: -w=`,
+    `errors in plot -w:
+
+unrecognized flag -w
+
+missing -x, consider using a preset such as -p=dmg
+
+missing -z, consider using a preset such as -p=dmg
+
+missing -y, consider using a preset such as -p=dmg
+
+missing -a, consider using a preset such as -p=dmg`,
   )
 
   fail(
     `plot -w=`,
-    `plot filters must be among: ${withEqs(a.keys(s.ALLOWED_FILTER_KEYS))}, got: -w=`,
+    `errors in plot -w=:
+
+unrecognized flag -w=
+
+missing -x, consider using a preset such as -p=dmg
+
+missing -z, consider using a preset such as -p=dmg
+
+missing -y, consider using a preset such as -p=dmg
+
+missing -a, consider using a preset such as -p=dmg`,
   )
 
   fail(
     `plot -w=one`,
-    `plot filters must be among: ${withEqs(a.keys(s.ALLOWED_FILTER_KEYS))}, got: -w=`,
+    `errors in plot -w=one:
+
+unrecognized flag -w=one
+
+missing -x, consider using a preset such as -p=dmg
+
+missing -z, consider using a preset such as -p=dmg
+
+missing -y, consider using a preset such as -p=dmg
+
+missing -a, consider using a preset such as -p=dmg`,
   )
 
-  fail(`plot -x=run`, `"-x" must be one of:`)
-  fail(`plot -x=run`, `got: -x=run`)
+  fail(
+    `plot -x=run`,
+    `errors in plot -x=run:
 
-  fail(`plot -x=round`, `"-x" must be one of:`)
-  fail(`plot -x=round`, `got: -x=round`)
+unrecognized -x=run, must be one of:
+${flagLines(`-x`, a.keys(s.ALLOWED_X_KEYS))}
 
-  fail(`plot -y=dmg`, `"-y" must be one of:`)
-  fail(`plot -y=dmg`, `got: -y=dmg`)
+missing -z, consider using a preset such as -p=dmg
 
-  fail(`plot -z=upg`, `"-z" must be one of:`)
-  fail(`plot -z=upg`, `got: -z=upg`)
+missing -y, consider using a preset such as -p=dmg
 
-  fail(`plot -a=one`, `"-a" must be one of:`)
-  fail(`plot -a=one`, `got: -a=one`)
+missing -a, consider using a preset such as -p=dmg`,
+  )
+
+  fail(
+    `plot -x=round`,
+    `errors in plot -x=round:
+
+unrecognized -x=round, must be one of:
+${flagLines(`-x`, a.keys(s.ALLOWED_X_KEYS))}
+
+missing -z, consider using a preset such as -p=dmg
+
+missing -y, consider using a preset such as -p=dmg
+
+missing -a, consider using a preset such as -p=dmg`,
+  )
+
+  fail(
+    `plot -y=dmg`,
+    `errors in plot -y=dmg:
+
+unrecognized -y=dmg, must be one of:
+${flagLines(`-y`, a.keys(s.ALLOWED_TOTAL_TYPE_FILTERS))}
+
+missing -x, consider using a preset such as -p=dmg
+
+missing -z, consider using a preset such as -p=dmg
+
+missing -a, consider using a preset such as -p=dmg`,
+  )
+
+  fail(
+    `plot -z=upg`,
+    `errors in plot -z=upg:
+
+unrecognized -z=upg, must be one of:
+${flagLines(`-z`, a.keys(s.ALLOWED_Z_KEYS))}
+
+missing -x, consider using a preset such as -p=dmg
+
+missing -y, consider using a preset such as -p=dmg
+
+missing -a, consider using a preset such as -p=dmg`,
+  )
+
+  fail(
+    `plot -a=one`,
+    `errors in plot -a=one:
+
+unrecognized -a=one, must be one of:
+${flagLines(`-a`, a.keys(s.AGGS))}
+
+missing -x, consider using a preset such as -p=dmg
+
+missing -z, consider using a preset such as -p=dmg
+
+missing -y, consider using a preset such as -p=dmg`,
+  )
 
   fail(
     `-x=round_num -y=dmg_done -z=bui_type_upg`,
-    `opt "-a" must be a valid aggregate name; missing "ent_type=" (required unless "-z=ent_type")`,
+    `errors in plot -x=round_num -y=dmg_done -z=bui_type_upg:
+
+missing -a, consider using a preset such as -p=dmg`,
   )
 
   fail(
@@ -164,12 +296,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -181,6 +315,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
       cloud: false,
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -188,6 +323,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
       cloud: false,
+      totals: [],
     },
   )
 
@@ -199,6 +335,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
       cloud: true,
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -206,6 +343,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
       cloud: true,
+      totals: [],
     },
   )
 
@@ -216,12 +354,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `avg`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `avg`, aggFun: u.accAvg, totalFun: u.accAvg,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -236,12 +376,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui_chi`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui_chi`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -276,6 +418,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       runLatest: true,
       where: {ent_type: [`run_round_bui`], user_id: [`one`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -286,6 +429,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         user_id: [`one`],
       },
+      totals: [],
     },
   )
 
@@ -312,12 +456,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: false, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: false, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -328,12 +474,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: false, runLatest: false,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: false, runLatest: false,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -344,6 +492,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], user_id: [`one`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -354,6 +503,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         ent_type: [`run_round_bui`],
         stat_type: [`dmg_done`],
       },
+      totals: [],
     },
   )
 
@@ -364,6 +514,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: false, runLatest: true,
       where: {ent_type: [`run_round_bui`], user_id: [`one`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -374,6 +525,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         ent_type: [`run_round_bui`],
         stat_type: [`dmg_done`],
       },
+      totals: [],
     },
   )
 
@@ -387,6 +539,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         user_id: [`one`],
         run_id: [`two`],
       },
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -397,6 +550,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         user_id: [`one`],
         run_id: [`two`],
       },
+      totals: [],
     },
   )
 
@@ -410,6 +564,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         user_id: [`one`],
         run_id: [`two`, `three`],
       },
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -420,6 +575,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         user_id: [`one`],
         run_id: [`two`, `three`],
       },
+      totals: [],
     },
   )
 
@@ -430,12 +586,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `user_id`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -446,12 +604,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: false, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `user_id`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: false, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -462,12 +622,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `user_id`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -478,12 +640,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: false,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `user_id`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: true, runLatest: false,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -494,12 +658,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: false, runLatest: false,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `user_id`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: false, runLatest: false,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -510,12 +676,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: false, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: false, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -526,6 +694,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true,
       where: {ent_type: [`run_round_bui`], run_id: [`12`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -536,6 +705,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         run_id: [`12`],
       },
+      totals: [],
     },
   )
 
@@ -546,6 +716,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: false,
       where: {ent_type: [`run_round_bui`], run_id: [`12`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -556,6 +727,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         run_id: [`12`],
       },
+      totals: [],
     },
   )
 
@@ -566,6 +738,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: false, runLatest: true,
       where: {ent_type: [`run_round_bui`], user_id: [`one`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -576,6 +749,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         user_id: [`one`],
       },
+      totals: [],
     },
   )
 
@@ -604,12 +778,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `run_id`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -620,12 +796,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: false,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `run_id`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: true, runLatest: false,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -642,6 +820,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], run_num: [12]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -652,6 +831,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         run_num: [12],
       },
+      totals: [],
     },
   )
 
@@ -662,6 +842,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], run_num: [12]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -672,6 +853,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         run_num: [12],
       },
+      totals: [],
     },
   )
 
@@ -682,12 +864,14 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `run_num`,
       agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
     },
   )
 
@@ -698,6 +882,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], round_id: [`12`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -708,6 +893,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         round_id: [`12`],
       },
+      totals: [],
     },
   )
 
@@ -718,6 +904,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], round_id: [`0012`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -728,6 +915,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         round_id: [`0012`],
       },
+      totals: [],
     },
   )
 
@@ -738,6 +926,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], round_num: [12]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -748,6 +937,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         round_num: [12],
       },
+      totals: [],
     },
   )
 
@@ -758,6 +948,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], round_num: [12]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -768,6 +959,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         round_num: [12],
       },
+      totals: [],
     },
   )
 
@@ -778,6 +970,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], bui_type: [`CB15`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -788,6 +981,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         bui_type: [`CB15`],
       },
+      totals: [],
     },
   )
 
@@ -798,6 +992,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], bui_type_upg: [`CB15`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -808,6 +1003,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         bui_type_upg: [`CB15`],
       },
+      totals: [],
     },
   )
 
@@ -818,6 +1014,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], bui_type_upg: [`CB15_AAA`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -828,6 +1025,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         bui_type_upg: [`CB15_AAA`],
       },
+      totals: [],
     },
   )
 
@@ -838,6 +1036,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], hero: [`F1H01`]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -848,6 +1047,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         hero: [`F1H01`],
       },
+      totals: [],
     },
   )
 
@@ -858,6 +1058,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], diff: [5]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -868,6 +1069,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         diff: [5],
       },
+      totals: [],
     },
   )
 
@@ -878,6 +1080,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       agg: `sum`,
       userCurrent: true, runLatest: true,
       where: {ent_type: [`run_round_bui`], frontier_diff: [18]},
+      totals: [],
     },
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
@@ -888,6 +1091,7 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
         stat_type: [`dmg_done`],
         frontier_diff: [18],
       },
+      totals: [],
     },
   )
 
@@ -932,10 +1136,80 @@ t.test(function test_decodePlotAggOpt_validPlotAggOpt() {
       where: {ent_type: [`run_round_bui`, `run_round_bui_chi`], stat_type: [`dmg_done`]},
     },
   )
+
+  fail(
+    `-p=dmg -t=one`,
+    `errors in plot -p=dmg -t=one:
+
+unrecognized -t=one, must be one of:
+${flagLines(`-t`, a.keys(s.SUPPORTED_TOTAL_KEYS))}`,
+  )
+
+  test(
+    `-p=dmg -t=`,
+    {
+      X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
+      agg: `sum`,
+      userCurrent: true, runLatest: true,
+      where: {ent_type: [`run_round_bui`]},
+      totals: [],
+    },
+    {
+      X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
+      agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
+      userCurrent: true, runLatest: true,
+      where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [],
+    },
+  )
+
+  test(
+    `-p=dmg -t=bui_type`,
+    {
+      X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
+      agg: `sum`,
+      userCurrent: true, runLatest: true,
+      where: {ent_type: [`run_round_bui`]},
+      totals: [`bui_type`],
+    },
+    {
+      X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
+      agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
+      userCurrent: true, runLatest: true,
+      where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [`bui_type`],
+    },
+  )
+
+  test(
+    `-p=dmg -t=bui_type -t=bui_type_upg`,
+    {
+      X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
+      agg: `sum`,
+      userCurrent: true, runLatest: true,
+      where: {ent_type: [`run_round_bui`]},
+      totals: [`bui_type`, `bui_type_upg`],
+    },
+    {
+      X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
+      agg: `sum`, aggFun: u.accSum, totalFun: u.accSum,
+      userCurrent: true, runLatest: true,
+      where: {ent_type: [`run_round_bui`], stat_type: [`dmg_done`]},
+      totals: [`bui_type`, `bui_type_upg`],
+    },
+  )
 })
 
-function withEqs(src) {return a.map(src, withEq).join(` `)}
-function withEq(src) {return a.reqValidStr(src) + `=`}
+function filterLines(keys) {
+  return a.joinLines(a.map(keys, appendEq).map(u.indent))
+}
+
+function flagLines(key, vals) {
+  a.reqValidStr(key)
+  return a.joinLines(a.map(vals, val => u.cliEq(key, val)).map(u.indent))
+}
+
+function appendEq(src) {return a.reqValidStr(src) + `=`}
 
 t.test(function test_stripPreSpaced() {
   function test(src, pre, exp) {t.is(u.stripPreSpaced(src, pre), exp)}
@@ -950,30 +1224,37 @@ t.test(function test_stripPreSpaced() {
 })
 
 t.test(function test_legendDisplay() {
-  function test(src, exp) {
-    const out = p.legendDisplay(src)
+  function test(key, src, exp) {
+    const out = p.legendDisplay(key, src)
     t.is(out, exp)
   }
 
   test(
+    `round_id`,
     `edcbcb24533b40a0b50b1bb02a8fd399_e28739dc15b941268787b241805a9247_47a3ede7179844cf89bd59d0a5ef422e`,
     `edcbcb24533b40a0…9bd59d0a5ef422e`,
   )
 
   test(
+    `run_id`,
     `93938a24661743e89604ff8cd930c479_cfac75910a1449719bf91d4c10ce3473`,
     `93938a24661743e8…bf91d4c10ce3473`,
   )
 
   test(
+    `user_id`,
     `ca7c02bdd9324f0599a4b2e8f1940f13`,
     `ca7c02bdd9324f0599a4b2e8f1940f13`,
   )
 
   test(
+    `any`,
     `3ff8707299374189`,
     `3ff8707299374189`,
   )
+
+  test(`bui_type`, `CB01`, `Bunker`)
+  test(`bui_type_upg`, `CB01_ABA`, `Bunker_ABA`)
 })
 
 // TODO test generic XYZ aggregation; see `schema.mjs`.

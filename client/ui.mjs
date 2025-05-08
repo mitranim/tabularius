@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 53
+const VERSION = 54
 let INITED
 
 /*
@@ -43,24 +43,32 @@ export const TARBLAN = Object.freeze({
   rel: `noopener noreferrer`,
 })
 
+const TITLEBAR_ICON_SIZE = `w-6 h-6`
+const STEAM_LINK = `https://store.steampowered.com/app/3226530`
+
 export const TITLEBAR = E(
   `div`,
   {class: `flex justify-between items-center p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-800`},
 
   // Left side with title.
   E(`h1`, {}, `Tabularius — book-keeper for `,
-    E(`a`, {href: `https://store.steampowered.com/app/3226530`, ...TARBLAN, class: u.INLINE_BTN_CLS},
+    E(`a`, {href: STEAM_LINK, ...TARBLAN, class: u.CLS_BTN_INLINE},
       `Tower Dominion`,
     ),
   ),
 
   // Right side with links.
-  // TODO: add Steam link.
-  // TODO: collapse into icons.
-  E(`div`, {class: `flex gap-4`},
-    E(`span`, {class: `text-gray-600 dark:text-gray-400`}, `v` + VERSION),
-    E(`a`, {href: `https://github.com/mitranim/tabularius`, ...TARBLAN, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `GitHub`),
-    E(`a`, {href: `https://discord.gg/upPxCEVxgD`, ...TARBLAN, class: `text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200`}, `Discord`)
+  E(`div`, {class: `flex items-center gap-4`},
+    E(`span`, {class: u.CLS_TEXT_GRAY}, `v` + VERSION),
+    E(`a`, {href: STEAM_LINK, ...TARBLAN},
+      u.Svg(`steam`, {class: TITLEBAR_ICON_SIZE}),
+    ),
+    E(`a`, {href: `https://github.com/mitranim/tabularius`, ...TARBLAN},
+      u.Svg(`github`, {class: a.spaced(TITLEBAR_ICON_SIZE, `text-[#1f2328] dark:text-[#f0f6fc]`)}),
+    ),
+    E(`a`, {href: `https://discord.gg/upPxCEVxgD`, ...TARBLAN},
+      u.Svg(`discord`, {class: TITLEBAR_ICON_SIZE}),
+    ),
   ),
 )
 
@@ -93,6 +101,8 @@ export const PROCESS_LIST = new class ProcessList extends u.ReacElem {
 
 function Process(src) {
   a.reqInst(src, os.Proc)
+  const cls = a.spaced(u.CLS_TEXT_GRAY, `truncate text-sm`)
+
   return E(`div`, {class: `flex items-center justify-between gap-2`},
     E(`pre`, {class: `truncate font-medium flex-1 shrink-0`},
       src.id, `: `, src.args,
@@ -100,12 +110,12 @@ function Process(src) {
     // TODO: place description on its own line (under).
     a.vac(src.desc && undefined) && E(
       `pre`,
-      {class: `truncate text-sm text-gray-500 dark:text-gray-400`},
+      {class: cls},
       `(`, u.callOpt(src.desc), `)`,
     ),
     a.vac(src.startAt) && E(
       `pre`,
-      {class: `truncate text-sm text-gray-500 dark:text-gray-400`},
+      {class: cls},
       u.timeFormat.format(src.startAt),
     ),
     a.vac(src.id) && BtnKill({
@@ -131,14 +141,14 @@ const MEDIA_CHI_PAD = `p-4`
 export const MEDIA_PLACEHOLDER = E(`div`, {class: a.spaced(MEDIA_CHI_CLS, `flex flex-col`)},
   E(`div`, {class: `text-center p-2`}, `Sample Plot`),
   E(`div`, {class: `h-64 flex items-center justify-center border border-gray-400 dark:border-gray-600 rounded bg-white dark:bg-gray-700`},
-    E(`div`, {class: `w-full text-center text-gray-500 dark:text-gray-400`}, `[Plot Placeholder]`)
+    E(`div`, {class: a.spaced(u.CLS_TEXT_GRAY, `w-full text-center`)}, `[Plot Placeholder]`)
   )
 )
 
 export const MEDIA = new class MediaPanel extends u.Elem {
   constructor() {
     super()
-    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto break-words overflow-wrap-anywhere flex flex-col gap-4 p-4 bg-white dark:bg-gray-900`})
+    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto overflow-x-hidden break-words overflow-wrap-anywhere flex flex-col gap-4 p-4 bg-white dark:bg-gray-900`})
     this.clear()
   }
 
@@ -272,7 +282,7 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
     const obs = o.obs({proc: undefined})
     u.logMsgFlash(u.log.info(new SubmittedCmd(src, obs)))
     this.histPush(src)
-    os.runCmd(src, obs).catch(u.logErr)
+    os.runCmd(src, {obs, user: true}).catch(u.logErr)
   }
 
   enablePassMode() {
@@ -365,7 +375,7 @@ class SubmittedCmd extends u.ReacElem {
       src,
       a.vac(proc) && [
         ` `,
-        E(`span`, {class: `text-gray-500 dark:text-gray-400`},
+        E(`span`, {class: u.CLS_TEXT_GRAY},
           `(`, a.vac(proc.desc) || `running`, `; `, os.BtnCmd(`kill ${proc.id}`), `)`
         )
       ],
@@ -452,19 +462,27 @@ export function BtnPromptAppend(pre, suf, alias) {
   a.reqValidStr(suf)
   a.optStr(alias)
 
-  function onclick() {PROMPT_INPUT.addSpaced(pre, suf)}
-
-  return E(
-    `button`,
-    {type: `button`, class: u.INLINE_BTN_CLS, onclick},
-    alias || suf,
-  )
+  return u.FakeBtnInline({
+    onclick(eve) {
+      a.eventKill(eve)
+      PROMPT_INPUT.addSpaced(pre, suf)
+    },
+    cmd: a.spaced(pre, suf),
+    chi: alias || suf,
+  })
 }
 
 export function BtnPromptReplace(val) {
   a.reqValidStr(val)
-  function onclick() {PROMPT_INPUT.value = val, PROMPT_INPUT.focus()}
-  return E(`button`, {type: `button`, class: u.INLINE_BTN_CLS, onclick}, val)
+
+  return u.FakeBtnInline({
+    onclick(eve) {
+      a.eventKill(eve)
+      PROMPT_INPUT.value = val
+      PROMPT_INPUT.focus()
+    },
+    cmd: val,
+  })
 }
 
 cmdClear.cmd = `clear`
@@ -500,4 +518,29 @@ export function cmdClear({args}) {
 
   if (log || !media) u.log.clear()
   if (media || !log) MEDIA.clear()
+}
+
+const CLI_BOOL = new Set([``, `true`, `false`])
+
+export function cliBool(cmd, flag, val) {
+  a.reqValidStr(cmd)
+  a.reqValidStr(flag)
+  cliEnum(cmd, flag, val, CLI_BOOL)
+  return !val || val === `true`
+}
+
+export function cliEnum(cmd, flag, val, coll) {
+  a.reqValidStr(cmd)
+  a.reqValidStr(flag)
+  a.reqStr(val)
+
+  if (coll.has(val)) return val
+
+  throw new u.ErrLog(...u.LogLines(
+    [`unrecognized `, BtnPromptAppend(cmd, u.cliEq(flag, val)), `, must be one of:`],
+    ...a.map(
+      a.keys(coll),
+      key => BtnPromptAppend(cmd, u.cliEq(flag, key)),
+    ).map(u.indentNode),
+  ))
 }

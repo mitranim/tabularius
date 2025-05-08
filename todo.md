@@ -802,12 +802,18 @@ Share the `watch` logging between all tabs, but make it clear that only one back
 ---
 
 Prettify for launch:
-- Some better way to tell visitors about the features, a visual presentation if possible.
-- GitHub and Discord icons.
+- [x] Some better way to tell visitors about the features, a visual presentation if possible.
+- [x] Icons:
+  - [x] Steam.
+  - [x] GitHub.
+  - [x] Discord.
 - More prominent title.
-- Denser terminal output, less verbosity, consider smaller font.
-- Try for fewer commands and shorter help.
-- GitHub repo readme: better description, add screenshots.
+- [x] Denser terminal output, less verbosity, consider smaller font.
+- [x] Try for fewer commands and shorter help.
+- [x] GitHub repo readme: better description, add screenshots.
+
+More:
+- [ ] Better Discord icon.
 
 ---
 
@@ -1339,14 +1345,38 @@ Various `plot` enhancements.
     * [ ] Detection 1: when new run begins.
     * [ ] Detection 2: when run reaches last wave for that difficulty.
     * [ ] Avoid duplication.
-* [ ] `plot`:
-  * [ ] Show various info about the found data (only when data is found):
+
+---
+
+* [x] `plot`:
+  * [x] Show various info about the found data (only when data is found):
     * Which `user_id`, `run_id`, `run_num` were found. Maybe more.
-    * [ ] Print in terminal.
-    * [ ] Maybe show in plot (under, or in title).
-    * [ ] Consider making this optional (a toggle).
-    * [ ] Server: support in `apiPlotAgg`. Make it optional.
-    * [ ] Client: support in various places where we build and query `dat`.
+    * [x] Print in terminal.
+    * [x] Consider making this optional (a toggle).
+    * [x] Server: support in `apiPlotAgg`. Make it optional.
+    * [x] Client: support in various places where we build and query `dat`.
+  * [x] Have an optional CLI flag to enable this.
+    * [x] When mentioned once with an empty value, it counts as a boolean.
+    * [x] When mentioned multiple times, it acts as a filter, requesting totals only on those keys.
+  * [x] Add the CLI flag either to all presets, or to `plot_link`.
+  * [x] Querying (only if enabled):
+    * [x] Server: just run an additional query on `facts`.
+    * [x] Client: build totals while aggregating from facts, see `plotAggAddFact`.
+  * [x] Client: print in log, one line per stat (count + values on the same line), stat shown only if count >= 1, values collapsed by default unless exactly 1.
+    * [x] `cmdPlotLocal`: totals must be live.
+  * Showing totals in terminal (only when enabled):
+    * [x] Multiple lines. Each line:
+      * [x] Stat name.
+      * [x] Count. Show only when non-0.
+      * [x] Sample values: collapsed by default, expandable `<details>`.
+  * [x] `chi_type`: only if `ent_type=run_round_bui_chi`.
+
+Additional:
+* [x] Make sure it works with `dropEmptySeries`. Tricky on both server and client.
+* [ ] Maybe show some totals in plot (under, or in title).
+
+---
+
 * [ ] `main.mjs`: be less insistent on printing help at the start, to avoid crowding the terminal when a plot is fetched on startup.
 
 ---
@@ -1376,3 +1406,20 @@ Alternatively, get around that with `sw.mjs`.
 ---
 
 `plot`: consider removing the default `user_id=current` and `run_id=all` filters from all presets, and altering the warnings.
+
+---
+
+* [x] New "copy to clipboard" button. Instead of looking like `BtnCmd`, just render one tiny button with a clipboard icon. Give it a tooltip.
+* [x] In `ls`, keep `BtnCmd` appearances for entries, remove clipboard action from them, and render separate clipboard buttons right next to them.
+
+---
+
+Add `active:` indicators to all buttons and maybe some links.
+
+---
+
+`plot`: add a search bar to each plot for filtering series.
+
+---
+
+On startup, when FS unavailable, instead of example run analysis, consider trying latest cloud run (`user_id=all run_id=latest`).

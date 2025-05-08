@@ -163,6 +163,8 @@ export const CODES_TO_NAMES_SHORT = dict({
 
 export const NAMES_TO_CODES_SHORT = invert(CODES_TO_NAMES_SHORT)
 
+export const SELL_COST_MUL = 0.8
+
 const COST_AIR_COM = 1500
 const BUI_CODE_SMOK_SIG = `CB12A`
 

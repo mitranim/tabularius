@@ -50,6 +50,7 @@ export class Proc extends a.Emp {
     super()
     this.id = String(++new.target.id)  // Process id (pid). Must be unique.
     this.args = a.reqStr(src.args)     // CLI command name and args.
+    this.user = a.laxBool(src.user)    // Was this invoked directly by user.
     this.desc = src.desc               // Optional description.
     this.control = u.abortController() // For cancelation.
     this.promise = undefined           // Assigned after starting.
@@ -79,11 +80,11 @@ export function procByName(name) {
   return a.find(PROCS, val => u.firstCliArg(val.args) === name)
 }
 
-export async function runCmd(args, obs) {
+export async function runCmd(args, opt) {
   args = a.trim(args)
   const name = u.firstCliArg(args)
   const cmd = reqCmdByName(name)
-  await runProc(cmd, args, u.callOpt(cmd.desc), obs)
+  await runProc({fun: cmd, args, desc: u.callOpt(cmd.desc), ...a.optDict(opt)})
 }
 
 export function reqCmdByName(name) {
@@ -93,8 +94,9 @@ export function reqCmdByName(name) {
   throw Error(`unknown command ${a.show(name)}`)
 }
 
-export async function runProc(fun, args, desc, obs) {
+export async function runProc({fun, args, desc, obs, user}) {
   a.reqFun(fun)
+  a.reqStr(args)
   a.optObj(obs)
 
   /*
@@ -102,7 +104,7 @@ export async function runProc(fun, args, desc, obs) {
   the process is immediately done. If the function is asynchronous and returns
   a promise, then we'll register the proc.
   */
-  const proc = new Proc({args, desc})
+  const proc = new Proc({args, desc, user})
   const name = u.firstCliArg(args)
 
   let out
@@ -154,7 +156,7 @@ export function showProcs() {
   if (!a.len(PROCS)) return `no active processes`
   return u.LogLines(
     `active processes (pid, name, status):`,
-    ...a.map(PROCS, procToStatus).map(u.indentChi),
+    ...a.map(PROCS, procToStatus).map(u.indentNode),
   )
 }
 
@@ -304,11 +306,19 @@ export function BtnCmdWithHelp(cmd) {
   return [BtnCmd(name), BtnHelp(name, {class: `ml-1`})]
 }
 
-export function BtnCmd(cmd) {
+export function BtnCmd(cmd, alias) {
   a.reqValidStr(cmd)
-  return u.Btn(cmd, function onClickRunCmd() {
-    runCmd(cmd).catch(u.logErr)
-  })
+  a.optStr(alias)
+
+  return E(
+    `button`,
+    {
+      type: `button`,
+      class: `px-1 inline whitespace-nowrap bg-gray-200 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-300 dark:hover:bg-gray-600`,
+      onclick() {runCmd(cmd).catch(u.logErr)},
+    },
+    alias || cmd,
+  )
 }
 
 export function BtnHelp(cmd, {class: cls} = {}) {
@@ -317,7 +327,7 @@ export function BtnHelp(cmd, {class: cls} = {}) {
     `button`,
     {
       type: `button`,
-      class: a.spaced(cls, u.INLINE_BTN_CLS),
+      class: a.spaced(cls, u.CLS_BTN_INLINE),
       onclick() {runCmd(`help ${cmd}`).catch(u.logErr)},
     },
     `?`,
@@ -326,7 +336,7 @@ export function BtnHelp(cmd, {class: cls} = {}) {
 
 export function runCmdMock(dur) {
   a.reqFin(dur)
-  return runProc(cmdMock, `mock ${dur}`, `mock command that sleeps`)
+  return runProc({fun: cmdMock, args: `mock ${dur}`, desc: `mock command that sleeps`})
   function cmdMock({sig}) {return a.after(dur, sig)}
 }
 

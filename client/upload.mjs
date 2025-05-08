@@ -83,7 +83,7 @@ export async function cmdUpload(proc) {
 
   proc.desc = `acquiring lock`
   let unlock = await u.lockOpt(UPLOAD_LOCK_NAME)
-  const {sig} = proc
+  const {sig, user} = proc
 
   if (!unlock) {
     if (!persistent) return `[upload] another process has a lock on uploading`
@@ -98,18 +98,18 @@ export async function cmdUpload(proc) {
   }
 
   proc.desc = `uploading backups to the cloud`
-  try {return await cmdUploadUnsync({sig, path, quiet, persistent, force})}
+  try {return await cmdUploadUnsync({sig, path, quiet, persistent, force, user})}
   finally {unlock()}
 }
 
-export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent, force}) {
+export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent, force, user}) {
   u.reqSig(sig)
   a.reqValidStr(srcPath)
   a.optBool(quiet)
   a.optBool(persistent)
   a.optBool(force)
 
-  const root = await fs.reqHistoryDir(sig)
+  const root = await fs.reqHistoryDir(sig, user)
   const [_, handle, path] = await fs.handleAtPathMagic(sig, root, srcPath)
 
   const userId = au.reqUserId()

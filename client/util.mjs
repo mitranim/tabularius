@@ -61,8 +61,19 @@ export const API_LOCAL = a.boolOpt(QUERY.get(`local`))
 export const API_URL = API_LOCAL ? `/api/` : `https://tabularius.mitranim.com/api/`
 
 // Initialize renderer.
-export const ren = new p.Ren()
+const ren = new class Ren extends p.Ren {
+  /*
+  Minor workaround for a bug in the library code, where `.toNode` is not
+  supported properly. We need it for `ErrLog`.
+  */
+  appendChi(tar, src) {
+    if (a.hasMeth(src, `toNode`)) src = src.toNode()
+    return super.appendChi(tar, src)
+  }
+}()
+
 export const E = ren.E.bind(ren)
+export const S = ren.elemSvg.bind(ren)
 
 // Base class for UI components with custom behaviors.
 export class Elem extends dr.MixReg(HTMLElement) {}
@@ -174,7 +185,10 @@ export function cmdVerbose() {
   return `logging is now ` + (LOG_VERBOSE ? `verbose` : `selective`)
 }
 
-export const INLINE_BTN_CLS = `text-sky-700 dark:text-sky-300 hover:underline hover:decoration-dotted cursor-pointer inline text-left`
+
+export const CLS_TEXT_GRAY = `text-gray-500 dark:text-gray-400`
+export const CLS_TEXT_GRAY_BUSY = CLS_TEXT_GRAY + ` hover:text-gray-800 dark:hover:text-gray-200`
+export const CLS_BTN_INLINE = `inline text-sky-700 dark:text-sky-300 hover:underline hover:decoration-dotted cursor-pointer text-left`
 
 export const LOG_WIDTH_KEY = `tabularius.log_width`
 export const LOG_WIDTH_DEFAULT = 50 // % of parent width
@@ -235,7 +249,7 @@ export const log = new class Log extends Elem {
   removedCount = 0
 
   removedMessageNotice = E(`div`, {
-    class: `text-gray-500 dark:text-gray-400 text-center border-b border-gray-300 dark:border-gray-700 pb-2`,
+    class: a.spaced(u.CLS_TEXT_GRAY, `text-center border-b border-gray-300 dark:border-gray-700 pb-2`),
     hidden: true,
   })
 
@@ -365,23 +379,24 @@ const LOG_MSG_CLS_INFO = `border-transparent`
 const LOG_MSG_CLS_INFO_LATEST = `border-yellow-300 dark:border-yellow-800`
 
 export class LogMsg extends dr.MixReg(HTMLPreElement) {
+  isErr = undefined
+
   static init({type} = {}, ...chi) {
-    chi = logShowChi(chi)
-    if (!chi) return undefined
-
-    const msg = new this()
-    msg.isErr = type === `err`
-
-    return E(
-      msg,
+    const isErr = type === `err`
+    const msg = msgRen.E(
+      new this(),
       {
         // TODO find if there's a class for this. Twind seems to lack `break-anywhere`.
         style: {overflowWrap: `anywhere`},
-        class: a.spaced(LOG_MSG_CLS, a.vac(msg.isErr) && LOG_MSG_CLS_ERR),
+        class: a.spaced(LOG_MSG_CLS, a.vac(isErr) && LOG_MSG_CLS_ERR),
       },
-      LogPrefix(),
       ...chi,
     )
+    if (!msg.hasChildNodes()) return undefined
+
+    msg.isErr = isErr
+    msg.prepend(LogPrefix())
+    return msg
   }
 
   setLatest() {
@@ -399,12 +414,31 @@ function LogPrefix() {
   return E(
     `span`,
     {
-      class: `text-gray-500 dark:text-gray-400`,
+      class: CLS_TEXT_GRAY,
       'data-tooltip': timeFormat.format(Date.now()),
     },
     `> `,
   )
 }
+
+/*
+Special renderer just for log messages. Supports falling back on `a.show` for
+non-stringable data structures. Unfortunately the library code doesn't support
+this properly, so we had to duplicate some of its logic.
+*/
+const msgRen = new class MsgRen extends p.Ren {
+  appendChi(tar, src) {
+    if (a.hasMeth(src, `toNode`)) src = src.toNode()
+    if (a.isNil(src)) return undefined
+    if (a.isStr(src)) return tar.append(src)
+    if (a.isNode(src)) return tar.appendChild(src)
+    if (p.isRaw(src)) return this.appendRaw(tar, src)
+    if (a.isSeq(src)) return this.appendSeq(tar, src)
+    const out = a.renderOpt(src)
+    if (out) return this.appendChi(tar, out)
+    return this.appendChi(tar, a.show(src))
+  }
+}()
 
 export function LogWords(...chi) {return intersperseOpt(chi, ` `)}
 export function LogLines(...chi) {return intersperseOpt(chi, LogNewline)}
@@ -414,17 +448,6 @@ export function LogNewlines() {return `\n\n`}
 
 export function logMsgFlash(tar) {
   tar.classList.add(`animate-flash-light`, `dark:animate-flash-dark`)
-}
-
-function logShowChi(src) {return a.vac(a.mapCompact(a.flat(src), logShow))}
-
-// TODO: support error chains.
-function logShow(val) {
-  if (a.isNil(val) || val === ``) return undefined
-  if (a.isStr(val)) return val
-  if (a.isNode(val)) return val
-  if (a.isInst(val, ErrLog)) return val.nodes
-  return a.show(val)
 }
 
 export function removeClasses(tar, src) {tar.classList.remove(...splitCliArgs(src))}
@@ -544,13 +567,17 @@ function isErrAbortAny(val) {
 
 /*
 Gets special treatment in the log, which appends the error's original nodes
-instead of its message.
+instead of its message string.
 */
 export class ErrLog extends su.Err {
   constructor(...nodes) {
-    super(E(`pre`, {}, ...nodes).textContent)
+    const msg = E(`pre`, {}, ...nodes).textContent
+    super(msg)
     this.nodes = nodes
   }
+
+  // Special interface used by `logShow`.
+  toNode() {return this.nodes}
 }
 
 /*
@@ -579,8 +606,9 @@ export function boundInd(ind, len) {
 Unlike the old `document.execCommand` API, this can be used programmatically
 at any time while the document is focused.
 */
-export async function copyToClipboard(src) {
+export async function copyToClipboard(src, report) {
   await navigator.clipboard.writeText(a.render(src))
+  if (report) log.info(`copied to clipboard: `, src)
   return true
 }
 
@@ -604,9 +632,11 @@ export function cliDecode(src) {return splitCliArgs(src).map(cliDecodeArg)}
 
 export function cliDecodeArg(src) {
   const ind = src.indexOf(`=`)
-  if (ind >= 0) return [src.slice(0, ind), src.slice(ind + `=`.length)]
-  if (src.startsWith(`-`)) return [src, ``]
-  return [``, src]
+  if (ind >= 0) {
+    return [src.slice(0, ind), src.slice(ind + `=`.length), src]
+  }
+  if (src.startsWith(`-`)) return [src, ``, src]
+  return [``, src, src]
 }
 
 export function cliEncodePair([key, val]) {
@@ -617,6 +647,10 @@ export function cliEncodePair([key, val]) {
   return key + `=` + val
 }
 
+export function cliEq(key, val) {
+  return a.reqStr(key) + `=` + a.reqStr(val)
+}
+
 export function cliGroup(src) {
   const flags = a.Emp()
   const args = []
@@ -625,23 +659,6 @@ export function cliGroup(src) {
     else args.push(val)
   }
   return [flags, args]
-}
-
-export function cliBool(key, val) {
-  a.reqValidStr(key)
-  reqEnum(key, val, CLI_BOOL)
-  return !val || val === `true`
-}
-
-const CLI_BOOL = new Set([``, `true`, `false`])
-
-export function reqEnum(key, val, coll) {
-  if (coll.has(val)) return val
-  throw a.str(
-    a.show(key), ` must be one of: `,
-    a.show(a.keys(coll)),
-    `, got: `, a.show(val),
-  )
 }
 
 // For super simple boolean CLI flags.
@@ -859,30 +876,98 @@ export function urlQuery(src) {
   return new URLSearchParams(a.split(src, `?`).join(`&`))
 }
 
+// TODO convert to `FakeBtnInline` but append to href instead of replace.
 export function BtnUrlAppend(val) {
   a.reqValidStr(val)
+
   return E(
-    `button`, {
+    `button`,
+    {
       type: `button`,
-      class: INLINE_BTN_CLS,
+      class: CLS_BTN_INLINE,
       onclick() {window.location.href += val},
     },
     val,
   )
 }
 
-export function Btn(chi, fun) {
-  a.reqSome(chi)
-  a.reqFun(fun)
+/*
+DO NOT DO THIS.
+
+If you're reading this code, remember two things:
+- Use `<a>` for ALL links, and for NOTHING ELSE.
+- Use `<button>` for ALL programmatic click actions and form submissions,
+  and for NOTHING ELSE.
+  - But mind `<input>`, `<select><option>`, `<details><summary>`, `<dialog>`,
+    and more...
+- Or the third more general thing: use built-in semantically-appropriate
+  elements with good accessibility support.
+
+But in this case, the browser rendering engines have left us no choice. It seems
+that the native `<button>` cannot be made actually properly inline. Even with
+`display: inline` and all available wrapping and word-breaking properties set,
+native buttons don't play well with text. When internal text is too long, a
+button doesn't wrap like a normal inline element; first it breaks out of its
+line, then it wraps, and then it forces subsequent text to be placed on a new
+line. Madness, which is very inconvenient in our app, where very long text in
+buttons is common.
+
+(The same problem applies to `<input type="button">` which seems equivalent to
+`<button>` in current engines.)
+*/
+export function FakeBtnInline({onclick, cmd, chi}) {
+  a.reqFun(onclick)
+  a.reqValidStr(cmd)
+
+  return E(
+    `a`,
+    {
+      href: `?run=` + cmd,
+      class: u.CLS_BTN_INLINE,
+      onkeydown(eve) {
+        if (a.isEventModified(eve)) return
+        if (eve.key === `Enter`) this.onclick(eve)
+        if (eve.key === ` `) this.onclick(eve)
+      },
+      onclick(eve) {
+        if (a.isEventModified(eve)) return
+        onclick(eve)
+      },
+    },
+    a.vac(chi) || cmd,
+  )
+}
+
+/*
+When using an SVG in a button, this must be set on BOTH.
+Otherwise dimensions and vertical alignment are out of whack.
+The `display: inline` property seems optional but added just in case.
+*/
+const CLS_INLINE_ICON = `inline w-[1em] h-[1em] align-text-top`
+
+export function BtnClip(val) {
+  val = a.renderLax(val)
+  if (!val) return undefined
 
   return E(
     `button`,
     {
       type: `button`,
-      class: `px-1 inline whitespace-nowrap bg-gray-200 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-300 dark:hover:bg-gray-600`,
-      onclick: fun,
+      class: a.spaced(CLS_INLINE_ICON, `cursor-pointer hover:text-sky-700 dark:hover:text-sky-300`),
+      'data-tooltip': `clipboard`,
+      onclick() {copyToClipboard(val, true).catch(logErr)},
     },
-    chi,
+    SvgClipboard(),
+  )
+}
+
+function SvgClipboard() {return Svg(`clipboard`, {class: CLS_INLINE_ICON})}
+
+const SPRITE_PATH = `./client/svg.svg` + (API_LOCAL ? `?` + Date.now() : ``)
+
+export function Svg(key, attr) {
+  return S(`svg`, attr,
+    S(`use`, {href: SPRITE_PATH + `#` + a.reqValidStr(key)}),
   )
 }
 
@@ -925,6 +1010,11 @@ function tableCellPair(src) {
 function tableCellPad(src, len, max) {
   if (a.isNode(src)) return [src, ` `.repeat(Math.max(0, max - len))]
   return src.padEnd(max | 0, ` `)
+}
+
+// Suboptimal implementation.
+export function preSpacedOpt(src, pre) {
+  return a.spaced(pre, stripPreSpaced(src, pre))
 }
 
 export function stripPreSpaced(src, pre) {

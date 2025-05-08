@@ -12,8 +12,8 @@ a.patch(window, tar)
 export async function watchStarted() {
   return (
     (await isWatchingLocal()) || (
-      (await fs.fileConfHasPermission(fs.PROGRESS_FILE_CONF)) &&
-      (await fs.fileConfHasPermission(fs.HISTORY_DIR_CONF)) &&
+      (await fs.fileConfHasPermission(u.sig, fs.PROGRESS_FILE_CONF)) &&
+      (await fs.fileConfHasPermission(u.sig, fs.HISTORY_DIR_CONF)) &&
       (os.runCmd(`watch`).catch(u.logErr), true)
     )
   )

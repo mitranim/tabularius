@@ -99,7 +99,10 @@ repl:
 	deno repl $(DENO_FLAGS) $(args)
 
 duck:
-	duckdb $(DB_FILE)
+	duckdb $(DB_FILE) $(args)
+
+duck.script:
+	duckdb $(DB_FILE) < $(file)
 
 lint:
 	deno lint
@@ -129,7 +132,7 @@ docker.clean:
 docker.ls:
 	docker images --filter $(DOCKER_LABEL)
 
-deploy:
+fly.deploy:
 	fly deploy --yes
 
 fly.repl:

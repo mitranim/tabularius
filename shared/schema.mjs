@@ -432,7 +432,7 @@ The "real" Y axis in our plots is always `.stat_val` of facts. Meanwhile, the
 The Y axis in our plots always corresponds to a number aggregated from the field
 `.stat_val` of facts.
 */
-export const ALLOWED_STAT_TYPE_FILTERS = new Set([
+export const ALLOWED_TOTAL_TYPE_FILTERS = new Set([
   STAT_TYPE_DMG_DONE,
   STAT_TYPE_DMG_OVER,
   STAT_TYPE_COST_EFF,
@@ -506,6 +506,24 @@ export const ALLOWED_FILTER_KEYS = new Set([
   `frontier_diff`,
 ])
 
+// SYNC[plot_agg_stats].
+export const SUPPORTED_TOTAL_KEYS = new Set([
+  `user_id`,
+  `run_id`,
+  `run_num`,
+  `round_id`,
+  `bui_inst`,
+  `bui_type`,
+  `bui_type_upg`,
+  `chi_type`,
+  `hero`,
+  `diff`,
+  `frontier_diff`,
+])
+
+export const SUPPORTED_TOTAL_KEYS_CHI = [...SUPPORTED_TOTAL_KEYS]
+export const SUPPORTED_TOTAL_KEYS_BUI = a.remove(SUPPORTED_TOTAL_KEYS_CHI, `chi_type`)
+
 export function validPlotAggOpt(src) {
   src ??= a.Emp()
   if (!a.isDict(src)) {
@@ -542,6 +560,7 @@ export function validPlotAggOpt(src) {
     }
   }
 
+  // SYNC[plot_agg_requires_x].
   const X = u.dictPop(inp, `X`)
   if (!u.isIdent(X)) {
     errs.push(`opt "-x" must be a valid identifier, got ${a.show(X)}`)
@@ -553,6 +572,7 @@ export function validPlotAggOpt(src) {
     out.X = X
   }
 
+  // SYNC[plot_agg_requires_z].
   const Z = u.dictPop(inp, `Z`)
   if (!u.isIdent(Z)) {
     errs.push(`opt "-z" must be a valid identifier, got ${a.show(Z)}`)
@@ -566,18 +586,18 @@ export function validPlotAggOpt(src) {
 
   const Y = u.dictPop(inp, `Y`)
   const msgYInvalid = `opt "-y" must be a valid identifier unless "-z=stat_type", got ${a.show(Y)}`
-  const msgYUnknown = `opt "-y" must be one of: ${a.show(a.keys(ALLOWED_STAT_TYPE_FILTERS))} (unless "-z=stat_type"), got ${Y}`
+  const msgYUnknown = `opt "-y" must be one of: ${a.show(a.keys(ALLOWED_TOTAL_TYPE_FILTERS))} (unless "-z=stat_type"), got ${Y}`
   const msgYFlag = `-y=` + Y
 
   // SYNC[plot_group_stat_type_z_versus_y].
   if (Z === `stat_type`) {
     if (a.isNil(Y) || Y === ``) {}
     else if (!u.isIdent(Y)) errs.push(msgYInvalid)
-    else if (!ALLOWED_STAT_TYPE_FILTERS.has(Y)) errs.push(msgYUnknown)
+    else if (!ALLOWED_TOTAL_TYPE_FILTERS.has(Y)) errs.push(msgYUnknown)
   }
   else {
     if (!u.isIdent(Y)) errs.push(msgYInvalid)
-    else if (!ALLOWED_STAT_TYPE_FILTERS.has(Y)) errs.push(msgYUnknown)
+    else if (!ALLOWED_TOTAL_TYPE_FILTERS.has(Y)) errs.push(msgYUnknown)
     else {
       // Purely informational. The consumer code is not expected to use this.
       out.Y = Y
@@ -594,6 +614,7 @@ export function validPlotAggOpt(src) {
     }
   }
 
+  // SYNC[plot_agg_requires_agg].
   const agg = u.dictPop(inp, `agg`)
   if (!u.isIdent(agg)) {
     errs.push(`opt "-a" must be a valid aggregate name`)
@@ -619,6 +640,22 @@ export function validPlotAggOpt(src) {
   if (a.isSome(cloud)) {
     if (!a.isBool(cloud)) errs.push(`opt "-c" must be a boolean`)
     else out.cloud = cloud
+  }
+
+  const totals = u.dictPop(inp, `totals`)
+  if (a.isSome(totals)) {
+    if (!a.isArr(totals)) {
+      errs.push(`opt "-t" must be an array`)
+    }
+    else {
+      out.totals = []
+      for (const val of totals) {
+        if (!SUPPORTED_TOTAL_KEYS.has(val)) {
+          errs.push(`unsupported value of "-t": ${a.show(val)}`)
+        }
+        else out.totals.push(val)
+      }
+    }
   }
 
   const fetch = u.dictPop(inp, `fetch`)
@@ -687,14 +724,18 @@ function showFilter(key, src) {
 export function plotAggStateInit(state) {
   state.Z_X_Y ??= a.Emp()
   state.X_set ??= new Set()
+  state.totalSets ??= a.Emp()
 }
 
 export function plotAggFromFacts({facts, opt}) {
   const state = a.Emp()
   plotAggStateInit(state)
   plotAggAddFacts({facts, state, opt})
-  const {totalFun} = opt
-  return plotAggWithTotals({...plotAggCompact(state), totalFun})
+
+  const out = plotAggStateToPlotAgg(state)
+  a.assign(out, plotAggWithTotalSeries({...out, totalFun: opt.totalFun}))
+  if (opt.totals) out.totals = plotAggTotals(state.totalSets)
+  return out
 }
 
 export function plotAggAddFacts({facts, state, opt}) {
@@ -715,9 +756,13 @@ export function plotAggAddFact({fact, state, opt}) {
 
   const X = fact[X_key]
   if (!a.isKey(X)) return
+  X_set.add(X)
 
   const X_Y = Z_X_Y[Z] ??= a.Emp()
   const Y = fact.stat_val
+
+  // SYNC[plot_agg_stats].
+  if (a.optArr(opt.totals)) plotAggAddStats(fact, state.totalSets, opt)
 
   /*
   We must skip nils to match SQL semantics, where aggregations skip unknown /
@@ -728,20 +773,46 @@ export function plotAggAddFact({fact, state, opt}) {
 
   SYNC[fold_not_nil].
   */
-  if (a.isSome(Y)) {
-    if (!X_Y[X]) {
-      X_Y[X] = [aggFun(undefined, Y, 0), 0]
-    }
-    else {
-      X_Y[X][1]++
-      X_Y[X][0] = aggFun(X_Y[X][0], Y, X_Y[X][1])
-    }
-  }
+  if (a.isNil(Y)) return
 
-  X_set.add(X)
+  if (!X_Y[X]) {
+    X_Y[X] = [aggFun(undefined, Y, 0), 0]
+  }
+  else {
+    X_Y[X][1]++
+    X_Y[X][0] = aggFun(X_Y[X][0], Y, X_Y[X][1])
+  }
 }
 
-export function plotAggCompact({Z_X_Y, X_set}) {
+function plotAggAddStats(fact, sets, opt) {
+  a.reqObj(fact)
+  a.reqObj(sets)
+
+  let keys = a.reqArr(opt.totals)
+  if (!keys.length) keys = defaultTotalKeys(opt)
+
+  for (const key of keys) {
+    a.reqStr(key)
+    if (!(key in fact)) continue
+    const set = sets[key] ??= new Set()
+    set.add(fact[key])
+  }
+}
+
+export function plotAggTotals(src) {
+  const counts = a.Emp()
+  const values = a.Emp()
+
+  for (const [key, val] of a.entries(src)) {
+    a.reqStr(key)
+    a.reqSet(val)
+    counts[key] = val.size
+    values[key] = [...val].sort(u.compareAsc)
+  }
+  return {counts, values}
+}
+
+export function plotAggStateToPlotAgg({Z_X_Y, X_set}) {
   a.reqDict(Z_X_Y)
   a.reqSet(X_set)
 
@@ -769,11 +840,11 @@ export function plotAggCompact({Z_X_Y, X_set}) {
   */
   Z_X_Y = a.map(Z_vals, Z => a.map(X_vals, X => a.head(Z_X_Y[Z][X])))
 
-  dropZeroRows(Z_vals, Z_X_Y)
+  dropEmptySeries(Z_vals, Z_X_Y)
   return {X_vals, Z_vals, Z_X_Y}
 }
 
-export function dropZeroRows(Z, Z_X_Y) {
+export function dropEmptySeries(Z, Z_X_Y) {
   a.reqArr(Z)
   a.reqArr(Z_X_Y)
   if (Z.length !== Z_X_Y.length) {
@@ -793,7 +864,7 @@ export function dropZeroRows(Z, Z_X_Y) {
   }
 }
 
-export function plotAggWithTotals({X_vals, Z_vals, Z_X_Y, totalFun}) {
+export function plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, totalFun}) {
   a.reqArr(X_vals)
   a.reqArr(Z_vals)
   a.reqArr(Z_X_Y)
@@ -839,6 +910,14 @@ export function Z_X_totals(Z_X_Y, totalFun) {
     Z_X_totals[X] = u.foldSome(Y_col, 0, totalFun)
   }
   return Z_X_totals
+}
+
+/*
+Note: we don't use this when calculating cost efficiency, because it wouldn't
+seem to make sense. Cost efficiency is per paid, not per would-be refunded.
+*/
+export function buiSellPrice(type, upg) {
+  return buiCost(type, upg) * gc.SELL_COST_MUL
 }
 
 /*
@@ -899,6 +978,12 @@ export function buiCost(type, upg) {
     out += a.reqFin(upgCost)
   }
   return out
+}
+
+export function defaultTotalKeys(opt) {
+  const chi = opt?.where?.ent_type?.includes(FACT_ENT_TYPE_CHI)
+  if (chi) return SUPPORTED_TOTAL_KEYS_CHI
+  return SUPPORTED_TOTAL_KEYS_BUI
 }
 
 export function roundMigrated({round, userId, runNum, runMs}) {

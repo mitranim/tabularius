@@ -139,28 +139,54 @@ export async function plotAgg(ctx, req) {
     opt.where.user_id = u.uniqArr(a.append(opt.where.user_id, id))
   }
 
-  const conn = await ctx.conn()
   const [runLatestCte, runLatestJoin] = qLatestRunId(opt)
   const where = u.SqlWhere.fromDict(opt.where)
   const aggMode = opt.mode ?? req.headers.get(`plot_agg_mode`) ?? `db`
 
-  const query = u.sql`
+  const queryFacts = u.sql`
     with
       ${runLatestCte}
       _ as (select null)
-    select
-      ${u.sqlRaw(Z)} as Z,
-      ${u.sqlRaw(X)} as X,
-      ${u.sqlRaw(opt.agg)}(stat_val) as Y
+    select *
     from
       facts
       ${runLatestJoin}
     ${where}
+  `
+
+  const queryAggs = u.sql`
+    with src as (${queryFacts})
+    select
+      ${u.sqlRaw(Z)} as Z,
+      ${u.sqlRaw(X)} as X,
+      ${u.sqlRaw(opt.agg)}(stat_val) as Y
+    from src
     group by
       ${u.sqlRaw(Z)},
       ${u.sqlRaw(X)}
   `
 
+  const conn = await ctx.conn()
+
+  /*
+  Running the queries sequentially vs concurrently seems to take the same
+  resulting total time.
+  */
+  const out = await queryPlotAgg(conn, queryAggs, aggMode)
+  const totals = await queryPlotTotals(conn, queryFacts, opt)
+
+  // Not faster.
+  //
+  // const [out, totals] = await Promise.all([
+  //   queryPlotAgg(conn, queryAggs, aggMode),
+  //   queryPlotTotals(conn, queryFacts, opt.totals),
+  // ])
+
+  out.totals = totals
+  return out
+}
+
+async function queryPlotAgg(conn, queryAggs, aggMode) {
   /*
   Option 0. Group and aggregate in DB, re-group to plot data in JS.
   Needs measurements.
@@ -174,7 +200,7 @@ export async function plotAgg(ctx, req) {
   */
   if (aggMode === `js`) {
     if (u.LOG_DEBUG) console.time(`[plot_agg] [mode=js]`)
-    const {text, args} = query
+    const {text, args} = queryAggs
     const rows = await conn.queryRows(text, args)
     try {
       return tripletsToPlotAgg(rows)
@@ -189,10 +215,9 @@ export async function plotAgg(ctx, req) {
   Needs measurements.
   */
   if (aggMode === `db`) {
-    if (u.LOG_DEBUG) console.time(`[plot_agg] [mode=db]`)
-    const query1 = u.sql`
+    const query = u.sql`
       with
-        incomplete_groups as (${query}),
+        incomplete_groups as (${queryAggs}),
         X_vals as (select distinct X from incomplete_groups order by X),
         Z_vals as (select distinct Z from incomplete_groups order by Z),
         Z_X as (select Z, X from Z_vals cross join X_vals),
@@ -220,14 +245,15 @@ export async function plotAgg(ctx, req) {
         (table Z_X_Y_arr)                            as Z_X_Y
     `
 
+    if (u.LOG_DEBUG) console.time(`[plot_agg] [mode=db]`)
     try {
-      const {text, args} = query1
+      const {text, args} = query
       let [X_vals, Z_vals, Z_X_Y] = await conn.queryRow(text, args)
       X_vals = a.laxArr(X_vals)
       Z_vals = a.laxArr(Z_vals)
       Z_X_Y = a.laxArr(Z_X_Y)
 
-      s.dropZeroRows(Z_vals, Z_X_Y)
+      s.dropEmptySeries(Z_vals, Z_X_Y)
       return {X_vals, Z_vals, Z_X_Y}
     }
     finally {
@@ -236,6 +262,20 @@ export async function plotAgg(ctx, req) {
   }
 
   throw Error(`unrecognized plot agg mode ${a.show(aggMode)}`)
+}
+
+async function queryPlotTotals(conn, queryFacts, opt) {
+  const query = qPlotAggTotals(queryFacts, opt)
+  if (!query) return undefined
+
+  if (u.LOG_DEBUG) console.time(`[plot_stats]`)
+  try {
+    const {text, args} = query
+    return await conn.queryDoc(text, args)
+  }
+  finally {
+    if (u.LOG_DEBUG) console.timeEnd(`[plot_stats]`)
+  }
 }
 
 export function tripletsToPlotAgg(src) {
@@ -251,16 +291,17 @@ export function tripletsToPlotAgg(src) {
     if (X in X_Y) throw Error(`redundant Z = ${Z}, X = ${X}`)
 
     /*
-    The `[Y]` wrapping makes the result compatible with `plotAggCompact`,
+    The `[Y]` wrapping makes the result compatible with `plotAggStateToPlotAgg`,
     which is shared with client-side code. A minor inefficiency, which
-    shouldn't matter because the dataset is small at this point. Makes
-    it easier to produce consistent results.
+    shouldn't matter because the dataset is small at this point. Makes it
+    easier to produce consistent results.
     */
     X_Y[X] = [Y]
     X_set.add(X)
   }
 
-  return s.plotAggCompact(state)
+  // This also calls `s.dropEmptySeries`.
+  return s.plotAggStateToPlotAgg(state)
 }
 
 /*
@@ -317,6 +358,55 @@ function qLatestRunId(opt) {
     `,
     u.sql`inner join latest_runs using (run_id)`
   ]
+}
+
+const TOTAL_VAL_LIMIT = 4
+
+const TOTAL_VAL_LIMITS = new Map()
+  .set(`user_id`, TOTAL_VAL_LIMIT)
+  .set(`run_id`, TOTAL_VAL_LIMIT)
+  .set(`round_id`, TOTAL_VAL_LIMIT)
+  .set(`bui_inst`, TOTAL_VAL_LIMIT)
+
+export function qPlotAggTotals(facts, opt) {
+  a.reqInst(facts, u.Sql)
+
+  let keys = opt?.totals
+  if (!a.optArr(keys)) return undefined
+  if (!keys.length) keys = s.defaultTotalKeys(opt)
+
+  const counts = []
+  const values = []
+
+  /*
+  Interpolation is an anti-pattern, but SQL injection should be impossible
+  because `s.validPlotAggOpt` ensures stat keys are safe.
+  */
+  for (const key of keys) {
+    counts.push(/*sql*/`${key} := count(distinct ${key})::double`)
+
+    const limit = TOTAL_VAL_LIMITS.get(key)
+
+    if (limit) {
+      values.push(/*sql*/`${key} := min(distinct ${key}, ${limit})`)
+    }
+    else {
+      values.push(/*sql*/`${key} := array_agg(distinct ${key} order by ${key})`)
+    }
+  }
+
+  const countFields = counts.join(`, `)
+  const valueFields = values.join(`, `)
+
+  return u.sql`
+    with
+      src as (${facts})
+    select
+      struct_pack(${u.sqlRaw(countFields)}) as counts,
+      struct_pack(${u.sqlRaw(valueFields)}) as values
+    from
+      src
+  `
 }
 
 /*

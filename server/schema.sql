@@ -24,9 +24,9 @@ change would be to save storage space, and possibly improve query performance.
 We're unable to evaluate this optimization until our data is large. When our
 data does get large, we're able to re-derive the DB data from the source data.
 
-- `run_id`           = `user_id, run_num, run_ms`
-- `round_id`         = `user_id, run_num, run_ms, round_num`
-- `run_round_bui_id` = `user_id, run_num, run_ms, round_num, bui_inst`
+  - `run_id`           = `user_id, run_num, run_ms`
+  - `round_id`         = `user_id, run_num, run_ms, round_num`
+  - `run_round_bui_id` = `user_id, run_num, run_ms, round_num, bui_inst`
 */
 create table facts (
   time_ms          bigint not null,
@@ -48,7 +48,10 @@ create table facts (
   stat_type        text   not null,
   stat_val         double not null
 
-  -- Sanity checks. Enable in development, disable in production.
+  /*
+  Sanity checks. Enable in development, disable in production.
+  We validate this in JS before creating facts; see `datAddRound`.
+  */
   /*
   constraint "facts.user_id"      check (user_id      <> ''),
   constraint "facts.round_num"    check (round_num    >  0),

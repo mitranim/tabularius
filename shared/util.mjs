@@ -35,7 +35,7 @@ export function optArrOfValidStr(val) {return a.optArrOf(val, a.isValidStr)}
 export function laxArrOfValidStr(val) {return a.optArrOf(val, a.isValidStr) ?? []}
 
 export function indent(src) {return a.optStr(src) ? `  ` + src : ``}
-export function indentChi(src) {return a.vac(src) && [`  `, src]}
+export function indentNode(src) {return a.vac(src) && [`  `, src]}
 
 export function joinKeys(...src) {return a.joinOptLax(src, `_`)}
 export function joinLines(...src) {return a.joinLinesOptLax(src)}
@@ -416,17 +416,17 @@ export function authHeadersOpt(publicKey, secretKey, ts) {
 /*
 Workaround for two unrelated problems.
 
-One is that we generate plot aggs in a few different ways, and want to compare
-them in testing, but JS has two different nil values, which often breaks
-comparison of nested data structures, when the comparison function
-distinguishes between `undefined` and `null`. This ameliorates that.
-
-Two is a problem in Uplot. Contrary to what the documentation claims, it seems
+One is a problem in Uplot. Contrary to what the documentation claims, it seems
 to only support missing values when they're `undefined`, but not when they're
 `null`. When generating data locally, we automatically end up with `undefined`
 for missing values. But when receiving plot agg data from a remote endpoint,
 the encoding and decoding process involves JSON which only supports `null`,
 and we have to convert it to `undefined` for the plot.
+
+Two is that we generate plot aggs in a few different ways, which must be
+consistent with each other on the same dataset, and want to compare them in
+testing, but `undefined` and `null` are distinct values, breaking comparisons.
+See above for how we end up with both.
 */
 export function consistentNil_undefined(val) {
   if (a.isNil(val)) return undefined

@@ -82,12 +82,13 @@ function validRunId(run) {
   return a.reqStr(id)
 }
 
-export async function datLoad(sig, dat, opt) {
+export async function datLoad({sig, dat, opt, user}) {
   a.reqStruct(dat)
   opt = a.laxStruct(opt)
+  a.optBool(user)
 
   const where = a.laxDict(opt.where)
-  const root = await fs.reqHistoryDir(sig)
+  const root = await fs.reqHistoryDir(sig, user)
   const runIds = new Set(a.optArr(where.run_id))
   const runNums = new Set(a.optArr(where.run_num))
   const roundNums = new Set(a.optArr(where.round_num))
@@ -115,8 +116,8 @@ export async function datLoad(sig, dat, opt) {
   }
 }
 
-export async function datLoadRun(sig, dat, run_id) {
-  const root = await fs.reqHistoryDir(sig)
+export async function datLoadRun({sig, dat, user, run_id}) {
+  const root = await fs.reqHistoryDir(sig, user)
   const runDir = await fs.chdir(sig, root, run_id)
   await datLoadRunFromHandle(sig, dat, runDir)
 }

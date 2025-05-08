@@ -57,8 +57,8 @@ export async function cmdInit({sig, args}) {
   const progInit = u.arrRemoved(args, `-p`)
   const histInit = u.arrRemoved(args, `-h`)
 
-  const progHad = await fs.loadedProgressFile()
-  const histHad = await fs.loadedHistoryDir()
+  const progHad = await fs.loadedProgressFile(sig)
+  const histHad = await fs.loadedHistoryDir(sig)
 
   let progHave = progHad
   let histHave = histHad
@@ -132,7 +132,7 @@ function cmdInitHelp() {
 // Deinitialize features and stop all processes.
 export async function cmdDeinit({sig}) {
   return u.LogParagraphs(
-    await os.procKillAll(),
+    os.procKillAll(),
     ...await fs.deinitFileHandles(sig),
   )
 }
@@ -187,7 +187,8 @@ function cmdLsHelp() {
 }
 
 export function cmdLs(proc) {
-  const {sig} = proc
+  const cmd = cmdLs.cmd
+  const {sig, user} = proc
   const pairs = a.tail(u.cliDecode(proc.args))
   if (!pairs.length) return os.cmdHelpDetailed(cmdLs)
 
@@ -197,12 +198,12 @@ export function cmdLs(proc) {
 
   for (const [key, val] of pairs) {
     if (key === `-c`) {
-      cloud = u.cliBool(key, val)
+      cloud = ui.cliBool(cmd, key, val)
       continue
     }
 
     if (key === `-s`) {
-      stat = u.cliBool(key, val)
+      stat = ui.cliBool(cmd, key, val)
       continue
     }
 
@@ -224,7 +225,7 @@ export function cmdLs(proc) {
     return au.listDirsFiles(sig, args[0])
   }
 
-  return fs.listDirsFiles(sig, args[0], stat)
+  return fs.listDirsFiles({sig, path: args[0], stat, user})
 }
 
 async function main() {
@@ -235,8 +236,8 @@ async function main() {
   migrations, and convenient for URL query "run" commands which rely on FS.
   */
   const [loadedProg, loadedHist] = await Promise.all([
-    fs.loadedProgressFile(),
-    fs.loadedHistoryDir(),
+    fs.loadedProgressFile(u.sig),
+    fs.loadedHistoryDir(u.sig),
   ]).catch(u.logErr)
 
   // Other code relies on up-to-date FS state, so FS migrations run first.
@@ -265,7 +266,7 @@ async function main() {
         imported++
       }
       else {
-        u.log.err(`rejecting foreign import `, a.show(val))
+        u.log.err(`rejecting foreign import `, a.show(val), ` to avoid XSS`)
       }
       continue
     }
@@ -294,7 +295,11 @@ async function main() {
   TODO: make this togglable.
   */
   if (ui.MEDIA.isDefault()) {
-    os.runProc(p.plotDefault, `plot_default`, `running default analysis`).catch(u.logErr)
+    os.runProc({
+      fun: p.plotDefault,
+      args: `plot_default`,
+      desc: `running default analysis`,
+    }).catch(u.logErr)
   }
 
   if (!loadedProg) {

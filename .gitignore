@@ -35,6 +35,7 @@
 !/client
 /client/*
 !/client/*.mjs
+!/client/*.svg
 !/client/wordlist.txt
 
 # TODO merge into `todo.md`.

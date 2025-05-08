@@ -1,4 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
+import * as o from '@mitranim/js/obs.mjs'
 import Plot from 'uplot'
 import * as gc from '../shared/game_const.mjs'
 import * as s from '../shared/schema.mjs'
@@ -41,7 +42,7 @@ cmdPlot.help = function cmdPlotHelp() {
     u.LogLines(
       [BtnAppend(`-p`), ` -- preset; supported values:`],
       u.LogParagraphs(
-        ...a.map(a.entries(PLOT_PRESETS), Help_preset).map(u.indentChi),
+        ...a.map(a.entries(PLOT_PRESETS), Help_preset).map(u.indentNode),
       ),
     ),
 
@@ -50,7 +51,7 @@ cmdPlot.help = function cmdPlotHelp() {
         BtnAppend(`-x`),
         ` -- X axis (progress); supported values:`,
       ],
-      ...FlagAppendBtns(a.keys(s.ALLOWED_X_KEYS), `-x`).map(u.indentChi),
+      ...FlagAppendBtns(a.keys(s.ALLOWED_X_KEYS), `-x`).map(u.indentNode),
     ),
 
     u.LogLines(
@@ -58,7 +59,7 @@ cmdPlot.help = function cmdPlotHelp() {
         BtnAppend(`-y`),
         ` -- Y axis (stat type); supported values:`,
       ],
-      ...FlagAppendBtns(a.keys(s.ALLOWED_STAT_TYPE_FILTERS), `-y`).map(u.indentChi),
+      ...FlagAppendBtns(a.keys(s.ALLOWED_TOTAL_TYPE_FILTERS), `-y`).map(u.indentNode),
     ),
 
     u.LogLines(
@@ -66,7 +67,7 @@ cmdPlot.help = function cmdPlotHelp() {
         BtnAppend(`-z`),
         ` -- Z axis (plot series); supported values:`,
       ],
-      ...a.map(a.keys(s.ALLOWED_Z_KEYS), Help_Z).map(u.indentChi),
+      ...a.map(a.keys(s.ALLOWED_Z_KEYS), Help_Z).map(u.indentNode),
     ),
 
     u.LogLines(
@@ -74,7 +75,17 @@ cmdPlot.help = function cmdPlotHelp() {
         BtnAppend(`-a`),
         ` -- aggregation mode; supported values:`,
       ],
-      ...FlagAppendBtns(a.keys(s.AGGS), `-a`).map(u.indentChi),
+      ...FlagAppendBtns(a.keys(s.AGGS), `-a`).map(u.indentNode),
+    ),
+
+    u.LogLines(
+      [
+        BtnAppend(`-t`),
+        ` -- print totals from the aggregated data; usage:`,
+      ],
+      [`  -t`, `                      -- all additional totals`],
+      [`  -t <stat>`, `               -- one specific stat`],
+      [`  -t <stat> -t <stat> ...`, ` -- several specific totals`],
     ),
 
     u.LogLines(
@@ -83,13 +94,13 @@ cmdPlot.help = function cmdPlotHelp() {
         ` -- fetch a run file / rounds file from the given URL; overrides `,
         BtnAppend(`-c`), `; examples:`
       ],
-      [`  `, BtnAppend(`-f=samples/example_run.gd`)],
-      [`  `, BtnAppend(`-f=samples/example_runs.gd`)],
+      [`  `, BtnAppend(`-f=samples/example_run.gd user_id=all run_id=all -p=dmg`)],
+      [`  `, BtnAppend(`-f=samples/example_runs.gd user_id=all run_id=all -p=dmg`)],
     ),
 
     u.LogLines(
       `supported filters:`,
-      ...a.map(a.keys(s.ALLOWED_FILTER_KEYS), Help_filter).map(u.indentChi),
+      ...a.map(a.keys(s.ALLOWED_FILTER_KEYS), Help_filter).map(u.indentNode),
     ),
 
     u.LogLines(
@@ -115,40 +126,58 @@ cmdPlot.help = function cmdPlotHelp() {
   )
 }
 
-export function cmdPlot({sig, args}) {
-  const inp = u.stripPreSpaced(args, cmdPlot.cmd)
-  if (!inp) return cmdPlot.help()
+export function cmdPlot({sig, args, user}) {
+  args = u.stripPreSpaced(args, cmdPlot.cmd)
+  if (!args) return cmdPlot.help()
 
-  const opt = decodePlotAggOpt(inp)
-  if (opt.cloud) return cmdPlotCloud(sig, opt, args)
-  if (opt.fetch) return cmdPlotFetch(sig, opt, args)
-  return cmdPlotLocal(sig, opt, args)
+  const opt = decodePlotAggOpt(args)
+  const inp = {sig, args, opt, user}
+  if (opt.cloud) return cmdPlotCloud(inp)
+  if (opt.fetch) return cmdPlotFetch(inp)
+  return cmdPlotLocal(inp)
 }
 
-export async function cmdPlotLocal(sig, opt, args) {
+/*
+TODO: on `DAT` events, don't update if unaffected.
+
+Technical and UX note. When totals are requested, this renders two reactive
+elements: `PlotTotals` in terminal, `LivePlotter` in media. When new rounds
+are added, the `LivePlotter` invokes `makeOpts`, which updates the observable
+used by the `PlotTotals`. When the `LivePlotter` is removed from the media,
+the `PlotTotals` may remain in the terminal, no longer receiving updates.
+Seems kinda sloppy, but is very simple, and makes for an okay UX. If the user
+clicks a button to remove a plot, they either no longer care about its stats,
+or are satisfied with them staying as-is.
+*/
+export async function cmdPlotLocal({sig, args, opt, user}) {
   opt = s.validPlotAggOpt(opt)
-  await d.datLoad(sig, d.DAT, opt)
+  await d.datLoad({sig, dat: d.DAT, opt, user})
 
-  const opts = plotOpts()
-  if (isPlotDataEmpty(opts.data)) return msgPlotDataEmpty(args, opt)
+  const agg = makeAgg()
+  if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
-  ui.MEDIA.add(new LivePlotter(opts, plotOpts))
+  const obs = agg.totals && o.obs({args, totals: agg.totals})
+  const opts = plotOptsWith({...agg, opt})
 
-  // TODO: on `DAT` events, don't update the plot if unaffected.
-  function plotOpts() {
-    const facts = d.datQueryFacts(d.DAT, opt)
-    const data = s.plotAggFromFacts({facts, opt})
-    return plotOptsWith({...data, opt})
+  function makeAgg() {
+    return s.plotAggFromFacts({facts: d.datQueryFacts(d.DAT, opt), opt})
   }
+
+  function makeOpts() {
+    const agg = makeAgg()
+    if (obs) obs.totals = agg.totals
+    return plotOptsWith({...agg, opt})
+  }
+
+  if (obs) u.log.info(new PlotTotals(obs))
+  else if (!user) u.log.info(...msgPlot(args))
+  ui.MEDIA.add(new LivePlotter(opts, makeOpts))
 }
 
-export async function cmdPlotFetch(sig, opt, args) {
-  const opts = await cmdPlotFetchOpts(sig, opt)
-  if (isPlotDataEmpty(opts.data)) return msgPlotDataEmpty(args, opt)
-  ui.MEDIA.add(new Plotter(opts))
-}
+export async function cmdPlotFetch({sig, args, opt, user, example}) {
+  opt = s.validPlotAggOpt(opt)
+  a.reqValidStr(args)
 
-export async function cmdPlotFetchOpts(sig, opt) {
   const src = a.reqValidStr(opt.fetch)
   const rounds = await u.decodeGdStr(await u.fetchText(src, {signal: sig}))
   if (!a.len(rounds)) throw Error(`no rounds in ${a.show(src)}`)
@@ -162,8 +191,6 @@ export async function cmdPlotFetchOpts(sig, opt) {
     s.datAddRound({dat, round, user_id, run_num, run_ms, composite: true})
   }
 
-  opt = s.validPlotAggOpt(opt)
-
   // SYNC[plot_user_current].
   if (opt.userCurrent) {
     u.dictPush(opt.where, `user_id`, plotReqUserId())
@@ -171,11 +198,22 @@ export async function cmdPlotFetchOpts(sig, opt) {
   }
 
   const facts = d.datQueryFacts(dat, opt)
-  const data = s.plotAggFromFacts({facts, opt})
-  return plotOptsWith({...data, opt})
+  const agg = u.consistentNil_undefined(s.plotAggFromFacts({facts, opt}))
+  if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
+
+  const opts = plotOptsWith({...agg, opt})
+
+  // Dumb special case but not worth fixing.
+  if (example) {
+    const pre = `example run analysis: `
+    opts.title = pre + opts.title
+    opts.titleElem?.prepend(Muted(pre))
+  }
+
+  showPlot({opts, totals: agg.totals, args, user})
 }
 
-export async function cmdPlotCloud(sig, opt, args) {
+export async function cmdPlotCloud({sig, args, opt, user}) {
   u.reqSig(sig)
   opt = s.validPlotAggOpt(opt)
 
@@ -187,11 +225,19 @@ export async function cmdPlotCloud(sig, opt, args) {
     )
   }
 
-  let data = await apiPlotAgg(sig, opt)
-  if (isPlotAggEmpty(data)) return msgPlotDataEmpty(args, opt)
-  data = s.plotAggWithTotals({...data, totalFun: opt.totalFun})
-  data = u.consistentNil_undefined(data)
-  ui.MEDIA.add(new Plotter(plotOptsWith({...data, opt})))
+  const agg = u.consistentNil_undefined(await apiPlotAgg(sig, opt))
+  if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
+
+  a.assign(agg, s.plotAggWithTotalSeries({...agg, totalFun: opt.totalFun}))
+  showPlot({opts: plotOptsWith({...agg, opt}), totals: agg.totals, args, user})
+}
+
+// Note: `cmdPlotLocal` does it differently.
+function showPlot({opts, totals, args, user}) {
+  a.reqStr(args)
+  if (totals) u.log.info(new PlotTotals({args, totals}))
+  else if (!user) u.log.info(...msgPlot(args))
+  ui.MEDIA.add(new Plotter(opts))
 }
 
 function plotReqUserId() {
@@ -205,6 +251,10 @@ function plotReqUserId() {
   )
 }
 
+/*
+TODO: use `argument[0].totals`, when provided.
+Some could be usefully rendered under the plot.
+*/
 export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt}) {
   a.reqArr(X_vals)
   a.reqArr(Z_vals)
@@ -212,18 +262,20 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt}) {
   a.reqDict(opt)
 
   const agg = s.AGGS.get(opt.agg)
-  const Z_rows = a.map(Z_vals, legendDisplay).map((val, ind) => serieWithAgg(val, ind, agg))
+  const Z_rows = Z_vals
+    .map(Z => legendDisplay(opt.Z, Z))
+    .map((val, ind) => serieWithAgg(val, ind, agg))
 
   // Hide the total serie by default.
   // TODO: when updating a live plot, preserve series show/hide state.
   if (Z_rows[0]) Z_rows[0].show = false
 
-  const titlePre = E(`b`, {}, opt.agg)
-  const titleSuf = [` per `, E(`b`, {}, opt.Z), ` per `, E(`b`, {}, opt.X)]
+  const titlePre = Bold(opt.agg)
+  const titleSuf = [Muted(` per `), Bold(opt.Z), Muted(` per `), Bold(opt.X)]
   const titleElem = E(`span`, {}, titlePre,
     opt.Z === `stat_type`
     ? titleSuf
-    : [` of `, E(`b`, {}, opt.Y), ...titleSuf]
+    : [Muted(` of `), Bold(opt.Y), ...titleSuf]
   )
   const title = titleElem.textContent
 
@@ -256,10 +308,13 @@ Converts CLI args to a format suitable as an input for `s.validPlotAggOpt`,
 which is what's actually used by the various plotting functions.
 */
 export function decodePlotAggOpt(src) {
-  src = u.stripPreSpaced(src, cmdPlot.cmd)
+  const cmd = cmdPlot.cmd
+  const errs = []
+  const keys = new Set()
   const out = a.Emp()
   out.where = a.Emp()
 
+  src = u.stripPreSpaced(src, cmd)
   const srcPairs = a.reqArr(u.cliDecode(src))
   const outPairs = a.reqArr(plotAggOptExpandPresets(srcPairs))
 
@@ -268,37 +323,55 @@ export function decodePlotAggOpt(src) {
     if (opts) u.log.verb(`[plot] expanded opts: `, BtnAppend(opts))
   }
 
-  for (let [key, val] of outPairs) {
+  for (let [key, val, pair] of outPairs) {
+    keys.add(key)
+
     if (key === `-c`) {
-      out.cloud = u.cliBool(key, val)
+      out.cloud = ui.cliBool(cmd, key, val)
       continue
     }
 
     if (key === `-x`) {
-      out.X = reqEnum(key, val, s.ALLOWED_X_KEYS)
+      try {out.X = ui.cliEnum(cmd, key, val, s.ALLOWED_X_KEYS)}
+      catch (err) {errs.push(err)}
       continue
     }
 
     if (key === `-y`) {
-      out.Y = reqEnum(key, val, s.ALLOWED_STAT_TYPE_FILTERS)
+      try {out.Y = ui.cliEnum(cmd, key, val, s.ALLOWED_TOTAL_TYPE_FILTERS)}
+      catch (err) {errs.push(err)}
       continue
     }
 
     if (key === `-z`) {
-      out.Z = reqEnum(key, val, s.ALLOWED_Z_KEYS)
+      try {out.Z = ui.cliEnum(cmd, key, val, s.ALLOWED_Z_KEYS)}
+      catch (err) {errs.push(err)}
       continue
     }
 
     if (key === `-a`) {
-      out.agg = reqEnum(key, val, s.AGGS)
+      try {out.agg = ui.cliEnum(cmd, key, val, s.AGGS)}
+      catch (err) {errs.push(err)}
+      continue
+    }
+
+    if (key === `-t`) {
+      out.totals ??= []
+      if (!val) continue
+
+      try {out.totals.push(ui.cliEnum(cmd, key, val, s.SUPPORTED_TOTAL_KEYS))}
+      catch (err) {errs.push(err)}
       continue
     }
 
     if (key === `-f`) {
-      if (!val) {
-        throw Error(`plot opt "-f" must be a non-empty path or URL pointing to a ".gd" or ".json" file which must contain a sequence of rounds to be aggregated and analyzed`)
+      if (val) out.fetch = val
+      else {
+        errs.push([
+          BtnAppend(`-f`),
+          ` must be a non-empty path or URL pointing to a ".gd" or ".json" file which must contain a sequence of rounds to be aggregated and analyzed`,
+        ])
       }
-      out.fetch = val
       continue
     }
 
@@ -309,17 +382,28 @@ export function decodePlotAggOpt(src) {
     }
 
     if (!key) {
-      throw Error(`plot args must be one of: "-flag", "-flag=val", or "field=val", got ${a.show(val)}`)
+      errs.push([
+        `unrecognized `, BtnAppend(val),
+        `, plot args must be in one of the following forms: "-flag", "-flag=val", or "field=val"`,
+        `, see `, os.BtnCmd(`help plot`), ` for available options`,
+      ])
+      continue
     }
 
     if (!s.ALLOWED_FILTER_KEYS.has(key)) {
-      throw new u.ErrLog(
-        `plot filters must be among: `,
-        ...u.LogWords(
-          ...a.map(a.keys(s.ALLOWED_FILTER_KEYS), BtnAppendEq),
-        ),
-        `, got: `, key, `=`,
-      )
+      if (key.startsWith(`-`)) {
+        errs.push([`unrecognized flag `, BtnAppend(pair)])
+      }
+      else {
+        errs.push(u.LogLines(
+          [`unrecognized filter `, BtnAppend(pair), `, filters must be among:`],
+          ...a.map(
+            a.keys(s.ALLOWED_FILTER_KEYS),
+            BtnAppendEq,
+          ).map(u.indentNode),
+        ))
+      }
+      continue
     }
 
     if (key === `user_id`) {
@@ -353,7 +437,10 @@ export function decodePlotAggOpt(src) {
     if (key === `run_num`) {
       out.runLatest ??= false
       const int = a.intOpt(val)
-      if (a.isNil(int)) throw Error(`${a.show(key)} must be an integer, got: ${a.show(val)}`)
+      if (a.isNil(int)) {
+        errs.push([BtnAppend(key), ` must be an integer, got `, val])
+        continue
+      }
       u.dictPush(out.where, key, int)
       continue
     }
@@ -364,20 +451,15 @@ export function decodePlotAggOpt(src) {
       key === `round_num`
     ) {
       const int = a.intOpt(val)
-      if (a.isNil(int)) throw Error(`${a.show(key)} must be an integer, got: ${a.show(val)}`)
+      if (a.isNil(int)) {
+        errs.push([BtnAppend(key), ` must be an integer, got `, val])
+        continue
+      }
       u.dictPush(out.where, key, int)
       continue
     }
 
-    if (key === `bui_type`) {
-      val = gc.BUIS_TO_CODES_SHORT[val] || val
-    }
-    else if (key === `bui_type_upg`) {
-      val = titledToCoded(val) || val
-    }
-    else if (key === `hero`) {
-      val = gc.HEROS_TO_CODES_SHORT[val] || val
-    }
+    val = titledToCoded(key, val)
 
     /*
     Inputs: `one=two one=three four=five`.
@@ -387,9 +469,23 @@ export function decodePlotAggOpt(src) {
     u.dictPush(out.where, key, val)
   }
 
+  // SYNC[plot_agg_requires_x].
+  if (!out.X && !keys.has(`-x`)) errs.push(msgMissing(`-x`))
+
+  // SYNC[plot_agg_requires_z].
+  if (!out.Z && !keys.has(`-z`)) errs.push(msgMissing(`-z`))
+
+  // SYNC[plot_group_stat_type_z_versus_y].
+  if (!out.Y && !keys.has(`-y`) && out.Z !== `stat_type`) {
+    errs.push(msgMissing(`-y`))
+  }
+
+  // SYNC[plot_agg_requires_agg].
+  if (!out.agg && !keys.has(`-a`)) errs.push(msgMissing(`-a`))
+
   // SYNC[plot_agg_z_chi_type].
   if (out.Z === `chi_type` && !a.includes(out.where.ent_type, s.FACT_ENT_TYPE_CHI)) {
-    throw new u.ErrLog(
+    errs.push([
       BtnAppend(`-z=chi_type`),
       ` requires `,
       BtnAppend(`ent_type=` + s.FACT_ENT_TYPE_CHI),
@@ -397,7 +493,7 @@ export function decodePlotAggOpt(src) {
         `, got `,
         FlagAppendBtns(out.where.ent_type, `ent_type`),
       ],
-    )
+    ])
   }
 
   // SYNC[plot_agg_cost_eff_only_bui].
@@ -406,44 +502,50 @@ export function decodePlotAggOpt(src) {
     !a.includes(out.where.ent_type, s.FACT_ENT_TYPE_BUI)
   ) {
     const got = FlagAppendBtns(out.where.ent_type, `ent_type`)
-    throw new u.ErrLog(
+    errs.push([
       BtnAppend(`-y=` + out.Y), ` requires `,
       BtnAppend(`ent_type=` + s.FACT_ENT_TYPE_BUI),
       a.vac(got) && `, got `, got,
-    )
+    ])
   }
 
+  if (errs.length) {
+    throw new u.ErrLog(...u.LogParagraphs(
+      [`errors in `, BtnReplace(src), `:`],
+      ...errs,
+    ))
+  }
   return out
 }
 
 export const PLOT_PRESETS = new Map()
   // SYNC[plot_agg_opt_dmg].
   .set(`dmg`, {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
   })
   .set(`chi_dmg`, {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
   })
   .set(`eff`, {
-    args: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
   })
   .set(`dmg_over`, {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=bui_type_upg -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
   })
   .set(`dmg_runs`, {
-    args: `-x=run_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+    args: `-x=run_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
   })
   .set(`eff_runs`, {
-    args: `-x=run_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+    args: `-x=run_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
   })
   .set(`round_stats`, {
-    args: `-x=round_num -z=stat_type -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    args: `-x=round_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
   })
   .set(`run_stats`, {
-    args: `-x=run_num -z=stat_type -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+    args: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
   })
   .set(`run_stats_all`, {
-    args: `-x=run_num -z=stat_type -a=sum ent_type=${s.FACT_ENT_TYPE_BUI} run_id=all`,
+    args: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=all`,
   })
 
 function plotAggOptExpandPresets(src) {
@@ -459,7 +561,7 @@ function plotAggOptExpandPresets(src) {
       continue
     }
 
-    reqEnum(`-p`, val, PLOT_PRESETS)
+    ui.cliEnum(cmdPlot.cmd, `-p`, val, PLOT_PRESETS)
     const {args} = PLOT_PRESETS.get(val)
 
     for (const prePair of u.cliDecode(args)) {
@@ -476,7 +578,7 @@ Otherwise, show a sample run for prettiness sake.
 */
 export async function plotDefault({sig}) {
   try {
-    if (await fs.loadedHistoryDir()) {
+    if (await fs.hasHistoryDir(sig)) {
       await cmdPlot({sig, args: `plot -p=dmg user_id=all run_id=latest`})
       return
     }
@@ -489,11 +591,8 @@ export async function plotDefault({sig}) {
 }
 
 export async function plotExampleRun(sig) {
-  const url = new URL(`../samples/example_run.gd`, import.meta.url)
-  const opt = decodePlotAggOpt(`-f=${url} -p=dmg user_id=all run_id=all`)
-  const opts = await cmdPlotFetchOpts(sig, opt)
-  opts.title = `example run analysis: ` + opts.title
-  ui.MEDIA.add(new Plotter(opts))
+  const args = `plot -f=samples/example_run.gd -p=dmg user_id=all run_id=all -t`
+  await cmdPlotFetch({sig, args, opt: decodePlotAggOpt(args), example: true})
 }
 
 /*
@@ -914,36 +1013,85 @@ export class TooltipPlugin extends a.Emp {
 
 export const LEGEND_LEN_MAX = 32
 
-export function legendDisplay(src) {
+export function legendDisplay(Z_key, Z_val) {
+  a.reqValidStr(Z_key)
+
   // Z labels are sometimes numbers.
-  if (!a.isStr(src)) return src
-  return u.ellMid(codedToTitled(src), LEGEND_LEN_MAX)
+  if (!a.isStr(Z_val)) return Z_val
+
+  return u.ellMid(codedToTitled(Z_key, Z_val), LEGEND_LEN_MAX)
 }
 
+// /*
+// Converts labels such as `CB01_ABA` into the likes of `Bunker_ABA`. We could
+// generate and store those names statically, but doing this dynamically seems
+// more reliable, considering that new entities may be added later. Updating the
+// table of codes is easier than updating the data.
+// */
+// export function codedToTitled(src) {
+//   // Z labels are sometimes numbers.
+//   if (!a.isStr(src)) return src
+//   return u.joinKeys(...u.splitKeys(src).map(codeToName))
+// }
+
+// /*
+// Inverse of `codedToTitled`. Should be used to convert user-readable filters such
+// as `bui_type=Bunker` into coded ones that match the actual fact fields.
+// */
+// export function titledToCoded(src) {
+//   return u.joinKeys(...u.splitKeys(src).map(nameToCode))
+// }
+
 /*
-Converts labels such as `CB01_ABA` into the likes of `Bunker_ABA`. We could
-generate and store those names statically, but doing this dynamically seems
-more reliable, considering that new entities may be added later. Updating the
-table of codes is easier than updating the data.
+Converts labels such as `CB01` to `Bunker`, `CB01_ABA` to `Bunker_ABA`, and
+other similar things. We could generate and store those names statically, but
+doing this dynamically seems more reliable, considering that new entities may
+be added later. Updating the table of codes is easier than updating the data.
+
+SYNC[plot_fields_coded_titled].
 */
-export function codedToTitled(src) {
-  // Z labels are sometimes numbers.
-  if (!a.isStr(src)) return src
-  return u.joinKeys(...u.splitKeys(src).map(codeToName))
+export function codedToTitled(key, val) {
+  a.reqValidStr(key)
+  if (!a.isStr(val)) return val
+
+  if (key === `bui_type`) {
+    return gc.CODES_TO_BUIS_SHORT[val] || val
+  }
+  if (key === `bui_type_upg`) {
+    [key, ...val] = u.splitKeys(val)
+    return u.joinKeys(gc.CODES_TO_BUIS_SHORT[key] || key, ...val)
+  }
+  if (key === `hero`) {
+    return gc.CODES_TO_HEROS_SHORT[val] || val
+  }
+  return val
 }
 
 /*
 Inverse of `codedToTitled`. Should be used to convert user-readable filters such
 as `bui_type=Bunker` into coded ones that match the actual fact fields.
+
+SYNC[plot_fields_coded_titled].
 */
-export function titledToCoded(src) {
-  return u.joinKeys(...u.splitKeys(src).map(nameToCode))
+export function titledToCoded(key, val) {
+  a.reqValidStr(key)
+  if (!a.isStr(val)) return val
+
+  if (key === `bui_type`) {
+    return gc.BUIS_TO_CODES_SHORT[val] || val
+  }
+  if (key === `bui_type_upg`) {
+    [key, ...val] = u.splitKeys(val)
+    return u.joinKeys(gc.BUIS_TO_CODES_SHORT[key] || key, ...val)
+  }
+  if (key === `hero`) {
+    return gc.HEROS_TO_CODES_SHORT[val] || val
+  }
+  return val
 }
 
-function codeToName(src) {return gc.CODES_TO_NAMES_SHORT[a.reqStr(src)] || src}
-function nameToCode(src) {return gc.NAMES_TO_CODES_SHORT[a.reqStr(src)] || src}
-
-function BtnAppend(val) {return ui.BtnPromptAppend(cmdPlot.cmd, val)}
+function BtnAppend(val, alias) {return ui.BtnPromptAppend(cmdPlot.cmd, val, alias)}
+function BtnReplace(val) {return ui.BtnPromptReplace(u.preSpacedOpt(val, cmdPlot.cmd))}
 
 function BtnAppendEq(key) {
   return BtnAppend(a.reqValidStr(key) + `=`)
@@ -1016,7 +1164,7 @@ function isPlotDataEmpty([X_vals, Z_vals, Z_X_Y]) {
 function msgPlotDataEmpty(args, opt) {
   a.reqStr(args)
   return u.LogParagraphs(
-    [`no data found for `, ui.BtnPromptReplace(args)],
+    [`no data found for `, BtnReplace(args)],
     a.vac(opt.userCurrent) && [
       `data was filtered by `, BtnAppend(`user_id=current`),
       `, consider `, BtnAppend(`user_id=all`),
@@ -1028,17 +1176,14 @@ function msgPlotDataEmpty(args, opt) {
   )
 }
 
-function reqEnum(key, val, coll) {
-  if (coll.has(val)) return val
-
-  function show(val) {return BtnAppend(key + `=` + a.renderLax(val))}
-
-  throw new u.ErrLog(
-    a.show(key), ` must be one of: `,
-    ...u.LogWords(...a.map(a.keys(coll), show)),
-    `, got: `, key, `=`, val,
+function msgMissing(key) {
+  return new u.ErrLog(
+    `missing `, BtnAppend(key), `, `,
+    `consider using a preset such as `, BtnAppend(`-p=dmg`),
   )
 }
+
+function msgPlot(args) {return [`plotting `, BtnReplace(args)]}
 
 export function plotArgsToAggOpt(src) {
   return s.validPlotAggOpt(decodePlotAggOpt(src))
@@ -1111,14 +1256,14 @@ export async function cmdPlotLink({sig, args}) {
 
   return u.LogParagraphs(
     `plot link:`,
-    E(`a`, {href, class: u.INLINE_BTN_CLS, ...ui.TARBLAN}, href),
+    E(`a`, {href, class: u.CLS_BTN_INLINE, ...ui.TARBLAN}, href),
     a.vac(copied) && `copied link to clipboard`,
   )
 }
 
 function plotLinkPlot(runId, preset) {
   a.reqValidStr(runId)
-  reqEnum(`-p`, preset, PLOT_PRESETS)
+  ui.cliEnum(cmdPlot.cmd, `-p`, preset, PLOT_PRESETS)
   return `plot -c -p=${preset} user_id=all run_id=${runId}`
 }
 
@@ -1126,4 +1271,92 @@ export function apiLatestRun(sig, user) {
   const url = u.paths.join(u.API_URL, `latest_run`, a.laxStr(user))
   const opt = {signal: u.reqSig(sig)}
   return u.fetchJson(url, opt)
+}
+
+export class PlotTotals extends u.ReacElem {
+  // May or may not be observable.
+  src = undefined
+
+  constructor(src) {
+    super()
+    this.src = a.reqObj(src)
+  }
+
+  run() {
+    const args = a.reqStr(this.src.args)
+    const totals = a.reqDict(this.src.totals)
+    const counts = a.reqDict(totals.counts)
+    const values = a.reqDict(totals.values)
+
+    E(
+      this,
+      // For long user ids which don't always fit.
+      {class: `break-all`},
+      u.LogLines(
+      [`totals for `, BtnReplace(args), `:`],
+      ...a.map(a.keys(counts), a.bind(PlotTotalEntry, counts, values)).map(u.indentNode),
+    ))
+  }
+}
+
+function PlotTotalEntry(counts, values, key) {
+  const totalCount = a.laxInt(counts[key])
+  const samples = a.laxArr(values[key])
+  const sampleCount = a.laxNat(samples.length)
+  const omitted = totalCount - sampleCount
+
+  // For the rest of this function we assume `omitted >= 0`.
+  if (omitted < 0 && u.LOG_VERBOSE) {
+    u.log.verb(`[plot] unexpected state in plot totals: `, counts, values)
+  }
+
+  if (!totalCount && !sampleCount) return undefined
+
+  const keyNode = Muted(key, `: `)
+
+  if (totalCount === 1 && sampleCount === 1) {
+    const sample = a.render(samples[0])
+    if (!sample) return undefined
+    return [keyNode, BtnAppend(u.cliEq(key, sample), sample)]
+  }
+
+  if (!sampleCount) return [keyNode, totalCount]
+
+  function Sample(val) {
+    val = codedToTitled(key, val)
+    return [val, ` `, u.BtnClip(val)]
+  }
+
+  /*
+  `display: inline-block` avoids a redundant newline;
+  `display: inline` doesn't work for this purpose.
+  */
+  return E(`details`, {class: `inline-block`, open: false},
+    E(
+      `summary`,
+      // `display: inline` hides the default arrow.
+      {class: `inline cursor-pointer hover:underline hover:decoration-dotted`},
+      keyNode, totalCount,
+      // TODO: say "collapse" if already expanded.
+      Muted(
+        totalCount === sampleCount
+        ? ` (expand)`
+        : ` (expand ` + sampleCount + `)`
+      ),
+    ),
+    ...u.LogLines(
+      ...a.map(samples, Sample).map(u.indentNode),
+      a.vac(omitted) && E(`span`, {class: u.CLS_TEXT_GRAY},
+        `  ... `, omitted, ` omitted`
+      ),
+    ),
+  )
+}
+
+function Bold(...chi) {
+  return E(`b`, {}, ...chi)
+}
+
+function Muted(...chi) {
+  return E(`span`, {class: u.CLS_TEXT_GRAY}, ...chi)
 }

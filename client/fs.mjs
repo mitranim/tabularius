@@ -72,33 +72,49 @@ export const HISTORY_DIR_CONF = new FileConf({
 })
 
 // Try to load file handles from IDB on app startup.
-export async function loadedFileHandles() {
+export async function loadedFileHandles(sig) {
   const [prog, hist] = await Promise.all([
-    loadedProgressFile(),
-    loadedHistoryDir(),
+    loadedProgressFile(sig),
+    loadedHistoryDir(sig),
   ])
   return !!(prog && hist)
 }
 
-export async function loadedProgressFile() {
-  return !!await fileConfLoadedWithPerm(PROGRESS_FILE_CONF)
+export async function loadedProgressFile(sig) {
+  return !!await fileConfLoadedWithPermIdemp(sig, PROGRESS_FILE_CONF)
 }
 
-export async function loadedHistoryDir() {
-  return !!await fileConfLoadedWithPerm(HISTORY_DIR_CONF)
+export async function loadedHistoryDir(sig) {
+  return !!await fileConfLoadedWithPermIdemp(sig, HISTORY_DIR_CONF)
+}
+
+export async function fileConfLoadedWithPermIdemp(sig, conf) {
+  const {handle} = a.reqInst(conf, FileConf)
+  if (handle) {
+    await fileConfRequirePermission(sig, conf)
+    return handle
+  }
+  return fileConfLoadedWithPerm(sig, conf)
 }
 
 // Try to load a handle and check its permission.
-export async function fileConfLoadedWithPerm(conf) {
+export async function fileConfLoadedWithPerm(sig, conf) {
+  u.reqSig(sig)
   const {mode} = a.reqInst(conf, FileConf)
   await fileConfLoad(conf)
   if (!conf.handle) return undefined
 
-  conf.perm = await queryPermission(conf.handle, {mode})
+  conf.perm = await queryPermission(sig, conf.handle, {mode})
   if (conf.perm === `granted`) return conf.handle
 
   u.log.info(...msgNotGranted(conf))
   return undefined
+}
+
+export async function fileConfLoadIdemp(conf) {
+  const {handle} = a.reqInst(conf, FileConf)
+  if (handle) await fileConfRequirePermission(sig, conf)
+  else await fileConfLoad(conf)
 }
 
 export async function fileConfLoad(conf) {
@@ -133,21 +149,27 @@ due to a user input, we're allowed to request permissions, but otherwise, we're
 only allowed to query permissions.
 */
 export async function initedFileHandles(sig) {
-  await fileConfInit(sig, PROGRESS_FILE_CONF)
-  await fileConfInit(sig, HISTORY_DIR_CONF)
+  await fileConfInitIdemp(sig, PROGRESS_FILE_CONF)
+  await fileConfInitIdemp(sig, HISTORY_DIR_CONF)
   return true
 }
 
 export async function initedProgressFile(sig) {
   const conf = PROGRESS_FILE_CONF
-  await fileConfInit(sig, conf).catch(u.logErr)
+  await fileConfInitIdemp(sig, conf).catch(u.logErr)
   return !!conf.handle
 }
 
 export async function initedHistoryDir(sig) {
   const conf = HISTORY_DIR_CONF
-  await fileConfInit(sig, conf).catch(u.logErr)
+  await fileConfInitIdemp(sig, conf).catch(u.logErr)
   return !!conf.handle
+}
+
+export async function fileConfInitIdemp(sig, conf) {
+  const {handle} = a.reqInst(conf, FileConf)
+  if (handle) await fileConfRequireOrRequestPermission(sig, conf)
+  else await fileConfInit(sig, conf)
 }
 
 /*
@@ -217,7 +239,7 @@ export async function fileConfStatusProblem(sig, conf) {
   const {handle, mode} = a.reqInst(conf, FileConf)
   if (!handle) return msgNotInited(conf)
 
-  conf.perm = await u.wait(sig, queryPermission(handle, {mode}))
+  conf.perm = await queryPermission(sig, handle, {mode})
   if (conf.perm !== `granted`) return msgNotGranted(conf)
   return undefined
 }
@@ -234,7 +256,7 @@ export async function fileConfRequireOrRequestPermission(sig, conf) {
   const {handle, desc, mode} = a.reqInst(conf, FileConf)
   if (!handle) throw msgNotInited(conf)
 
-  conf.perm = await u.wait(sig, queryPermission(handle, {mode}))
+  conf.perm = await queryPermission(sig, handle, {mode})
   if (conf.perm === `granted`) return
 
   u.log.info(desc, `: permission: `, a.show(conf.perm), `, requesting permission`)
@@ -319,22 +341,37 @@ export function pickHistoryDir() {
   })
 }
 
-/*
-See the comment on `fileConfRequireOrRequestPermission`. This must be used only
-on a user action, such as prompt input submission or a click.
-*/
-export async function reqHistoryDir(sig) {
-  await fileConfInit(sig, HISTORY_DIR_CONF, true)
-  await fileConfRequireOrRequestPermission(sig, HISTORY_DIR_CONF)
-  return HISTORY_DIR_CONF.handle
+export function hasHistoryDir(sig) {
+  return fileConfHasPermission(sig, HISTORY_DIR_CONF)
 }
 
-export async function listDirsFiles(sig, path, stat) {
+export async function reqHistoryDir(sig, user) {
+  u.reqSig(sig)
+  a.optBool(user)
+  const conf = HISTORY_DIR_CONF
+
+  /*
+  See the comment on `fileConfRequireOrRequestPermission`. As a result of a user
+  action, we can request a directory picker _and_ request readwrite permissions
+  as needed. Meanwhile when running commands on startup via `?run`, or in other
+  programmatic cases, we can't.
+  */
+  if (user) {
+    await fileConfInitIdemp(sig, conf)
+  }
+  else {
+    await fileConfLoadedWithPermIdemp(sig, conf)
+    await fileConfRequirePermission(sig, conf)
+  }
+  return conf.handle
+}
+
+export async function listDirsFiles({sig, path, stat, user}) {
   a.optStr(path)
   a.optBool(stat)
 
   path = u.paths.clean(a.laxStr(path))
-  const root = await reqHistoryDir(sig)
+  const root = await reqHistoryDir(sig, user)
   const handle = await handleAtPath(sig, root, path)
   const {kind, name} = handle
 
@@ -391,9 +428,17 @@ export function showLsEntry({kind, name, path, entries, stat, statStr, cloud}) {
   const buf = []
 
   for (const {kind, name, statStr} of a.values(entries)) {
+    const entryPath = u.paths.join(path, name)
+
     buf.push([
       kind + inf,
-      BtnLsEntry(path, name, (kind === `file` ? undefined : cmd)),
+      (
+        kind === `file`
+        ? name
+        : os.BtnCmd(a.spaced(cmd, entryPath), name)
+      ),
+      ` `,
+      u.BtnClip(entryPath),
       a.vac(statStr) && ` (${statStr})`,
     ])
   }
@@ -402,18 +447,6 @@ export function showLsEntry({kind, name, path, entries, stat, statStr, cloud}) {
     [`contents of `, locPre, `directory ${a.show(path)}`, statSuf, `:`],
     ...u.alignTable(buf),
   )
-}
-
-function BtnLsEntry(path, name, cmd) {
-  path = u.paths.join(path, name)
-  a.reqValidStr(name)
-  a.optStr(cmd)
-
-  return u.Btn(name, function onClickDirEntry() {
-    u.copyToClipboard(path).catch(u.logErr)
-    u.log.info(`copied `, a.show(path), ` to clipboard`)
-    if (cmd) os.runCmd(a.spaced(cmd, path)).catch(u.logErr)
-  })
 }
 
 export const SHOW_DIR = `show`
@@ -470,15 +503,16 @@ cmdShow.help = function cmdShowHelp() {
   )
 }
 
-export async function cmdShow({sig, args}) {
+export async function cmdShow({sig, args, user}) {
+  const cmd = cmdShow.cmd
   const opt = a.Emp()
   const paths = []
 
   for (const [key, val] of a.tail(u.cliDecode(args))) {
-    if (key === `-c`) opt.copy = u.cliBool(key, val)
-    else if (key === `-l`) opt.log = u.cliBool(key, val)
-    else if (key === `-w`) opt.write = u.cliBool(key, val)
-    else if (key === `-p`) opt.pretty = u.cliBool(key, val)
+    if (key === `-c`) opt.copy = ui.cliBool(cmd, key, val)
+    else if (key === `-l`) opt.log = ui.cliBool(cmd, key, val)
+    else if (key === `-w`) opt.write = ui.cliBool(cmd, key, val)
+    else if (key === `-p`) opt.pretty = ui.cliBool(cmd, key, val)
     else if (!key) paths.push(val)
     else return u.LogParagraphs(`unrecognized flag ${a.show(key)}`, os.cmdHelpDetailed(cmdShow))
   }
@@ -491,7 +525,7 @@ export async function cmdShow({sig, args}) {
     return `no action flags provided, nothing done`
   }
 
-  const root = await reqHistoryDir(sig)
+  const root = await reqHistoryDir(sig, user)
 
   for (const path of paths) {
     try {
@@ -810,13 +844,13 @@ export async function chdir(sig, handle, path) {
   return handle
 }
 
-export function fileConfHasPermission(conf) {
+export function fileConfHasPermission(sig, conf) {
   const {handle, mode} = a.reqInst(conf, FileConf)
-  return hasPermission(handle, {mode})
+  return hasPermission(sig, handle, {mode})
 }
 
-export async function hasPermission(handle, opt) {
-  return (await queryPermission(handle, opt)) === `granted`
+export async function hasPermission(sig, handle, opt) {
+  return (await queryPermission(sig, handle, opt)) === `granted`
 }
 
 // Too specialized, TODO generalize if needed.
@@ -890,10 +924,11 @@ export async function* readDir(sig, src) {
   }
 }
 
-export async function queryPermission(src, opt) {
+export async function queryPermission(sig, src, opt) {
+  u.reqSig(sig)
   if (!a.optInst(src, FileSystemHandle)) return undefined
   try {
-    return await src.queryPermission(opt)
+    return await u.wait(sig, src.queryPermission(opt))
   }
   catch (err) {
     throw new ErrFsPerm(`unable to query permission for ${src.name}: ${err}`, {cause: err})

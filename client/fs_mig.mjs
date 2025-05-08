@@ -33,17 +33,17 @@ export async function migrateRuns() {
     return state
   }
 
-  if (!await fs.hasPermission(root, {mode: `readwrite`})) {
-    u.log.info(`[fs_mig] skipping migration: insufficient permissions on history dir`)
-    return state
-  }
-
   /*
   Un-cancelable background signal. We want this migration to run to completion,
   if possible. We only bother to use a signal here because much of our utility
   code requires one.
   */
   const sig = u.sig
+
+  if (!await fs.hasPermission(sig, root, {mode: `readwrite`})) {
+    u.log.info(`[fs_mig] skipping migration: insufficient permissions on history dir`)
+    return state
+  }
   const runDirs = await fs.readRunsAsc(sig, root)
   if (!runDirs.length) return state
 
