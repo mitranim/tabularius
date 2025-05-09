@@ -591,7 +591,7 @@ export async function plotDefault({sig}) {
 }
 
 export async function plotExampleRun(sig) {
-  const args = `plot -f=samples/example_run.gd -p=dmg user_id=all run_id=all -t`
+  const args = `plot -f=samples/example_run.gd -p=dmg user_id=all run_id=all`
   await cmdPlotFetch({sig, args, opt: decodePlotAggOpt(args), example: true})
 }
 

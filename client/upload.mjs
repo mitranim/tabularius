@@ -360,5 +360,5 @@ export function optStartUploadAfterInit() {
 }
 
 export function recommendAuth() {
-  u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`auth`))
+  u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`auth`), ` to enable cloud backups and share your stats`)
 }

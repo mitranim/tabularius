@@ -876,19 +876,16 @@ export function urlQuery(src) {
   return new URLSearchParams(a.split(src, `?`).join(`&`))
 }
 
-// TODO convert to `FakeBtnInline` but append to href instead of replace.
 export function BtnUrlAppend(val) {
-  a.reqValidStr(val)
-
-  return E(
-    `button`,
-    {
-      type: `button`,
-      class: CLS_BTN_INLINE,
-      onclick() {window.location.href += val},
+  const href = window.location.href + a.reqValidStr(val)
+  return FakeBtnInline({
+    onclick(eve) {
+      a.eventKill(eve)
+      window.location.href = href
     },
-    val,
-  )
+    href,
+    chi: val,
+  })
 }
 
 /*
@@ -915,14 +912,14 @@ buttons is common.
 (The same problem applies to `<input type="button">` which seems equivalent to
 `<button>` in current engines.)
 */
-export function FakeBtnInline({onclick, cmd, chi}) {
+export function FakeBtnInline({onclick, href, chi}) {
   a.reqFun(onclick)
-  a.reqValidStr(cmd)
+  href = a.reqValidStr(a.render(href))
 
   return E(
     `a`,
     {
-      href: `?run=` + cmd,
+      href,
       class: u.CLS_BTN_INLINE,
       onkeydown(eve) {
         if (a.isEventModified(eve)) return
@@ -934,7 +931,7 @@ export function FakeBtnInline({onclick, cmd, chi}) {
         onclick(eve)
       },
     },
-    a.vac(chi) || cmd,
+    a.vac(chi) || href,
   )
 }
 

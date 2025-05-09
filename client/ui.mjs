@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 54
+const VERSION = 55
 let INITED
 
 /*
@@ -43,31 +43,39 @@ export const TARBLAN = Object.freeze({
   rel: `noopener noreferrer`,
 })
 
+const TITLEBAR_PAD = `p-2`
 const TITLEBAR_ICON_SIZE = `w-6 h-6`
+const TITLEBAR_LINK_CLS = a.spaced(`flex justify-center items-center`, TITLEBAR_PAD)
+const TITLEBAR_ICON_CLS = a.spaced(TITLEBAR_ICON_SIZE, `hover:scale-[1.2]`)
+
+const GITHUB_LINK = `https://github.com/mitranim/tabularius`
 const STEAM_LINK = `https://store.steampowered.com/app/3226530`
+
+// SYNC[discord_link].
+const DISCORD_LINK = `https://discord.gg/upPxCEVxgD`
 
 export const TITLEBAR = E(
   `div`,
-  {class: `flex justify-between items-center p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-800`},
+  {class: `flex justify-between items-center gap-2 border-b border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-800`},
 
   // Left side with title.
-  E(`h1`, {}, `Tabularius — book-keeper for `,
+  E(`h1`, {class: a.spaced(`flex-1`, TITLEBAR_PAD)}, `Tabularius — book-keeper for `,
     E(`a`, {href: STEAM_LINK, ...TARBLAN, class: u.CLS_BTN_INLINE},
       `Tower Dominion`,
     ),
   ),
 
   // Right side with links.
-  E(`div`, {class: `flex items-center gap-4`},
-    E(`span`, {class: u.CLS_TEXT_GRAY}, `v` + VERSION),
-    E(`a`, {href: STEAM_LINK, ...TARBLAN},
-      u.Svg(`steam`, {class: TITLEBAR_ICON_SIZE}),
+  E(`div`, {class: `flex items-center`},
+    E(`span`, {class: a.spaced(TITLEBAR_LINK_CLS, u.CLS_TEXT_GRAY)}, `v` + VERSION),
+    E(`a`, {href: GITHUB_LINK, ...TARBLAN, class: TITLEBAR_LINK_CLS},
+      u.Svg(`github`, {class: a.spaced(TITLEBAR_ICON_CLS, `text-[#1f2328] dark:text-[#f0f6fc]`)}),
     ),
-    E(`a`, {href: `https://github.com/mitranim/tabularius`, ...TARBLAN},
-      u.Svg(`github`, {class: a.spaced(TITLEBAR_ICON_SIZE, `text-[#1f2328] dark:text-[#f0f6fc]`)}),
+    E(`a`, {href: STEAM_LINK, ...TARBLAN, class: TITLEBAR_LINK_CLS},
+      u.Svg(`steam`, {class: TITLEBAR_ICON_CLS}),
     ),
-    E(`a`, {href: `https://discord.gg/upPxCEVxgD`, ...TARBLAN},
-      u.Svg(`discord`, {class: TITLEBAR_ICON_SIZE}),
+    E(`a`, {href: DISCORD_LINK, ...TARBLAN, class: TITLEBAR_LINK_CLS},
+      u.Svg(`discord`, {class: TITLEBAR_ICON_CLS}),
     ),
   ),
 )
@@ -103,7 +111,7 @@ function Process(src) {
   a.reqInst(src, os.Proc)
   const cls = a.spaced(u.CLS_TEXT_GRAY, `truncate text-sm`)
 
-  return E(`div`, {class: `flex items-center justify-between gap-2`},
+  return E(`div`, {class: `flex justify-between items-center gap-2`},
     E(`pre`, {class: `truncate font-medium flex-1 shrink-0`},
       src.id, `: `, src.args,
     ),
@@ -140,7 +148,7 @@ const MEDIA_CHI_PAD = `p-4`
 
 export const MEDIA_PLACEHOLDER = E(`div`, {class: a.spaced(MEDIA_CHI_CLS, `flex flex-col`)},
   E(`div`, {class: `text-center p-2`}, `Sample Plot`),
-  E(`div`, {class: `h-64 flex items-center justify-center border border-gray-400 dark:border-gray-600 rounded bg-white dark:bg-gray-700`},
+  E(`div`, {class: `h-64 flex justify-center items-center border border-gray-400 dark:border-gray-600 rounded bg-white dark:bg-gray-700`},
     E(`div`, {class: a.spaced(u.CLS_TEXT_GRAY, `w-full text-center`)}, `[Plot Placeholder]`)
   )
 )
@@ -467,7 +475,7 @@ export function BtnPromptAppend(pre, suf, alias) {
       a.eventKill(eve)
       PROMPT_INPUT.addSpaced(pre, suf)
     },
-    cmd: a.spaced(pre, suf),
+    href: `?run=` + a.spaced(pre, suf),
     chi: alias || suf,
   })
 }
@@ -481,7 +489,8 @@ export function BtnPromptReplace(val) {
       PROMPT_INPUT.value = val
       PROMPT_INPUT.focus()
     },
-    cmd: val,
+    href: `?run=` + val,
+    chi: val,
   })
 }
 

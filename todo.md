@@ -1374,6 +1374,7 @@ Various `plot` enhancements.
 Additional:
 * [x] Make sure it works with `dropEmptySeries`. Tricky on both server and client.
 * [ ] Maybe show some totals in plot (under, or in title).
+  * Not the same as the totals of the Y values per X and Z, which we already have.
 
 ---
 
