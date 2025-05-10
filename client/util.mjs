@@ -1115,3 +1115,13 @@ export function ellMid(src, max) {
   }
   return chars.slice(0, lenPre).concat(inf).concat(chars.slice(-lenSuf)).join(``)
 }
+
+export function maxBy(src, fun) {
+  a.reqFun(fun)
+  let out
+  for (src of a.values(src)) {
+    src = fun(src)
+    if (a.isNil(out) || src > out) out = src
+  }
+  return out
+}

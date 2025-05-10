@@ -677,6 +677,11 @@ export class Plotter extends u.Elem {
 
   updatePlotDom() {
     const root = this.plot?.root
+    this.updatePlotTitle(root)
+    this.updatePlotLegend(root)
+  }
+
+  updatePlotTitle(root) {
     if (!root) return
 
     const title = root.firstElementChild
@@ -693,7 +698,30 @@ export class Plotter extends u.Elem {
       this.closeBtn,
     )
   }
+
+  updatePlotLegend(root) {
+    if (!root) return
+
+    const series = this.plot?.series
+    const maxLen = u.maxBy(series, getLabelLen)
+    if (!maxLen) return
+
+    const COL_VAL_LEN = 6
+    const colMinLen = maxLen + COL_VAL_LEN
+
+    // SYNC[plot_grid_column_len].
+    const MAX_LEN = 20
+    if (!(colMinLen < MAX_LEN)) return
+
+    const tbody = root.querySelector(`tbody`)
+    if (!tbody) return
+
+    tbody.style.gridTemplateColumns = `repeat(auto-fit, minmax(${colMinLen}ch, 1fr))`
+  }
 }
+
+function getLabel(val) {return a.onlyStr(val?.label)}
+function getLabelLen(val) {return getLabel(val)?.length}
 
 export class LivePlotter extends Plotter {
   constructor(opts, fun) {
