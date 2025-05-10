@@ -274,7 +274,7 @@ We use Tailwind CSS for styling.
 
 We use CSS-in-JS via the library `twind`, which dynamically generates Tailwind-compliant styles.
 
-All styling is done in JS. Do not modify HTML files.
+The vast majority of the styling is done in JS. Avoid modifying styles in HTML files unless absolutely unavoidable.
 
 We support both light and dark modes.
 

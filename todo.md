@@ -1113,7 +1113,7 @@ Done.
 
 ---
 
-An option to have plots side-by-side.
+* [x] An option to have plots side-by-side.
 
 ---
 
@@ -1330,8 +1330,8 @@ Still load the old progress file handle and use it and show in status, but call 
 
 Various `plot` enhancements.
 
-* [ ] When waiting for plot agg data (either cloud or local), indicate that in the media.
-  * The sample plot placeholder has a method to increment or decrement the count of pending plots; when count > 0, it says "plot loading" or something like that. `cmdPlot` uses `try/finally` to modify the count.
+* [x] When waiting for plot agg data (either cloud or local), indicate that in the media.
+  * [x] The sample plot placeholder has a method to increment or decrement the count of pending plots; when count > 0, it says "plot loading" or something like that. `cmdPlot` uses `try/finally` to modify the count.
 * [x] `plot_link` generates a link.
   * [x] By default, orders multiple plots, with various presets, for the same filter, which is the current user's latest cloud run (but with fixed `run_num` or `run_id`).
   * ~~[ ] Takes arbitrary plot options as overrides.~~
@@ -1435,12 +1435,19 @@ Add a command for unlocking commanders, difficulties, etc. Requires switching fr
 
 ---
 
-Make it possible to return any number of inputs for the terminal AND for the media. Convert the `plot` command to that format, returning stats for the terminal and plot for the media. Then in `main.mjs`, run startup commands concurrently, not sequentially, appending their return values to the terminal and media in the same order as they appear in the URL.
+* [x] Make it possible to return any number of inputs for the terminal AND for the media.
+* [x] Convert the `plot` command to that format, returning stats for the terminal and plot for the media.
+* [x] In `main.mjs`, run startup commands concurrently, not sequentially.
+* [x] Append command outputs to the terminal and media in the same order as they appear in the URL.
 
 ---
 
 Make it easier to filter runs by run directory names.
 
 Consider adding `run_name` to the schema.
+
+---
+
+Consider switching to an SVG-based plotting library. Motive: responsive scaling should be much easier. There's plenty of bloated choices, but we want something about as tiny and fast as Uplot.
 
 ---

@@ -71,7 +71,13 @@ tw.install({
     same line. `overflow-clip` seems strictly superior.
     */
     [`trunc`, `inline-block whitespace-pre overflow-clip text-ellipsis`],
+    [`row-cen-cen`, `flex-row justify-center items-center`],
+    [`row-bet-cen`, `flex-row justify-between items-center`],
+    [`col-cen-cen`, `flex-col justify-center items-center`],
+    [`col-cen-sta`, `flex-col justify-center items-start`],
+    [`col-sta-str`, `flex-col justify-start items-stretch`],
   ],
+  ignorelist: [`media-grid`],
 })
 
 /*
@@ -542,17 +548,6 @@ export function wait(sig, ...src) {
   return Promise.race(src)
 }
 
-export function logCmdDone(name, out) {
-  a.reqValidStr(name)
-  if (a.vac(out)) log.info(out)
-  else log.verb(`[${name}] done`)
-}
-
-export function logCmdFail(name, err) {
-  a.reqValidStr(name)
-  log.err(`[${name}] `, err)
-}
-
 /*
 Purpose: return true if the current element has its own handling of arbitrary
 text input or arbitrary keystrokes.
@@ -735,6 +730,38 @@ export async function lockWith(name, opt) {
 
   const ok = await Promise.race([request0, request1])
   return ok ? unlock : undefined
+}
+
+export const LOCAL_LOCKS = a.Emp()
+
+/*
+For locks within one browsing context. Unfortunately the Web Locks API does not
+provide this functionality. We have cases where locking across all tabs would
+be incorrect. One such example is loading data from local round files, when
+concurrently preparing multiple plots from local data. It needs locking to
+avoid redundantly adding the same round to the same dat object, but the locking
+needs to be scoped only to the current browsing context. Otherwise one tab
+would temporarily block others from loading plots. Now granted, it's almost
+impossible to be concurrently loading local data across multiple tabs, at least
+in a useful way. But it would still be incorrect. This also has less overhead.
+*/
+export async function localLock(sig, name) {
+  reqSig(sig)
+  a.reqValidStr(name)
+
+  for (;;) {
+    const lock = LOCAL_LOCKS[name]
+    if (!lock) break
+    await lock
+  }
+
+  const {promise, resolve} = Promise.withResolvers()
+  LOCAL_LOCKS[name] = promise
+
+  return function unlock() {
+    if (LOCAL_LOCKS[name] === promise) delete LOCAL_LOCKS[name]
+    resolve()
+  }
 }
 
 /*

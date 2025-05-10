@@ -94,10 +94,11 @@ export function reqCmdByName(name) {
   throw Error(`unknown command ${a.show(name)}`)
 }
 
-export async function runProc({fun, args, desc, obs, user}) {
+export async function runProc({fun, args, desc, obs, user, waitFor}) {
   a.reqFun(fun)
   a.reqStr(args)
   a.optObj(obs)
+  a.optPromise(waitFor)
 
   /*
   We're not adding this to `PROCS` yet. If the function is done synchronously,
@@ -110,12 +111,16 @@ export async function runProc({fun, args, desc, obs, user}) {
   let out
   try {out = fun(proc)}
   catch (err) {
-    u.logCmdFail(name, err)
+    logCmdFail(name, err)
     return
   }
 
+  // Unfortunate cyclic dependency. TODO revise.
+  const ui = await import(`./ui.mjs`)
+
   if (!a.isPromise(out)) {
-    u.logCmdDone(name, out)
+    if (waitFor) await waitFor.catch(u.logErr)
+    logCmdDone(name, out, ui)
     return
   }
 
@@ -125,11 +130,12 @@ export async function runProc({fun, args, desc, obs, user}) {
     if (obs) obs.proc = proc
     out = await out
     proc.val = out
-    u.logCmdDone(name, out)
+    if (waitFor) await waitFor.catch(u.logErr)
+    logCmdDone(name, out, ui)
   }
   catch (err) {
     proc.err = err
-    u.logCmdFail(name, err)
+    logCmdFail(name, err)
   }
   finally {
     try {
@@ -141,6 +147,38 @@ export async function runProc({fun, args, desc, obs, user}) {
       if (obs) delete obs.proc
     }
   }
+}
+
+export class Combo extends a.Emp {
+  constructor(src) {
+    super()
+    a.optObj(src)
+    this.logMsgs = a.optArr(src?.logMsgs)
+    this.mediaItems = a.optArr(src?.mediaItems)
+  }
+}
+
+export function logCmdDone(name, out, ui) {
+  a.reqValidStr(name)
+
+  if (!a.vac(out)) {
+    u.log.verb(`[${name}] done`)
+    return
+  }
+
+  if (!a.isInst(out, Combo)) {
+    u.log.info(out)
+    return
+  }
+
+  const {logMsgs, mediaItems} = out
+  for (const val of a.laxArr(logMsgs)) u.log.info(val)
+  for (const val of a.laxArr(mediaItems)) ui.MEDIA.add(val)
+}
+
+export function logCmdFail(name, err) {
+  a.reqValidStr(name)
+  u.log.err(`[${name}] `, err)
 }
 
 export function procToStatus(src) {

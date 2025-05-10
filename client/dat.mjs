@@ -140,16 +140,21 @@ export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms}) 
   a.reqStruct(dat)
   a.reqInst(file, FileSystemFileHandle)
   const round_id = s.makeRoundId(USER_ID, run_num, run_ms, u.toNatOpt(file.name))
+  const unlock = await u.localLock(sig, round_id)
 
-  /*
-  For better performance, we must load rounds idempotently. We assume that
-  if the round is present, it was fully loaded. Without this check, we would
-  sometimes insert redundant facts and mess up the stats.
-  */
-  if (dat.run_rounds?.has(round_id)) return
+  try {
+    /*
+    We must load rounds idempotently. We assume that if the round is present,
+    it was fully loaded. Without this check, we would sometimes insert redundant
+    facts and mess up the stats. This is also why we use locking to avoid
+    concurrent loading of the same round by multiple concurrent plot procs.
+    */
+    if (dat.run_rounds?.has(round_id)) return
 
-  const round = await fs.readDecodeGameFile(sig, file)
-  s.datAddRound({dat, round, user_id: USER_ID, run_num, run_ms, composite: true})
+    const round = await fs.readDecodeGameFile(sig, file)
+    s.datAddRound({dat, round, user_id: USER_ID, run_num, run_ms, composite: true})
+  }
+  finally {unlock()}
 }
 
 function datOnBroadcast(src) {

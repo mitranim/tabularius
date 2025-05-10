@@ -263,6 +263,7 @@ async function main() {
 
   let imported = 0
   let ran = 0
+  let prevProcPromise
 
   for (const [key, val] of u.QUERY) {
     // Can plug-in arbitrary modules via URL query param.
@@ -288,7 +289,7 @@ async function main() {
     if (key === `run`) {
       if (!val) continue
       ran++
-      await os.runCmd(val).catch(u.logErr)
+      prevProcPromise = os.runCmd(val, {waitFor: prevProcPromise}).catch(u.logErr)
     }
   }
 

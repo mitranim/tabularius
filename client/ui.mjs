@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 58
+const VERSION = 59
 let INITED
 
 /*
@@ -45,7 +45,7 @@ export const TARBLAN = Object.freeze({
 
 const TITLEBAR_PAD = `p-2`
 const TITLEBAR_ICON_SIZE = `w-6 h-6`
-const TITLEBAR_LINK_CLS = a.spaced(`flex justify-center items-center`, TITLEBAR_PAD)
+const TITLEBAR_LINK_CLS = a.spaced(`flex row-cen-cen`, TITLEBAR_PAD)
 const TITLEBAR_ICON_CLS = a.spaced(TITLEBAR_ICON_SIZE, `hover:scale-[1.2]`)
 
 const GITHUB_LINK = `https://github.com/mitranim/tabularius`
@@ -80,6 +80,35 @@ export const TITLEBAR = E(
   ),
 )
 
+const MEDIA_CHI_CLS = `border border-gray-300 dark:border-neutral-700 rounded bg-gray-100 dark:bg-dark-base overflow-x-clip`
+const MEDIA_CHI_PAD = `p-4`
+
+export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends u.ReacElem {
+  state = o.obs({count: 0})
+
+  run() {
+    const {count} = this.state
+    const placeholder = `[Plot Placeholder]`
+
+    E(
+      this,
+      {class: a.spaced(MEDIA_CHI_CLS, `flex flex-col`)},
+      E(`div`, {class: `text-center p-2`},
+        count ? `Plots loading...` : placeholder,
+      ),
+      E(
+        `div`,
+        {class: `h-64 flex row-cen-cen border border-gray-400 dark:border-neutral-600 rounded bg-white dark:bg-neutral-700`},
+        E(
+          `div`,
+          {class: a.spaced(u.CLS_TEXT_GRAY, `w-full text-center`)},
+          count ? [`Loading `, count, ` plots...`] : placeholder,
+        )
+      )
+    )
+  }
+}
+
 // A reactive element that shows running processes.
 export const PROCESS_LIST = new class ProcessList extends u.ReacElem {
   run() {
@@ -107,11 +136,70 @@ export const PROCESS_LIST = new class ProcessList extends u.ReacElem {
   }
 }()
 
+/*
+Holds all dynamically added media items.
+The styling is done in CSS. See `index.html`.
+*/
+export const MEDIA_GRID = E(`div`, {class: `media-grid`})
+
+export const MEDIA = new class MediaPanel extends u.Elem {
+  constructor() {
+    super()
+    E(
+      this,
+      {class: `flex-1 min-w-0 min-h-full w-full p-4 gap-4 flex col-sta-str overflow-y-auto overflow-x-clip break-words overflow-wrap-anywhere`},
+      MEDIA_GRID, PLOT_PLACEHOLDER, PROCESS_LIST,
+    )
+  }
+
+  add(val) {
+    a.reqElement(val)
+    u.addClasses(val, MEDIA_CHI_CLS)
+
+    const onclick = () => {this.delete(val)}
+    const btn = BtnKill({onclick})
+
+    if (a.hasMeth(val, `addCloseBtn`)) {
+      val.addCloseBtn(btn)
+    }
+    else {
+      val.classList.add(`relative`)
+      btn.classList.add(`absolute`, `top-2`, `right-2`)
+      val.appendChild(btn)
+    }
+
+    PLOT_PLACEHOLDER.remove()
+    MEDIA_GRID.prepend(val)
+  }
+
+  delete(val) {
+    if (!a.optElement(val)) return
+    if (val.parentNode !== MEDIA_GRID) return
+    val.remove()
+    this.updatePlaceholder()
+  }
+
+  clear() {
+    E(MEDIA_GRID, {}, undefined)
+    this.updatePlaceholder()
+  }
+
+  updatePlaceholder() {
+    if (this.isDefault()) {
+      this.insertBefore(PLOT_PLACEHOLDER, PROCESS_LIST)
+    } else {
+      PLOT_PLACEHOLDER.remove()
+    }
+  }
+
+  isDefault() {return !MEDIA_GRID.children.length}
+}()
+
 function Process(src) {
   a.reqInst(src, os.Proc)
   const cls = a.spaced(u.CLS_TEXT_GRAY, `truncate text-sm`)
 
-  return E(`div`, {class: `flex justify-between items-center gap-2`},
+  return E(`div`, {class: `flex row-bet-cen gap-2`},
     E(`pre`, {class: `truncate font-medium flex-1 shrink-0`},
       src.id, `: `, src.args,
     ),
@@ -142,61 +230,6 @@ export function BtnKill({class: cls, ...attrs}) {
     ...attrs
   }, `✕`)
 }
-
-const MEDIA_CHI_CLS = `border border-gray-300 dark:border-neutral-700 rounded bg-gray-100 dark:bg-dark-base overflow-x-clip`
-const MEDIA_CHI_PAD = `p-4`
-
-export const MEDIA_PLACEHOLDER = E(`div`, {class: a.spaced(MEDIA_CHI_CLS, `flex flex-col`)},
-  E(`div`, {class: `text-center p-2`}, `Sample Plot`),
-  E(`div`, {class: `h-64 flex justify-center items-center border border-gray-400 dark:border-neutral-600 rounded bg-white dark:bg-neutral-700`},
-    E(`div`, {class: a.spaced(u.CLS_TEXT_GRAY, `w-full text-center`)}, `[Plot Placeholder]`)
-  )
-)
-
-export const MEDIA = new class MediaPanel extends u.Elem {
-  constructor() {
-    super()
-    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto overflow-x-clip break-words overflow-wrap-anywhere flex flex-col gap-4 p-4`})
-    this.clear()
-  }
-
-  add(val) {
-    a.reqElement(val)
-    u.addClasses(val, MEDIA_CHI_CLS)
-
-    const onclick = () => {this.delete(val)}
-    const btn = BtnKill({onclick})
-
-    if (a.hasMeth(val, `addCloseBtn`)) {
-      val.addCloseBtn(btn)
-    }
-    else {
-      val.classList.add(`relative`)
-      btn.classList.add(`absolute`, `top-2`, `right-2`)
-      val.appendChild(btn)
-    }
-
-    MEDIA_PLACEHOLDER.remove()
-    this.prepend(val)
-    this.append(PROCESS_LIST)
-  }
-
-  delete(val) {
-    val.remove()
-    if (this.children.length <= 1) this.prepend(MEDIA_PLACEHOLDER)
-  }
-
-  clear() {E(this, {}, MEDIA_PLACEHOLDER, PROCESS_LIST)}
-
-  // Too fragile, TODO simplify.
-  isDefault() {
-    return (
-      this.childElementCount === 2 &&
-      MEDIA_PLACEHOLDER.parentNode === this &&
-      PROCESS_LIST.parentNode === this
-    )
-  }
-}()
 
 export const MIDDLE = E(`div`, {class: `flex flex-1 min-h-0`}, u.log, MEDIA)
 

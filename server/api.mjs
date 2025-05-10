@@ -5,6 +5,8 @@ import * as u from './util.mjs'
 import * as s from '../shared/schema.mjs'
 import * as db from './db.mjs'
 
+let TIMER_ID = 0
+
 export function apiRes(ctx, rou) {
   a.reqInst(rou, a.ReqRou)
   return (
@@ -199,14 +201,15 @@ async function queryPlotAgg(conn, queryAggs, aggMode) {
   testing.
   */
   if (aggMode === `js`) {
-    if (u.LOG_DEBUG) console.time(`[plot_agg] [mode=js]`)
+    const id = ++TIMER_ID
+    if (u.LOG_DEBUG) console.time(`[plot_agg_${id}] [mode=js]`)
     const {text, args} = queryAggs
     const rows = await conn.queryRows(text, args)
     try {
       return tripletsToPlotAgg(rows)
     }
     finally {
-      if (u.LOG_DEBUG) console.timeEnd(`[plot_agg] [mode=js]`)
+      if (u.LOG_DEBUG) console.timeEnd(`[plot_agg_${id}] [mode=js]`)
     }
   }
 
@@ -245,7 +248,8 @@ async function queryPlotAgg(conn, queryAggs, aggMode) {
         (table Z_X_Y_arr)                            as Z_X_Y
     `
 
-    if (u.LOG_DEBUG) console.time(`[plot_agg] [mode=db]`)
+    const id = ++TIMER_ID
+    if (u.LOG_DEBUG) console.time(`[plot_agg_${id}] [mode=db]`)
     try {
       const {text, args} = query
       let [X_vals, Z_vals, Z_X_Y] = await conn.queryRow(text, args)
@@ -257,7 +261,7 @@ async function queryPlotAgg(conn, queryAggs, aggMode) {
       return {X_vals, Z_vals, Z_X_Y}
     }
     finally {
-      if (u.LOG_DEBUG) console.timeEnd(`[plot_agg] [mode=db]`)
+      if (u.LOG_DEBUG) console.timeEnd(`[plot_agg_${id}] [mode=db]`)
     }
   }
 
@@ -268,13 +272,14 @@ async function queryPlotTotals(conn, queryFacts, opt) {
   const query = qPlotAggTotals(queryFacts, opt)
   if (!query) return undefined
 
-  if (u.LOG_DEBUG) console.time(`[plot_stats]`)
+  const id = ++TIMER_ID
+  if (u.LOG_DEBUG) console.time(`[plot_stats_${id}]`)
   try {
     const {text, args} = query
     return await conn.queryDoc(text, args)
   }
   finally {
-    if (u.LOG_DEBUG) console.timeEnd(`[plot_stats]`)
+    if (u.LOG_DEBUG) console.timeEnd(`[plot_stats_${id}]`)
   }
 }
 

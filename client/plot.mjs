@@ -17,11 +17,6 @@ tar.gc = gc
 tar.s = s
 a.patch(window, tar)
 
-document.head.append(E(`link`, {
-  rel: `stylesheet`,
-  href: `https://esm.sh/uplot@1.6.27/dist/uPlot.min.css`,
-}))
-
 cmdPlot.cmd = `plot`
 cmdPlot.desc = `analyze data, visualizing with a plot 📈📉`
 
@@ -131,15 +126,21 @@ cmdPlot.help = function cmdPlotHelp() {
   )
 }
 
-export function cmdPlot({sig, args, user}) {
+export async function cmdPlot({sig, args, user}) {
   args = u.stripPreSpaced(args, cmdPlot.cmd)
   if (!args) return cmdPlot.help()
 
   const opt = decodePlotAggOpt(args)
   const inp = {sig, args, opt, user}
-  if (opt.cloud) return cmdPlotCloud(inp)
-  if (opt.fetch) return cmdPlotFetch(inp)
-  return cmdPlotLocal(inp)
+  const {state} = ui.PLOT_PLACEHOLDER
+  state.count++
+
+  try {
+    if (opt.cloud) return await cmdPlotCloud(inp)
+    if (opt.fetch) return await cmdPlotFetch(inp)
+    return await cmdPlotLocal(inp)
+  }
+  finally {state.count--}
 }
 
 /*
@@ -174,9 +175,10 @@ export async function cmdPlotLocal({sig, args, opt, user}) {
     return plotOptsWith({...agg, opt})
   }
 
-  if (obs) u.log.info(new PlotTotals(obs))
-  else if (!user) u.log.info(...msgPlot(args))
-  ui.MEDIA.add(new LivePlotter(opts, makeOpts))
+  return new os.Combo({
+    logMsgs: [obs ? new PlotTotals(obs) : user ? undefined : msgPlot(args)],
+    mediaItems: [new LivePlotter(opts, makeOpts)],
+  })
 }
 
 export async function cmdPlotFetch({sig, args, opt, user, example}) {
@@ -215,7 +217,7 @@ export async function cmdPlotFetch({sig, args, opt, user, example}) {
     opts.titleElem?.prepend(Muted(pre))
   }
 
-  showPlot({opts, totals: agg.totals, args, user})
+  return showPlot({opts, totals: agg.totals, args, user})
 }
 
 export async function cmdPlotCloud({sig, args, opt, user}) {
@@ -234,15 +236,23 @@ export async function cmdPlotCloud({sig, args, opt, user}) {
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
   a.assign(agg, s.plotAggWithTotalSeries({...agg, totalFun: opt.totalFun}))
-  showPlot({opts: plotOptsWith({...agg, opt}), totals: agg.totals, args, user})
+  return showPlot({opts: plotOptsWith({...agg, opt}), totals: agg.totals, args, user})
 }
 
 // Note: `cmdPlotLocal` does it differently.
 function showPlot({opts, totals, args, user}) {
   a.reqStr(args)
-  if (totals) u.log.info(new PlotTotals({args, totals}))
-  else if (!user) u.log.info(...msgPlot(args))
-  ui.MEDIA.add(new Plotter(opts))
+
+  return new os.Combo({
+    logMsgs: [
+      totals
+      ? new PlotTotals({args, totals})
+      : user
+      ? undefined
+      : msgPlot(args)
+    ],
+    mediaItems: [new Plotter(opts)],
+  })
 }
 
 function plotReqUserId() {
@@ -584,20 +594,19 @@ Otherwise, show a sample run for prettiness sake.
 export async function plotDefault({sig}) {
   try {
     if (await fs.hasHistoryDir(sig)) {
-      await cmdPlot({sig, args: `plot -p=dmg user_id=all run_id=latest`})
-      return
+      return await cmdPlot({sig, args: `plot -p=dmg user_id=all run_id=latest`})
     }
   }
   catch (err) {
     if (u.LOG_VERBOSE) u.log.err(`error analyzing latest run: `, err)
     u.log.verb(`unable to plot latest run, plotting example run`)
   }
-  await plotExampleRun(sig)
+  return plotExampleRun(sig)
 }
 
-export async function plotExampleRun(sig) {
+export function plotExampleRun(sig) {
   const args = `plot -f=samples/example_run.gd -p=dmg user_id=all run_id=all`
-  await cmdPlotFetch({sig, args, opt: decodePlotAggOpt(args), example: true})
+  return cmdPlotFetch({sig, args, opt: decodePlotAggOpt(args), example: true})
 }
 
 /*
@@ -621,54 +630,69 @@ Usage examples:
 export class Plotter extends u.Elem {
   constructor(opts) {
     super()
-    this.opts = a.reqDict(opts)
-    this.resObs = new ResizeObserver(this.onResize.bind(this))
-    this.className = `block w-full`
+    this.className = `flex col-sta-str`
+    this.setOpts(opts)
   }
 
-  init() {
-    this.deinit()
+  plotInit() {
+    this.plotDeinit()
     this.plot = new Plot({...this.opts, ...this.sizes()})
     this.appendChild(this.plot.root)
     this.updatePlotDom()
-    this.resObs.observe(this)
-    u.darkModeMediaQuery.addEventListener(`change`, this)
   }
 
-  deinit() {
-    u.darkModeMediaQuery.removeEventListener(`change`, this)
-    this.resObs.disconnect()
+  plotDeinit() {
     this.plot?.root?.remove()
     this.plot?.destroy()
     this.plot = undefined
   }
 
   connectedCallback() {
+    this.disconnectedCallback()
+
+    u.darkModeMediaQuery.addEventListener(`change`, this)
+    this.resObs = new ResizeObserver(this.onResize.bind(this))
+    this.resObs.observe(this)
+
     // Need to wait a tick for the element's geometry to be determined.
-    const init = () => {if (this.isConnected) this.init()}
+    const init = () => {if (this.isConnected) this.plotInit()}
     window.requestAnimationFrame(init)
   }
 
-  disconnectedCallback() {this.deinit()}
+  disconnectedCallback() {
+    this.resObs?.disconnect()
+    u.darkModeMediaQuery.removeEventListener(`change`, this)
+    this.plotDeinit()
+  }
 
-  resizing = false
+  setOpts(opts) {
+    a.reqDict(opts)
+    this.opts = opts
+  }
+
   onResize() {
-    // Precaution against recursively triggering resize.
-    if (this.resizing) return
-    this.resizing = true
-    const done = () => {this.resizing = false}
-    window.requestAnimationFrame(done)
-    this.plot?.setSize(this.sizes())
+    if (!this.plot) return
+
+    const par = this.parentNode
+    if (!par) return
+
+    const sizes = this.sizes()
+
+    // Never exceed the container.
+    // This also avoids recursive resize in some cases.
+    if (sizes.width > par.clientWidth) return
+
+    this.plot.setSize(sizes)
   }
 
   sizes() {
     return {
-      width: this.offsetWidth,
-      height: this.offsetWidth/(16/9), // Golden ratio.
+      width: this.clientWidth,
+      height: this.clientWidth/(16/9), // Golden ratio.
     }
   }
 
-  handleEvent(eve) {if (eve.type === `change` && eve.media) this.init()}
+  handleEvent(eve) {if (eve.type === `change` && eve.media) this.plotInit()}
 
   closeBtn = undefined
 
@@ -729,14 +753,14 @@ export class LivePlotter extends Plotter {
     this.fun = a.reqFun(fun)
   }
 
-  init() {
-    super.init()
+  plotInit() {
+    super.plotInit()
     this.unsub = u.listenMessage(d.DAT, this.onDatMsg.bind(this))
   }
 
-  deinit() {
+  plotDeinit() {
     this.unsub?.()
-    super.deinit()
+    super.plotDeinit()
   }
 
   /*
@@ -754,8 +778,8 @@ export class LivePlotter extends Plotter {
     const opts = this.fun(src)
     if (!opts) return
 
-    this.opts = opts
-    this.init()
+    this.setOpts(opts)
+    this.plotInit()
   }
 }
 
@@ -1061,26 +1085,6 @@ export function legendDisplay(Z_key, Z_val) {
   return u.ellMid(codedToTitled(Z_key, Z_val), LEGEND_LEN_MAX)
 }
 
-// /*
-// Converts labels such as `CB01_ABA` into the likes of `Bunker_ABA`. We could
-// generate and store those names statically, but doing this dynamically seems
-// more reliable, considering that new entities may be added later. Updating the
-// table of codes is easier than updating the data.
-// */
-// export function codedToTitled(src) {
-//   // Z labels are sometimes numbers.
-//   if (!a.isStr(src)) return src
-//   return u.joinKeys(...u.splitKeys(src).map(codeToName))
-// }
-
-// /*
-// Inverse of `codedToTitled`. Should be used to convert user-readable filters such
-// as `bui_type=Bunker` into coded ones that match the actual fact fields.
-// */
-// export function titledToCoded(src) {
-//   return u.joinKeys(...u.splitKeys(src).map(nameToCode))
-// }
-
 /*
 Converts labels such as `CB01` to `Bunker`, `CB01_ABA` to `Bunker_ABA`, and
 other similar things. We could generate and store those names statically, but
@@ -1300,9 +1304,10 @@ export async function cmdPlotLink({sig, args}) {
   const url = new URL(window.location)
   url.hash = ``
   url.search = ``
+  url.searchParams.append(`run`, plotLinkPlot(runId, `dmg_over`))
   url.searchParams.append(`run`, plotLinkPlot(runId, `dmg`))
-  url.searchParams.append(`run`, plotLinkPlot(runId, `chi_dmg`))
   url.searchParams.append(`run`, plotLinkPlot(runId, `eff`))
+  url.searchParams.append(`run`, plotLinkPlot(runId, `chi_dmg`))
 
   const href = url.href.replaceAll(`+`, `%20`)
   const copied = await u.copyToClipboard(href).catch(u.logErr)
