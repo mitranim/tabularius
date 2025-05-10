@@ -128,8 +128,11 @@ export async function readDirAll(src, fun) {
 export function isEntryDir(val) {return val?.isDirectory}
 export function isEntryFile(val) {return val?.isFile}
 
+// SYNC[run_name_format].
 export function isEntryRunDir(val) {
-  return isEntryDir(val) && su.hasIntPrefix(val.name)
+  if (!isEntryDir(val)) return false
+  const [run_num, run_ms] = u.splitKeys(val.name)
+  return a.isSome(u.toNatOpt(run_num)) && a.isSome(u.toNatOpt(run_ms))
 }
 
 export function isEntryRoundFile(val) {

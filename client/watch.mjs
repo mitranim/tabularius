@@ -121,7 +121,7 @@ async function watchInit(sig, state) {
   await fs.fileConfRequireOrRequestPermission(sig, fs.HISTORY_DIR_CONF)
   a.final(state, `historyDirHandle`, fs.HISTORY_DIR_CONF.handle)
 
-  const runDir = await fs.findLatestDirEntryOpt(sig, state.historyDirHandle)
+  const runDir = await fs.findLatestDirEntryOpt(sig, state.historyDirHandle, fs.isHandleRunDir)
   state.setRunDir(runDir?.name)
 
   const roundFile = (
@@ -177,13 +177,15 @@ async function watchStep(sig, state) {
     return
   }
 
-  const prevRoundNum = u.toIntOpt(roundFileName)
+  const prevRoundNum = u.toNatOpt(roundFileName)
   if (prevRoundNum === nextRoundNum) {
     // u.log.verb(`[watch] skipping: round is still ${prevRoundNum}`)
     return
   }
 
-  const [prevRunNum, prevRunMs] = s.splitRunName(runDirName)
+  const nameSplit = runDirName ? s.splitRunName(runDirName) : []
+  const prevRunNum = a.laxNat(nameSplit?.[0])
+  const prevRunMs = a.onlyNat(nameSplit?.[1]) ?? Date.now()
   const nextFileName = u.intPadded(nextRoundNum) + u.paths.ext(state.progressFileHandle.name)
 
   const event = {

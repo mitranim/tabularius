@@ -392,9 +392,10 @@ export function makeRunName(run_num, run_ms) {
   return u.joinKeys(u.intPadded(run_num), a.reqNat(run_ms))
 }
 
+// SYNC[run_name_format].
 export function splitRunName(src) {
   const [run_num, run_ms] = u.splitKeys(src)
-  return [u.toIntReq(run_num), u.toIntReq(run_ms)]
+  return [u.toNatReq(run_num), u.toNatReq(run_ms)]
 }
 
 export function makeRunId(user_id, run_num, run_ms) {

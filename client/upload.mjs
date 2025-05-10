@@ -224,7 +224,7 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
 
   if (state) state.status = `checking round ${a.show(path)}`
 
-  const roundNum = u.toIntOpt(file.name)
+  const roundNum = u.toNatOpt(file.name)
   if (!roundNum) {
     state.status = `skipping round ${a.show(path)} with round_num ${a.show(roundNum)}`
     return

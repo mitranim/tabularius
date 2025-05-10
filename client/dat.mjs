@@ -109,19 +109,22 @@ export async function datLoad({sig, dat, opt, user}) {
     if (runNums.size && !runNums.has(run_num)) continue
 
     for (const file of await fs.readRunRoundHandlesAsc(sig, dir)) {
-      const round_num = u.toIntReq(file.name)
+      const round_num = u.toNatReq(file.name)
       if (roundNums.size && !roundNums.has(round_num)) continue
       await datLoadRoundFromHandle({sig, dat, file, run_num, run_ms})
     }
   }
 }
 
-export async function datLoadRun({sig, dat, user, run_id}) {
+/*
+export async function datLoadRun({sig, dat, user, runName}) {
   const root = await fs.reqHistoryDir(sig, user)
-  const runDir = await fs.chdir(sig, root, run_id)
+  const runDir = await fs.chdir(sig, root, runName)
   await datLoadRunFromHandle(sig, dat, runDir)
 }
+*/
 
+/*
 export async function datLoadRunFromHandle(sig, dat, dir) {
   a.reqStruct(dat)
   a.reqInst(dir, FileSystemDirectoryHandle)
@@ -131,11 +134,12 @@ export async function datLoadRunFromHandle(sig, dat, dir) {
     await datLoadRoundFromHandle({sig, dat, file, run_num, run_ms})
   }
 }
+*/
 
 export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms}) {
   a.reqStruct(dat)
   a.reqInst(file, FileSystemFileHandle)
-  const round_id = s.makeRoundId(USER_ID, run_num, run_ms, u.toIntOpt(file.name))
+  const round_id = s.makeRoundId(USER_ID, run_num, run_ms, u.toNatOpt(file.name))
 
   /*
   For better performance, we must load rounds idempotently. We assume that

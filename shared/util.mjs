@@ -59,22 +59,22 @@ file extensions.
   123.<ext>      -> 123
   123_<id>.<ext> -> 123
 */
-export function toIntOpt(val) {
-  if (a.isInt(val)) return val
-  if (a.isStr(val)) return a.onlyFin(parseInt(val))
+export function toNatOpt(val) {
+  if (a.isNat(val)) return val
+  if (a.isStr(val)) return a.onlyNat(parseInt(val))
   return undefined
 }
 
-export function toIntReq(src) {
-  if (a.isInt(src)) return src
+export function toNatReq(src) {
+  if (a.isNat(src)) return src
   if (a.isStr(src)) {
     const val = parseInt(src)
-    if (a.isInt(val)) return val
+    if (a.isNat(val)) return val
   }
-  throw TypeError(`expected an integer or a string starting with an integer, got ${a.show(src)}`)
+  throw TypeError(`expected a positive integer or a string starting with a positive integer, got ${a.show(src)}`)
 }
 
-export function hasIntPrefix(val) {return a.isStr(val) && a.isSome(toIntOpt(val))}
+export function hasIntPrefix(val) {return a.isStr(val) && a.isSome(toNatOpt(val))}
 
 export function compareAsc(one, two) {return compareByIntPrefix(one, two, false)}
 export function compareDesc(one, two) {return compareByIntPrefix(one, two, true)}
@@ -85,8 +85,8 @@ Integers always come before other values. Falls back on regular JS sorting.
 */
 export function compareByIntPrefix(prev, next, desc) {
   a.reqBool(desc)
-  const one = toIntOpt(prev)
-  const two = toIntOpt(next)
+  const one = toNatOpt(prev)
+  const two = toNatOpt(next)
 
   if (a.isNil(one) && a.isNil(two)) {
     return (a.compare(prev, next) * (desc ? -1 : 1)) | 0

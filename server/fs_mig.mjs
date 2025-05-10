@@ -64,7 +64,7 @@ export async function migrateUserRuns(ctx) {
     for (const runName of runDirs) {
       out.runCheck++
       const runDir = io.paths.join(userDir, runName)
-      const runNum = u.toIntOpt(runName)
+      const runNum = u.toNatOpt(runName)
       let runRoundsChecked = 0
       let runRoundsMigrated = 0
       let runMs

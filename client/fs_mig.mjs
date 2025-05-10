@@ -151,7 +151,10 @@ async function migrateRunDir({
   a.reqInst(dirHandlePrev, FileSystemDirectoryHandle)
 
   const dirNamePrev = a.reqValidStr(dirHandlePrev.name)
-  const dirNameNext = s.makeRunName(u.toIntReq(dirNamePrev), runMs)
+  const runNum = u.toNatOpt(dirNamePrev)
+  if (a.isNil(runNum)) return
+
+  const dirNameNext = s.makeRunName(runNum, runMs)
   const dirPathNext = u.paths.join(dirHandleParent.name, dirNameNext)
 
   state.status = `creating new run directory ` + dirNameNext

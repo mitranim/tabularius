@@ -651,7 +651,7 @@ export async function findLatestDirEntryOpt(sig, dir, fun) {
   let out
   for await (const han of readDir(sig, dir)) {
     if (fun && !fun(han)) continue
-    const ord = u.toIntOpt(han.name)
+    const ord = u.toNatOpt(han.name)
     if (!(ord > max)) continue
     max = ord
     out = han
@@ -679,7 +679,7 @@ export async function findHandleByIntPrefixOpt(sig, dir, int) {
   a.reqInt(int)
 
   for await (const val of readDir(sig, dir)) {
-    if (u.toIntOpt(val.name) === int) return val
+    if (u.toNatOpt(val.name) === int) return val
   }
   return undefined
 }
@@ -740,9 +740,12 @@ export async function findLatestRunId(sig, root) {
   return a.head((await readDirDesc(sig, root)).filter(isDir))?.name
 }
 
-export function isHandleRunDir(handle) {
-  a.reqInst(handle, FileSystemHandle)
-  return isDir(handle) && u.hasIntPrefix(handle.name)
+// SYNC[run_name_format].
+export function isHandleRunDir(val) {
+  a.reqInst(val, FileSystemHandle)
+  if (!isDir(val)) return false
+  const [run_num, run_ms] = u.splitKeys(val.name)
+  return a.isSome(u.toNatOpt(run_num)) && a.isSome(u.toNatOpt(run_ms))
 }
 
 export function isHandleRoundFile(handle) {
@@ -967,7 +970,7 @@ export async function getSubHandleMagic(sig, dir, name) {
 
   if (name === `latest`) return findLatestDirEntryReq(sig, dir)
 
-  const int = u.toIntOpt(name)
+  const int = u.toNatOpt(name)
   if (a.isNil(int)) return getSubHandle(sig, dir, name)
 
   try {
