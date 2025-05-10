@@ -25,13 +25,8 @@ export async function migrateRuns() {
     roundsChecked: 0,
     roundsMigrated: 0,
   })
-  let logged = false
 
-  const root = fs.HISTORY_DIR_CONF.handle
-  if (!root) {
-    u.log.info(`[fs_mig] skipping migration: history dir handle not available`)
-    return state
-  }
+  let logged = false
 
   /*
   Un-cancelable background signal. We want this migration to run to completion,
@@ -39,6 +34,12 @@ export async function migrateRuns() {
   code requires one.
   */
   const sig = u.sig
+
+  const root = await fs.historyDirOpt(sig)
+  if (!root) {
+    u.log.info(`[fs_mig] skipping migration: history dir handle not available`)
+    return state
+  }
 
   if (!await fs.hasPermission(sig, root, {mode: `readwrite`})) {
     u.log.info(`[fs_mig] skipping migration: insufficient permissions on history dir`)
@@ -167,13 +168,13 @@ async function migrateRunDir({
     for (const file of handles) {
       state.status = `writing file ` + a.show(u.paths.join(dirHandleNext.name, file.name))
 
-      console.time(`writing_file`)
+      if (u.LOG_VERBOSE) console.time(`writing_file`)
       // TODO generalize into `fs.cpFile`.
       await fs.writeDirFile(
         sig, dirHandleNext, file.name,
         await fs.readFileText(sig, file),
       )
-      console.timeEnd(`writing_file`)
+      if (u.LOG_VERBOSE) console.timeEnd(`writing_file`)
     }
 
     u.log.verb(`[fs_mig] copied run dir ${a.show(dirNamePrev)} to ${a.show(dirPathNext)}`)
@@ -183,17 +184,17 @@ async function migrateRunDir({
     u.log.err(`[fs_mig] unable to migrate run dir ${a.show(dirNamePrev)}: ${err}`)
 
     // Clean up new dir on error.
-    console.time(`deleting_err`)
+    if (u.LOG_VERBOSE) console.time(`deleting_err`)
     await dirHandleParent.removeEntry(dirNameNext, {recursive: true})
-    console.timeEnd(`deleting_err`)
+    if (u.LOG_VERBOSE) console.timeEnd(`deleting_err`)
 
     throw err
   }
 
   // Drop old dir on success.
-  console.time(`deleting_old_dir`)
+  if (u.LOG_VERBOSE) console.time(`deleting_old_dir`)
   await dirHandleParent.removeEntry(dirNamePrev, {recursive: true})
-  console.timeEnd(`deleting_old_dir`)
+  if (u.LOG_VERBOSE) console.timeEnd(`deleting_old_dir`)
   u.log.verb(`[fs_mig] removed run dir ${a.show(dirNamePrev)}`)
 }
 

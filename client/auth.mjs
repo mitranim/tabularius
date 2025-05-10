@@ -124,7 +124,7 @@ function authInstructions(suggs) {
     ],
     a.vac(suggs?.length) && [
       `sample passphrase: `,
-      ui.BtnPromptReplace(suggs.join(` `)),
+      ui.BtnPromptReplace({val: suggs.join(` `)}),
     ],
   )
 }

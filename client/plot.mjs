@@ -111,7 +111,12 @@ cmdPlot.help = function cmdPlotHelp() {
 
     `tip: try ctrl+click / cmd+click / shift+click on plot labels`,
     [`tip: `, os.BtnCmdWithHelp(`verbose`), ` mode shows full opts after expanding presets`],
-    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
+
+    u.LogLines(
+      [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
+      [`  `, BtnAppend(`-p run_id=all run_num=`)]
+    ),
+
     [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud runs`],
 
     u.LogLines(
@@ -436,9 +441,9 @@ export function decodePlotAggOpt(src) {
     // SYNC[plot_default_run_latest].
     if (key === `run_num`) {
       out.runLatest ??= false
-      const int = a.intOpt(val)
+      const int = u.toNatOpt(val)
       if (a.isNil(int)) {
-        errs.push([BtnAppend(key), ` must be an integer, got `, val])
+        errs.push([BtnAppend(key), ` must begin with a positive integer, got `, a.show(val)])
         continue
       }
       u.dictPush(out.where, key, int)
@@ -450,9 +455,9 @@ export function decodePlotAggOpt(src) {
       key === `frontier_diff` ||
       key === `round_num`
     ) {
-      const int = a.intOpt(val)
+      const int = u.toNatOpt(val)
       if (a.isNil(int)) {
-        errs.push([BtnAppend(key), ` must be an integer, got `, val])
+        errs.push([BtnAppend(key), ` must begin with a positive integer, got `, a.show(val)])
         continue
       }
       u.dictPush(out.where, key, int)
@@ -706,6 +711,12 @@ export class LivePlotter extends Plotter {
     super.deinit()
   }
 
+  /*
+  TODO update the plot incrementally instead of rebuilding it.
+  Probably something like:
+    `plot.setData(opts.data)`
+    `plot.setSeries(opts.series)`
+  */
   onDatMsg(src) {
     if (!this.isConnected) {
       console.error(`internal: ${a.show(this)} received a dat event when not connected to the DOM`)
@@ -1061,6 +1072,9 @@ export function codedToTitled(key, val) {
     [key, ...val] = u.splitKeys(val)
     return u.joinKeys(gc.CODES_TO_BUIS_SHORT[key] || key, ...val)
   }
+  if (key === `chi_type`) {
+    return gc.CODES_TO_CHIS_SHORT[val] || val
+  }
   if (key === `hero`) {
     return gc.CODES_TO_HEROS_SHORT[val] || val
   }
@@ -1084,14 +1098,22 @@ export function titledToCoded(key, val) {
     [key, ...val] = u.splitKeys(val)
     return u.joinKeys(gc.BUIS_TO_CODES_SHORT[key] || key, ...val)
   }
+  if (key === `chi_type`) {
+    return gc.CHIS_TO_CODES_SHORT[val] || val
+  }
   if (key === `hero`) {
     return gc.HEROS_TO_CODES_SHORT[val] || val
   }
   return val
 }
 
-function BtnAppend(val, alias) {return ui.BtnPromptAppend(cmdPlot.cmd, val, alias)}
-function BtnReplace(val) {return ui.BtnPromptReplace(u.preSpacedOpt(val, cmdPlot.cmd))}
+function BtnAppend(val, alias) {
+  return ui.BtnPromptAppend(cmdPlot.cmd, val, alias)
+}
+
+function BtnReplace(val) {
+  return ui.BtnPromptReplace({val: u.preSpacedOpt(val, cmdPlot.cmd)})
+}
 
 function BtnAppendEq(key) {
   return BtnAppend(a.reqValidStr(key) + `=`)
@@ -1165,7 +1187,7 @@ function msgPlotDataEmpty(args, opt) {
   a.reqStr(args)
   return u.LogParagraphs(
     [`no data found for `, BtnReplace(args)],
-    a.vac(opt.userCurrent) && [
+    a.vac(opt.userCurrent && (opt.cloud || opt.fetch)) && [
       `data was filtered by `, BtnAppend(`user_id=current`),
       `, consider `, BtnAppend(`user_id=all`),
     ],
@@ -1223,7 +1245,10 @@ cmdPlotLink.help = function cmdPlotLinkHelp() {
     ],
     [
       `  `,
-      `plot_link <user_id>`,
+      ui.BtnPromptReplace({
+        val: cmdPlotLink.cmd + ` `,
+        chi: [`plot_link `, Muted(`<user_id>`)],
+      }),
       ` -- get shareable plot link for specific user`,
     ],
   )
@@ -1290,14 +1315,18 @@ export class PlotTotals extends u.ReacElem {
 
     E(
       this,
-      // For long user ids which don't always fit.
-      {class: `break-all`},
+      {class: `inline-block w-full whitespace-pre overflow-clip`},
       u.LogLines(
-      [`totals for `, BtnReplace(args), `:`],
-      ...a.map(a.keys(counts), a.bind(PlotTotalEntry, counts, values)).map(u.indentNode),
-    ))
+        E(`span`, {class: `w-full trunc`},
+          `totals for `, BtnReplace(args), `:`,
+        ),
+        ...a.map(a.keys(counts), a.bind(PlotTotalEntry, counts, values)),
+      ),
+    )
   }
 }
+
+const INDENT = `  `
 
 function PlotTotalEntry(counts, values, key) {
   const totalCount = a.laxInt(counts[key])
@@ -1317,40 +1346,61 @@ function PlotTotalEntry(counts, values, key) {
   if (totalCount === 1 && sampleCount === 1) {
     const sample = a.render(samples[0])
     if (!sample) return undefined
-    return [keyNode, BtnAppend(u.cliEq(key, sample), sample)]
+
+    const len = INDENT.length + keyNode.textContent.length
+    const btn = ui.BtnPromptAppendWith({
+      pre: cmdPlot.cmd,
+      suf: u.cliEq(key, sample),
+      chi: sample,
+      trunc: true,
+      width: `w-[calc(100%-${len}ch)]`,
+    })
+    return [INDENT, keyNode, btn]
   }
 
   if (!sampleCount) return [keyNode, totalCount]
 
-  function Sample(val) {
-    val = codedToTitled(key, val)
-    return [val, ` `, u.BtnClip(val)]
-  }
-
-  /*
-  `display: inline-block` avoids a redundant newline;
-  `display: inline` doesn't work for this purpose.
-  */
-  return E(`details`, {class: `inline-block`, open: false},
+  return E(`details`, {class: `inline-block w-full`},
     E(
       `summary`,
-      // `display: inline` hides the default arrow.
-      {class: `inline cursor-pointer hover:underline hover:decoration-dotted`},
-      keyNode, totalCount,
-      // TODO: say "collapse" if already expanded.
-      Muted(
-        totalCount === sampleCount
-        ? ` (expand)`
-        : ` (expand ` + sampleCount + `)`
+      {class: `w-full trunc`},
+      INDENT,
+      E(`span`, {class: `cursor-pointer hover:underline hover:decoration-dotted`},
+        keyNode, totalCount,
+        // TODO: say "collapse" if already expanded.
+        Muted(
+          totalCount === sampleCount
+          ? ` (expand)`
+          : ` (expand ` + sampleCount + `)`
+        ),
       ),
     ),
     ...u.LogLines(
-      ...a.map(samples, Sample).map(u.indentNode),
-      a.vac(omitted) && E(`span`, {class: u.CLS_TEXT_GRAY},
-        `  ... `, omitted, ` omitted`
+      ...a.map(samples, a.bind(Sample, key)),
+      a.vac(omitted) && Muted(
+        INDENT + INDENT + `... ` + omitted + ` omitted`,
       ),
     ),
   )
+}
+
+function Sample(key, val) {
+  val = codedToTitled(key, val)
+  const pre = INDENT + INDENT
+  const inf = ` `
+  const clip = u.BtnClip(val)
+
+  if (a.isStr(val)) {
+    const chars = pre.length + inf.length
+
+    val = E(
+      `span`,
+      {class: `trunc max-w-[calc(100%-${chars}ch-${u.ICON_BTN_SIZE})]`},
+      val,
+    )
+  }
+
+  return [pre, val, inf, clip]
 }
 
 function Bold(...chi) {

@@ -387,19 +387,37 @@ export function datAddRound({
 // Below 100, we don't really care.
 function isDamageSimilar(one, two) {return (a.laxNum(one) - a.laxNum(two)) < 100}
 
+export function runIdToRunNameReq(src) {
+  const out = runIdToRunNameOpt(src)
+  if (out) return out
+  throw SyntaxError(`unable to convert ${a.show(src)} to run name: it doesn't appear to be a valid run id`)
+}
+
+// SYNC[run_id_name_format].
+export function runIdToRunNameOpt(src) {
+  const seg = u.splitKeys(src)
+  if (seg.length < 2) return undefined
+  return u.joinKeys(seg[seg.length - 2], seg[seg.length - 1])
+}
+
 // Must be used for run directories inside user directories.
 export function makeRunName(run_num, run_ms) {
   return u.joinKeys(u.intPadded(run_num), a.reqNat(run_ms))
 }
 
-// SYNC[run_name_format].
+// SYNC[run_id_name_format].
 export function splitRunName(src) {
   const [run_num, run_ms] = u.splitKeys(src)
   return [u.toNatReq(run_num), u.toNatReq(run_ms)]
 }
 
+// SYNC[run_id_name_format].
 export function makeRunId(user_id, run_num, run_ms) {
-  return u.joinKeys(a.reqValidStr(user_id), makeRunName(run_num, run_ms))
+  return makeRunIdWithName(user_id, makeRunName(run_num, run_ms))
+}
+
+export function makeRunIdWithName(user_id, runName) {
+  return u.joinKeys(a.reqValidStr(user_id), a.reqValidStr(runName))
 }
 
 export function makeRoundId(user_id, run_num, run_ms, round_num) {

@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 56
+const VERSION = 57
 let INITED
 
 /*
@@ -26,7 +26,7 @@ export function init() {
 
   E(
     document.body,
-    {class: `dark:bg-gray-900 dark:text-white flex flex-col h-screen overflow-hidden`},
+    {class: `bg-gray-100 text-black dark:bg-dark-root dark:text-white flex flex-col h-screen overflow-clip`},
     TITLEBAR,
     MIDDLE,
     PROMPT,
@@ -56,7 +56,7 @@ const DISCORD_LINK = `https://discord.gg/upPxCEVxgD`
 
 export const TITLEBAR = E(
   `div`,
-  {class: `flex justify-between items-center gap-2 border-b border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-800`},
+  {class: `flex justify-between items-center gap-2 border-b border-gray-300 dark:border-neutral-700 bg-gray-200 dark:bg-dark-base`},
 
   // Left side with title.
   E(`h1`, {class: a.spaced(`flex-1`, TITLEBAR_PAD)}, `Tabularius — book-keeper for `,
@@ -101,7 +101,7 @@ export const PROCESS_LIST = new class ProcessList extends u.ReacElem {
           E(`div`, {}, `active processes (${len}):`),
           a.map(vals, Process),
         ]
-        : E(`div`, {class: `text-gray-500`}, `no active processes`)
+        : E(`div`, {class: `text-gray-500 dark:text-neutral-500`}, `no active processes`)
       )
     )
   }
@@ -143,12 +143,12 @@ export function BtnKill({class: cls, ...attrs}) {
   }, `✕`)
 }
 
-const MEDIA_CHI_CLS = `border border-gray-300 dark:border-gray-700 rounded bg-gray-100 dark:bg-gray-800`
+const MEDIA_CHI_CLS = `border border-gray-300 dark:border-neutral-700 rounded bg-gray-100 dark:bg-dark-base overflow-x-clip`
 const MEDIA_CHI_PAD = `p-4`
 
 export const MEDIA_PLACEHOLDER = E(`div`, {class: a.spaced(MEDIA_CHI_CLS, `flex flex-col`)},
   E(`div`, {class: `text-center p-2`}, `Sample Plot`),
-  E(`div`, {class: `h-64 flex justify-center items-center border border-gray-400 dark:border-gray-600 rounded bg-white dark:bg-gray-700`},
+  E(`div`, {class: `h-64 flex justify-center items-center border border-gray-400 dark:border-neutral-600 rounded bg-white dark:bg-neutral-700`},
     E(`div`, {class: a.spaced(u.CLS_TEXT_GRAY, `w-full text-center`)}, `[Plot Placeholder]`)
   )
 )
@@ -156,7 +156,7 @@ export const MEDIA_PLACEHOLDER = E(`div`, {class: a.spaced(MEDIA_CHI_CLS, `flex 
 export const MEDIA = new class MediaPanel extends u.Elem {
   constructor() {
     super()
-    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto overflow-x-hidden break-words overflow-wrap-anywhere flex flex-col gap-4 p-4 bg-white dark:bg-gray-900`})
+    E(this, {class: `flex-1 min-w-0 min-h-full w-full overflow-y-auto overflow-x-clip break-words overflow-wrap-anywhere flex flex-col gap-4 p-4`})
     this.clear()
   }
 
@@ -288,7 +288,7 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
     if (!src) return
 
     const obs = o.obs({proc: undefined})
-    u.logMsgFlash(u.log.info(new SubmittedCmd(src, obs)))
+    u.log.inp(new SubmittedCmd(src, obs))
     this.histPush(src)
     os.runCmd(src, {obs, user: true}).catch(u.logErr)
   }
@@ -448,14 +448,14 @@ export const PROMPT_INPUT = E(new PromptInput(), {
   type: `text`,
   autofocus: true,
   class: a.spaced(
-    `w-full p-2 bg-transparent resize-none overflow-hidden dark:text-gray-200 outline-none focus:outline-none focus:ring-2 rounded p-2`,
+    `w-full p-2 bg-transparent resize-none overflow-clip dark:text-neutral-200 outline-none focus:outline-none focus:ring-2 rounded p-2`,
     PROMPT_INPUT_CLS_REGULAR,
   ),
 })
 
 export const PROMPT = E(
   `div`,
-  {class: `flex items-center p-2 bg-gray-200 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700`},
+  {class: `flex items-center p-2 bg-gray-200 dark:bg-dark-base border-t border-gray-300 dark:border-neutral-700`},
   E(`span`, {class: `text-green-600 dark:text-green-400`}, `>`),
   PROMPT_INPUT,
 )
@@ -465,22 +465,26 @@ export function BtnPrompt(src) {
   return BtnPromptAppend(head, tail.join(` `), src)
 }
 
-export function BtnPromptAppend(pre, suf, alias) {
+export function BtnPromptAppend(pre, suf, chi) {
+  return BtnPromptAppendWith({pre, suf, chi})
+}
+
+export function BtnPromptAppendWith({pre, suf, chi, ...opt}) {
   a.reqValidStr(pre)
   a.reqValidStr(suf)
-  a.optStr(alias)
 
   return u.FakeBtnInline({
+    ...opt,
     onclick(eve) {
       a.eventKill(eve)
       PROMPT_INPUT.addSpaced(pre, suf)
     },
     href: `?run=` + a.spaced(pre, suf),
-    chi: alias || suf,
+    chi: chi ?? suf,
   })
 }
 
-export function BtnPromptReplace(val) {
+export function BtnPromptReplace({val, chi}) {
   a.reqValidStr(val)
 
   return u.FakeBtnInline({
@@ -490,7 +494,7 @@ export function BtnPromptReplace(val) {
       PROMPT_INPUT.focus()
     },
     href: `?run=` + val,
-    chi: val,
+    chi: chi ?? val,
   })
 }
 

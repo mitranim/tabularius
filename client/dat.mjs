@@ -88,19 +88,19 @@ export async function datLoad({sig, dat, opt, user}) {
   a.optBool(user)
 
   const where = a.laxDict(opt.where)
-  const root = await fs.reqHistoryDir(sig, user)
-  const runIds = new Set(a.optArr(where.run_id))
+  const root = await fs.historyDirReq(sig, user)
   const runNums = new Set(a.optArr(where.run_num))
+  const runNames = new Set(a.map(a.optArr(where.run_id), s.runIdToRunNameReq))
   const roundNums = new Set(a.optArr(where.round_num))
 
   if (opt.runLatest) {
-    const id = await fs.findLatestRunId(sig, root)
-    if (id) runIds.add(id)
+    const name = await fs.findLatestRunName(sig, root)
+    if (name) runNames.add(name)
   }
 
   const runHandles = await (
-    runIds.size
-    ? fs.readRunsByIdsAscOpt(sig, root, runIds)
+    runNames.size
+    ? fs.readRunsByNamesAscOpt(sig, root, runNames)
     : fs.readRunsAsc(sig, root)
   )
 
@@ -118,7 +118,7 @@ export async function datLoad({sig, dat, opt, user}) {
 
 /*
 export async function datLoadRun({sig, dat, user, runName}) {
-  const root = await fs.reqHistoryDir(sig, user)
+  const root = await fs.historyDirReq(sig, user)
   const runDir = await fs.chdir(sig, root, runName)
   await datLoadRunFromHandle(sig, dat, runDir)
 }

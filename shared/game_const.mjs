@@ -83,19 +83,19 @@ export const CODES_TO_BUIS_SHORT = dict({
   CB07R: `Scout+`,
   CB08: `PlasFence`,
   CB09: `Retrib`,
-  CB10: `OmegaEmit`,
-  CB11: `SuperPulse`,
+  CB10: `OmegEmit`,
+  CB11: `Pulse`,
   CB12: `AirCom`,
   CB12A: `SmokSig`,
   CB13: `ArcCann`,
   CB14: `Missilo`,
   CB15: `Mirador`,
   CB15R: `Mirador+`,
-  CB16: `Decimation`,
+  CB16: `Decima`,
   CB17: `Puma`,
   CB17R: `Puma+`,
-  CB18: `Claymore`,
-  CB18R: `Claymore+`,
+  CB18: `Claymor`,
+  CB18R: `Claymor+`,
   CB19: `LigMort`,
   CB20: `MedMort`,
   CB21: `Salamand`,
@@ -109,18 +109,17 @@ export const CODES_TO_BUIS_SHORT = dict({
   F202: `Fortress`,
   F207: `StarCall`,
   F208: `StarCall`,
-  F2C01: `Praetorian`,
+  F2C01: `Praetor`,
   F2C02: `Tank`,
-  F2H09CB01: `Flame_of_Tsarstvo`,
-  F2H10CB01: `Xeno-prog`,
-  F301: `JOC`,
-  F301A: `AssTeam`,
-  F302: `Barricade`,
+  F2H09CB01: `FlamTsar`,
+  F2H10CB01: `XenoProg`,
+  F301: `JoinOp`,
+  F302: `Barric`,
   F303: `SiegCit`,
   F3H07CB01: `ExperPulse`,
   F3H07CB01A1: `UnderChargeSys`,
   F3H10CB01: `Scarlett`,
-  F3H10CB01A: `ScarlettTiger`,
+  F3H10CB01A: `ScarTig`,
   F3H10SB01: `CampAlpha`,
   HQ01: `BlueHQ`,
   HQ02: `RedHQ`,
@@ -149,12 +148,22 @@ export const CODES_TO_BUIS_SHORT = dict({
   SB02A: `AntRel`,
   SB04: `ZonCom`,
   SB06: `Platform`,
-  SB07: `MissCtrl`,
+  SB07: `MissCon`,
   SB07A: `CtrlExt`,
-  SB08: `DemoCharge`,
+  SB08: `DemoCharg`,
 })
 
 export const BUIS_TO_CODES_SHORT = invert(CODES_TO_BUIS_SHORT)
+
+// TODO: add Scarlett, she probably has a special code like Laethissa.
+export const CODES_TO_CHIS_SHORT = dict({
+  // Red commanders spawn as "children" of their HQ.
+  ...CODES_TO_HEROS_SHORT,
+  F1H10CB01: `Laethissa`,
+  F301A: `AssTeam`,
+})
+
+export const CHIS_TO_CODES_SHORT = invert(CODES_TO_CHIS_SHORT)
 
 export const CODES_TO_NAMES_SHORT = dict({
   ...CODES_TO_HEROS_SHORT,

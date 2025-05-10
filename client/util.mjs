@@ -32,6 +32,19 @@ tw.install({
   hash: false,
   theme: {
     extend: {
+      /*
+      Twind accepts colors only in the hex and HSL (legacy only) formats.
+      Tailwind classes are defined in `oklah` by default. When experimenting
+      with colors in the `oklah` format, use https://oklch.com for converting
+      between `oklah` and hex. Beware of browser devtools: at the time of
+      writing, in Chrome 135, conversions involving `oklah` are buggy. For
+      colors, conversion to `oklah` from many other formats (tested with hex
+      and `hsl`), often produces incorrect results.
+      */
+      colors: {
+        'dark-root': `#0c0a09`, // stone-950
+        'dark-base': `#1c1917`, // stone-900
+      },
       animation: {
         'flash-light': `flash-light 1s ease-out`,
         'flash-dark': `flash-dark 1s ease-out`,
@@ -48,6 +61,17 @@ tw.install({
       },
     },
   },
+  rules: [
+    /*
+    Caller MUST also set width.
+
+    Uses `overflow-clip` rather than `overflow-hidden` because the latter
+    creates a new formatting context, requiring additional `align-top` or
+    `align-bottom` to avoid messing up alignment for other elements on the
+    same line. `overflow-clip` seems strictly superior.
+    */
+    [`trunc`, `inline-block whitespace-pre overflow-clip text-ellipsis`],
+  ],
 })
 
 /*
@@ -185,10 +209,10 @@ export function cmdVerbose() {
   return `logging is now ` + (LOG_VERBOSE ? `verbose` : `selective`)
 }
 
-
-export const CLS_TEXT_GRAY = `text-gray-500 dark:text-gray-400`
-export const CLS_TEXT_GRAY_BUSY = CLS_TEXT_GRAY + ` hover:text-gray-800 dark:hover:text-gray-200`
-export const CLS_BTN_INLINE = `inline text-sky-700 dark:text-sky-300 hover:underline hover:decoration-dotted cursor-pointer text-left`
+export const CLS_TEXT_GRAY = `text-gray-500 dark:text-neutral-400`
+export const CLS_TEXT_GRAY_BUSY = CLS_TEXT_GRAY + ` hover:text-gray-800 dark:hover:text-neutral-200`
+export const CLS_BTN_INLINE_BASE = `text-sky-700 dark:text-sky-300 hover:underline hover:decoration-dotted cursor-pointer text-left`
+export const CLS_BTN_INLINE = `inline ` + CLS_BTN_INLINE_BASE
 
 export const LOG_WIDTH_KEY = `tabularius.log_width`
 export const LOG_WIDTH_DEFAULT = 50 // % of parent width
@@ -228,6 +252,8 @@ export const log = new class Log extends Elem {
     return this.addMsg({}, ...msg)
   }
 
+  inp(...msg) {return this.addMsg({type: `inp`}, ...msg)}
+
   clear() {
     ren.clear(this.messageLog)
     this.removedCount = 0
@@ -236,20 +262,13 @@ export const log = new class Log extends Elem {
     )
   }
 
-  /*
-  List of actual log messages.
-
-  Vertical spacing should either exactly match line height, or to be
-  non-existent, like in actual terminals. We want to be consistent with
-  precedent, and don't want to waste vertical space. Still undecided.
-  */
-  messageLog = E(`div`, {class: a.spaced(`w-full py-2 overflow-x-hidden overflow-y-auto`, LOG_LINE_HEIGHT)})
-  // messageLog = E(`div`, {class: a.spaced(`w-full py-2 overflow-y-auto`, LOG_LINE_HEIGHT, LOG_SPACE_Y)})
+  // List of actual log messages.
+  messageLog = E(`div`, {class: a.spaced(`w-full py-2 overflow-x-clip overflow-y-auto`, LOG_LINE_HEIGHT)})
 
   removedCount = 0
 
   removedMessageNotice = E(`div`, {
-    class: a.spaced(u.CLS_TEXT_GRAY, `text-center border-b border-gray-300 dark:border-gray-700 pb-2`),
+    class: a.spaced(u.CLS_TEXT_GRAY, `text-center border-b border-gray-300 dark:border-neutral-700 pb-2`),
     hidden: true,
   })
 
@@ -260,7 +279,7 @@ export const log = new class Log extends Elem {
   dragHandle = E(
     `div`,
     {
-      class: `w-1 shrink-0 h-full cursor-ew-resize bg-gray-400 dark:bg-gray-600 opacity-50 hover:opacity-100 border-r border-gray-300 dark:border-gray-700`,
+      class: `w-1 shrink-0 h-full cursor-ew-resize bg-gray-400 dark:bg-neutral-600 opacity-50 hover:opacity-100 border-r border-gray-300 dark:border-neutral-700`,
       onpointerdown: this.resizePointerdown,
       onpointerup: this.resizePointerup,
     },
@@ -278,7 +297,8 @@ export const log = new class Log extends Elem {
     E(
       this,
       {
-        class: `flex items-stretch min-w-0 bg-gray-100 text-black dark:bg-gray-800 dark:text-white`,
+        class: `flex items-stretch min-w-0 bg-gray-100 text-black dark:bg-dark-base dark:text-white`,
+        // class: `flex items-stretch min-w-0 bg-gray-100 text-black dark:bg-stone-900 dark:text-white`,
         style: {
           width: percEncode(this.currentWidth),
           // The following properties are needed for reliable resizing.
@@ -373,7 +393,7 @@ export const log = new class Log extends Elem {
   }
 }()
 
-const LOG_MSG_CLS = `px-2 font-mono whitespace-pre-wrap border-l-4`
+const LOG_MSG_CLS = `block w-full px-2 font-mono whitespace-pre-wrap border-l-4`
 const LOG_MSG_CLS_ERR = `text-red-500 dark:text-red-400 border-red-500`
 const LOG_MSG_CLS_INFO = `border-transparent`
 const LOG_MSG_CLS_INFO_LATEST = `border-yellow-300 dark:border-yellow-800`
@@ -383,19 +403,25 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
 
   static init({type} = {}, ...chi) {
     const isErr = type === `err`
+    const isInp = type === `inp`
+
     const msg = msgRen.E(
       new this(),
       {
         // TODO find if there's a class for this. Twind seems to lack `break-anywhere`.
         style: {overflowWrap: `anywhere`},
-        class: a.spaced(LOG_MSG_CLS, a.vac(isErr) && LOG_MSG_CLS_ERR),
+        class: a.spaced(
+          LOG_MSG_CLS,
+          a.vac(isErr) && LOG_MSG_CLS_ERR,
+          a.vac(isInp) && `animate-flash-light dark:animate-flash-dark`,
+        ),
       },
       ...chi,
     )
     if (!msg.hasChildNodes()) return undefined
 
     msg.isErr = isErr
-    msg.prepend(LogPrefix())
+    if (isInp) msg.prepend(LogPrefix())
     return msg
   }
 
@@ -445,10 +471,6 @@ export function LogLines(...chi) {return intersperseOpt(chi, LogNewline)}
 export function LogParagraphs(...chi) {return intersperseOpt(chi, LogNewlines)}
 export function LogNewline() {return `\n`}
 export function LogNewlines() {return `\n\n`}
-
-export function logMsgFlash(tar) {
-  tar.classList.add(`animate-flash-light`, `dark:animate-flash-dark`)
-}
 
 export function removeClasses(tar, src) {tar.classList.remove(...splitCliArgs(src))}
 export function addClasses(tar, src) {tar.classList.add(...splitCliArgs(src))}
@@ -889,7 +911,7 @@ export function BtnUrlAppend(val) {
 }
 
 /*
-DO NOT DO THIS.
+Using `<a>` for pseudo-buttons should generally be avoided.
 
 If you're reading this code, remember two things:
 - Use `<a>` for ALL links, and for NOTHING ELSE.
@@ -912,15 +934,22 @@ buttons is common.
 (The same problem applies to `<input type="button">` which seems equivalent to
 `<button>` in current engines.)
 */
-export function FakeBtnInline({onclick, href, chi}) {
+export function FakeBtnInline({onclick, href, chi, trunc, width}) {
   a.reqFun(onclick)
+  a.optStr(width)
   href = a.reqValidStr(a.render(href))
+
+  if (trunc && !width) throw Error(`truncation requires width`)
 
   return E(
     `a`,
     {
       href,
-      class: u.CLS_BTN_INLINE,
+      class: a.spaced(
+        CLS_BTN_INLINE,
+        a.vac(trunc) && `trunc`,
+        width,
+      ),
       onkeydown(eve) {
         if (a.isEventModified(eve)) return
         if (eve.key === `Enter`) this.onclick(eve)
@@ -931,16 +960,18 @@ export function FakeBtnInline({onclick, href, chi}) {
         onclick(eve)
       },
     },
-    a.vac(chi) || href,
+    chi ?? href,
   )
 }
+
+export const ICON_BTN_SIZE = `1em`
 
 /*
 When using an SVG in a button, this must be set on BOTH.
 Otherwise dimensions and vertical alignment are out of whack.
 The `display: inline` property seems optional but added just in case.
 */
-const CLS_INLINE_ICON = `inline w-[1em] h-[1em] align-text-top`
+const CLS_INLINE_ICON = `inline w-[${ICON_BTN_SIZE}] h-[${ICON_BTN_SIZE}] align-text-top`
 
 export function BtnClip(val) {
   val = a.renderLax(val)

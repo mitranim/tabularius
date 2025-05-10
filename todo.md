@@ -1424,3 +1424,23 @@ Add `active:` indicators to all buttons and maybe some links.
 ---
 
 On startup, when FS unavailable, instead of example run analysis, consider trying latest cloud run (`user_id=all run_id=latest`).
+
+---
+
+When running `upload` on app startup, make the initial check cheaper / faster, by only checking the latest run, except when performing a migration.
+
+---
+
+Add a command for unlocking commanders, difficulties, etc. Requires switching from picking just the progress file, to picking the whole save dir.
+
+---
+
+Make it possible to return any number of inputs for the terminal AND for the media. Convert the `plot` command to that format, returning stats for the terminal and plot for the media. Then in `main.mjs`, run startup commands concurrently, not sequentially, appending their return values to the terminal and media in the same order as they appear in the URL.
+
+---
+
+Make it easier to filter runs by run directory names.
+
+Consider adding `run_name` to the schema.
+
+---

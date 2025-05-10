@@ -30,15 +30,25 @@ export class FileConf extends a.Emp {
     this.cmd = a.reqValidStr(src.cmd)
     this.mode = a.reqValidStr(src.mode)
     this.pick = a.reqFun(src.pick)
+    this.validate = a.optFun(src.validate)
     this.handle = undefined
     this.perm = undefined
     return o.obs(this)
   }
+
+  clear() {
+    this.handle = undefined
+    this.perm = undefined
+  }
 }
+
+export const SAVE_FILES_DIR_NAME = `SaveFiles`
+
+export const KNOWN_GAME_FILE_NAMES = [`Progress.gd`, `Settings.gd`]
 
 export const PROGRESS_FILE_LOCATION = u.joinParagraphs(
   `location of progress file; note that "AppData" is hidden by default:`,
-  `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\SaveFiles\\Progress.gd`,
+  `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\${SAVE_FILES_DIR_NAME}\\Progress.gd`,
 )
 
 export const PROGRESS_FILE_CONF = new FileConf({
@@ -51,12 +61,12 @@ export const PROGRESS_FILE_CONF = new FileConf({
   cmd: `init -p`,
   mode: `read`,
   pick: pickProgressFile,
+  validate: undefined,
 })
-
 
 export const HISTORY_DIR_LOCATION = u.joinParagraphs(
   `suggested location of run history dir; create it yourself:`,
-  `  C:\\Users\\<user>\\Documents\\tower-dominion-history`,
+  `  C:\\Users\\<user>\\Documents\\tower_dominion_history`,
 )
 
 export const HISTORY_DIR_CONF = new FileConf({
@@ -69,16 +79,8 @@ export const HISTORY_DIR_CONF = new FileConf({
   cmd: `init -h`,
   mode: `readwrite`,
   pick: pickHistoryDir,
+  validate: validateHistoryDir,
 })
-
-// Try to load file handles from IDB on app startup.
-export async function loadedFileHandles(sig) {
-  const [prog, hist] = await Promise.all([
-    loadedProgressFile(sig),
-    loadedHistoryDir(sig),
-  ])
-  return !!(prog && hist)
-}
 
 export async function loadedProgressFile(sig) {
   return !!await fileConfLoadedWithPermIdemp(sig, PROGRESS_FILE_CONF)
@@ -89,11 +91,7 @@ export async function loadedHistoryDir(sig) {
 }
 
 export async function fileConfLoadedWithPermIdemp(sig, conf) {
-  const {handle} = a.reqInst(conf, FileConf)
-  if (handle) {
-    await fileConfRequirePermission(sig, conf)
-    return handle
-  }
+  if (await fileConfHasPermission(sig, conf)) return conf.handle
   return fileConfLoadedWithPerm(sig, conf)
 }
 
@@ -107,7 +105,7 @@ export async function fileConfLoadedWithPerm(sig, conf) {
   conf.perm = await queryPermission(sig, conf.handle, {mode})
   if (conf.perm === `granted`) return conf.handle
 
-  u.log.info(...msgNotGranted(conf))
+  u.log.err(msgNotGranted(conf))
   return undefined
 }
 
@@ -142,59 +140,85 @@ export async function fileConfLoad(conf) {
   conf.handle = handle
 }
 
-/*
-See also `loadedFileHandles`. The difference between "load" and "init" behaviors
-in our code is caused by browser security rules and permissions. When running
-due to a user input, we're allowed to request permissions, but otherwise, we're
-only allowed to query permissions.
-*/
-export async function initedFileHandles(sig) {
-  await fileConfInitIdemp(sig, PROGRESS_FILE_CONF)
-  await fileConfInitIdemp(sig, HISTORY_DIR_CONF)
-  return true
-}
-
 export async function initedProgressFile(sig) {
   const conf = PROGRESS_FILE_CONF
-  await fileConfInitIdemp(sig, conf).catch(u.logErr)
-  return !!conf.handle
+  return await fileConfInitedIdemp(sig, conf)
 }
 
 export async function initedHistoryDir(sig) {
   const conf = HISTORY_DIR_CONF
-  await fileConfInitIdemp(sig, conf).catch(u.logErr)
-  return !!conf.handle
+  return await fileConfInitedIdemp(sig, conf)
 }
 
-export async function fileConfInitIdemp(sig, conf) {
+export function fileConfInitedIdemp(sig, conf) {
   const {handle} = a.reqInst(conf, FileConf)
-  if (handle) await fileConfRequireOrRequestPermission(sig, conf)
-  else await fileConfInit(sig, conf)
+  if (!handle) return fileConfInited(sig, conf)
+  return fileConfRequireOrRequestPermission(sig, conf)
 }
 
 /*
 See the comment on `fileConfRequireOrRequestPermission`. This must be used only
 on a user action, such as prompt input submission or a click.
 */
-export async function fileConfInit(sig, conf) {
+export async function fileConfInited(sig, conf) {
   u.reqSig(sig)
-  const {desc, help, key, pick} = a.reqInst(conf, FileConf)
+  const {desc, help, key, pick, validate} = a.reqInst(conf, FileConf)
+
   if (!conf.handle) await fileConfLoad(conf)
 
   if (!conf.handle) {
     u.log.info(help)
     conf.handle = a.reqInst(await u.wait(sig, pick()), FileSystemHandle)
-
-    try {
-      await u.wait(sig, i.dbPut(i.IDB_STORE_HANDLES, key, conf.handle))
-      u.log.info(desc, `: stored handle to DB`)
-    }
-    catch (err) {
-      u.log.err(desc, `: error storing handle to DB:`, err)
-    }
   }
 
   await fileConfRequireOrRequestPermission(sig, conf)
+
+  if (validate) {
+    try {await validate(sig, conf.handle)}
+    catch (err) {
+      conf.clear()
+      throw err
+    }
+  }
+
+  try {
+    await u.wait(sig, i.dbPut(i.IDB_STORE_HANDLES, key, conf.handle))
+    u.log.info(desc, `: stored handle to DB`)
+  }
+  catch (err) {
+    u.log.err(desc, `: error storing handle to DB:`, err)
+  }
+  return conf.handle
+}
+
+async function validateHistoryDir(sig, handle) {
+  a.reqInst(handle, FileSystemDirectoryHandle)
+
+  const subDir = await getDirectoryHandle(sig, handle, SAVE_FILES_DIR_NAME).catch(a.nop)
+  if (subDir && await isGameSaveFilesDir(sig, subDir)) {
+    throw new u.ErrLog(...u.LogParagraphs(
+      `${a.show(handle.name)} appears to be the game's data directory; your run history directory must be located outside of it`,
+      HISTORY_DIR_LOCATION,
+    ))
+  }
+
+  if (!await isGameSaveFilesDir(sig, handle)) return
+
+  throw new u.ErrLog(...u.LogParagraphs(
+    `${a.show(handle.name)} appears to be the game's save directory; your run history directory must be located outside of it`,
+    HISTORY_DIR_LOCATION,
+  ))
+}
+
+async function isGameSaveFilesDir(sig, handle) {
+  a.reqInst(handle, FileSystemDirectoryHandle)
+  if (handle.name !== SAVE_FILES_DIR_NAME) return false
+  for (const name of KNOWN_GAME_FILE_NAMES) {
+    if (!await getFileHandle(sig, handle, name).catch(console.error)) {
+      return false
+    }
+  }
+  return true
 }
 
 export async function deinitFileHandles(sig) {
@@ -216,8 +240,7 @@ export async function fileConfDeinit(sig, conf) {
   }
 
   if (!conf.handle) return `${desc}: not initialized`
-  conf.handle = undefined
-  conf.perm = undefined
+  conf.clear()
   return `${desc}: deinitialized`
 }
 
@@ -254,16 +277,16 @@ SYNC[file_conf_status].
 */
 export async function fileConfRequireOrRequestPermission(sig, conf) {
   const {handle, desc, mode} = a.reqInst(conf, FileConf)
-  if (!handle) throw msgNotInited(conf)
+  if (!handle) throw new u.ErrLog(msgNotInited(conf))
 
   conf.perm = await queryPermission(sig, handle, {mode})
-  if (conf.perm === `granted`) return
+  if (conf.perm === `granted`) return handle
 
   u.log.info(desc, `: permission: `, a.show(conf.perm), `, requesting permission`)
   conf.perm = await requestPermission(sig, handle, {mode})
-  if (conf.perm === `granted`) return
+  if (conf.perm === `granted`) return handle
 
-  throw msgNotGranted(conf)
+  throw new u.ErrLog(msgNotGranted(conf))
 }
 
 function msgNotInited(conf) {
@@ -278,7 +301,7 @@ function msgNotGranted(conf) {
 
 export async function fileConfRequirePermission(sig, conf) {
   const msg = await fileConfStatusProblem(sig, conf)
-  if (msg) throw msg
+  if (msg) throw new u.ErrLog(msg)
 }
 
 export function fileHandleStatStr(sig, handle) {
@@ -335,8 +358,8 @@ export async function pickProgressFile() {
   }))
 }
 
-export function pickHistoryDir() {
-  return reqFsDirPick()({
+export async function pickHistoryDir() {
+  return await reqFsDirPick()({
     types: [{description: `Directory for [run history / backups]`}],
   })
 }
@@ -345,7 +368,14 @@ export function hasHistoryDir(sig) {
   return fileConfHasPermission(sig, HISTORY_DIR_CONF)
 }
 
-export async function reqHistoryDir(sig, user) {
+export async function historyDirOpt(sig) {
+  const {handle, mode} = HISTORY_DIR_CONF
+  if (!handle) return undefined
+  if (!await hasPermission(sig, handle, {mode})) return undefined
+  return handle
+}
+
+export async function historyDirReq(sig, user) {
   u.reqSig(sig)
   a.optBool(user)
   const conf = HISTORY_DIR_CONF
@@ -357,7 +387,7 @@ export async function reqHistoryDir(sig, user) {
   programmatic cases, we can't.
   */
   if (user) {
-    await fileConfInitIdemp(sig, conf)
+    await fileConfInitedIdemp(sig, conf)
   }
   else {
     await fileConfLoadedWithPermIdemp(sig, conf)
@@ -371,7 +401,7 @@ export async function listDirsFiles({sig, path, stat, user}) {
   a.optBool(stat)
 
   path = u.paths.clean(a.laxStr(path))
-  const root = await reqHistoryDir(sig, user)
+  const root = await historyDirReq(sig, user)
   const handle = await handleAtPath(sig, root, path)
   const {kind, name} = handle
 
@@ -503,7 +533,7 @@ cmdShow.help = function cmdShowHelp() {
   )
 }
 
-export async function cmdShow({sig, args, user}) {
+export async function cmdShow({sig, args}) {
   const cmd = cmdShow.cmd
   const opt = a.Emp()
   const paths = []
@@ -525,11 +555,9 @@ export async function cmdShow({sig, args, user}) {
     return `no action flags provided, nothing done`
   }
 
-  const root = await reqHistoryDir(sig, user)
-
   for (const path of paths) {
     try {
-      await showSavesOrDirOrFile({sig, root, path, opt})
+      await showSavesOrDirOrFile({sig, path, opt})
     }
     catch (err) {
       u.log.err(`[show] unable to show ${a.show(path)}: `, err)
@@ -537,13 +565,16 @@ export async function cmdShow({sig, args, user}) {
   }
 }
 
-export function showSavesOrDirOrFile({sig, root, path, opt}) {
+export async function showSavesOrDirOrFile({sig, path, opt}) {
   u.reqSig(sig)
   path = u.paths.clean(path)
   const [maybeDir, restPath] = u.paths.split1(path)
+
   if (maybeDir === `saves`) {
-    return showSaves({sig, root, path: restPath, opt})
+    return showSaves({sig, path: restPath, opt})
   }
+
+  const root = await historyDirReq(sig)
   return showDirOrFile({sig, root, path, opt})
 }
 
@@ -585,7 +616,6 @@ becoming new "round" files in run dirs.
 */
 export async function showData({sig, root, path, data, opt}) {
   u.reqSig(sig)
-  a.reqInst(root, FileSystemDirectoryHandle)
   a.reqValidStr(path)
   a.optObj(opt)
 
@@ -609,6 +639,7 @@ export async function showData({sig, root, path, data, opt}) {
 
   if (write) {
     coded ??= JSON.stringify(data, undefined, pretty ? 2 : 0)
+    root ??= await historyDirReq(sig)
 
     const outDirName = SHOW_DIR
     const outDir = await getDirectoryHandle(sig, root, outDirName, {create: true})
@@ -621,7 +652,7 @@ export async function showData({sig, root, path, data, opt}) {
   }
 }
 
-export async function showSaves({sig, root, path, opt}) {
+export async function showSaves({sig, path, opt}) {
   u.reqSig(sig)
   a.optStr(path)
 
@@ -630,12 +661,12 @@ export async function showSaves({sig, root, path, opt}) {
 
   if (path) {
     const handle = await getFileHandle(sig, dir, path)
-    await showFile({sig, root, file: handle, path, opt})
+    await showFile({sig, file: handle, path, opt})
     return
   }
 
   for await (const handle of readDir(sig, dir)) {
-    await showFile({sig, root, file: handle, path: u.paths.join(path, handle.name), opt})
+    await showFile({sig, file: handle, path: u.paths.join(path, handle.name), opt})
   }
 }
 
@@ -688,15 +719,15 @@ export async function readRunsAsc(sig, root) {
   return (await readDirAsc(sig, root)).filter(isHandleRunDir)
 }
 
-export async function readRunsByIdsAscOpt(sig, root, ids) {
+export async function readRunsByNamesAscOpt(sig, root, names) {
   u.reqSig(sig)
   a.reqInst(root, FileSystemDirectoryHandle)
   const out = []
 
-  for (const id of a.values(ids)) {
+  for (const name of a.values(names)) {
     let dir
     try {
-      dir = await getDirectoryHandle(sig, root, id)
+      dir = await getDirectoryHandle(sig, root, name)
     }
     catch (err) {
       if (err?.cause?.name === `NotFoundError`) continue
@@ -735,12 +766,12 @@ export async function* readRunRoundHandles(sig, dir) {
   }
 }
 
-export async function findLatestRunId(sig, root) {
+export async function findLatestRunName(sig, root) {
   a.reqInst(root, FileSystemDirectoryHandle)
   return a.head((await readDirDesc(sig, root)).filter(isDir))?.name
 }
 
-// SYNC[run_name_format].
+// SYNC[run_id_name_format].
 export function isHandleRunDir(val) {
   a.reqInst(val, FileSystemHandle)
   if (!isDir(val)) return false

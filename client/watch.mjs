@@ -115,11 +115,13 @@ export async function cmdWatchUnsync(sig) {
 
 // Initialize backup state by inspecting history directory.
 async function watchInit(sig, state) {
-  await fs.fileConfRequireOrRequestPermission(sig, fs.PROGRESS_FILE_CONF)
-  a.final(state, `progressFileHandle`, fs.PROGRESS_FILE_CONF.handle)
+  a.final(state, `progressFileHandle`, (
+    await fs.fileConfRequireOrRequestPermission(sig, fs.PROGRESS_FILE_CONF)
+  ))
 
-  await fs.fileConfRequireOrRequestPermission(sig, fs.HISTORY_DIR_CONF)
-  a.final(state, `historyDirHandle`, fs.HISTORY_DIR_CONF.handle)
+  a.final(state, `historyDirHandle`, (
+    await fs.fileConfRequireOrRequestPermission(sig, fs.HISTORY_DIR_CONF)
+  ))
 
   const runDir = await fs.findLatestDirEntryOpt(sig, state.historyDirHandle, fs.isHandleRunDir)
   state.setRunDir(runDir?.name)

@@ -177,6 +177,19 @@ function cmdLsHelp() {
       [`  `, os.BtnCmd(`ls -c`)],
       `  ls -c <some_run_id>`,
     ),
+    u.LogLines(
+      `tip: filter plots by run numbers from directory names; this works for both local and cloud plots:`,
+      [`  `, ui.BtnPromptAppendWith({
+        pre: `plot`,
+        suf: `user_id=current run_id=all run_num=`,
+        chi: [`plot user_id=current run_id=all run_num=<dir_name>`],
+      })],
+      [`  `, ui.BtnPromptAppendWith({
+        pre: `plot`,
+        suf: `user_id=current run_id=all run_num=`,
+        chi: [`plot user_id=current run_id=all run_num=<dir_0> run_num=<dir_1>`],
+      })],
+    ),
     // TODO: don't bother telling about how to init when already inited.
     [
       `tip: to upload runs to the cloud, run `,
@@ -231,6 +244,11 @@ export function cmdLs(proc) {
 async function main() {
   ui.init()
 
+  if (!u.QUERY.get(`import`)) {
+    u.log.info(`welcome to Tabularius! 🚀`)
+    await os.runCmd(`help`).catch(u.logErr)
+  }
+
   /*
   Attempt to load the FS handles before running anything else. Needed for FS
   migrations, and convenient for URL query "run" commands which rely on FS.
@@ -245,11 +263,6 @@ async function main() {
 
   let imported = 0
   let ran = 0
-
-  if (!u.QUERY.get(`import`)) {
-    u.log.info(`welcome to Tabularius! 🚀`)
-    await os.runCmd(`help`).catch(u.logErr)
-  }
 
   for (const [key, val] of u.QUERY) {
     // Can plug-in arbitrary modules via URL query param.

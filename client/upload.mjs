@@ -109,7 +109,7 @@ export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent, fo
   a.optBool(persistent)
   a.optBool(force)
 
-  const root = await fs.reqHistoryDir(sig, user)
+  const root = await fs.historyDirReq(sig, user)
   const [_, handle, path] = await fs.handleAtPathMagic(sig, root, srcPath)
 
   const userId = au.reqUserId()

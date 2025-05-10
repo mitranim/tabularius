@@ -314,7 +314,7 @@ export function BtnCmd(cmd, alias) {
     `button`,
     {
       type: `button`,
-      class: `px-1 inline whitespace-nowrap bg-gray-200 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-300 dark:hover:bg-gray-600`,
+      class: `px-1 inline whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 rounded border border-gray-300 dark:border-neutral-600 hover:bg-gray-300 dark:hover:bg-neutral-600`,
       onclick() {runCmd(cmd).catch(u.logErr)},
     },
     alias || cmd,
