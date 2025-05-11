@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 61
+const VERSION = 62
 let INITED
 
 /*
@@ -224,7 +224,7 @@ export function BtnKill({class: cls, ...attrs}) {
   return E(`button`, {
     type: `button`,
     class: a.spaced(
-      `w-8 h-8 text-center align-middle leading-none bg-red-500 text-white rounded hover:bg-red-600`,
+      `w-6 h-6 text-center align-middle leading-none bg-red-500 text-white rounded hover:bg-red-600`,
       cls,
     ),
     ...attrs
