@@ -26,7 +26,10 @@ export function apiRes(ctx, rou) {
 }
 
 export async function apiUploadRound(ctx, req) {
-  return new u.Res(a.jsonEncode(await uploadRound(ctx, req)))
+  const id = ++TIMER_ID
+  console.time(`[upload_${id}]`)
+  try {return new u.Res(a.jsonEncode(await uploadRound(ctx, req)))}
+  finally {console.timeEnd(`[upload_${id}]`)}
 }
 
 export async function uploadRound(ctx, req) {
@@ -421,9 +424,14 @@ That's fine.
 Missing feature: converting `/` to `\` on Windows. Not necessary.
 */
 export async function apiLs(ctx, path) {
-  path = u.gameFilePathFakeToReal(path)
-  path = io.paths.join(ctx.userRunsDir, path)
-  return new u.Res(a.jsonEncode(await apiLsEntry(path)))
+  const id = ++TIMER_ID
+  console.time(`[ls_${id}]`)
+  try {
+    path = u.gameFilePathFakeToReal(path)
+    path = io.paths.join(ctx.userRunsDir, path)
+    return new u.Res(a.jsonEncode(await apiLsEntry(path)))
+  }
+  finally {console.timeEnd(`[ls_${id}]`)}
 }
 
 /*

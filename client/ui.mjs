@@ -151,7 +151,11 @@ export const MEDIA = new class MediaPanel extends u.Elem {
     super()
     E(
       this,
-      {class: `flex-1 min-w-0 min-h-full w-full p-4 gap-4 flex col-sta-str overflow-y-auto overflow-x-clip break-words overflow-wrap-anywhere`},
+      {class: a.spaced(
+        `flex-1 min-w-0 min-h-full w-full`,
+        `p-4 gap-4 flex col-sta-str`,
+        `overflow-y-auto overflow-x-clip break-words overflow-wrap-anywhere`,
+      )},
       MEDIA_GRID, PLOT_PLACEHOLDER, PROCESS_LIST,
     )
   }

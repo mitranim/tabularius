@@ -1451,3 +1451,5 @@ Consider adding `run_name` to the schema.
 Consider switching to an SVG-based plotting library. Motive: responsive scaling should be much easier. There's plenty of bloated choices, but we want something about as tiny and fast as Uplot.
 
 ---
+
+Add a plot preset for "overkill efficiency".

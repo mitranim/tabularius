@@ -104,7 +104,7 @@ cmdPlot.help = function cmdPlotHelp() {
       [`  `, BtnAppend(`round_num=1 round_num=2`), ` -- first and second rounds`],
     ),
 
-    `tip: try ctrl+click / cmd+click / shift+click on plot labels`,
+    `tip: try ctrl+click / cmd+click / shift+click on plot legend labels`,
     [`tip: `, os.BtnCmdWithHelp(`verbose`), ` mode shows full opts after expanding presets`],
 
     u.LogLines(
