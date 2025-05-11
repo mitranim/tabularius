@@ -308,6 +308,7 @@ async function main() {
   the URL query has modified the media already, we should avoid touching it.
   TODO: make this togglable.
   */
+  if (prevProcPromise) await prevProcPromise
   if (ui.MEDIA.isDefault()) {
     os.runProc({
       fun: p.plotDefault,
