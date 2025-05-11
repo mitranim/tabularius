@@ -86,6 +86,10 @@ elements that we define.
 */
 dr.Reg.main.setDefiner(customElements)
 
+export const URL_CLEAN = new URL(window.location)
+URL_CLEAN.search = ``
+URL_CLEAN.hash = ``
+
 export const QUERY = urlQuery(window.location.search)
 export const API_LOCAL = a.boolOpt(QUERY.get(`local`))
 export const API_URL = API_LOCAL ? `/api/` : `https://tabularius.mitranim.com/api/`

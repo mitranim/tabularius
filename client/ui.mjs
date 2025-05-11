@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 62
+const VERSION = 63
 let INITED
 
 /*
@@ -59,7 +59,11 @@ export const TITLEBAR = E(
   {class: `flex justify-between items-center gap-2 border-b border-gray-300 dark:border-neutral-700 bg-gray-200 dark:bg-dark-base`},
 
   // Left side with title.
-  E(`h1`, {class: a.spaced(`flex-1`, TITLEBAR_PAD)}, `Tabularius — book-keeper for `,
+  E(
+    `h1`,
+    {class: a.spaced(`flex-1`, TITLEBAR_PAD)},
+    E(`a`, {href: u.URL_CLEAN, class: u.CLS_BTN_INLINE}, `Tabularius`),
+    ` — book-keeper for `,
     E(`a`, {href: STEAM_LINK, ...TARBLAN, class: u.CLS_BTN_INLINE},
       `Tower Dominion`,
     ),
