@@ -19,7 +19,7 @@ export function apiRes(ctx, rou) {
     ) ||
     (
       rou.get(/^[/]api[/]latest_run(?:[/](?<user>\w+))?$/) &&
-      apiLatestRun(ctx, rou.params?.user)
+      apiLatestRun(ctx, rou.groups?.user)
     ) ||
     rou.notFound()
   )
