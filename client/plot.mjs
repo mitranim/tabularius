@@ -670,8 +670,13 @@ export class Plotter extends u.Elem {
     this.opts = opts
   }
 
+  lastResize = 0
+
   onResize() {
     if (!this.plot) return
+
+    // Tentative. Should make jittering recursive resize less likely.
+    if (!((Date.now() - this.lastResize) > 32)) return
 
     const par = this.parentNode
     if (!par) return
@@ -683,6 +688,7 @@ export class Plotter extends u.Elem {
     if (sizes.width > par.clientWidth) return
 
     this.plot.setSize(sizes)
+    this.lastResize = Date.now()
   }
 
   sizes() {
