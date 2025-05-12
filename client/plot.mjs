@@ -321,7 +321,7 @@ function plotTitleText({X, Y, Z, agg}) {
 export function PlotTitle({elem, opt, args, close}) {
   a.reqElement(elem)
   a.reqDict(opt)
-  a.optStr(args)
+  args = u.stripPreSpaced(args, cmdPlot.cmd)
 
   const {X, Y, Z, agg} = opt
   const pre = Bold(agg)
