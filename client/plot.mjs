@@ -158,7 +158,7 @@ export async function cmdPlotLocal({sig, args, opt, user}) {
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
   const obs = agg.totals && o.obs({args, totals: agg.totals})
-  const opts = plotOptsWith({...agg, opt})
+  const opts = plotOptsWith({...agg, opt, args})
 
   function makeAgg() {
     return s.plotAggFromFacts({facts: d.datQueryFacts(d.DAT, opt), opt})
@@ -167,7 +167,7 @@ export async function cmdPlotLocal({sig, args, opt, user}) {
   function makeOpts() {
     const agg = makeAgg()
     if (obs) obs.totals = agg.totals
-    return plotOptsWith({...agg, opt})
+    return plotOptsWith({...agg, opt, args})
   }
 
   return new os.Combo({
@@ -203,7 +203,7 @@ export async function cmdPlotFetch({sig, args, opt, user, example}) {
   const agg = u.consistentNil_undefined(s.plotAggFromFacts({facts, opt}))
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
-  const opts = plotOptsWith({...agg, opt})
+  const opts = plotOptsWith({...agg, opt, args})
 
   // Dumb special case but not worth fixing.
   if (example) {
@@ -231,7 +231,7 @@ export async function cmdPlotCloud({sig, args, opt, user}) {
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
   a.assign(agg, s.plotAggWithTotalSeries({...agg, totalFun: opt.totalFun}))
-  return showPlot({opts: plotOptsWith({...agg, opt}), totals: agg.totals, args, user})
+  return showPlot({opts: plotOptsWith({...agg, opt, args}), totals: agg.totals, args, user})
 }
 
 // Note: `cmdPlotLocal` does it differently.
@@ -265,7 +265,7 @@ function plotReqUserId() {
 TODO: use `argument[0].totals`, when provided.
 Some could be usefully rendered under the plot.
 */
-export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt}) {
+export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args}) {
   a.reqArr(X_vals)
   a.reqArr(Z_vals)
   a.reqArr(Z_X_Y)
@@ -280,18 +280,7 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt}) {
   // TODO: when updating a live plot, preserve series show/hide state.
   if (Z_rows[0]) Z_rows[0].show = false
 
-  const titlePre = Bold(opt.agg)
-  const titleSuf = [Muted(` per `), Bold(opt.Z), Muted(` per `), Bold(opt.X)]
-  const titleElem = E(`span`, {}, titlePre,
-    opt.Z === `stat_type`
-    ? titleSuf
-    : [Muted(` of `), Bold(opt.Y), ...titleSuf]
-  )
-  const title = titleElem.textContent
-
-  const tooltipOpt = (
-    opt.agg === `count` ? {preY: `count of `} : undefined
-  )
+  const tooltipOpt = opt.agg === `count` ? {preY: `count of `} : undefined
 
   return {
     ...LINE_PLOT_OPTS,
@@ -304,13 +293,66 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt}) {
     */
     plugins: [new TooltipPlugin(tooltipOpt).opts()],
 
-    // TODO human readability.
-    title,
-    titleElem,
+    title: plotTitleText(opt),
     series: [{label: opt.X}, ...Z_rows],
     data: [X_vals, ...a.arr(Z_X_Y)],
     axes: axes(opt.X, opt.Y),
+
+    // For our own usage.
+    plotOpt: opt,
+    plotArgs: args,
   }
+}
+
+// SYNC[plot_title_text].
+function plotTitleText({X, Y, Z, agg}) {
+  a.reqValidStr(X)
+  a.reqValidStr(Y)
+  a.reqValidStr(Z)
+  a.reqValidStr(agg)
+
+  const pre = agg
+  const suf = ` per ` + Z + ` per ` + X
+  if (Z === `stat_type`) return pre + suf
+  return pre + ` of ` + Y + suf
+}
+
+// SYNC[plot_title_text].
+export function PlotTitle({elem, opt, args, close}) {
+  a.reqElement(elem)
+  a.reqDict(opt)
+  a.optStr(args)
+
+  const {X, Y, Z, agg} = opt
+  const pre = Bold(agg)
+  const suf = [Muted(` per `), Bold(Z), Muted(` per `), Bold(X)]
+  const btn = a.vac(args) && BtnReplace(args)
+
+  if (btn) {
+    btn.className = a.spaced(btn.className, `w-full trunc`)
+    btn.style.textAlign = `center` // Override class.
+  }
+
+  return E(
+    elem,
+    {class: `flex justify-between gap-2 p-2`},
+    E(
+      `div`,
+      {
+        class: a.spaced(
+          `flex-1 flex-shrink-1 w-full min-w-0`,
+          `flex col-sta-cen gap-2`,
+        ),
+      },
+      E(
+        `span`,
+        {class: `w-full trunc text-center`},
+        pre, Z === `stat_type` ? suf : [Muted(` of `), Bold(Y), ...suf],
+      ),
+      btn,
+    ),
+    close,
+  )
 }
 
 /*
@@ -709,19 +751,16 @@ export class Plotter extends u.Elem {
   updatePlotTitle(root) {
     if (!root) return
 
-    const title = root.firstElementChild
-    if (!title) return
+    const elem = root.firstElementChild
+    if (!elem || !elem.classList.contains(`u-title`)) return
 
-    const titleElem = (
-      a.optElement(this.opts.titleElem) ||
-      E(`span`, {text: `font-bold`}, title.textContent)
-    )
-    titleElem.classList.add(`flex-1`, `text-center`)
+    const opts = this.opts
+    if (!opts) return
 
-    E(title, {class: `flex justify-between gap-2 p-2`},
-      titleElem,
-      this.closeBtn,
-    )
+    const {plotOpt: opt, plotArgs: args} = this.opts
+    if (!opt) return
+
+    PlotTitle({elem, opt, args, close: this.closeBtn})
   }
 
   updatePlotLegend(root) {

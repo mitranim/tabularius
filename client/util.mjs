@@ -70,12 +70,13 @@ tw.install({
     `align-bottom` to avoid messing up alignment for other elements on the
     same line. `overflow-clip` seems strictly superior.
     */
-    [`trunc`, `inline-block whitespace-pre overflow-clip text-ellipsis`],
+    [`trunc`, `inline-block whitespace-pre overflow-x-clip text-ellipsis`],
     [`row-cen-cen`, `flex-row justify-center items-center`],
     [`row-bet-cen`, `flex-row justify-between items-center`],
     [`col-cen-cen`, `flex-col justify-center items-center`],
     [`col-cen-sta`, `flex-col justify-center items-start`],
     [`col-sta-str`, `flex-col justify-start items-stretch`],
+    [`col-sta-cen`, `flex-col justify-start items-center`],
   ],
   ignorelist: [`media-grid`],
 })
