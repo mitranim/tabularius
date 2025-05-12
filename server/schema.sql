@@ -37,6 +37,7 @@ create table facts (
   round_id         text   not null,
   round_num        int    not null,
   bui_inst         int    not null,
+  run_bui_id       text   not null,
   run_round_bui_id text   not null,
   hero             text   not null,
   diff             int    not null,

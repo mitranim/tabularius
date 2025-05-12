@@ -131,8 +131,8 @@ export function isEntryFile(val) {return val?.isFile}
 // SYNC[run_id_name_format].
 export function isEntryRunDir(val) {
   if (!isEntryDir(val)) return false
-  const [run_num, run_ms] = u.splitKeys(val.name)
-  return a.isSome(u.toNatOpt(run_num)) && a.isSome(u.toNatOpt(run_ms))
+  const [run_num, run_ms] = su.splitKeys(val.name)
+  return a.isSome(su.toNatOpt(run_num)) && a.isSome(su.toNatOpt(run_ms))
 }
 
 export function isEntryRoundFile(val) {

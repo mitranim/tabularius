@@ -9,7 +9,7 @@ import * as gc from './game_const.mjs'
 /*
 TODO / missing: we need game versions in our stats.
 */
-export const DATA_SCHEMA_VERSION = 4
+export const DATA_SCHEMA_VERSION = 5
 export const ROUND_FIELDS_SCHEMA_VERSION = 2
 export const DATA_DEBUG = false
 
@@ -106,7 +106,7 @@ export function datAddRound({
     const bui_inst = a.int(bui_inst_str)
     const bui_type = a.laxStr(bui.EntityID)
     const run_bui_id = u.joinKeys(run_id, bui_inst_str)
-    const runBuiIds = roundIds
+    const runBuiIds = {...roundIds, run_bui_id}
     const bui_kind = bui.BuildingType
 
     if (run_buis) {
