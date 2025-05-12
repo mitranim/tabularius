@@ -330,8 +330,10 @@ export const log = new class Log extends Elem {
     const msgLog = this.messageLog
     const prevMsg = msgLog.lastElementChild
     if (prevMsg) {
-      prevMsg.unsetLatest()
-      prevMsg.setIndex(msgLog.childElementCount)
+      // `?.` is used because not all entries are `LogMsg`.
+      // For example, `this.removedMessageNotice` is plain.
+      prevMsg.unsetLatest?.()
+      prevMsg.setIndex?.(msgLog.childElementCount)
     }
 
     nextMsg.setLatest()

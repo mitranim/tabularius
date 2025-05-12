@@ -1471,3 +1471,9 @@ Provide an ability to find a specific run that matches the provided filters. May
 * [x] Add alternating left borders to log msgs to easily tell them apart.
 
 ---
+
+Consolidate exclusion of empty plot series between plot agg and plot totals, or rather add it to plot totals.
+
+---
+
+Plot totals: add `round_num`.
