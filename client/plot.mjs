@@ -1431,16 +1431,17 @@ function PlotTotalEntry(counts, values, key) {
     const sample = a.render(samples[0])
     if (!sample) return undefined
 
-    const len = INDENT.length + keyNode.textContent.length
-    const btn = BtnAppendTrunc({
+    return Sample({
       key,
       val: sample,
-      width: `w-[calc(100%-${len}ch)]`,
+      pre: [INDENT, keyNode],
+      preLen: INDENT.length + keyNode.textContent.length,
     })
-    return [INDENT, keyNode, btn]
   }
 
   if (!sampleCount) return [keyNode, totalCount]
+
+  const INDENT2 = INDENT + INDENT
 
   return E(`details`, {class: `inline-block w-full`},
     E(
@@ -1458,19 +1459,18 @@ function PlotTotalEntry(counts, values, key) {
       ),
     ),
     ...u.LogLines(
-      ...a.map(samples, a.bind(Sample, key)),
+      ...a.map(samples, val => Sample({key, val, pre: INDENT2})),
       a.vac(omitted) && Muted(
-        INDENT + INDENT + `... ` + omitted + ` omitted`,
+        INDENT2 + `... ` + omitted + ` omitted`,
       ),
     ),
   )
 }
 
-function Sample(key, val) {
+function Sample({key, val, pre, preLen}) {
   val = codedToTitled(key, val)
-  const pre = INDENT + INDENT
   const inf = ` `
-  const chars = pre.length + inf.length
+  const chars = inf.length + (a.optNat(preLen) ?? a.laxStr(pre).length)
   const btn = BtnAppendTrunc({
     key,
     val,

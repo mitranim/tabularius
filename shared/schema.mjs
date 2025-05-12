@@ -20,7 +20,10 @@ export const STAT_TYPE_DMG_DONE_ACC = `dmg_done_acc`
 export const STAT_TYPE_DMG_OVER_ACC = `dmg_over_acc`
 export const STAT_TYPE_COST_EFF_ACC = `cost_eff_acc`
 
+// TODO rename to `bui`.
 export const FACT_ENT_TYPE_BUI = `run_round_bui`
+
+// TODO rename to `chi`.
 export const FACT_ENT_TYPE_CHI = `run_round_bui_chi`
 
 export const BUI_KIND_NEUTRAL = `Neutral`
