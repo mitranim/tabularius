@@ -203,15 +203,7 @@ export async function cmdPlotFetch({sig, args, opt, user, example}) {
   const agg = u.consistentNil_undefined(s.plotAggFromFacts({facts, opt}))
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
-  const opts = plotOptsWith({...agg, opt, args})
-
-  // Dumb special case but not worth fixing.
-  if (example) {
-    const pre = `example run analysis: `
-    opts.title = pre + opts.title
-    opts.titleElem?.prepend(Muted(pre))
-  }
-
+  const opts = plotOptsWith({...agg, opt, args, example})
   return showPlot({opts, totals: agg.totals, args, user})
 }
 
@@ -261,11 +253,13 @@ function plotReqUserId() {
   )
 }
 
+const EXAMPLE_TITLE_PRE = `example run analysis: `
+
 /*
 TODO: use `argument[0].totals`, when provided.
 Some could be usefully rendered under the plot.
 */
-export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args}) {
+export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
   a.reqArr(X_vals)
   a.reqArr(Z_vals)
   a.reqArr(Z_X_Y)
@@ -282,6 +276,11 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args}) {
 
   const tooltipOpt = opt.agg === `count` ? {preY: `count of `} : undefined
 
+  let title = plotTitleText(opt)
+
+  // Dumb special case but not worth generalizing.
+  if (example) title = EXAMPLE_TITLE_PRE + title
+
   return {
     ...LINE_PLOT_OPTS,
 
@@ -293,7 +292,7 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args}) {
     */
     plugins: [new TooltipPlugin(tooltipOpt).opts()],
 
-    title: plotTitleText(opt),
+    title,
     series: [{label: opt.X}, ...Z_rows],
     data: [X_vals, ...a.arr(Z_X_Y)],
     axes: axes(opt.X, opt.Y),
@@ -301,6 +300,8 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args}) {
     // For our own usage.
     plotOpt: opt,
     plotArgs: args,
+    // Dumb special case but not worth generalizing.
+    plotTitlePre: a.vac(example) && Muted(EXAMPLE_TITLE_PRE),
   }
 }
 
@@ -318,7 +319,7 @@ function plotTitleText({X, Y, Z, agg}) {
 }
 
 // SYNC[plot_title_text].
-export function PlotTitle({elem, opt, args, close}) {
+export function PlotTitle({elem, opt, args, pre: prefix, close}) {
   a.reqElement(elem)
   a.reqDict(opt)
   args = u.stripPreSpaced(args, cmdPlot.cmd)
@@ -347,7 +348,7 @@ export function PlotTitle({elem, opt, args, close}) {
       E(
         `span`,
         {class: `w-full trunc text-center`},
-        pre, Z === `stat_type` ? suf : [Muted(` of `), Bold(Y), ...suf],
+        prefix, pre, Z === `stat_type` ? suf : [Muted(` of `), Bold(Y), ...suf],
       ),
       btn,
     ),
@@ -757,10 +758,10 @@ export class Plotter extends u.Elem {
     const opts = this.opts
     if (!opts) return
 
-    const {plotOpt: opt, plotArgs: args} = this.opts
+    const {plotOpt: opt, plotArgs: args, plotTitlePre} = this.opts
     if (!opt) return
 
-    PlotTitle({elem, opt, args, close: this.closeBtn})
+    PlotTitle({elem, opt, args, pre: plotTitlePre, close: this.closeBtn})
   }
 
   updatePlotLegend(root) {
