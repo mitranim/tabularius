@@ -326,7 +326,7 @@ export function PlotTitle({elem, opt, args, close}) {
   const {X, Y, Z, agg} = opt
   const pre = Bold(agg)
   const suf = [Muted(` per `), Bold(Z), Muted(` per `), Bold(X)]
-  const btn = a.vac(args) && BtnReplace(args)
+  const btn = a.vac(args) && BtnAppend(args)
 
   if (btn) {
     btn.className = a.spaced(btn.className, `w-full trunc`)
