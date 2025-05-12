@@ -106,12 +106,7 @@ cmdPlot.help = function cmdPlotHelp() {
 
     `tip: try ctrl+click / cmd+click / shift+click on plot legend labels`,
     [`tip: `, os.BtnCmdWithHelp(`verbose`), ` mode shows full opts after expanding presets`],
-
-    u.LogLines(
-      [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
-      [`  `, BtnAppend(`-p run_id=all run_num=`)]
-    ),
-
+    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
     [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud runs`],
 
     u.LogLines(

@@ -5,8 +5,6 @@ import * as u from './util.mjs'
 import * as s from '../shared/schema.mjs'
 import * as db from './db.mjs'
 
-let TIMER_ID = 0
-
 export function apiRes(ctx, rou) {
   a.reqInst(rou, a.ReqRou)
   return (
@@ -25,8 +23,10 @@ export function apiRes(ctx, rou) {
   )
 }
 
+let UPLOAD_TIMER_ID = 0
+
 export async function apiUploadRound(ctx, req) {
-  const id = ++TIMER_ID
+  const id = ++UPLOAD_TIMER_ID
   console.time(`[upload_${id}]`)
   try {return new u.Res(a.jsonEncode(await uploadRound(ctx, req)))}
   finally {console.timeEnd(`[upload_${id}]`)}
@@ -191,6 +191,8 @@ export async function plotAgg(ctx, req) {
   return out
 }
 
+let PLOT_AGG_TIMER_ID = 0
+
 async function queryPlotAgg(conn, queryAggs, aggMode) {
   /*
   Option 0. Group and aggregate in DB, re-group to plot data in JS.
@@ -204,7 +206,7 @@ async function queryPlotAgg(conn, queryAggs, aggMode) {
   testing.
   */
   if (aggMode === `js`) {
-    const id = ++TIMER_ID
+    const id = ++PLOT_AGG_TIMER_ID
     if (u.LOG_DEBUG) console.time(`[plot_agg_${id}] [mode=js]`)
     const {text, args} = queryAggs
     const rows = await conn.queryRows(text, args)
@@ -251,7 +253,7 @@ async function queryPlotAgg(conn, queryAggs, aggMode) {
         (table Z_X_Y_arr)                            as Z_X_Y
     `
 
-    const id = ++TIMER_ID
+    const id = ++PLOT_AGG_TIMER_ID
     if (u.LOG_DEBUG) console.time(`[plot_agg_${id}] [mode=db]`)
     try {
       const {text, args} = query
@@ -271,11 +273,13 @@ async function queryPlotAgg(conn, queryAggs, aggMode) {
   throw Error(`unrecognized plot agg mode ${a.show(aggMode)}`)
 }
 
+let PLOT_TOTAL_TIMER_ID = 0
+
 async function queryPlotTotals(conn, queryFacts, opt) {
   const query = qPlotAggTotals(queryFacts, opt)
   if (!query) return undefined
 
-  const id = ++TIMER_ID
+  const id = ++PLOT_TOTAL_TIMER_ID
   if (u.LOG_DEBUG) console.time(`[plot_stats_${id}]`)
   try {
     const {text, args} = query
@@ -417,6 +421,8 @@ export function qPlotAggTotals(facts, opt) {
   `
 }
 
+let LS_TIMER_ID = 0
+
 /*
 If invoked at the root (empty path), this leaks the name of `ctx.userRunsDir`.
 That's fine.
@@ -424,7 +430,7 @@ That's fine.
 Missing feature: converting `/` to `\` on Windows. Not necessary.
 */
 export async function apiLs(ctx, path) {
-  const id = ++TIMER_ID
+  const id = ++LS_TIMER_ID
   console.time(`[ls_${id}]`)
   try {
     path = u.gameFilePathFakeToReal(path)

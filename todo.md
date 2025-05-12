@@ -1226,7 +1226,7 @@ Goal: migrate from Firebase (Auth, Firestore, Cloud Functions) to our own Deno s
 * [x] Count upgrade prices (hardcoded dict) into building sell prices.
   * [x] Define various upgrade prices in `game_const.mjs`.
   * [x] Use them to calculate and store modified `sell_price` in `schema.mjs`.
-* [ ] Deployment. Once the Deno server and DB is done:
+* [x] Deployment. Once the Deno server and DB is done:
     * ~~[x] Try Oracle again.~~
     * [x] Redo `fly.io` from scratch.
   * [x] `html.mjs`:
@@ -1452,7 +1452,7 @@ Consider switching to an SVG-based plotting library. Motive: responsive scaling 
 
 ---
 
-Add a plot preset for "overkill efficiency".
+Add a stat "overkill efficiency" (damage / overkill) to the schema, and a plot preset for it.
 
 ---
 
@@ -1461,3 +1461,9 @@ Getting warnings about missing costs for building type `F3H07CB01A`, find out wh
 ---
 
 `plot`: make it possible to focus plot series by clicking lines or data points.
+
+---
+
+Provide an ability to find a specific run that matches the provided filters. Maybe something like `run_id=one` or `run_limit=1`.
+
+---
