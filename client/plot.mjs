@@ -1157,6 +1157,17 @@ function BtnAppendEq(key) {
   return BtnAppend(a.reqValidStr(key) + `=`)
 }
 
+function BtnAppendTrunc({key, val, width}) {
+  val = a.render(val)
+  return ui.BtnPromptAppendWith({
+    pre: cmdPlot.cmd,
+    suf: u.cliEq(key, val),
+    chi: val,
+    trunc: true,
+    width,
+  })
+}
+
 function FlagAppendBtns(src, flag) {
   return a.map(src, key => BtnAppend(a.str(flag, `=`, key)))
 }
@@ -1387,11 +1398,9 @@ function PlotTotalEntry(counts, values, key) {
     if (!sample) return undefined
 
     const len = INDENT.length + keyNode.textContent.length
-    const btn = ui.BtnPromptAppendWith({
-      pre: cmdPlot.cmd,
-      suf: u.cliEq(key, sample),
-      chi: sample,
-      trunc: true,
+    const btn = BtnAppendTrunc({
+      key,
+      val: sample,
       width: `w-[calc(100%-${len}ch)]`,
     })
     return [INDENT, keyNode, btn]
@@ -1427,19 +1436,14 @@ function Sample(key, val) {
   val = codedToTitled(key, val)
   const pre = INDENT + INDENT
   const inf = ` `
+  const chars = pre.length + inf.length
+  const btn = BtnAppendTrunc({
+    key,
+    val,
+    width: `max-w-[calc(100%-${chars}ch-${u.ICON_BTN_SIZE})]`,
+  })
   const clip = u.BtnClip(val)
-
-  if (a.isStr(val)) {
-    const chars = pre.length + inf.length
-
-    val = E(
-      `span`,
-      {class: `trunc max-w-[calc(100%-${chars}ch-${u.ICON_BTN_SIZE})]`},
-      val,
-    )
-  }
-
-  return [pre, val, inf, clip]
+  return [pre, btn, inf, clip]
 }
 
 function Bold(...chi) {

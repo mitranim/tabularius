@@ -1453,3 +1453,11 @@ Consider switching to an SVG-based plotting library. Motive: responsive scaling 
 ---
 
 Add a plot preset for "overkill efficiency".
+
+---
+
+Getting warnings about missing costs for building type `F3H07CB01A`, find out what that is.
+
+---
+
+`plot`: make it possible to focus plot series by clicking lines or data points.

@@ -389,6 +389,11 @@ function req_Ed25519_seed(val) {
   return val
 }
 
+/*
+We're using the `tweetnacl` library because at the time of writing, browsers
+don't yet support the `Ed25519` algorithm. In the future, we'll be able to
+switch to the native crypto API.
+*/
 export function seedToKeyPair(seed) {
   return nc.sign.keyPair.fromSeed(req_Ed25519_seed(seed))
 }
