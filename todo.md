@@ -1467,3 +1467,7 @@ Getting warnings about missing costs for building type `F3H07CB01A`, find out wh
 Provide an ability to find a specific run that matches the provided filters. Maybe something like `run_id=one` or `run_limit=1`.
 
 ---
+
+* [x] Add alternating left borders to log msgs to easily tell them apart.
+
+---

@@ -328,7 +328,12 @@ export const log = new class Log extends Elem {
     if (!nextMsg) return nextMsg
 
     const msgLog = this.messageLog
-    msgLog.lastElementChild?.unsetLatest?.()
+    const prevMsg = msgLog.lastElementChild
+    if (prevMsg) {
+      prevMsg.unsetLatest()
+      prevMsg.setIndex(msgLog.childElementCount)
+    }
+
     nextMsg.setLatest()
     msgLog.appendChild(nextMsg)
     this.enforceMessageLimit()
@@ -405,9 +410,11 @@ export const log = new class Log extends Elem {
 }()
 
 const LOG_MSG_CLS = `block w-full px-2 font-mono whitespace-pre-wrap border-l-4`
-const LOG_MSG_CLS_ERR = `text-red-500 dark:text-red-400 border-red-500`
+const LOG_MSG_CLS_ERR = `text-red-600 dark:text-red-500 border-red-400 dark:border-red-600`
 const LOG_MSG_CLS_INFO = `border-transparent`
-const LOG_MSG_CLS_INFO_LATEST = `border-yellow-300 dark:border-yellow-800`
+const LOG_MSG_CLS_INFO_LATEST = `border-yellow-600 dark:border-yellow-800`
+const LOG_MSG_CLS_INFO_EVEN = `border-sky-600 dark:border-sky-800`
+const LOG_MSG_CLS_INFO_ODD = `border-emerald-600 dark:border-emerald-800`
 
 export class LogMsg extends dr.MixReg(HTMLPreElement) {
   isErr = undefined
@@ -444,6 +451,17 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
   unsetLatest() {
     if (this.isErr) return
     replaceClasses(this, LOG_MSG_CLS_INFO_LATEST, LOG_MSG_CLS_INFO)
+  }
+
+  setIndex(ind) {
+    if (!a.optNat(ind)) return
+    if (this.isErr) return
+
+    replaceClasses(
+      this,
+      LOG_MSG_CLS_INFO,
+      (ind % 2 ? LOG_MSG_CLS_INFO_ODD : LOG_MSG_CLS_INFO_EVEN),
+    )
   }
 }
 

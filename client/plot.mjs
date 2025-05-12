@@ -579,6 +579,9 @@ export const PLOT_PRESETS = new Map()
   .set(`chi_dmg`, {
     args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
   })
+  .set(`chi_dmg_over`, {
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
+  })
   .set(`eff`, {
     args: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
   })
@@ -1400,7 +1403,7 @@ export class PlotTotals extends u.ReacElem {
 
     E(
       this,
-      {class: `inline-block w-full whitespace-pre overflow-clip`},
+      {class: `inline-block w-full whitespace-pre`},
       u.LogLines(
         E(`span`, {class: `w-full trunc`},
           `totals for `, BtnReplace(args), `:`,
