@@ -1477,3 +1477,15 @@ Consolidate exclusion of empty plot series between plot agg and plot totals, or 
 ---
 
 Plot totals: add `round_num`.
+
+---
+
+Plot legend: drop `ellMid`, rely on overflow ellipsis.
+
+---
+
+`show`: pretty JSON by default.
+
+---
+
+Add a `make` command or script for backing up cloud data by downloading, preferably the entire volume.

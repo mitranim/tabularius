@@ -309,7 +309,6 @@ export const log = new class Log extends Elem {
       this,
       {
         class: `flex items-stretch min-w-0 bg-gray-100 text-black dark:bg-dark-base dark:text-white`,
-        // class: `flex items-stretch min-w-0 bg-gray-100 text-black dark:bg-stone-900 dark:text-white`,
         style: {
           width: percEncode(this.currentWidth),
           // The following properties are needed for reliable resizing.
@@ -468,14 +467,16 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
 }
 
 function LogPrefix() {
-  return E(
-    `span`,
-    {
-      class: CLS_TEXT_GRAY,
-      'data-tooltip': timeFormat.format(Date.now()),
-    },
-    `> `,
-  )
+  return withTooltip({
+    chi: timeFormat.format(Date.now()),
+    elem: E(
+      `span`,
+      {
+        class: a.spaced(CLS_TEXT_GRAY, `cursor-help`),
+      },
+      `> `,
+    )
+  })
 }
 
 /*
@@ -1029,16 +1030,18 @@ export function BtnClip(val) {
   val = a.renderLax(val)
   if (!val) return undefined
 
-  return E(
-    `button`,
-    {
-      type: `button`,
-      class: a.spaced(CLS_INLINE_ICON, `cursor-pointer hover:text-sky-700 dark:hover:text-sky-300`),
-      'data-tooltip': `clipboard`,
-      onclick() {copyToClipboard(val, true).catch(logErr)},
-    },
-    SvgClipboard(),
-  )
+  return withTooltip({
+    chi: `clipboard`,
+    elem: E(
+      `button`,
+      {
+        type: `button`,
+        class: a.spaced(CLS_INLINE_ICON, `cursor-pointer hover:text-sky-700 dark:hover:text-sky-300`),
+        onclick() {copyToClipboard(val, true).catch(logErr)},
+      },
+      SvgClipboard(),
+    ),
+  })
 }
 
 function SvgClipboard() {return Svg(`clipboard`, {class: CLS_INLINE_ICON})}
@@ -1176,4 +1179,89 @@ export function maxBy(src, fun) {
     if (a.isNil(out) || src > out) out = src
   }
   return out
+}
+
+// Single global because we wouldn't want multiple concurrent tooltips anyway.
+export const TOOLTIP = E(
+  `span`,
+  {
+    class: a.spaced(
+      `fixed py-1 px-2 leading-1 decoration-none whitespace-pre rounded pointer-events-none`,
+      `text-white bg-neutral-800 dark:text-black dark:bg-neutral-200`,
+    ),
+    style: {transform: `translate(-50%, calc(-100% - 0.5rem))`},
+  },
+)
+
+let TOOLTIP_LAST_ELEM
+
+function withTooltip({elem, chi}) {
+  a.reqElement(elem)
+  elem.onpointerover = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}
+  elem.onpointermove = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}
+  elem.onpointerleave = function deinit() {tooltipDeinitFor(elem)}
+  return elem
+}
+
+/*
+`capture` is required for detecting scroll inside elements.
+`passive` indicates we don't prevent default, good for scroll performance.
+*/
+const SCROLL_LISTEN_OPT = {passive: true, capture: true, once: true}
+
+function tooltipReinitFor(elem, chi, eve) {
+  a.reqElement(elem)
+
+  if (TOOLTIP_LAST_ELEM !== elem) E(TOOLTIP, {}, chi)
+  TOOLTIP_LAST_ELEM = elem
+
+  /*
+  TODO: snap to the element rather than the cursor, and remove the `pointermove`
+  listener. In plots, we snap tooltips to data points, which are, well, points.
+  For sized elements such as buttons, we'd have to figure out where in relation
+  to the element to position the tooltip. And elements can be partially outside
+  of the viewport.
+  */
+  tooltipOrient({
+    elem: TOOLTIP,
+    posX: eve.clientX,
+    posY: eve.clientY,
+    wid: window.innerWidth,
+    hei: window.innerHeight,
+    off: `0.5rem`,
+  })
+
+  if (!TOOLTIP.isConnected) {
+    document.body.appendChild(TOOLTIP)
+    document.addEventListener(`scroll`, tooltipDeinit, SCROLL_LISTEN_OPT)
+  }
+}
+
+function tooltipDeinitFor(elem) {
+  if (TOOLTIP_LAST_ELEM === elem) tooltipDeinit()
+}
+
+function tooltipDeinit(eve) {
+  TOOLTIP.remove()
+  TOOLTIP_LAST_ELEM = undefined
+  document.removeEventListener(`scroll`, tooltipDeinit, SCROLL_LISTEN_OPT)
+}
+
+export function tooltipOrient({elem, posX, posY, wid, hei, off}) {
+  a.reqElement(elem)
+  a.reqFin(posX)
+  a.reqFin(posY)
+  a.reqFin(wid)
+  a.reqFin(hei)
+  a.optStr(off)
+
+  const isRig = posX > (wid / 2)
+  const isBot = posY > (hei / 2)
+  const tran = off ? `calc(-100% - ${off})` : `-100%`
+  const tranX = isRig ? tran : (off || `0`)
+  const tranY = isBot ? tran : (off || `0`)
+
+  elem.style.left = posX + `px`
+  elem.style.top = posY + `px`
+  elem.style.transform = `translate(${tranX}, ${tranY})`
 }

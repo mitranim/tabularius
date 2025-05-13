@@ -791,6 +791,8 @@ export function isHandleGameFile(handle) {
 
 // SYNC[decode_game_file].
 export async function readDecodeGameFile(sig, file) {
+  a.reqInst(file, FileSystemFileHandle)
+
   if (file.name.endsWith(`.json.gz`)) {
     const src = await readFileByteArr(sig, file)
     return JSON.parse(await u.byteArr_to_ungzip_to_str(src))

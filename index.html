@@ -22,37 +22,6 @@
     /* Make `[hidden]` take priority over CSS classes which set `display`. */
     [hidden] {display: none !important}
 
-    /*
-    CSS tooltip. We could have used `aria-label`, which is a common approach,
-    but for our current use cases, we wouldn't want them read aloud anyway.
-
-    Missing feature: controlling tooltip alignment.
-    */
-    [data-tooltip]:hover {
-      position: relative;
-      &:not([class*=cursor]) {cursor: help}
-
-      &::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        padding: 0.5rem;
-        line-height: 1;
-        text-decoration: unset;
-        white-space: pre;
-        background-color: oklch(26.8% 0.007 34.298); /* --color-neutral-800 */
-        color: white;
-        left: 0;
-        bottom: calc(100% + 0.5rem);
-        border-radius: 5px;
-        border: 1px solid;
-
-        @media(prefers-color-scheme: dark) {
-          background-color: oklch(92.3% 0.003 48.717); /* --color-neutral-200 */
-          color: black;
-        }
-      }
-    }
-
     /* TODO move to JS if possible. */
     media-panel {
       container-type: inline-size;

@@ -1087,21 +1087,17 @@ export class TooltipPlugin extends a.Emp {
     const nameSuf = `: `
     const nameLen = nameSuf.length + Math.max(axisNameX.length, axisNameY.length)
 
-    const tar = this.tooltip ??= this.makeTooltip()
-    const wid = plot.over.offsetWidth / 2
-    const hei = plot.over.offsetHeight / 2
-    const isRig = posX > wid
-    const isBot = posY > hei
-
-    tar.style.transform = `translate(${isRig ? -100 : 0}%, ${isBot ? -100 : 0}%)`
-    tar.style.left = posX + `px`
-    tar.style.top = posY + `px`
-    tar.textContent = u.joinLines(
+    const elem = this.tooltip ??= this.makeTooltip()
+    elem.textContent = u.joinLines(
       series.label,
       (axisNameX + nameSuf).padEnd(nameLen, ` `) + formatVal(valX),
       (axisNameY + nameSuf).padEnd(nameLen, ` `) + formatVal(valY),
     )
-    plot.over.appendChild(tar)
+
+    const wid = plot.over.offsetWidth
+    const hei = plot.over.offsetHeight
+    u.tooltipOrient({elem, posX, posY, wid, hei})
+    plot.over.appendChild(elem)
   }
 
   makeTooltip() {
@@ -1368,9 +1364,8 @@ export async function cmdPlotLink({sig, args}) {
   const copied = await u.copyToClipboard(href).catch(u.logErr)
 
   return u.LogParagraphs(
-    `plot link:`,
+    (copied ? `copied plot link to clipboard:` : `plot link:`),
     E(`a`, {href, class: u.CLS_BTN_INLINE, ...ui.TARBLAN}, href),
-    a.vac(copied) && `copied link to clipboard`,
   )
 }
 
