@@ -121,15 +121,11 @@ where nils / nulls are ignored.
 SYNC[fold_not_nil].
 */
 export function foldSome(src, acc, fun) {
-  src = a.values(src)
   a.reqFun(fun)
-
   let count = 0
-  let ind = -1
-  while (++ind < src.length) {
-    const val = src[ind]
-    if (a.isNil(val)) continue
-    acc = fun(acc, val, count++)
+  for (src of a.values(src)) {
+    if (a.isNil(src)) continue
+    acc = fun(acc, src, count++)
   }
   return acc
 }

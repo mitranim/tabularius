@@ -755,7 +755,6 @@ export function plotAggFromFacts({facts, opt}) {
   plotAggAddFacts({facts, state, opt})
 
   const out = plotAggStateToPlotAgg(state)
-  a.assign(out, plotAggWithTotalSeries({...out, totalFun: opt.totalFun}))
   if (opt.totals) out.totals = plotAggTotals(state.totalSets)
   return out
 }

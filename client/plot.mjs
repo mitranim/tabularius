@@ -222,7 +222,6 @@ export async function cmdPlotCloud({sig, args, opt, user}) {
   const agg = u.consistentNil_undefined(await apiPlotAgg(sig, opt))
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
-  a.assign(agg, s.plotAggWithTotalSeries({...agg, totalFun: opt.totalFun}))
   return showPlot({opts: plotOptsWith({...agg, opt, args}), totals: agg.totals, args, user})
 }
 
@@ -265,16 +264,18 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
   a.reqArr(Z_X_Y)
   a.reqDict(opt)
 
-  const agg = s.AGGS.get(opt.agg)
+  const {agg, aggFun, totalFun} = opt
+  ;[{X_vals, Z_vals, Z_X_Y}] = [s.plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, totalFun})]
+
   const Z_rows = Z_vals
     .map(Z => legendDisplay(opt.Z, Z))
-    .map((val, ind) => serieWithAgg(val, ind, agg))
+    .map((val, ind) => serieWithTotal(val, ind, totalFun))
 
   // Hide the total serie by default.
   // TODO: when updating a live plot, preserve series show/hide state.
   if (Z_rows[0]) Z_rows[0].show = false
 
-  const tooltipOpt = opt.agg === `count` ? {preY: `count of `} : undefined
+  const tooltipOpt = agg === `count` ? {preY: `count of `} : undefined
 
   let title = plotTitleText(opt)
 
@@ -900,13 +901,13 @@ export function axisStroke() {
   return u.darkModeMediaQuery.matches ? `white` : `black`
 }
 
-export function serieWithAgg(label, ind, agg) {
-  a.reqFun(agg)
+export function serieWithTotal(label, ind, totalFun) {
+  a.reqFun(totalFun)
 
   return {
     ...serie(label, ind),
     value(plot, val, ind) {
-      return serieFormatVal(plot, val, ind, agg)
+      return serieFormatVal(plot, val, ind, totalFun)
     },
   }
 }
@@ -915,15 +916,15 @@ export function serie(label, ind) {
   return {label, stroke: nextFgColor(ind), width: 2, value: formatVal}
 }
 
-export function serieFormatVal(plot, val, seriesInd, agg) {
+export function serieFormatVal(plot, val, seriesInd, totalFun) {
   a.reqInt(seriesInd)
-  a.reqFun(agg)
+  a.reqFun(totalFun)
   const ind = plot.cursor.idx
   return formatVal(a.laxFin(
     a.isInt(ind) && ind >= 0
     ? val
     // SYNC[fold_not_nil].
-    : u.foldSome(plot.data[seriesInd], 0, agg)
+    : u.foldSome(plot.data[seriesInd], 0, totalFun)
   ))
 }
 

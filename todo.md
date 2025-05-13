@@ -1489,3 +1489,7 @@ Plot legend: drop `ellMid`, rely on overflow ellipsis.
 ---
 
 Add a `make` command or script for backing up cloud data by downloading, preferably the entire volume.
+
+---
+
+`plot`: add `-a` = shortcut for `user_id=all run_id=all`
