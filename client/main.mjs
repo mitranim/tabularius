@@ -263,6 +263,7 @@ async function main() {
 
   let imported = 0
   let ran = 0
+  let ranPlots = 0
   let prevProcPromise
 
   for (const [key, val] of u.QUERY) {
@@ -290,6 +291,7 @@ async function main() {
       if (!val) continue
       ran++
       prevProcPromise = os.runCmd(val, {waitFor: prevProcPromise}).catch(u.logErr)
+      if (val.startsWith(`plot `)) ranPlots++
     }
   }
 
@@ -309,7 +311,8 @@ async function main() {
   TODO: make this togglable.
   */
   if (prevProcPromise) await prevProcPromise
-  if (ui.MEDIA.isDefault()) {
+
+  if (!ranPlots && ui.MEDIA.isDefault()) {
     os.runProc({
       fun: p.plotDefault,
       args: `plot_default`,
