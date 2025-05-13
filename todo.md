@@ -1427,7 +1427,7 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
 
 ---
 
-When running `upload` on app startup, make the initial check cheaper / faster, by only checking the latest run, except when performing a migration.
+* [x] When running `upload` on app startup, make the initial check cheaper / faster, by only checking the latest run, except when performing a migration.
 
 ---
 
@@ -1492,4 +1492,4 @@ Add a `make` command or script for backing up cloud data by downloading, prefera
 
 ---
 
-`plot`: add `-a` = shortcut for `user_id=all run_id=all`
+`plot`: add a flag acting as a shortcut for `user_id=all run_id=all`.

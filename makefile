@@ -150,7 +150,9 @@ fly.repl:
 fly.file:
 	fly ssh sftp get -a tabularius /app/data/$(src_file) ./local/$(out_file)
 
-# Must provide `out_file=...`.
+# Must provide `out_file=...`. Note that the `.duckdb` file may be heavily
+# outdated if a lot of recent data is currently in the `.wal` file, which
+# we're not bothering to download.
 fly.db.dump:
 	$(MAKE) fly.file src_file=tabularius.duckdb
 

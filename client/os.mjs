@@ -361,6 +361,7 @@ export function BtnCmd(cmd, alias) {
 
 export function BtnHelp(cmd, {class: cls} = {}) {
   a.reqValidStr(cmd)
+
   return E(
     `button`,
     {

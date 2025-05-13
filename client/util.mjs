@@ -1195,7 +1195,7 @@ export const TOOLTIP = E(
 
 let TOOLTIP_LAST_ELEM
 
-function withTooltip({elem, chi}) {
+export function withTooltip({elem, chi}) {
   a.reqElement(elem)
   elem.onpointerover = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}
   elem.onpointermove = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}

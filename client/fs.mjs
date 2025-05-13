@@ -105,7 +105,7 @@ export async function fileConfLoadedWithPerm(sig, conf) {
   conf.perm = await queryPermission(sig, conf.handle, {mode})
   if (conf.perm === `granted`) return conf.handle
 
-  u.log.err(msgNotGranted(conf))
+  u.log.err(new u.ErrLog(...msgNotGranted(conf)))
   return undefined
 }
 
@@ -277,7 +277,7 @@ SYNC[file_conf_status].
 */
 export async function fileConfRequireOrRequestPermission(sig, conf) {
   const {handle, desc, mode} = a.reqInst(conf, FileConf)
-  if (!handle) throw new u.ErrLog(msgNotInited(conf))
+  if (!handle) throw new u.ErrLog(...msgNotInited(conf))
 
   conf.perm = await queryPermission(sig, handle, {mode})
   if (conf.perm === `granted`) return handle
@@ -286,7 +286,7 @@ export async function fileConfRequireOrRequestPermission(sig, conf) {
   conf.perm = await requestPermission(sig, handle, {mode})
   if (conf.perm === `granted`) return handle
 
-  throw new u.ErrLog(msgNotGranted(conf))
+  throw new u.ErrLog(...msgNotGranted(conf))
 }
 
 function msgNotInited(conf) {
@@ -301,7 +301,7 @@ function msgNotGranted(conf) {
 
 export async function fileConfRequirePermission(sig, conf) {
   const msg = await fileConfStatusProblem(sig, conf)
-  if (msg) throw new u.ErrLog(msg)
+  if (msg) throw new u.ErrLog(...msg)
 }
 
 export function fileHandleStatStr(sig, handle) {
@@ -690,6 +690,11 @@ export async function findLatestDirEntryOpt(sig, dir, fun) {
   return out
 }
 
+export function findLatestRoundFile(sig, runDir) {
+  return findLatestDirEntryOpt(sig, runDir, isHandleGameFile)
+}
+
+/*
 export function findLatestRoundFile(sig, runDir, progressFileHandle) {
   a.reqInst(progressFileHandle, FileSystemFileHandle)
   const ext = progressFileHandle ? u.paths.ext(progressFileHandle.name) : ``
@@ -697,6 +702,7 @@ export function findLatestRoundFile(sig, runDir, progressFileHandle) {
     return isFile(val) && u.paths.ext(val.name) === ext
   })
 }
+*/
 
 export async function findHandleByIntPrefixReq(sig, dir, int) {
   const out = await findHandleByIntPrefixOpt(sig, dir, int)
@@ -907,7 +913,8 @@ export async function getSubFile(sig, dir, subDirName, fileName) {
 
 export async function writeDirFile(sig, dir, name, body) {
   const file = await getFileHandle(sig, dir, name, {create: true})
-  return writeFile(sig, file, body, u.paths.join(dir.name, name))
+  await writeFile(sig, file, body, u.paths.join(dir.name, name))
+  return file
 }
 
 export async function writeFile(sig, file, body, path) {

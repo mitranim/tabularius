@@ -254,8 +254,8 @@ async function main() {
   migrations, and convenient for URL query "run" commands which rely on FS.
   */
   const [loadedProg, loadedHist] = await Promise.all([
-    fs.loadedProgressFile(u.sig),
-    fs.loadedHistoryDir(u.sig),
+    fs.loadedProgressFile(u.sig).catch(u.logErr),
+    fs.loadedHistoryDir(u.sig).catch(u.logErr),
   ]).catch(u.logErr)
 
   // Other code relies on up-to-date FS state, so FS migrations run first.
@@ -320,14 +320,15 @@ async function main() {
     }).catch(u.logErr)
   }
 
+  if (loadedHist) {
+    up.recommendAuthIfNeededOrRunUpload()?.catch?.(u.logErr)
+  }
+
   if (!loadedProg) {
     u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`init -p`))
   }
   else if (!loadedHist) {
     u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`init -h`))
-  }
-  else {
-    up.recommendAuthIfNeededOrRunUpload()?.catch?.(u.logErr)
   }
 }
 

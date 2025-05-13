@@ -964,7 +964,7 @@ missing -a, consider using a preset such as -p=dmg`,
   )
 
   test(
-    `-p=dmg bui_type=Mirador`,
+    `-p=dmg bui_type=Mirad`,
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`,
@@ -986,7 +986,7 @@ missing -a, consider using a preset such as -p=dmg`,
   )
 
   test(
-    `-p=dmg bui_type_upg=Mirador`,
+    `-p=dmg bui_type_upg=Mirad`,
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`,
@@ -1008,7 +1008,7 @@ missing -a, consider using a preset such as -p=dmg`,
   )
 
   test(
-    `-p=dmg bui_type_upg=Mirador_AAA`,
+    `-p=dmg bui_type_upg=Mirad_AAA`,
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`,

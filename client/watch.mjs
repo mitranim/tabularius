@@ -126,10 +126,7 @@ async function watchInit(sig, state) {
   const runDir = await fs.findLatestDirEntryOpt(sig, state.historyDirHandle, fs.isHandleRunDir)
   state.setRunDir(runDir?.name)
 
-  const roundFile = (
-    runDir &&
-    await fs.findLatestRoundFile(sig, runDir, state.progressFileHandle)
-  )
+  const roundFile = runDir && await fs.findLatestRoundFile(sig, runDir)
   await state.setRoundFile(roundFile?.name)
 
   u.log.info(`[watch] initialized: `, {

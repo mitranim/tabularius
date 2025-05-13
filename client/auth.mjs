@@ -299,7 +299,7 @@ function wordlistInitErr(err) {u.log.err(`unable to init wordlist: `, err)}
 // TODO consolidate with `recommendAuthIfNeededOrRunUpload` and `optStartUploadAfterInit`.
 export async function optStartUploadAfterAuth() {
   if (!await fs.loadedHistoryDir(u.sig).catch(u.logErr)) return undefined
-  return os.runCmd(`upload -p /`)
+  return os.runCmd(`upload -p -l /`)
 }
 
 function isByteArrEq(one, two) {

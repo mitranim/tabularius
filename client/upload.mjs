@@ -58,6 +58,7 @@ cmdUpload.help = function cmdUploadHelp() {
     u.LogLines(
       `flags:`,
       [`  `, ui.BtnPromptAppend(`upload`, `-p`), ` -- persistent mode`],
+      [`  `, ui.BtnPromptAppend(`upload`, `-l`), ` -- lazy mode: skip all runs if latest/latest is already uploaded`],
       [`  `, ui.BtnPromptAppend(`upload`, `-q`), ` -- quiet mode, minimal logging`],
     ),
     `the upload is idempotent, which means no duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
@@ -67,26 +68,52 @@ cmdUpload.help = function cmdUploadHelp() {
 }
 
 export async function cmdUpload(proc) {
-  const args = a.tail(u.splitCliArgs(proc.args))
-  const persistent = u.arrRemoved(args, `-p`)
-  const quiet = u.arrRemoved(args, `-q`)
-  const force = u.arrRemoved(args, `-f`)
-  const path = args[0]
+  const cmd = cmdUpload.cmd
+  const args = u.stripPreSpaced(proc.args, cmd)
+  const opt = a.Emp()
+  let path
+
+  for (const [key, val, pair] of u.cliDecode(args)) {
+    if (key === `-p`) {
+      opt.persistent = ui.cliBool(cmd, key, val)
+      continue
+    }
+    if (key === `-l`) {
+      opt.lazy = ui.cliBool(cmd, key, val)
+      continue
+    }
+    if (key === `-q`) {
+      opt.quiet = ui.cliBool(cmd, key, val)
+      continue
+    }
+    if (key === `-f`) {
+      opt.force = ui.cliBool(cmd, key, val)
+      continue
+    }
+    if (key) {
+      return u.LogParagraphs(
+        [`unrecognized `, ui.BtnPromptAppend(cmd, pair)],
+        os.cmdHelpDetailed(cmdUpload),
+      )
+    }
+    if (!val) continue
+    if (path) {
+      return u.LogParagraphs(`redundant path ${a.show(val)}`, os.cmdHelpDetailed(cmdUpload))
+    }
+    path = val
+  }
 
   if (!path) {
     return u.LogParagraphs(`missing upload path`, os.cmdHelpDetailed(cmdUpload))
   }
-  if (args.length > 1) {
-    return u.LogParagraphs(`too many inputs`, os.cmdHelpDetailed(cmdUpload))
-  }
   if (isUploadingLocal()) return `[upload] already running`
 
+  const {sig, user} = proc
   proc.desc = `acquiring lock`
   let unlock = await u.lockOpt(UPLOAD_LOCK_NAME)
-  const {sig, user} = proc
 
   if (!unlock) {
-    if (!persistent) return `[upload] another process has a lock on uploading`
+    if (!opt.persistent) return `[upload] another process has a lock on uploading`
 
     const start = Date.now()
     u.log.verb(`[upload] another process has a lock on uploading, waiting until it stops`)
@@ -98,20 +125,19 @@ export async function cmdUpload(proc) {
   }
 
   proc.desc = `uploading backups to the cloud`
-  try {return await cmdUploadUnsync({sig, path, quiet, persistent, force, user})}
+  try {return await cmdUploadUnsync({sig, path, opt, user})}
   finally {unlock()}
 }
 
-export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent, force, user}) {
+export async function cmdUploadUnsync({sig, path: srcPath, opt, user}) {
   u.reqSig(sig)
   a.reqValidStr(srcPath)
-  a.optBool(quiet)
-  a.optBool(persistent)
-  a.optBool(force)
+  a.reqDict(opt)
 
+  const persistent = a.optBool(opt.persistent)
+  const quiet = a.optBool(opt.quiet)
   const root = await fs.historyDirReq(sig, user)
   const [_, handle, path] = await fs.handleAtPathMagic(sig, root, srcPath)
-
   const userId = au.reqUserId()
   const state = a.vac(!quiet) && o.obs({
     done: false,
@@ -129,12 +155,12 @@ export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent, fo
       u.log.info(new DirUploadProgress(path || `/`, state))
     }
   }
-  if (!persistent) return cmdUploadStep({sig, root, path, userId, state, force})
+  if (!persistent) return cmdUploadStep({sig, root, path, opt, userId, state})
 
   let errs = 0
   while (!sig.aborted) {
     try {
-      return await cmdUploadStep({sig, root, path, userId, state, force})
+      return await cmdUploadStep({sig, root, path, opt, userId, state})
     }
     catch (err) {
       if (u.errIs(err, u.isErrAbort)) return
@@ -154,27 +180,44 @@ export async function cmdUploadUnsync({sig, path: srcPath, quiet, persistent, fo
   }
 }
 
-async function cmdUploadStep({sig, root, path, userId, state, force}) {
+async function cmdUploadStep({sig, root, path, opt, userId, state}) {
   u.reqSig(sig)
   a.reqStr(path)
+  a.reqDict(opt)
   a.reqValidStr(userId)
   a.optObj(state)
-  a.optBool(force)
 
+  const lazy = a.optBool(opt.lazy)
+  const force = a.optBool(opt.force)
   const segs = u.paths.split(path)
+
   if (!segs.length) {
+    if (state) state.status = `checking runs`
+
+    const runHandles = await fs.readRunsAsc(sig, root)
+    if (lazy && await isRunUploaded({sig, dir: a.last(runHandles), state})) {
+      uploadDone({state, lazy: true})
+      return
+    }
+
     if (state) state.status = `uploading all runs`
-    for (const dir of await fs.readRunsAsc(sig, root)) {
+    for (const dir of runHandles) {
       await uploadRun({sig, dir, userId, state, force})
     }
-    uploadDone(state)
+    uploadDone({state})
     return
   }
 
   const dir = await fs.getDirectoryHandle(sig, root, segs.shift())
+
   if (!segs.length) {
+    if (lazy && await isRunUploaded({sig, dir, state})) {
+      uploadDone({state, lazy: true})
+      return
+    }
+
     await uploadRun({sig, dir, userId, state, force})
-    uploadDone(state)
+    uploadDone({state})
     return
   }
 
@@ -185,7 +228,7 @@ async function cmdUploadStep({sig, root, path, userId, state, force}) {
 
   const file = await fs.getFileHandle(sig, dir, segs.shift())
   await uploadRound({sig, file, runName: dir.name, userId, state, force})
-  uploadDone(state)
+  uploadDone({state})
 }
 
 export async function uploadRun({sig, dir, userId, state, force}) {
@@ -203,12 +246,18 @@ export async function uploadRun({sig, dir, userId, state, force}) {
     state.runsChecked++
   }
 
-  for (const file of await fs.readRunRoundHandlesAsc(sig, dir)) {
+  const handles = await fs.readRunRoundHandlesAsc(sig, dir)
+  for (const file of handles) {
     await uploadRound({sig, file, runName, userId, state, force})
   }
 }
 
+let UPLOAD_ROUND_TIMER_ID = 0
+
 export async function uploadRound({sig, file, runName, userId, state, force}) {
+  const id = ++UPLOAD_ROUND_TIMER_ID
+  if (u.LOG_VERBOSE) console.time(`upload_round_${id}`)
+
   a.reqInst(file, FileSystemFileHandle)
   a.reqValidStr(runName)
   a.reqValidStr(userId)
@@ -223,64 +272,116 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
   }
 
   if (state) state.status = `checking round ${a.show(path)}`
+  if (state) state.roundsChecked++
 
   const roundNum = u.toNatOpt(file.name)
   if (!roundNum) {
-    state.status = `skipping round ${a.show(path)} with round_num ${a.show(roundNum)}`
+    if (u.LOG_VERBOSE) console.log(`skipping round ${a.show(path)} with round_num ${a.show(roundNum)}`)
     return
   }
 
+  // if (u.LOG_VERBOSE) console.time(`read_file_${id}`)
   const round = await fs.readDecodeGameFile(sig, file)
+  // if (u.LOG_VERBOSE) console.timeEnd(`read_file_${id}`)
+
   const roundNumFromData = a.reqInt(round.RoundIndex)
   if (roundNum !== roundNumFromData) {
     u.log.err(`data inconsistency: file ${a.show(path)} indicates round_num ${a.show(roundNum)} in the name, but has round_num ${a.show(roundNumFromData)} in the data; skipping upload`)
     return
   }
 
-  if (round.tabularius_uploaded_at && !force) {
-    if (state) state.roundsChecked++
+  if (isRoundUploaded(round) && !force) return
+
+  const prevUserId = a.onlyValidStr(round.tabularius_user_id)
+
+  // We can't attempt to upload it with the old user id, because our server
+  // rejects the attempt. Users can only upload rounds with their own user id.
+  if (prevUserId && prevUserId !== userId) {
+    if (u.LOG_VERBOSE) console.log(`skipping upload of ${a.show(path)}: user id mismatch: old ${prevUserId} ≠ new ${userId}`)
     return
   }
 
   const [runNum, runMs] = s.splitRunName(runName)
-  s.roundMigrated({round, userId, runNum, runMs})
-  round.tabularius_uploaded_at = Date.now()
+  let migrated = s.roundMigrated({round, userId, runNum, runMs})
+
+  if (!a.isNat(round.tabularius_uploaded_at)) {
+    round.tabularius_uploaded_at = Date.now()
+    migrated = true
+  }
 
   const jsonStr = JSON.stringify(round)
   const gzipByteArr = await u.str_to_gzipByteArr(jsonStr)
-  const fileContentGdStr = u.byteArr_to_base64Str(gzipByteArr)
   if (state) state.status = `uploading ${a.show(path)}`
 
   try {
     const isGzip = u.QUERY.get(`upload_mode`) !== `json`
     const body = isGzip ? gzipByteArr : jsonStr
+
+    // if (u.LOG_VERBOSE) console.time(`upload_to_server_${id}`)
     const info = await apiUploadRound(sig, {body, isGzip})
+    // if (u.LOG_VERBOSE) console.timeEnd(`upload_to_server_${id}`)
+
     if (info?.redundant) {
-      u.log.info(`server: skipped redundant upload of ${a.show(path)}`)
+      if (u.LOG_VERBOSE) console.log(`server: skipped redundant upload of ${a.show(path)}`)
     }
-    else if (u.LOG_VERBOSE && info?.facts) {
-      u.log.info(`uploaded ${a.show(path)}: ${a.show(info.facts)} facts`)
+    else {
+      if (state) state.roundsUploaded++
+      if (u.LOG_VERBOSE && info?.facts) {
+        u.log.info(`uploaded ${a.show(path)}: ${a.show(info.facts)} facts`)
+      }
     }
   }
   catch (err) {
     if (state) state.status = `unable to upload ${a.show(path)}, see error`
     throw err
   }
-  if (state) state.roundsUploaded++
 
-  /*
-  Use a background signal to suppress cancelation, to avoid double upload if the
-  command is killed between uploading and writing the file. The desync is still
-  possible if the browser tab is killed at this point.
-  */
-  await fs.writeFile(u.sig, file, fileContentGdStr, path)
-  if (state) state.roundsChecked++
+  if (migrated) {
+    const fileContentGdStr = u.byteArr_to_base64Str(gzipByteArr)
+
+    /*
+    Use a background signal to suppress cancelation, to avoid double upload if the
+    command is killed between uploading and writing the file. The desync is still
+    possible if the browser tab is killed at this point.
+    */
+    // if (u.LOG_VERBOSE) console.time(`write_file_${id}`)
+    await fs.writeFile(u.sig, file, fileContentGdStr, path)
+    // if (u.LOG_VERBOSE) console.timeEnd(`write_file_${id}`)
+  }
+  else if (u.LOG_VERBOSE) {
+    console.log(`skipping write of ${a.show(path)}: no data change and previously uploaded`)
+  }
+
+  if (u.LOG_VERBOSE) console.timeEnd(`upload_round_${id}`)
 }
 
-function uploadDone(state) {
+async function isRunUploaded({sig, dir, state}) {
+  if (!a.optInst(dir, FileSystemDirectoryHandle)) return false
+
+
+  try {
+    const file = await fs.findLatestRoundFile(sig, dir)
+    if (!file) return false
+
+    const data = await fs.readDecodeGameFile(sig, file)
+
+    if (state) state.runsChecked++
+    if (state) state.roundsChecked++
+
+    return isRoundUploaded(data)
+  }
+  catch (err) {
+    u.log.err(`unable to check if run ${a.show(dir.name)} is uploaded: `, err)
+    return false
+  }
+}
+
+function isRoundUploaded(val) {return a.isNat(val?.tabularius_uploaded_at)}
+
+function uploadDone({state, lazy}) {
   if (!a.optObj(state)) return
   state.done = true
-  state.status = `done`
+  state.status = `done` + (a.optBool(lazy) ? ` (lazy mode)` : ``)
 }
 
 export class FileUploadProgress extends u.ReacElem {
@@ -349,7 +450,7 @@ export function apiUploadRound(sig, {body, isGzip}) {
 
 // TODO consolidate with `optStartUploadAfterInit` and `optStartUploadAfterAuth`.
 export function recommendAuthIfNeededOrRunUpload() {
-  if (au.isAuthed()) return os.runCmd(`upload -p /`)
+  if (au.isAuthed()) return os.runCmd(`upload -p -l /`)
   return recommendAuth()
 }
 

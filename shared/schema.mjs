@@ -1033,12 +1033,12 @@ export function roundMigrated({round, userId, runNum, runMs}) {
   return out
 }
 
-function changed(tar, key, val) {
+export function changed(tar, key, val) {
   a.reqObj(tar), a.reqStr(key)
   return !a.is(tar[key], (tar[key] = val))
 }
 
-function deleted(tar, key) {
+export function deleted(tar, key) {
   a.reqObj(tar), a.reqStr(key)
   return key in tar && delete tar[key]
 }
