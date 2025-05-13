@@ -1145,32 +1145,6 @@ export function randomSamples(src, count) {
   return out
 }
 
-/*
-Probably like 5 times more complicated and 10 times slower than it could be.
-TODO improve.
-*/
-export function ellMid(src, max) {
-  src = a.laxStr(src)
-  a.reqInt(max)
-  if (src.length <= max) return src
-  if (!(max > 0)) return ``
-
-  const chars = [...src]
-  if (chars.length <= max) return src
-
-
-  const inf = `…`
-  let lenPre = (max / 2) | 0
-  let lenSuf = (max / 2) | 0
-
-  while ((lenPre + lenSuf) >= max) {
-    if (lenSuf > 0) lenSuf--
-    else if (lenPre > 0) lenPre--
-    else break
-  }
-  return chars.slice(0, lenPre).concat(inf).concat(chars.slice(-lenSuf)).join(``)
-}
-
 export function maxBy(src, fun) {
   a.reqFun(fun)
   let out
@@ -1241,7 +1215,7 @@ function tooltipDeinitFor(elem) {
   if (TOOLTIP_LAST_ELEM === elem) tooltipDeinit()
 }
 
-function tooltipDeinit(eve) {
+function tooltipDeinit() {
   TOOLTIP.remove()
   TOOLTIP_LAST_ELEM = undefined
   document.removeEventListener(`scroll`, tooltipDeinit, SCROLL_LISTEN_OPT)

@@ -1480,7 +1480,7 @@ Plot totals: add `round_num`.
 
 ---
 
-Plot legend: drop `ellMid`, rely on overflow ellipsis.
+* [x] Plot legend: drop `ellMid`, rely on overflow ellipsis.
 
 ---
 

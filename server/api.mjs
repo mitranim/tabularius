@@ -40,7 +40,7 @@ Note that the download may take a while.
 Note that the `.duckdb` file may be heavily outdated if a lot of recent data is
 currently in the `.wal` file, which we're not bothering to expose.
 */
-export async function apiDb(ctx) {
+export function apiDb(ctx) {
   const path = ctx.dbFile
   if (path === `:memory:`) throw Error(`unable to serve memory DB file`)
   return hd.HttpFileStream.res(path)

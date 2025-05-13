@@ -264,11 +264,11 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
   a.reqArr(Z_X_Y)
   a.reqDict(opt)
 
-  const {agg, aggFun, totalFun} = opt
+  const {agg, totalFun} = opt
   ;[{X_vals, Z_vals, Z_X_Y}] = [s.plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, totalFun})]
 
   const Z_rows = Z_vals
-    .map(Z => legendDisplay(opt.Z, Z))
+    .map(Z => codedToTitled(opt.Z, Z))
     .map((val, ind) => serieWithTotal(val, ind, totalFun))
 
   // Hide the total serie by default.
@@ -1116,15 +1116,6 @@ export class TooltipPlugin extends a.Emp {
 }
 
 export const LEGEND_LEN_MAX = 32
-
-export function legendDisplay(Z_key, Z_val) {
-  a.reqValidStr(Z_key)
-
-  // Z labels are sometimes numbers.
-  if (!a.isStr(Z_val)) return Z_val
-
-  return u.ellMid(codedToTitled(Z_key, Z_val), LEGEND_LEN_MAX)
-}
 
 /*
 Converts labels such as `CB01` to `Bunker`, `CB01_ABA` to `Bunker_ABA`, and
