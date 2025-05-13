@@ -1,6 +1,7 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as pt from '@mitranim/js/path.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
+import * as hd from '@mitranim/js/http_deno.mjs'
 import * as u from './util.mjs'
 import * as s from '../shared/schema.mjs'
 import * as db from './db.mjs'
@@ -8,6 +9,7 @@ import * as db from './db.mjs'
 export function apiRes(ctx, rou) {
   a.reqInst(rou, a.ReqRou)
   return (
+    rou.get(`/api/db`) && apiDb(ctx) ||
     rou.post(`/api/upload_round`) && apiUploadRound(ctx, rou.req) ||
     rou.post(`/api/plot_agg`) && apiPlotAgg(ctx, rou.req) ||
     (
@@ -21,6 +23,24 @@ export function apiRes(ctx, rou) {
     ) ||
     rou.notFound()
   )
+}
+
+/*
+Usage in DuckDB SQL:
+
+  attach 'https://tabularius.mitranim.com/api/db' as db;
+  select * from db.facts limit 1;
+
+  attach 'https://tabularius.mitranim.com/api/db' as db;
+  use db;
+  select * from facts limit 1;
+
+Note that the download may take a while.
+*/
+export async function apiDb(ctx) {
+  const path = ctx.dbFile
+  if (path === `:memory:`) throw Error(`unable to serve memory DB file`)
+  return hd.HttpFileStream.res(path)
 }
 
 let UPLOAD_TIMER_ID = 0
@@ -159,12 +179,16 @@ export async function plotAgg(ctx, req) {
     ${where}
   `
 
+  /*
+  The cast to `double` is redundant for most stats, but necessary for `count`
+  which otherwise produces a JS `BigInt` which is not JSON-serializable.
+  */
   const queryAggs = u.sql`
     with src as (${queryFacts})
     select
       ${u.sqlRaw(Z)} as Z,
       ${u.sqlRaw(X)} as X,
-      ${u.sqlRaw(opt.agg)}(stat_val) as Y
+      ${u.sqlRaw(opt.agg)}(stat_val)::double as Y
     from src
     group by
       ${u.sqlRaw(Z)},

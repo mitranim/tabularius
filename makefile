@@ -104,6 +104,15 @@ duck:
 duck.script:
 	duckdb $(DB_FILE) < $(file)
 
+duck.script.mem:
+	duckdb < $(file)
+
+duck.attach.dev:
+	duckdb -cmd "attach 'http://localhost:$(PORT)/api/db' as db; use db;"
+
+duck.attach.prod:
+	duckdb -cmd "attach 'https://tabularius.mitranim.com/api/db' as db; use db;"
+
 lint:
 	deno lint
 
@@ -140,6 +149,10 @@ fly.repl:
 
 fly.file:
 	fly ssh sftp get -a tabularius /app/data/$(src_file) ./local/$(out_file)
+
+# Must provide `out_file=...`.
+fly.db.dump:
+	$(MAKE) fly.file src_file=tabularius.duckdb
 
 # Keeps .dockerignore in sync with .gitignore.
 #
