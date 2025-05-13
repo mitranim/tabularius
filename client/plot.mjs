@@ -302,7 +302,7 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
     plotOpt: opt,
     plotArgs: args,
     // Dumb special case but not worth generalizing.
-    plotTitlePre: a.vac(example) && Muted(EXAMPLE_TITLE_PRE),
+    plotTitlePre: a.vac(example) && u.Muted(EXAMPLE_TITLE_PRE),
   }
 }
 
@@ -326,8 +326,8 @@ export function PlotTitle({elem, opt, args, pre: prefix, close}) {
   args = u.stripPreSpaced(args, cmdPlot.cmd)
 
   const {X, Y, Z, agg} = opt
-  const pre = Bold(agg)
-  const suf = [Muted(` per `), Bold(Z), Muted(` per `), Bold(X)]
+  const pre = u.Bold(agg)
+  const suf = [u.Muted(` per `), u.Bold(Z), u.Muted(` per `), u.Bold(X)]
   const btn = a.vac(args) && BtnAppend(args)
 
   if (btn) {
@@ -349,7 +349,7 @@ export function PlotTitle({elem, opt, args, pre: prefix, close}) {
       E(
         `span`,
         {class: `w-full trunc text-center`},
-        prefix, pre, Z === `stat_type` ? suf : [Muted(` of `), Bold(Y), ...suf],
+        prefix, pre, Z === `stat_type` ? suf : [u.Muted(` of `), u.Bold(Y), ...suf],
       ),
       btn,
     ),
@@ -1322,7 +1322,7 @@ cmdPlotLink.help = function cmdPlotLinkHelp() {
       `  `,
       ui.BtnPromptReplace({
         val: cmdPlotLink.cmd + ` `,
-        chi: [`plot_link `, Muted(`<user_id>`)],
+        chi: [`plot_link `, u.Muted(`<user_id>`)],
       }),
       ` -- get shareable plot link for specific user`,
     ],
@@ -1416,7 +1416,7 @@ function PlotTotalEntry(counts, values, key) {
 
   if (!totalCount && !sampleCount) return undefined
 
-  const keyNode = Muted(key, `: `)
+  const keyNode = u.Muted(key, `: `)
 
   if (totalCount === 1 && sampleCount === 1) {
     const sample = a.render(samples[0])
@@ -1442,7 +1442,7 @@ function PlotTotalEntry(counts, values, key) {
       E(`span`, {class: `cursor-pointer hover:underline hover:decoration-dotted`},
         keyNode, totalCount,
         // TODO: say "collapse" if already expanded.
-        Muted(
+        u.Muted(
           totalCount === sampleCount
           ? ` (expand)`
           : ` (expand ` + sampleCount + `)`
@@ -1451,7 +1451,7 @@ function PlotTotalEntry(counts, values, key) {
     ),
     ...u.LogLines(
       ...a.map(samples, val => Sample({key, val, pre: INDENT2})),
-      a.vac(omitted) && Muted(
+      a.vac(omitted) && u.Muted(
         INDENT2 + `... ` + omitted + ` omitted`,
       ),
     ),
@@ -1469,12 +1469,4 @@ function Sample({key, val, pre, preLen}) {
   })
   const clip = u.BtnClip(val)
   return [pre, btn, inf, clip]
-}
-
-function Bold(...chi) {
-  return E(`b`, {}, ...chi)
-}
-
-function Muted(...chi) {
-  return E(`span`, {class: u.CLS_TEXT_GRAY}, ...chi)
 }

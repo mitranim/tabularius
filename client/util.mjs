@@ -70,7 +70,7 @@ tw.install({
     `align-bottom` to avoid messing up alignment for other elements on the
     same line. `overflow-clip` seems strictly superior.
     */
-    [`trunc`, `inline-block whitespace-pre overflow-x-clip text-ellipsis`],
+    [`trunc`, `inline-block min-w-0 whitespace-pre overflow-x-clip text-ellipsis`],
     [`row-cen-cen`, `flex-row justify-center items-center`],
     [`row-bet-cen`, `flex-row justify-between items-center`],
     [`col-cen-cen`, `flex-col justify-center items-center`],
@@ -1238,4 +1238,12 @@ export function tooltipOrient({elem, posX, posY, wid, hei, off}) {
   elem.style.left = posX + `px`
   elem.style.top = posY + `px`
   elem.style.transform = `translate(${tranX}, ${tranY})`
+}
+
+export function Bold(...chi) {
+  return E(`b`, {}, ...chi)
+}
+
+export function Muted(...chi) {
+  return E(`span`, {class: CLS_TEXT_GRAY}, ...chi)
 }

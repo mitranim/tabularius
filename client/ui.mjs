@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 75
+const VERSION = 76
 let INITED
 
 /*
@@ -205,11 +205,16 @@ export const MEDIA = new class MediaPanel extends u.Elem {
 
 function Process(src) {
   a.reqInst(src, os.Proc)
-  const cls = a.spaced(u.CLS_TEXT_GRAY, `truncate text-sm`)
+  const cls = a.spaced(u.CLS_TEXT_GRAY, `trunc text-sm`)
 
   return E(`div`, {class: `flex row-bet-cen gap-2`},
-    E(`pre`, {class: `truncate font-medium flex-1 shrink-0`},
-      src.id, `: `, src.args,
+    E(`pre`, {class: `flex-1 basis-auto trunc font-medium flex-1`},
+      u.withTooltip({
+        chi: `process id`,
+        elem: E(`span`, {class: `cursor-help`}, src.id),
+      }),
+      u.Muted(`: `),
+      BtnPromptReplace({val: src.args}),
     ),
     // TODO: place description on its own line (under).
     a.vac(src.desc && undefined) && E(
@@ -217,11 +222,14 @@ function Process(src) {
       {class: cls},
       `(`, u.callOpt(src.desc), `)`,
     ),
-    a.vac(src.startAt) && E(
-      `pre`,
-      {class: cls},
-      u.timeFormat.format(src.startAt),
-    ),
+    a.vac(src.startAt) && u.withTooltip({
+      chi: `started at: ` + u.dateFormat.format(src.startAt),
+      elem: E(
+        `pre`,
+        {class: a.spaced(cls, `cursor-help`)},
+        u.timeFormat.format(src.startAt),
+      ),
+    }),
     a.vac(src.id) && BtnKill({
       onclick() {os.runCmd(`kill ` + src.id).catch(u.logErr)},
     }),
@@ -424,7 +432,7 @@ class SubmittedCmd extends u.ReacElem {
       src,
       a.vac(proc) && [
         ` `,
-        E(`span`, {class: u.CLS_TEXT_GRAY},
+        u.Muted(
           `(`, a.vac(proc.desc) || `running`, `; `, os.BtnCmd(`kill ${proc.id}`), `)`
         )
       ],
