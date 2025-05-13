@@ -1,0 +1,2738 @@
+{
+  "maxDifficultyUnlocked": 5,
+  "LockedEntities": {
+    "D1_02": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "f6efe60d-c262-4b25-8d13-9128b6aa83bd": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F1H01",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_08": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "d4e312d8-f3ce-40f5-ae83-43e44a7d587e": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F1H02",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_16": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "bca6406b-ea2a-4dcb-a62b-33c8c1e1cc74": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F2H04",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_23": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "37c74b36-ce5e-443c-8fa1-7ec78294cda6": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F2H02",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_24": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "c653ce20-aab3-4b8a-b4b9-b1d82529358e": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F2H07",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_26": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "c5277c3c-319c-4f2d-a24c-539b559b0528": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 30,
+          "Progression": 30,
+          "Hero": "F3H01",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_33": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "14c7a786-f691-4689-9755-3453b9ab2a48": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 5,
+          "Progression": 5,
+          "Hero": "F1H01",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_35": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "bd7f902e-f7c4-4800-89d7-77055132bd36": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 5,
+          "Progression": 5,
+          "Hero": "F1H08",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_37": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "5d802ff8-92a4-4de4-849a-df231e9a1d59": {
+          "UnlockEvent": "OnCurrencyGained",
+          "UnlockCondition": "Production",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 100000,
+          "Progression": 100162,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_04": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "084b344e-214b-44ec-879c-31b85591dcf6": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F3H03",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_05": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "a19b16b5-69a7-4cad-af90-0e78fbdb520a": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F1H10",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_06": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "c4238c34-4823-45ea-ab8c-e221a2307ce4": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F3H07",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_07": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "8f13a08a-f7df-4b1b-9f85-6e7769b6315f": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F2H01",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_09": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "025d5341-fdf6-471c-827c-aec560c72b7a": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F1H05",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_11": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "56db54d9-d4dd-42e4-9112-e75f17f01590": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F2H05",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_14": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "05121cf5-0b17-4667-93cb-1838854afea7": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F2H08",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_18": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "7f64d116-2481-4151-9964-4452894502d5": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F3H04",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_19": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "dfd2dd34-b2f8-485f-a221-fa330e70f5b3": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F2H03",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_20": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "1b4ccdfa-8f5f-41ad-bd50-1af656127373": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F1H09",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_21": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "30afa193-5c00-4915-b49c-c5446f612c4b": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F1H06",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_24": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "93efb4a1-1181-4968-b1a5-d334d194c054": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F2H10",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_25": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "28a4d0e2-353f-4ba9-97f7-44af1ccfc2b2": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F3H10",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_02": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "75c3f922-4633-4a72-80e7-4933a1be8dd4": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F3H01",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_04": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "c586fccb-9f16-4032-a784-fcf6d4217e16": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F2H09",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_06": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "b068cd31-b0ff-4b28-912d-bc0c1af3e451": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F3H08",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_08": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "733b7a63-cc20-43f6-8bb6-a2e25c18f2ec": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F3H06",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_09": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "a5a0253b-2750-4ced-a75e-03c77f1f824f": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F1H04",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_10": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "64ef2143-92e5-4199-bacb-09c79de49f01": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F3H02",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_11": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "59538b25-0db3-4237-91c9-1cfc662f5da3": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F2H06",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_14": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "50ae393e-07f8-4ab6-baa9-97bfe91dcc61": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F1H03",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_16": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "097ed393-247b-412b-8718-af726cc69cef": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F3H05",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_20": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "be1278d7-0e6c-433b-ad70-0813ffa7fe37": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F1H07",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_21": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "4bb4fd69-3d1b-44d8-8d20-eec0c53fe886": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "F1H08",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB01D7": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "1f8bdf2f-f10d-465f-9417-5e0b41b0ad40": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB01D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB02D7": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "a35f4b33-f745-4fd2-aaff-2d52ba0ab9f6": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB02D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB03D7": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "668a35cc-c550-4709-8a22-a65965839809": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB03D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB04D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "77ab21af-044e-486c-b046-47fb6e2f10d8": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB04D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB05D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "5a981b21-970a-46e7-9db7-8eb307edcfeb": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB05D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB06D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "763bdc1b-836c-4e32-abac-5516cf2cdaca": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB06D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB07D7": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "d9dfbf8b-c175-4b0d-ab42-bb3d66e87867": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB07D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB08D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "e06e02aa-edb7-4e5b-afa3-8f4fe9d33a36": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB08D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB09D7": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "fea46935-9f18-44d1-be20-533489aef381": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB09D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB10D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "e3b5602a-a7ca-4d98-8e56-57ea7d8e5361": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB10D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB11D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "28ecb79f-b322-45ee-b0dd-4f72c8959b3d": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB11D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB13D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "65c3ac14-2ae4-4286-940c-9b28e84e8261": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB13D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB14D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "31b5e3cd-1f59-4df0-a614-bba0faf3e402": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB14D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB15D7": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "be481815-1db6-4825-962b-42ff7a418b98": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB15D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB16D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "cc679df4-1577-4ae1-a119-23e9b9ebc855": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB16D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB17D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "4becc832-dcc2-4b2f-a0e4-1e09f9637b21": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB17D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB18D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "11728c6b-d03e-4fb9-ae40-e6abb37cc698": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB18D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB19D7": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "a4308eb4-98ce-4829-8743-f1878ad4e1b0": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB19D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB20D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "7d89fa32-61e8-4f25-bb45-a0e85ffb2120": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB20D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBF101D7": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "8dfccfac-4882-407f-95f8-50d60e4961f7": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBF101D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB02": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "47e0f2c4-94bb-4607-90da-9acc9f2d6794": {
+          "UnlockEvent": "OnEnemyDestroyed",
+          "UnlockCondition": "EnemyType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 10000,
+          "Progression": 10000,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB10": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "2a03c15b-ebce-405d-a35c-f8a479be5cfc": {
+          "UnlockEvent": "OnCurrencySpent",
+          "UnlockCondition": "CurrencyType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Tech",
+          "TargetValue": 30,
+          "Progression": 32,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB14": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "41f74d46-4489-4d4a-827f-845497dd1577": {
+          "UnlockEvent": "OnReroll",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Any",
+          "TargetValue": 50,
+          "Progression": 50,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB18": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "d9f9beaa-8518-42a7-afeb-cecde299c871": {
+          "UnlockEvent": "OnCurrencyGained",
+          "UnlockCondition": "Production",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 50000,
+          "Progression": 50615,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "SB01": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "004fb9fe-f5e9-4bdc-9bf5-fcc01584948b": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "Any",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 50,
+          "Progression": 50,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "SB02": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "118b7c06-a364-4801-b5f4-588bdb2d2237": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 5,
+          "Progression": 5,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F1H02": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "165e4ea7-3380-474f-9c23-0231e423e83c": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "CB06",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 3,
+          "Progression": 3,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F1H03": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "2462fddd-b7d9-4b0f-9b06-8acd7bd00593": {
+          "UnlockEvent": "OnProductionGained",
+          "UnlockCondition": "Production",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 400,
+          "Progression": 460,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F1H04": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "50d6ac13-3146-4131-b2d2-0c3d98999fcb": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "CB15",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 12,
+          "Progression": 12,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F1H05": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "21295be4-301f-404b-a5ff-431ce1efc752": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "Any",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 120,
+          "Progression": 120,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F1H06": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "22cbae2e-3d15-479f-8cd5-d8806f185b65": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrinesOwned",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 30,
+          "Progression": 30,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F1H07": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "35b718a9-caf8-4f68-989b-1f5c1f9f68d6": {
+          "UnlockEvent": "OnCurrencyGained",
+          "UnlockCondition": "Production",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 150000,
+          "Progression": 150411,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F1H09": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "2fe55503-a845-4007-acae-0cb9de9379c7": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "DifficultyLevel",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 4,
+          "Progression": 4,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F1H10": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "e9ad9b7c-b75b-45a6-87c1-93b1245abc57": {
+          "UnlockEvent": "OnReroll",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Any",
+          "TargetValue": 15,
+          "Progression": 15,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F2H01": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "5f1e1d2d-a618-4d6a-97eb-e3f8e0d11fc6": {
+          "UnlockEvent": "OnExpeditionLose",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F2H02": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "b3104531-df4d-4ff4-983b-460ce03109a4": {
+          "UnlockEvent": "OnBuildingActivated",
+          "UnlockCondition": "NeutralBuildingType",
+          "EnemyType": "",
+          "BuildingType": "",
+          "NeutralType": "Any",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 12,
+          "Progression": 12,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F2H03": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "6cc38292-3065-4e9b-8e2c-f28fa6c95df8": {
+          "UnlockEvent": "OnCurrencyGained",
+          "UnlockCondition": "Production",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 350000,
+          "Progression": 350312,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F2H04": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "fbdae4b4-443d-49df-a3d5-3ce029d039fc": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "SB06",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 8,
+          "Progression": 8,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F2H05": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "0bbebd5f-2531-4ed8-8cad-cad1fdd4b022": {
+          "UnlockEvent": "OnEnemyDestroyed",
+          "UnlockCondition": "EnemyType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 100000,
+          "Progression": 100000,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F2H06": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "cbc20331-b2bf-4b7c-a77c-792f3bb2e5ac": {
+          "UnlockEvent": "OnExpeditionLose",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 3,
+          "Progression": 3,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F2H07": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "c190a8f3-7e7b-4d5a-b4ea-219c1d754469": {
+          "UnlockEvent": "OnHQRepaired",
+          "UnlockCondition": "RepairedAmount",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 50000,
+          "Progression": 50121.75,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F2H08": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "519897bf-8554-4e45-9c0b-7cfc8ba64b12": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "DifficultyLevel",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 3,
+          "Progression": 3,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F2H09": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "56a3f231-6d7d-4342-9e66-275eb91a713a": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 25,
+          "Progression": 25,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F2H10": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "f678fec8-ec28-4923-9a02-11c119b6f7fe": {
+          "UnlockEvent": "OnNeutralBuildingDiscovered",
+          "UnlockCondition": "NeutralBuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "Any",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 6,
+          "Progression": 6,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F3H01": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "27975b4d-a087-4d4e-ac7a-a25d2853b77f": {
+          "UnlockEvent": "OnHPGained",
+          "UnlockCondition": "HPLevel",
+          "EnemyType": "",
+          "BuildingType": "F101",
+          "NeutralType": "NB04",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 20000,
+          "Progression": 20000,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F3H02": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "f6100b17-7725-4c41-83ca-18fdb20600c7": {
+          "UnlockEvent": "OnCurrencySpent",
+          "UnlockCondition": "CurrencyType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Tech",
+          "TargetValue": 10,
+          "Progression": 10,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F3H03": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "0f8a796a-9330-4d02-be8d-e5b7ddd27ab7": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "DifficultyLevel",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F3H04": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "29b21a17-2dfe-43f9-9d86-71a414706845": {
+          "UnlockEvent": "OnProductionGained",
+          "UnlockCondition": "Production",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Reconnaissance",
+          "TargetValue": 50,
+          "Progression": 53,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F3H05": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "b2b99ef4-942f-4d91-aab7-ff9d73e128e5": {
+          "UnlockEvent": "OnExpeditionLose",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 10,
+          "Progression": 10,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F3H06": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "0e5aa96a-f28e-422e-918b-1121f5ccfc33": {
+          "UnlockEvent": "OnEnemyDestroyed",
+          "UnlockCondition": "EnemyType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 50000,
+          "Progression": 50000,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F3H07": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "dcac300a-b051-48a7-90dd-620721b54908": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "DifficultyLevel",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 2,
+          "Progression": 2,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F3H08": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "cbec917b-d68e-4068-9517-ce6c0f2b73ae": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "Any",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 30,
+          "Progression": 30,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F3H09": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "ba8b9bca-bf4b-4cbe-a20b-27985a9047ad": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "SB04",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 2,
+          "Progression": 2,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F3H10": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "0a20775c-4e4b-49d7-afaf-7a03c580846a": {
+          "UnlockEvent": "OnReroll",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Any",
+          "TargetValue": 150,
+          "Progression": 150,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_04": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "3e3832c8-8a34-4ca9-ae4e-18e21d42d369": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 15,
+          "Progression": 15,
+          "Hero": "F1H07",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_21": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "bc818bc8-40ec-4739-a2e8-4c09642cf9e4": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 15,
+          "Progression": 15,
+          "Hero": "F3H05",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_25": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "c0eced8f-4085-4253-a9c3-6ec3defa2121": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 10,
+          "Progression": 10,
+          "Hero": "F3H03",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_36": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "692bbfe7-0691-483f-87ab-273639c7c584": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 10,
+          "Progression": 10,
+          "Hero": "F2H08",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_02": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "a92df3df-e2e8-43ac-8bf8-6fb8710833b6": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 20,
+          "Progression": 20,
+          "Hero": "F1H04",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_17": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "ec90ff4c-1866-4713-835d-1ef290a3081d": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 20,
+          "Progression": 20,
+          "Hero": "F1H10",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_26": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "ea40041f-8ee2-44a4-a469-6a04d0c0d1d1": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 30,
+          "Progression": 30,
+          "Hero": "F2H02",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_27": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "a79e0e28-32f6-404f-b9c5-92ecb788950b": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 20,
+          "Progression": 20,
+          "Hero": "F3H06",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_39": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "9eed4352-551b-4931-b0ab-c7fd754edec0": {
+          "UnlockEvent": "OnWaveEnd",
+          "UnlockCondition": "Hero",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 10,
+          "Progression": 10,
+          "Hero": "F1H06",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_01": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "730d28cf-e048-42b0-997a-a81213e67f47": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "Any",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 80,
+          "Progression": 80,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D3_19": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "862452a2-a052-41da-ae8d-fd84d7e644cc": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 8,
+          "Progression": 8,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_38": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "72d98b92-6c9d-4458-8f9b-10d5e6b3b97a": {
+          "UnlockEvent": "OnCurrencyGained",
+          "UnlockCondition": "Production",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 200000,
+          "Progression": 200289,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB01AdvUpg": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "cdd2bdd7-176d-4e89-97e9-5d8554d35c8c": {
+          "UnlockEvent": "OnExpeditionEnd",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "CB01",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB02AdvUpg": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "fce5d1f5-b4a0-4b01-a351-866f6f2d2a36": {
+          "UnlockEvent": "OnExpeditionEnd",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "CB02",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB03AdvUpg": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "02b9de30-7539-4d8c-a403-12fed63b12d4": {
+          "UnlockEvent": "OnExpeditionEnd",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "CB03",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB04AdvUpg": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "c04f7879-79d9-412b-8d82-a3bb71a37184": {
+          "UnlockEvent": "OnExpeditionEnd",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "CB04",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB07AdvUpg": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "60249e53-c42b-4c0e-ac5f-33db947801fd": {
+          "UnlockEvent": "OnExpeditionEnd",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "CB07",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB15AdvUpg": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "b310d4aa-82e8-46b8-a483-9e367eff3ea5": {
+          "UnlockEvent": "OnExpeditionEnd",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "CB15",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB17AdvUpg": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "c1e67273-d824-4d28-af46-ccb5a21ff7b4": {
+          "UnlockEvent": "OnExpeditionEnd",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "CB17",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB19AdvUpg": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "f74c8f96-f9a0-46d0-967a-f2f82f4f9795": {
+          "UnlockEvent": "OnExpeditionEnd",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "CB19",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F101AdvUpg": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "f3efdf32-ace4-4930-a1c8-c383ec5a4087": {
+          "UnlockEvent": "OnExpeditionEnd",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "F101",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "F106AdvUpg": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "0ea21785-a507-4ceb-b910-915c9249682e": {
+          "UnlockEvent": "OnExpeditionEnd",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "Any",
+          "BuildingType": "F106",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_19": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "58c40dfa-e914-4ac0-a1a6-7d67bc3ed895": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 3,
+          "Progression": 3,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_31": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "2ef6f264-4349-45fa-87f7-e6749f334123": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 2,
+          "Progression": 2,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_32": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "d9791cbe-c9be-4d51-900b-8a9b8b984930": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB01D7",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_33": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "537c83ba-5d4b-45ae-91d7-817a5279f657": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB03D7",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_34": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "cf79e44d-1bef-4c67-8a51-ac6fa10dc6f3": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB07D7",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_35": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "425a0559-1293-4c02-8ac5-ffa10492cd9c": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB17D7",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_36": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "431acf86-08b3-41b2-805f-1d47e42c56d1": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB18D7",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D2_37": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "0dc76b7b-a44a-43bb-a05e-074c39d92520": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBF101D7",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB08": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "a25b9083-5fd1-417d-b75d-5216519344da": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 6,
+          "Progression": 6,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB12": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "eee0b4d3-3fc8-45e5-9bb3-4470434cc7ae": {
+          "UnlockEvent": "OnEnemyDestroyed",
+          "UnlockCondition": "EnemyType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 20000,
+          "Progression": 20000,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB13": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "c5540c75-88c1-4763-b687-a79c54192ad6": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "Any",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 75,
+          "Progression": 75,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "CB16": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "b66cc576-55ae-4822-a772-baa535ed5d1f": {
+          "UnlockEvent": "OnCurrencySpent",
+          "UnlockCondition": "CurrencyType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Tech",
+          "TargetValue": 15,
+          "Progression": 15,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "SB07": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "5b4a6114-9e9b-47ff-9489-b439737079c4": {
+          "UnlockEvent": "OnReroll",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Any",
+          "TargetValue": 100,
+          "Progression": 100,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "NB02": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "f5201130-6b55-4a43-b8cc-48e292e1d233": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "CB12",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "NB06": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "7954cef4-cf7e-49ba-9832-d7a013187e7e": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "SB04",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 1,
+          "Progression": 1,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "NB08": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "e3399896-41f0-4e62-b537-2e6c1e2bc1a7": {
+          "UnlockEvent": "OnExpeditionLose",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 2,
+          "Progression": 2,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "NB11": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "de0dfe57-2a40-43d5-b65f-ff5388067fc3": {
+          "UnlockEvent": "OnReroll",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Any",
+          "TargetValue": 20,
+          "Progression": 20,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "NB15": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "b491b679-9a5a-4433-9482-dfaeda4fb96e": {
+          "UnlockEvent": "OnCurrencySpent",
+          "UnlockCondition": "CurrencyType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Tech",
+          "TargetValue": 6,
+          "Progression": 6,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "NB17": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "fe320303-773e-4834-afa9-dac54e745439": {
+          "UnlockEvent": "OnBuildingPlaced",
+          "UnlockCondition": "BuildingType",
+          "EnemyType": "",
+          "BuildingType": "CB07",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "",
+          "TargetValue": 2,
+          "Progression": 2,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "TBCB21D7": {
+      "AlreadyDisplayed": false,
+      "UnlockableConditionsSD": {
+        "f9cb1870-9c6e-4875-af3f-c39dbf07fa43": {
+          "UnlockEvent": "OnDoctrineGained",
+          "UnlockCondition": "DoctrineType",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "TBCB21D3",
+          "CurrencyType": "Supply",
+          "TargetValue": 1,
+          "Progression": 0,
+          "Hero": "",
+          "CheckCycle": "Expedition",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    },
+    "D1_13": {
+      "AlreadyDisplayed": true,
+      "UnlockableConditionsSD": {
+        "27307f6d-b5f3-4b3e-9e6f-4c7161176d59": {
+          "UnlockEvent": "OnExpeditionWin",
+          "UnlockCondition": "None",
+          "EnemyType": "Any",
+          "BuildingType": "",
+          "NeutralType": "",
+          "DoctrineType": "",
+          "CurrencyType": "Supply",
+          "TargetValue": 7,
+          "Progression": 7,
+          "Hero": "",
+          "CheckCycle": "LifeTime",
+          "UniqueID": ""
+        }
+      },
+      "LastUpdated": "0001-01-01T00:00:00",
+      "Version": 0
+    }
+  },
+  "endlessMode": true,
+  "LastUpdated": "2025-05-13T06:39:50.2860883Z",
+  "Version": 1
+}
