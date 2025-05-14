@@ -36,13 +36,18 @@ Usage in DuckDB SQL:
   select * from facts limit 1;
 
 Note that the download may take a while.
-
-Note that the `.duckdb` file may be heavily outdated if a lot of recent data is
-currently in the `.wal` file, which we're not bothering to expose.
 */
-export function apiDb(ctx) {
+export async function apiDb(ctx) {
   const path = ctx.dbFile
   if (path === `:memory:`) throw Error(`unable to serve memory DB file`)
+
+  /*
+  Merge the `.wal` file into the `.duckdb` file, allowing the client
+  to observe the current state of the database.
+  */
+  try {await (await ctx.conn()).run(`checkpoint`)}
+  catch (err) {console.error(`[api_db] unable to checkpoint:`, err)}
+
   return hd.HttpFileStream.res(path)
 }
 

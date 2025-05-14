@@ -14,6 +14,8 @@ The constraints are for dev/debug purposes. TODO avoid them in production.
 We validate those fields in JS before creating facts (see `datAddRound`),
 so the DB-level constraints are redundant and waste performance.
 
+TODO rename `time_ms` to `round_ms`.
+
 TODO consider supporting (not in the data, but in the code) the ability to group
 on combinations of fields, for example (user_id, run_num).
 
@@ -27,6 +29,14 @@ data does get large, we're able to re-derive the DB data from the source data.
   - `run_id`           = `user_id, run_num, run_ms`
   - `round_id`         = `user_id, run_num, run_ms, round_num`
   - `run_round_bui_id` = `user_id, run_num, run_ms, round_num, bui_inst`
+
+TODO consider switching to a proper star schema, offloading various fields to
+dimensions, while preserving the same querying interface. Some columns would be
+"virtual": when they're present in a client query, we join the necessary table
+to the facts. Ideally, when joining, we grab only those columns from the other
+table, instead of everything. The purpose would be to reduce the size of the
+`facts` table, but it would make queries significantly more complex. The true
+impact on size and performance is unknown.
 */
 create table facts (
   time_ms          bigint not null,

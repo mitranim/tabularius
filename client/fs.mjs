@@ -644,7 +644,9 @@ export async function showData({sig, root, path, data, opt}) {
     const outDirName = SHOW_DIR
     const outDir = await getDirectoryHandle(sig, root, outDirName, {create: true})
 
-    const outName = u.paths.name(path) + `.json`
+    let outName = u.paths.name(path)
+    if (!outName.endsWith(`.json`)) outName += `.json`
+
     await writeDirFile(sig, outDir, outName, coded)
 
     const outPath = u.paths.join(root.name, outDirName, outName)

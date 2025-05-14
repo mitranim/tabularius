@@ -586,7 +586,7 @@ https://github.com/leeoniya/uPlot/issues?q=dark%20
 
 ---
 
-Plot: when zoomed-in, totals should be calculated only for the currently _visible_ ranges in the chart.
+Plot: when zoomed-in, totals should be calculated only for the currently _visible_ ranges in the chart. In addition, series without data points in the zoomed area should be excluded from the legend.
 
 ---
 
@@ -1489,6 +1489,14 @@ Plot totals: add `round_num`.
 ---
 
 Add a `make` command or script for backing up cloud data by downloading, preferably the entire volume.
+
+---
+
+Add a command for downloading all of a user's cloud backups, either merging them into the history dir, or (as an option) placing into a sub-dir.
+
+---
+
+`show`: support cloud source.
 
 ---
 

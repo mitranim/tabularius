@@ -44,7 +44,7 @@ async function watch() {
 function isPathLive(val) {
   return (
     /^\w+[.]html$/.test(val) ||
-    val.startsWith(`client/`) ||
-    /^local[/]\w+[.]mjs$/.test(val)
+    val.startsWith(`client/`)
+    // /^local[/]\w+[.]mjs$/.test(val)
   )
 }
