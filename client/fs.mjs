@@ -29,6 +29,7 @@ export class FileConf extends a.Emp {
     this.help = a.reqValidStr(src.help)
     this.cmd = a.reqValidStr(src.cmd)
     this.mode = a.reqValidStr(src.mode)
+    this.deprecated = a.optBool(src.deprecated)
     this.pick = a.reqFun(src.pick)
     this.validate = a.optFun(src.validate)
     this.handle = undefined
@@ -42,15 +43,22 @@ export class FileConf extends a.Emp {
   }
 }
 
-export const SAVE_FILES_DIR_NAME = `SaveFiles`
+export const SAVE_DIR_NAME = `SaveFolder`
+export const SAVE_BACKUP_DIR_NAME = `Backup`
+export const PROG_FILE_NAME = `Progress.gd`
 
-export const KNOWN_GAME_FILE_NAMES = [`Progress.gd`, `Settings.gd`]
-
+// Deprecated, TODO drop.
 export const PROGRESS_FILE_LOCATION = u.joinParagraphs(
   `location of progress file; note that "AppData" is hidden by default:`,
-  `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\${SAVE_FILES_DIR_NAME}\\Progress.gd`,
+  `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\${SAVE_DIR_NAME}\\${PROG_FILE_NAME}`,
 )
 
+/*
+"Picking" a progress file is deprecated and no longer supported in the CLI
+interface. The preferred approach is to pick the entire save dir. That said,
+we still try to load it from IndexedDB for pre-existing users who haven't yet
+granted access to the save dir.
+*/
 export const PROGRESS_FILE_CONF = new FileConf({
   key: `progress_file`,
   desc: `progress file`,
@@ -60,8 +68,27 @@ export const PROGRESS_FILE_CONF = new FileConf({
   ),
   cmd: `init -p`,
   mode: `read`,
+  deprecated: true,
   pick: pickProgressFile,
   validate: undefined,
+})
+
+export const SAVE_DIR_LOCATION = u.joinParagraphs(
+  `location of game save directory; note that "AppData" is hidden by default:`,
+  `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\${SAVE_DIR_NAME}`,
+)
+
+export const SAVE_DIR_CONF = new FileConf({
+  key: `save_dir`,
+  desc: `save dir`,
+  help: u.joinParagraphs(
+    `pick your game save directory`,
+    SAVE_DIR_LOCATION,
+  ),
+  cmd: `init -s`,
+  mode: `read`,
+  pick: pickSaveDir,
+  validate: validateSaveDir,
 })
 
 export const HISTORY_DIR_LOCATION = u.joinParagraphs(
@@ -82,30 +109,54 @@ export const HISTORY_DIR_CONF = new FileConf({
   validate: validateHistoryDir,
 })
 
+export const CONFS = [
+  PROGRESS_FILE_CONF,
+  SAVE_DIR_CONF,
+  HISTORY_DIR_CONF,
+]
+
 export async function loadedProgressFile(sig) {
   return !!await fileConfLoadedWithPermIdemp(sig, PROGRESS_FILE_CONF)
+}
+
+export async function loadedSaveDir(sig) {
+  return !!await fileConfLoadedWithPermIdemp(sig, SAVE_DIR_CONF)
 }
 
 export async function loadedHistoryDir(sig) {
   return !!await fileConfLoadedWithPermIdemp(sig, HISTORY_DIR_CONF)
 }
 
-export async function fileConfLoadedWithPermIdemp(sig, conf) {
-  if (await fileConfHasPermission(sig, conf)) return conf.handle
-  return fileConfLoadedWithPerm(sig, conf)
+export async function fileConfLoadedWithPermIdemp(sig, conf, req) {
+  a.optBool(req)
+  return (
+    (await fileConfWithPermission(sig, conf)) ||
+    (await fileConfLoadedWithPerm(sig, conf, req))
+  )
 }
 
-// Try to load a handle and check its permission.
-export async function fileConfLoadedWithPerm(sig, conf) {
+/*
+Try to load a handle and check its permission.
+SYNC[file_conf_status].
+*/
+export async function fileConfLoadedWithPerm(sig, conf, req) {
   u.reqSig(sig)
+  a.optBool(req)
+
   const {mode} = a.reqInst(conf, FileConf)
   await fileConfLoad(conf)
-  if (!conf.handle) return undefined
+
+  if (!conf.handle) {
+    if (req) throw new u.ErrLog(...msgNotInited(conf))
+    return undefined
+  }
 
   conf.perm = await queryPermission(sig, conf.handle, {mode})
   if (conf.perm === `granted`) return conf.handle
 
-  u.log.err(new u.ErrLog(...msgNotGranted(conf)))
+  const err = new u.ErrLog(...msgNotGranted(conf))
+  if (req) throw err
+  u.log.err(err)
   return undefined
 }
 
@@ -145,6 +196,11 @@ export async function initedProgressFile(sig) {
   return await fileConfInitedIdemp(sig, conf)
 }
 
+export async function initedSaveDir(sig) {
+  const conf = SAVE_DIR_CONF
+  return await fileConfInitedIdemp(sig, conf)
+}
+
 export async function initedHistoryDir(sig) {
   const conf = HISTORY_DIR_CONF
   return await fileConfInitedIdemp(sig, conf)
@@ -171,8 +227,6 @@ export async function fileConfInited(sig, conf) {
     conf.handle = a.reqInst(await u.wait(sig, pick()), FileSystemHandle)
   }
 
-  await fileConfRequireOrRequestPermission(sig, conf)
-
   if (validate) {
     try {await validate(sig, conf.handle)}
     catch (err) {
@@ -180,6 +234,8 @@ export async function fileConfInited(sig, conf) {
       throw err
     }
   }
+
+  await fileConfRequireOrRequestPermission(sig, conf)
 
   try {
     await u.wait(sig, i.dbPut(i.IDB_STORE_HANDLES, key, conf.handle))
@@ -191,39 +247,75 @@ export async function fileConfInited(sig, conf) {
   return conf.handle
 }
 
-async function validateHistoryDir(sig, handle) {
+export async function validateSaveDir(sig, handle) {
   a.reqInst(handle, FileSystemDirectoryHandle)
 
-  const subDir = await getDirectoryHandle(sig, handle, SAVE_FILES_DIR_NAME).catch(a.nop)
-  if (subDir && await isGameSaveFilesDir(sig, subDir)) {
+  if (await dirHasProgressFile(sig, handle)) {
+    if (handle.name !== SAVE_BACKUP_DIR_NAME) return
+
     throw new u.ErrLog(...u.LogParagraphs(
-      `${a.show(handle.name)} appears to be the game's data directory; your run history directory must be located outside of it`,
+      `${a.show(handle.name)} appears to be the game's backup directory; please pick the actual save directory (one level higher)`,
+      SAVE_DIR_LOCATION,
+    ))
+  }
+
+  const subDir = await getDirectoryHandle(sig, handle, SAVE_DIR_NAME).catch(a.nop)
+  if (subDir && await dirHasProgressFile(sig, subDir)) {
+    throw new u.ErrLog(...u.LogParagraphs(
+      `${a.show(handle.name)} appears to be the game's data directory; please pick the save directory inside`,
+      SAVE_DIR_LOCATION,
+    ))
+  }
+
+  u.log.err(...u.LogParagraphs(
+    [
+      a.show(handle.name), ` doesn't appear to be the game's save directory: `,
+      `unable to locate `, a.show(PROG_FILE_NAME),
+    ],
+    [
+      `may need to run `, os.BtnCmdWithHelp(`deinit`), ` and `,
+      os.BtnCmd(`init -s`), ` to try again`,
+    ],
+    SAVE_DIR_LOCATION,
+  ))
+}
+
+export async function validateHistoryDir(sig, handle) {
+  a.reqInst(handle, FileSystemDirectoryHandle)
+
+  const subDir = await getDirectoryHandle(sig, handle, SAVE_DIR_NAME).catch(a.nop)
+  if (subDir && await dirHasProgressFile(sig, subDir)) {
+    throw new u.ErrLog(...u.LogParagraphs(
+      `${a.show(handle.name)} appears to be the game's data directory; your run history directory must be located outside of game directories`,
       HISTORY_DIR_LOCATION,
     ))
   }
 
-  if (!await isGameSaveFilesDir(sig, handle)) return
+  if (!await dirHasProgressFile(sig, handle)) return
+
+  const desc = (
+    handle.name === SAVE_DIR_NAME
+    ? `save directory`
+    : handle.name === SAVE_BACKUP_DIR_NAME
+    ? `save backup directory`
+    : `save or backup directory`
+  )
 
   throw new u.ErrLog(...u.LogParagraphs(
-    `${a.show(handle.name)} appears to be the game's save directory; your run history directory must be located outside of it`,
+    `${a.show(handle.name)} appears to be the game's ${desc} (found ${a.show(PROG_FILE_NAME)}); your run history directory must be located outside of game directories`,
     HISTORY_DIR_LOCATION,
   ))
 }
 
-async function isGameSaveFilesDir(sig, handle) {
-  a.reqInst(handle, FileSystemDirectoryHandle)
-  if (handle.name !== SAVE_FILES_DIR_NAME) return false
-  for (const name of KNOWN_GAME_FILE_NAMES) {
-    if (!await getFileHandle(sig, handle, name).catch(console.error)) {
-      return false
-    }
-  }
-  return true
+export async function dirHasProgressFile(sig, dir) {
+  a.reqInst(dir, FileSystemDirectoryHandle)
+  return !!await getFileHandle(sig, dir, PROG_FILE_NAME).catch(a.nop)
 }
 
 export async function deinitFileHandles(sig) {
   return a.compact([
-    await fileConfDeinit(sig, PROGRESS_FILE_CONF),
+    a.vac(PROGRESS_FILE_CONF.handle) && await fileConfDeinit(sig, PROGRESS_FILE_CONF),
+    await fileConfDeinit(sig, SAVE_DIR_CONF),
     await fileConfDeinit(sig, HISTORY_DIR_CONF),
   ])
 }
@@ -302,6 +394,7 @@ function msgNotGranted(conf) {
 export async function fileConfRequirePermission(sig, conf) {
   const msg = await fileConfStatusProblem(sig, conf)
   if (msg) throw new u.ErrLog(...msg)
+  return conf.handle
 }
 
 export function fileHandleStatStr(sig, handle) {
@@ -351,11 +444,18 @@ export async function dirStat(sig, dir, out) {
   return out
 }
 
+// Deprecated.
 export async function pickProgressFile() {
   return a.head(await reqFsFilePick()({
     types: [{description: `Game [save / progress] file`}],
     multiple: false
   }))
+}
+
+export async function pickSaveDir() {
+  return await reqFsDirPick()({
+    types: [{description: `Original game save directory`}],
+  })
 }
 
 export async function pickHistoryDir() {
@@ -364,58 +464,85 @@ export async function pickHistoryDir() {
   })
 }
 
-export function hasHistoryDir(sig) {
-  return fileConfHasPermission(sig, HISTORY_DIR_CONF)
+export async function progressFileOpt(sig) {
+  const file = await fileConfWithPermission(sig, PROGRESS_FILE_CONF).catch(u.logErr)
+  if (file) return file
+
+  const dir = await saveDirOpt(sig).catch(u.logErr)
+  if (!dir) return undefined
+
+  return getFileHandle(sig, dir, PROG_FILE_NAME).catch(u.logErr)
 }
 
-export async function historyDirOpt(sig) {
-  const {handle, mode} = HISTORY_DIR_CONF
-  if (!handle) return undefined
-  if (!await hasPermission(sig, handle, {mode})) return undefined
-  return handle
+export async function progressFileReq(sig) {
+  const file = await fileConfWithPermission(sig, PROGRESS_FILE_CONF).catch(u.logErr)
+  if (file) return file
+  const dir = await saveDirReq(sig)
+  return getFileHandle(sig, dir, PROG_FILE_NAME)
 }
 
-export async function historyDirReq(sig, user) {
-  u.reqSig(sig)
-  a.optBool(user)
-  const conf = HISTORY_DIR_CONF
-
-  /*
-  See the comment on `fileConfRequireOrRequestPermission`. As a result of a user
-  action, we can request a directory picker _and_ request readwrite permissions
-  as needed. Meanwhile when running commands on startup via `?run`, or in other
-  programmatic cases, we can't.
-  */
-  if (user) {
-    await fileConfInitedIdemp(sig, conf)
-  }
-  else {
-    await fileConfLoadedWithPermIdemp(sig, conf)
-    await fileConfRequirePermission(sig, conf)
-  }
-  return conf.handle
+export function saveDirOpt(sig) {
+  return fileConfWithPermission(sig, SAVE_DIR_CONF)
 }
 
-export async function listDirsFiles({sig, path, stat, user}) {
+export function saveDirReq(sig) {
+  return fileConfLoadedWithPermIdemp(sig, SAVE_DIR_CONF, true)
+}
+
+export function historyDirOpt(sig) {
+  return fileConfWithPermission(sig, HISTORY_DIR_CONF)
+}
+
+export function historyDirReq(sig) {
+  return fileConfLoadedWithPermIdemp(sig, HISTORY_DIR_CONF, true)
+}
+
+export async function listDirsFiles({sig, path, stat}) {
   a.optStr(path)
   a.optBool(stat)
 
-  path = u.paths.clean(a.laxStr(path))
-  const root = await historyDirReq(sig, user)
-  const handle = await handleAtPath(sig, root, path)
+  path = u.paths.cleanTop(a.laxStr(path))
+
+  if (!path) {
+    return u.LogLines(
+      [`top-level FS entries`, a.vac(!stat) && [` `, ...StatTip(path)], `:`],
+      ...u.alignCol(
+        await Promise.all(a.map(CONFS, val => (
+          FileConfLine(sig, val, stat)
+        ))),
+      ),
+    )
+  }
+
+  const [_, handle, __] = await handleAtPathFromTop({sig, path})
   const {kind, name} = handle
 
   if (isFile(handle)) {
-    return showLsEntry({
+    return LsEntry({
       kind, name, path, stat,
       statStr: a.vac(stat) && await fileStatStr(sig, handle),
     })
   }
 
-  return showLsEntry({
+  return LsEntry({
     kind, name, path, stat,
     entries: await dirEntries(sig, handle, stat),
   })
+}
+
+export async function FileConfLine(sig, conf, stat) {
+  u.reqSig(sig)
+  a.optBool(stat)
+  const {desc, handle, deprecated} = a.reqInst(conf, FileConf)
+
+  if (handle) {
+    const cmd = a.spaced(`ls`, (stat ? `-s` : ``))
+    const statStr = a.vac(stat) && await fileHandleStatStr(sig, handle)
+    return EntryLine({entry: handle, desc, cmd, statStr})
+  }
+
+  if (deprecated) return undefined
+  return [desc + `: `, `not initialized, run `, os.BtnCmdWithHelp(conf.cmd)]
 }
 
 async function dirEntries(sig, dir, stat) {
@@ -431,7 +558,7 @@ async function dirEntries(sig, dir, stat) {
   return out
 }
 
-export function showLsEntry({kind, name, path, entries, stat, statStr, cloud}) {
+export function LsEntry({kind, name, path, entries, stat, statStr, cloud}) {
   a.reqStr(kind)
   a.reqStr(name)
   a.reqStr(path)
@@ -442,9 +569,7 @@ export function showLsEntry({kind, name, path, entries, stat, statStr, cloud}) {
 
   const locPre = cloud ? `cloud ` : `local `
   const inf = `: `
-  const statSuf = a.vac(!statStr && !cloud) && [
-    ` (tip: `, os.BtnCmd(`ls -s`), ` adds stats)`
-  ]
+  const statSuf = a.vac(!stat && !cloud) && [` `, ...StatTip(path)]
 
   if (kind === `file`) {
     const base = locPre + kind + inf + path
@@ -457,34 +582,55 @@ export function showLsEntry({kind, name, path, entries, stat, statStr, cloud}) {
   const cmd = a.spaced(`ls`, (cloud ? `-c` : stat ? `-s` : ``))
   const buf = []
 
-  for (const {kind, name, statStr} of a.values(entries)) {
-    const entryPath = u.paths.join(path, name)
-
-    buf.push([
-      kind + inf,
-      (
-        kind === `file`
-        ? name
-        : os.BtnCmd(a.spaced(cmd, entryPath), name)
-      ),
-      ` `,
-      u.BtnClip(entryPath),
-      a.vac(statStr) && ` (${statStr})`,
-    ])
+  for (const entry of a.values(entries)) {
+    const {kind, statStr} = entry
+    buf.push(EntryLine({entry, desc: kind, cmd, path, statStr}))
   }
 
   return u.LogLines(
     [`contents of `, locPre, `directory ${a.show(path)}`, statSuf, `:`],
-    ...u.alignTable(buf),
+    ...u.alignCol(buf),
   )
+}
+
+export function EntryLine({entry, desc, cmd, path, statStr}) {
+  a.reqObj(entry)
+  a.optStr(desc)
+  a.optStr(cmd)
+  a.optStr(statStr)
+
+  const name = a.reqValidStr(entry.name)
+  path = u.paths.join(a.laxStr(path), name)
+
+  return a.compact([
+    a.vac(desc) && desc + `: `,
+    a.compact([
+      (
+        isDir(entry) && cmd
+        ? os.BtnCmd(a.spaced(cmd, path), name)
+        : name
+      ),
+      ` `,
+      u.BtnClip(path),
+      a.vac(statStr) && ` (${statStr})`,
+    ]),
+  ])
+}
+
+export function StatTip(path) {
+  const cmd = `ls -s`
+  return [`(tip: `, os.BtnCmd(a.spaced(cmd, path), cmd), ` adds stats)`]
 }
 
 export const SHOW_DIR = `show`
 
 cmdShow.cmd = `show`
-cmdShow.desc = `decode and show runs, rounds, or save files, with flexible output options`
+cmdShow.desc = `decode and show game files / runs / rounds, with flexible output options`
 
 cmdShow.help = function cmdShowHelp() {
+  const saveDir = a.laxStr(SAVE_DIR_CONF.handle?.name)
+  const histDir = a.laxStr(HISTORY_DIR_CONF.handle?.name)
+
   return u.LogParagraphs(
     u.callOpt(cmdShow.desc),
 
@@ -498,38 +644,51 @@ cmdShow.help = function cmdShowHelp() {
       `flags:`,
       [`  `, ui.BtnPromptAppend(`show`, `-c`), ` -- copy decoded JSON to clipboard`],
       [`  `, ui.BtnPromptAppend(`show`, `-l`), ` -- log decoded data to browser console`],
-      [`  `, ui.BtnPromptAppend(`show`, `-w`), ` -- write JSON file to <run_history>/show/`],
-      [`  `, ui.BtnPromptAppend(`show`, `-p`), ` -- pretty JSON`],
+      [`  `, ui.BtnPromptAppend(`show`, `-w`), ` -- write JSON file to "`, (histDir || `<run_history>`), `/show/"`],
     ),
 
     u.LogLines(
-      `supported paths:`,
-      [`  `, ui.BtnPromptAppend(`show`, `latest`), `             -- latest run`],
-      [`  `, ui.BtnPromptAppend(`show`, `saves`), `              -- original game save dir`],
-      [`  `, ui.BtnPromptAppend(`show`, `latest/latest`), `      -- latest run, latest round`],
-      [`  <run>              -- run dir, example: `, ui.BtnPromptAppend(`show`, `0001`)],
-      [`  <num>              -- run num, example: `, ui.BtnPromptAppend(`show`, `1`)],
-      [`  latest/<round>     -- latest run, round file name; example: `, ui.BtnPromptAppend(`show`, `latest/0001.gd`)],
-      [`  latest/<num>       -- latest run, round num; example: `, ui.BtnPromptAppend(`show`, `latest/1`)],
-      [`  <run>/latest       -- run dir, latest round; example: `, ui.BtnPromptAppend(`show`, `0001/latest`)],
-      [`  <num>/latest       -- run num, latest round; example: `, ui.BtnPromptAppend(`show`, `1/latest`)],
-      [`  <run>/<round>      -- run num, round file name; example: `, ui.BtnPromptAppend(`show`, `0001/0001.gd`)],
-      [`  <num>/<round>      -- run num, round file name; example: `, ui.BtnPromptAppend(`show`, `1/0001.gd`)],
-      [`  <num>/<num>        -- run num, round num; example: `, ui.BtnPromptAppend(`show`, `1/1`)],
-      [`  saves/<file>       -- original game save dir, specific file; example: `, ui.BtnPromptAppend(`show`, `saves/Progress.gd`)],
+      `path segments can be magic:`,
+      [`  <num>         -- run num`],
+      [`  latest        -- latest run`],
+      [`  latest/<num>  -- round num in latest run`],
+      [`  latest/latest -- latest round`],
     ),
 
-    u.LogLines(
-      `examples:`,
-      [`  `, ui.BtnPromptAppend(`show`, `latest -l`), `                 -- log all rounds in latest run`],
-      [`  `, ui.BtnPromptAppend(`show`, `latest/latest -l`), `          -- log latest round in latest run`],
-      [`  `, ui.BtnPromptAppend(`show`, `latest -c -l -w -p`), `        -- log, write, clipboard all rounds in latest run`],
-      [`  `, ui.BtnPromptAppend(`show`, `latest/latest -c -l -w -p`), ` -- log, write, clipboard latest round in latest run`],
-      [`  `, ui.BtnPromptAppend(`show`, `saves -l -w -p`), `            -- log all original save files, write JSON files`],
+    (
+      !saveDir
+      ? [
+        `to decode and show game files, grant access to the original save directory`,
+        ` via `, os.BtnCmdWithHelp(SAVE_DIR_CONF.cmd),
+      ]
+      : u.LogLines(
+        `examples for game files:`,
+        [`  `, ui.BtnPromptAppend(`show`,  ` -l ` + saveDir), ` -- log all game files`],
+        [`  `, ui.BtnPromptAppend(`show`, ` -l -c -w ` + saveDir), ` -- log, clipboard, write decoded content of all game files`],
+        [`  `, ui.BtnPromptAppend(`show`, ` -l ` + u.paths.join(saveDir, `Progress.gd`)), ` -- log current progress`],
+        [`  `, ui.BtnPromptAppend(`show`, ` -w ` + u.paths.join(saveDir, `Unlockables.gd`)), ` -- write decoded unlockables file`],
+      )
+    ),
+
+    (
+      !histDir
+      ? [
+        `to decode and show runs and rounds in the run history directory, `,
+        `grant access via `, os.BtnCmdWithHelp(HISTORY_DIR_CONF.cmd), `; `,
+        `to build the run history in the first place, also grant access to the `,
+        `original save directory via `, os.BtnCmdWithHelp(SAVE_DIR_CONF.cmd),
+      ]
+      : u.LogLines(
+        `examples for run history:`,
+        [`  `, ui.BtnPromptAppend(`show`, ` -l ` + u.paths.join(histDir, `latest`)), ` -- log all rounds in latest run`],
+        [`  `, ui.BtnPromptAppend(`show`, ` -l ` + u.paths.join(histDir, `latest/latest`)), ` -- log latest round in latest run`],
+        [`  `, ui.BtnPromptAppend(`show`, ` -l -c -w ` + u.paths.join(histDir, `latest`)), ` -- log, clipboard, write all rounds in latest run`],
+        [`  `, ui.BtnPromptAppend(`show`, ` -l -c -w ` + u.paths.join(histDir, `latest/latest`)), ` -- log, clipboard, write latest round in latest run`],
+      )
     ),
 
     `if no flags are provided, nothing is done`,
-    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local files`],
   )
 }
 
@@ -542,7 +701,6 @@ export async function cmdShow({sig, args}) {
     if (key === `-c`) opt.copy = ui.cliBool(cmd, key, val)
     else if (key === `-l`) opt.log = ui.cliBool(cmd, key, val)
     else if (key === `-w`) opt.write = ui.cliBool(cmd, key, val)
-    else if (key === `-p`) opt.pretty = ui.cliBool(cmd, key, val)
     else if (!key) paths.push(val)
     else return u.LogParagraphs(`unrecognized flag ${a.show(key)}`, os.cmdHelpDetailed(cmdShow))
   }
@@ -557,7 +715,7 @@ export async function cmdShow({sig, args}) {
 
   for (const path of paths) {
     try {
-      await showSavesOrDirOrFile({sig, path, opt})
+      await showPath({sig, path, opt})
     }
     catch (err) {
       u.log.err(`[show] unable to show ${a.show(path)}: `, err)
@@ -565,56 +723,44 @@ export async function cmdShow({sig, args}) {
   }
 }
 
-export async function showSavesOrDirOrFile({sig, path, opt}) {
+export async function showPath({sig, path, opt}) {
   u.reqSig(sig)
-  path = u.paths.clean(path)
-  const [maybeDir, restPath] = u.paths.split1(path)
-
-  if (maybeDir === `saves`) {
-    return showSaves({sig, path: restPath, opt})
-  }
-
-  const root = await historyDirReq(sig)
-  return showDirOrFile({sig, root, path, opt})
+  const [_, handle, resolvedPath] = await handleAtPathFromTop({
+    sig, path, magic: true,
+  })
+  return showDirOrFile({sig, handle, path: resolvedPath, opt})
 }
 
-export async function showDirOrFile({sig, root, path: srcPath, opt}) {
-  a.reqInst(root, FileSystemDirectoryHandle)
-  const [_, handle, path] = await handleAtPathMagic(sig, root, srcPath)
+export function showDirOrFile({sig, handle, path, opt}) {
+  a.reqInst(handle, FileSystemHandle)
   if (isDir(handle)) {
-    return showDir({sig, root, dir: handle, path, opt})
+    return showDir({sig, handle, path, opt})
   }
   if (isFile(handle)) {
-    return showFile({sig, root, file: handle, path, opt})
+    return showFile({sig, handle, path, opt})
   }
-  u.log.err(errHandleKind(handle.kind))
-  return undefined
+  throw errHandleKind(handle.kind)
 }
 
-export async function showDir({sig, root, dir, path, opt}) {
-  const data = await u.asyncIterCollect(sig, readRunRoundsAsc(sig, dir))
+export async function showDir({sig, handle, path, opt}) {
+  const data = await collectGameFilesAsc(sig, handle)
   if (!data.length) {
-    u.log.info(`no rounds found in ${a.show(path)}`)
+    u.log.info(`no game files found in ${a.show(path)}`)
     return
   }
-  await showData({sig, root, path, data, opt})
+  await showData({sig, path, data, opt})
 }
 
-export async function showFile({sig, root, file, path, opt}) {
-  if (!isHandleGameFile(file)) {
-    u.log.info(`unable to show file ${a.show(path || file.name)}: unknown format`)
+export async function showFile({sig, handle, path, opt}) {
+  if (!isHandleGameFile(handle)) {
+    u.log.info(`unable to show file ${a.show(path || handle.name)}: unknown format`)
     return
   }
-  const data = await readDecodeGameFile(sig, file)
-  await showData({sig, root, path, data, opt})
+  const data = await readDecodeGameFile(sig, handle)
+  await showData({sig, path, data, opt})
 }
 
-/*
-This requires a root dir, and writes a file there, because we prefer to write
-the "showed" files to the root dir, rather than sub-dirs, to avoid them
-becoming new "round" files in run dirs.
-*/
-export async function showData({sig, root, path, data, opt}) {
+export async function showData({sig, path, data, opt}) {
   u.reqSig(sig)
   a.reqValidStr(path)
   a.optObj(opt)
@@ -622,12 +768,11 @@ export async function showData({sig, root, path, data, opt}) {
   const copy = a.optBool(opt?.copy)
   const log = a.optBool(opt?.log)
   const write = a.optBool(opt?.write)
-  const pretty = a.optBool(opt?.pretty)
-  let coded
+  let json
 
   if (copy) {
-    coded ??= JSON.stringify(data, undefined, pretty ? 2 : 0)
-    await u.copyToClipboard(coded)
+    json ??= JSON.stringify(data, undefined, 2)
+    await u.copyToClipboard(json)
     u.log.info(`copied decoded content of ${a.show(path)} to clipboard`)
   }
 
@@ -638,37 +783,18 @@ export async function showData({sig, root, path, data, opt}) {
   }
 
   if (write) {
-    coded ??= JSON.stringify(data, undefined, pretty ? 2 : 0)
-    root ??= await historyDirReq(sig)
+    json ??= JSON.stringify(data, undefined, 2)
 
+    const hist = await historyDirReq(sig)
     const outDirName = SHOW_DIR
-    const outDir = await getDirectoryHandle(sig, root, outDirName, {create: true})
+    const outDir = await getDirectoryHandle(sig, hist, outDirName, {create: true})
 
     let outName = u.paths.name(path)
     if (!outName.endsWith(`.json`)) outName += `.json`
+    await writeDirFile(sig, outDir, outName, json)
 
-    await writeDirFile(sig, outDir, outName, coded)
-
-    const outPath = u.paths.join(root.name, outDirName, outName)
+    const outPath = u.paths.join(hist.name, outDirName, outName)
     u.log.info(`wrote decoded content of ${a.show(path)} to ${a.show(outPath)}`)
-  }
-}
-
-export async function showSaves({sig, path, opt}) {
-  u.reqSig(sig)
-  a.optStr(path)
-
-  // TODO store the handle to IDB to avoid re-prompting.
-  const dir = await reqFsDirPick()()
-
-  if (path) {
-    const handle = await getFileHandle(sig, dir, path)
-    await showFile({sig, file: handle, path, opt})
-    return
-  }
-
-  for await (const handle of readDir(sig, dir)) {
-    await showFile({sig, file: handle, path: u.paths.join(path, handle.name), opt})
   }
 }
 
@@ -679,17 +805,26 @@ export async function findLatestDirEntryReq(sig, dir, fun) {
 }
 
 export async function findLatestDirEntryOpt(sig, dir, fun) {
-  a.optFun(fun)
   let max = -Infinity
   let out
-  for await (const han of readDir(sig, dir)) {
-    if (fun && !fun(han)) continue
+  for await (const han of readDir(sig, dir, fun)) {
     const ord = u.toNatOpt(han.name)
     if (!(ord > max)) continue
     max = ord
     out = han
   }
   return out
+}
+
+export async function hasRoundFile(sig) {
+  const root = await historyDirOpt(sig)
+  if (!root) return false
+  for await (const runDir of readDir(sig, root, isHandleRunDir)) {
+    for await (const _ of readDir(sig, runDir, isHandleRoundFile)) {
+      return true
+    }
+  }
+  return false
 }
 
 export function findLatestRoundFile(sig, runDir) {
@@ -723,6 +858,11 @@ export async function findHandleByIntPrefixOpt(sig, dir, int) {
   return undefined
 }
 
+// Caution: the iteration order is unstable.
+export function readRuns(sig, root) {
+  return readDir(sig, root, isHandleRunDir)
+}
+
 export async function readRunsAsc(sig, root) {
   return (await readDirAsc(sig, root)).filter(isHandleRunDir)
 }
@@ -744,6 +884,13 @@ export async function readRunsByNamesAscOpt(sig, root, names) {
     out.push(dir)
   }
   return out
+}
+
+export async function collectGameFilesAsc(sig, dir) {
+  const iter = readDir(sig, dir, isHandleGameFile)
+  const handles = await u.asyncIterCollect(sig, iter)
+  handles.sort(u.compareHandlesAsc)
+  return Promise.all(a.map(handles, a.bind(readDecodeGameFile, sig)))
 }
 
 export async function* readRunRoundsAsc(sig, dir) {
@@ -774,9 +921,9 @@ export async function* readRunRoundHandles(sig, dir) {
   }
 }
 
-export async function findLatestRunName(sig, root) {
+export async function findLatestRunDir(sig, root) {
   a.reqInst(root, FileSystemDirectoryHandle)
-  return a.head((await readDirDesc(sig, root)).filter(isDir))?.name
+  return a.head((await readDirDesc(sig, root)).filter(isDir))
 }
 
 // SYNC[run_id_name_format].
@@ -844,57 +991,116 @@ export async function readFileByteArr(sig, src) {
   return new Uint8Array(src)
 }
 
-/*
-Similar to `handleAtPath`, but with support for some specials:
-
-- The magic name `latest` refers to the last directory or file, where sorting is
-  done by integer prefix before falling back on string sort; see `compareDesc`.
-
-- Any path segment which looks like an integer, optionally zero-padded, can
-  match any directory or file with a matching integer prefix in its name.
-*/
-export async function handleAtPathMagic(sig, root, path) {
+export async function handleAtPathFromTop({sig, path, magic}) {
   u.reqSig(sig)
-  a.reqInst(root, FileSystemDirectoryHandle)
+  path = a.laxStr(path)
+  a.optBool(magic)
 
-  let parent = undefined
-  let child = root
-  const outPath = []
+  const confs = CONFS
+  const seg = u.paths.splitTop(path)
 
-  for (const name of u.paths.split(path)) {
-    const next = await getSubHandleMagic(sig, child, name)
-    parent = child
-    child = next
-    outPath.push(child.name)
+  if (!seg.length) {
+    throw new u.ErrLog(...u.LogParagraphs(
+      [
+        `invalid FS path `, a.show(path),
+        `: provide a non-empty path to choose a top-level FS entry`,
+      ],
+      msgTopEntries(confs),
+    ))
   }
-  return [parent, child, u.paths.join(...outPath)]
+
+  const [head, ...tail] = seg
+  const matches = a.filter(confs, val => val.handle?.name === head)
+
+  if (!matches.length) {
+    throw new u.ErrLog(...u.LogParagraphs(
+      [`missing top-level FS entry `, a.show(head)],
+      msgTopEntries(confs),
+    ))
+  }
+
+  if (matches.length !== 1) {
+    throw new u.ErrLog(...u.LogParagraphs(
+      [
+        `ambiguous path `, a.show(path),
+        `: multiple top-level matches for `, a.show(head), `:`,
+      ],
+      topEntryLines(matches),
+      `please rename to disambiguate`,
+    ))
+  }
+
+  const conf = matches[0]
+  if (!conf.handle) {
+    throw new u.ErrLog(...u.LogParagraphs(
+      [`top-level FS entry `, a.show(head), ` is not initialized;`],
+      msgTopEntries(confs),
+    ))
+  }
+
+  const [parent, child, resolved] = await handleAtPath({
+    sig,
+    handle: conf.handle,
+    path: u.paths.join(...tail),
+    magic,
+  })
+  return [parent, child, u.paths.join(head, resolved)]
 }
 
-// TODO return `[parent, child]`.
-export async function handleAtPath(sig, root, path) {
-  a.reqInst(root, FileSystemDirectoryHandle)
-  const handle = await chdir(sig, root, u.paths.dir(path))
-  const name = u.paths.base(path)
-  if (!name) return handle
-  return await getSubHandle(sig, handle, name)
+function msgTopEntries(confs) {
+  const lines = topEntryLines(confs)
+  if (!lines.length) return undefined
+  return u.LogLines(`top-level FS entries:`, ...a.map(lines, u.indentNode))
 }
 
-export async function chdir(sig, handle, path) {
+function topEntryLines(confs) {
+  const out = []
+  for (const conf of a.values(confs)) {
+    const {desc, cmd, handle, deprecated} = a.reqInst(conf, FileConf)
+
+    if (handle) {
+      const {name} = handle
+      out.push([name, ` `, u.BtnClip(name)])
+      continue
+    }
+
+    if (deprecated) continue
+    out.push([desc, `: run `, os.BtnCmdWithHelp(cmd), ` to grant access`])
+  }
+  return out
+}
+
+export async function handleAtPath({sig, handle, path, magic}) {
   u.reqSig(sig)
   a.reqInst(handle, FileSystemHandle)
-  for (const name of u.paths.split(path)) {
-    handle = await getDirectoryHandle(sig, handle, name)
+  a.optBool(magic)
+
+  path = u.paths.clean(a.laxStr(path))
+  let parent = undefined
+  if (!path) return [parent, handle, path]
+
+  const seg = []
+  for (const name of u.paths.splitRel(path)) {
+    parent = handle
+    handle = await (
+      magic
+      ? getSubHandleMagic(sig, handle, name)
+      : getSubHandle(sig, handle, name)
+    )
+    seg.push(handle.name)
   }
-  return handle
+  return [parent, handle, u.paths.join(...seg)]
 }
 
-export function fileConfHasPermission(sig, conf) {
+export function fileConfWithPermission(sig, conf) {
   const {handle, mode} = a.reqInst(conf, FileConf)
-  return hasPermission(sig, handle, {mode})
+  return withPermission(sig, handle, {mode})
 }
 
-export async function hasPermission(sig, handle, opt) {
-  return (await queryPermission(sig, handle, opt)) === `granted`
+export async function withPermission(sig, handle, opt) {
+  const perm = await queryPermission(sig, handle, opt)
+  if (perm === `granted`) return handle
+  return undefined
 }
 
 // Too specialized, TODO generalize if needed.
@@ -960,11 +1166,14 @@ export async function readDirSorted(sig, dir, fun) {
 Iterates all file handles in the directory.
 Order is arbitrary and unstable; browsers don't bother sorting.
 */
-export async function* readDir(sig, src) {
+export async function* readDir(sig, src, fun) {
   a.optInst(src, FileSystemDirectoryHandle)
+  a.optFun(fun)
   if (!src) return
-  for await (const val of await u.wait(sig, src.values())) {
+
+  for await (const val of src.values()) {
     if (sig.aborted) break
+    if (fun && !fun(val)) continue
     yield val
   }
 }
@@ -1005,6 +1214,15 @@ export async function getFile(sig, src, opt) {
   }
 }
 
+/*
+Rules:
+
+- The magic name `latest` refers to the last directory or file, where sorting is
+  done by integer prefix before falling back on string sort; see `compareDesc`.
+
+- Any path segment which looks like an integer, optionally zero-padded, can
+  match any directory or file with a matching integer prefix in its name.
+*/
 export async function getSubHandleMagic(sig, dir, name) {
   u.reqSig(sig)
   a.reqInst(dir, FileSystemDirectoryHandle)

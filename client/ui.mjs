@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 77
+const VERSION = 78
 let INITED
 
 /*
@@ -26,7 +26,7 @@ export function init() {
 
   E(
     document.body,
-    {class: `bg-gray-100 text-black dark:bg-dark-root dark:text-white flex flex-col h-screen overflow-clip`},
+    {class: `text-black bg-gray-50 dark:text-white dark:bg-root-dark flex flex-col h-screen overflow-clip`},
     TITLEBAR,
     MIDDLE,
     PROMPT,
@@ -56,12 +56,12 @@ const DISCORD_LINK = `https://discord.gg/upPxCEVxgD`
 
 export const TITLEBAR = E(
   `div`,
-  {class: `flex justify-between items-center gap-2 border-b border-gray-300 dark:border-neutral-700 bg-gray-200 dark:bg-dark-base`},
+  {class: `flex justify-between items-center gap-2 border-b border-gray-300 dark:border-neutral-700 bg-gray-200 dark:bg-base-dark`},
 
   // Left side with title.
   E(
     `h1`,
-    {class: a.spaced(`flex-1`, TITLEBAR_PAD)},
+    {class: a.spaced(`flex-1 trunc`, TITLEBAR_PAD)},
     E(`a`, {href: u.URL_CLEAN, class: u.CLS_BTN_INLINE}, `Tabularius`),
     ` — book-keeper for `,
     E(`a`, {href: STEAM_LINK, ...TARBLAN, class: u.CLS_BTN_INLINE},
@@ -84,7 +84,7 @@ export const TITLEBAR = E(
   ),
 )
 
-const MEDIA_CHI_CLS = `border border-gray-300 dark:border-neutral-700 rounded bg-gray-100 dark:bg-dark-base overflow-x-clip`
+const MEDIA_CHI_CLS = `border border-gray-300 dark:border-neutral-700 rounded bg-gray-100 dark:bg-base-dark overflow-x-clip`
 const MEDIA_CHI_PAD = `p-4`
 
 export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends u.ReacElem {
@@ -177,6 +177,9 @@ export const MEDIA = new class MediaPanel extends u.Elem {
     }
 
     PLOT_PLACEHOLDER.remove()
+    for (const val of MEDIA_GRID.children) {
+      if (isElementMediaDefault(val)) val.remove()
+    }
     MEDIA_GRID.prepend(val)
   }
 
@@ -200,8 +203,19 @@ export const MEDIA = new class MediaPanel extends u.Elem {
     }
   }
 
-  isDefault() {return !MEDIA_GRID.children.length}
+  isDefault() {
+    return a.every(MEDIA_GRID.children, isElementMediaDefault)
+  }
 }()
+
+export function isElementMediaDefault(val) {
+  return val?.dataset?.isDefault === `true`
+}
+
+export function markElementMediaDefault(val) {
+  a.reqElement(val)
+  val.dataset.isDefault = `true`
+}
 
 function Process(src) {
   a.reqInst(src, os.Proc)
@@ -504,8 +518,8 @@ export const PROMPT_INPUT = E(new PromptInput(), {
 
 export const PROMPT = E(
   `div`,
-  {class: `flex items-center p-2 bg-gray-200 dark:bg-dark-base border-t border-gray-300 dark:border-neutral-700`},
-  E(`span`, {class: `text-green-600 dark:text-green-400`}, `>`),
+  {class: `flex items-center p-2 bg-gray-200 dark:bg-base-dark border-t border-gray-300 dark:border-neutral-700`},
+  E(`span`, {class: `text-green-600 dark:text-green-400`}, u.PROMPT_PREFIX),
   PROMPT_INPUT,
 )
 

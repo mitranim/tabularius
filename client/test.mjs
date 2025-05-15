@@ -1223,38 +1223,21 @@ t.test(function test_stripPreSpaced() {
   test(`onetwo`, `one`, `onetwo`)
 })
 
-t.test(function test_legendDisplay() {
+t.test(function test_codedToTitled() {
   function test(key, src, exp) {
-    const out = p.legendDisplay(key, src)
+    const out = p.codedToTitled(key, src)
     t.is(out, exp)
   }
 
-  test(
-    `round_id`,
-    `edcbcb24533b40a0b50b1bb02a8fd399_e28739dc15b941268787b241805a9247_47a3ede7179844cf89bd59d0a5ef422e`,
-    `edcbcb24533b40a0…9bd59d0a5ef422e`,
-  )
+  test(`any`, `3ff8707299374189`, `3ff8707299374189`)
+  test(`any`, `CB01`, `CB01`)
+  test(`any`, `CB01_ABA`, `CB01_ABA`)
 
-  test(
-    `run_id`,
-    `93938a24661743e89604ff8cd930c479_cfac75910a1449719bf91d4c10ce3473`,
-    `93938a24661743e8…bf91d4c10ce3473`,
-  )
+  test(`bui_type`, `23c410a2e505496a`, `23c410a2e505496a`)
+  test(`bui_type`, `CB01`, `Bunk`)
 
-  test(
-    `user_id`,
-    `ca7c02bdd9324f0599a4b2e8f1940f13`,
-    `ca7c02bdd9324f0599a4b2e8f1940f13`,
-  )
-
-  test(
-    `any`,
-    `3ff8707299374189`,
-    `3ff8707299374189`,
-  )
-
-  test(`bui_type`, `CB01`, `Bunker`)
-  test(`bui_type_upg`, `CB01_ABA`, `Bunker_ABA`)
+  test(`bui_type_upg`, `9021b77f5da047af`, `9021b77f5da047af`)
+  test(`bui_type_upg`, `CB01_ABA`, `Bunk_ABA`)
 })
 
 // TODO test generic XYZ aggregation; see `schema.mjs`.

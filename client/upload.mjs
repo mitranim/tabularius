@@ -41,7 +41,7 @@ cmdUpload.help = function cmdUploadHelp() {
     `usage:`,
     u.LogLines(
       `upload all runs:`,
-      [`  `, os.BtnCmd(`upload /`)],
+      [`  `, os.BtnCmd(`upload`)],
     ),
     u.LogLines(
       `upload latest run:`,
@@ -55,6 +55,7 @@ cmdUpload.help = function cmdUploadHelp() {
       `upload one arbitrary round:`,
       `  upload <run_dir>/<round_file>`,
     ),
+    `FS paths are relative to the run history directory`,
     u.LogLines(
       `flags:`,
       [`  `, ui.BtnPromptAppend(`upload`, `-p`), ` -- persistent mode`],
@@ -62,8 +63,8 @@ cmdUpload.help = function cmdUploadHelp() {
       [`  `, ui.BtnPromptAppend(`upload`, `-q`), ` -- quiet mode, minimal logging`],
     ),
     `the upload is idempotent, which means no duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
-    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
-    [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud runs`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local files`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud files`],
   )
 }
 
@@ -71,7 +72,7 @@ export async function cmdUpload(proc) {
   const cmd = cmdUpload.cmd
   const args = u.stripPreSpaced(proc.args, cmd)
   const opt = a.Emp()
-  let path
+  let path = ``
 
   for (const [key, val, pair] of u.cliDecode(args)) {
     if (key === `-p`) {
@@ -91,24 +92,24 @@ export async function cmdUpload(proc) {
       continue
     }
     if (key) {
-      return u.LogParagraphs(
+      throw new u.ErrLog(...u.LogParagraphs(
         [`unrecognized `, ui.BtnPromptAppend(cmd, pair)],
         os.cmdHelpDetailed(cmdUpload),
-      )
+      ))
     }
     if (!val) continue
     if (path) {
-      return u.LogParagraphs(`redundant path ${a.show(val)}`, os.cmdHelpDetailed(cmdUpload))
+      throw new u.ErrLog(...u.LogParagraphs(
+        `redundant path ${a.show(val)}`,
+        os.cmdHelpDetailed(cmdUpload),
+      ))
     }
     path = val
   }
 
-  if (!path) {
-    return u.LogParagraphs(`missing upload path`, os.cmdHelpDetailed(cmdUpload))
-  }
   if (isUploadingLocal()) return `[upload] already running`
 
-  const {sig, user} = proc
+  const {sig} = proc
   proc.desc = `acquiring lock`
   let unlock = await u.lockOpt(UPLOAD_LOCK_NAME)
 
@@ -125,20 +126,29 @@ export async function cmdUpload(proc) {
   }
 
   proc.desc = `uploading backups to the cloud`
-  try {return await cmdUploadUnsync({sig, path, opt, user})}
+  try {return await cmdUploadUnsync({sig, path, opt})}
   finally {unlock()}
 }
 
-export async function cmdUploadUnsync({sig, path: srcPath, opt, user}) {
+export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
   u.reqSig(sig)
-  a.reqValidStr(srcPath)
   a.reqDict(opt)
 
   const persistent = a.optBool(opt.persistent)
   const quiet = a.optBool(opt.quiet)
-  const root = await fs.historyDirReq(sig, user)
-  const [_, handle, path] = await fs.handleAtPathMagic(sig, root, srcPath)
+  const root = await fs.historyDirReq(sig)
   const userId = au.reqUserId()
+  const rootPath = `/` + root.name
+  const relPath = (
+    u.paths.isAbs(srcPath)
+    ? u.paths.strictRelTo(srcPath, rootPath)
+    : u.paths.clean(srcPath)
+  )
+  const [_, handle, resolvedPath] = await fs.handleAtPath({
+    sig, handle: root, path: relPath, magic: true,
+  })
+  const absPath = u.paths.join(rootPath, resolvedPath)
+
   const state = a.vac(!quiet) && o.obs({
     done: false,
     status: ``,
@@ -149,18 +159,20 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt, user}) {
 
   if (state) {
     if (fs.isFile(handle)) {
-      u.log.info(new FileUploadProgress(path, state))
+      u.log.info(new FileUploadProgress(absPath, state))
     }
     else {
-      u.log.info(new DirUploadProgress(path || `/`, state))
+      u.log.info(new DirUploadProgress(absPath, state))
     }
   }
-  if (!persistent) return cmdUploadStep({sig, root, path, opt, userId, state})
+
+  const inp = {sig, root, path: resolvedPath, opt, userId, state}
+  if (!persistent) return cmdUploadStep(inp)
 
   let errs = 0
   while (!sig.aborted) {
     try {
-      return await cmdUploadStep({sig, root, path, opt, userId, state})
+      return await cmdUploadStep(inp)
     }
     catch (err) {
       if (u.errIs(err, u.isErrAbort)) return
@@ -189,7 +201,7 @@ async function cmdUploadStep({sig, root, path, opt, userId, state}) {
 
   const lazy = a.optBool(opt.lazy)
   const force = a.optBool(opt.force)
-  const segs = u.paths.split(path)
+  const segs = u.paths.splitRel(path)
 
   if (!segs.length) {
     if (state) state.status = `checking runs`
@@ -450,7 +462,7 @@ export function apiUploadRound(sig, {body, isGzip}) {
 
 // TODO consolidate with `optStartUploadAfterInit` and `optStartUploadAfterAuth`.
 export function recommendAuthIfNeededOrRunUpload() {
-  if (au.isAuthed()) return os.runCmd(`upload -p -l /`)
+  if (au.isAuthed()) return os.runCmd(`upload -p -l`)
   return recommendAuth()
 }
 

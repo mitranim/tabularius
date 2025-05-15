@@ -10,10 +10,11 @@ tar.w = self
 a.patch(window, tar)
 
 export async function watchStarted() {
+  const sig = u.sig
   return (
-    (await isWatchingLocal()) || (
-      (await fs.fileConfHasPermission(u.sig, fs.PROGRESS_FILE_CONF)) &&
-      (await fs.fileConfHasPermission(u.sig, fs.HISTORY_DIR_CONF)) &&
+    isWatchingLocal() || (
+      !!(await fs.progressFileOpt(sig).catch(u.logErr)) &&
+      !!(await fs.historyDirOpt(sig).catch(u.logErr)) &&
       (os.runCmd(`watch`).catch(u.logErr), true)
     )
   )
@@ -43,7 +44,7 @@ export const WATCH_INTERVAL_MS_LONG = a.minToMs(1)
 export const WATCH_MAX_ERRS = 3
 
 cmdWatch.cmd = `watch`
-cmdWatch.desc = `watch the progress file for changes and create backups`
+cmdWatch.desc = `watch the game's ${fs.PROGRESS_FILE_CONF.desc} for changes and create backups`
 cmdWatch.help = function cmdWatchHelp() {
   return u.LogParagraphs(
     u.callOpt(cmdWatch.desc),
@@ -115,13 +116,8 @@ export async function cmdWatchUnsync(sig) {
 
 // Initialize backup state by inspecting history directory.
 async function watchInit(sig, state) {
-  a.final(state, `progressFileHandle`, (
-    await fs.fileConfRequireOrRequestPermission(sig, fs.PROGRESS_FILE_CONF)
-  ))
-
-  a.final(state, `historyDirHandle`, (
-    await fs.fileConfRequireOrRequestPermission(sig, fs.HISTORY_DIR_CONF)
-  ))
+  a.final(state, `progressFileHandle`, await fs.progressFileReq(sig))
+  a.final(state, `historyDirHandle`, await fs.historyDirReq(sig))
 
   const runDir = await fs.findLatestDirEntryOpt(sig, state.historyDirHandle, fs.isHandleRunDir)
   state.setRunDir(runDir?.name)
@@ -172,7 +168,7 @@ async function watchStep(sig, state) {
 
   const prevTime = prevFile?.lastModified
   if (prevTime >= nextTime) {
-    // u.log.verb(`[watch] skipping: progress file unmodified`)
+    // u.log.verb(`[watch] skipping: ${fs.PROGRESS_FILE_CONF.desc} unmodified`)
     return
   }
 
@@ -206,7 +202,7 @@ async function watchStep(sig, state) {
 
     await fs.writeDirFile(sig, dir, nextFileName, content)
     await state.setRoundFile(nextFileName)
-    watchBroadcast(event)
+    afterRoundBackup(event)
     return
   }
 
@@ -230,16 +226,17 @@ async function watchStep(sig, state) {
   state.setRoundFile(nextFileName)
   u.log.info(`[watch] backed up ${a.show(u.paths.join(dir.name, nextFileName))}`)
 
+  event.prevRunNum = event.run_num
   event.runDirName = nextRunDirName
   event.roundFileName = nextFileName
-  event.prev_run_num = event.run_num
   event.run_num = nextRunNum
-  watchBroadcast(event)
+  afterRoundBackup(event)
 }
 
-function watchBroadcast(eve) {
+function afterRoundBackup(eve) {
   u.broadcastToAllTabs(eve)
   if (!au.STATE.userId) return
   const {runDirName, roundFileName} = eve
   os.runCmd(`upload ${u.paths.join(runDirName, roundFileName)}`).catch(u.logErr)
+  if (!eve.prevRunNum) p.plotDefaultLocalOpt(u.sig).catch(u.logErr)
 }

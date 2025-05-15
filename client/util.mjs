@@ -39,11 +39,11 @@ tw.install({
       between `oklah` and hex. Beware of browser devtools: at the time of
       writing, in Chrome 135, conversions involving `oklah` are buggy. For
       colors, conversion to `oklah` from many other formats (tested with hex
-      and `hsl`), often produces incorrect results.
+      and `hsl`) often produces incorrect results.
       */
       colors: {
-        'dark-root': `#0c0a09`, // stone-950
-        'dark-base': `#1c1917`, // stone-900
+        'root-dark': `#0c0a09`, // stone-950
+        'base-dark': `#1c1917`, // stone-900
       },
       animation: {
         'flash-light': `flash-light 1s ease-out`,
@@ -308,7 +308,7 @@ export const log = new class Log extends Elem {
     E(
       this,
       {
-        class: `flex items-stretch min-w-0 bg-gray-100 text-black dark:bg-dark-base dark:text-white`,
+        class: `flex items-stretch min-w-0 bg-gray-100 text-black dark:bg-base-dark dark:text-white`,
         style: {
           width: percEncode(this.currentWidth),
           // The following properties are needed for reliable resizing.
@@ -437,10 +437,15 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
       },
       ...chi,
     )
-    if (!msg.hasChildNodes()) return undefined
+
+    const head = msg.firstChild
+    if (!head) return undefined
+
+    const pre = LogPrefix(isInp)
+    if (a.hasMeth(head, `addLogPrefix`)) head.addLogPrefix(pre)
+    else msg.prepend(pre)
 
     msg.isErr = isErr
-    if (isInp) msg.prepend(LogPrefix())
     return msg
   }
 
@@ -466,15 +471,15 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
   }
 }
 
-function LogPrefix() {
+export const PROMPT_PREFIX = `>`
+
+function LogPrefix(inp) {
   return withTooltip({
     chi: timeFormat.format(Date.now()),
     elem: E(
       `span`,
-      {
-        class: a.spaced(CLS_TEXT_GRAY, `cursor-help`),
-      },
-      `> `,
+      {class: a.spaced(CLS_TEXT_GRAY, `cursor-help`)},
+      inp ? PROMPT_PREFIX + ` ` : `< `,
     )
   })
 }
@@ -631,12 +636,6 @@ Usage:
   function someListener(eve) {console.log(eve.matches)}
 */
 export const darkModeMediaQuery = window.matchMedia(`(prefers-color-scheme: dark)`)
-
-// Non-insane variant of `Math.round`. Rounds away from 0, instead of up.
-export function round(val) {
-  a.reqNum(val)
-  return val < 0 ? -Math.round(-val) : Math.round(val)
-}
 
 export function boundInd(ind, len) {
   a.reqInt(ind)
@@ -872,25 +871,19 @@ function eventData(src) {
 
 // Minor extensions and workarounds for library functionality.
 export const paths = new class PathsPosix extends pt.PathsPosix {
-  split(src) {
-    // If the path ends with the dir separator, the last item is an empty string.
-    if (this.isDirLike(src)) return a.split(this.clean(src), this.dirSep)
-    return a.split(this.cleanPre(src), this.dirSep)
-  }
-
-  split1(src) {
-    src = this.split(src)
-    return [src[0] || ``, src.slice(1).join(this.sep)]
-  }
-
-  // In this particular system, all paths are relative to the root.
-  clean(src) {
-    return a.stripPre(super.clean(src), this.dirSep)
-  }
-
   // Workaround for a minor bug in the original method, which always expects
   // at least one input.
   join(...src) {return src.length ? super.join(...src) : ``}
+
+  cleanTop(src) {return a.stripPre(super.clean(src), this.dirSep)}
+
+  splitTop(src) {return a.split(this.cleanTop(src), this.dirSep)}
+
+  splitRel(src) {
+    src = this.clean(src)
+    if (this.isRel(src)) return a.split(src, this.dirSep)
+    throw Error(`${a.show(src)} is not a relative path`)
+  }
 }()
 
 export function filterWhere(src, where) {
@@ -1054,46 +1047,15 @@ export function Svg(key, attr) {
   )
 }
 
-export function alignTable(rows) {
-  const cols = []
-  return a.reqArr(rows).map(makeRow).map(alignRow)
-
-  function makeRow(src) {
-    a.reqArr(src)
-    const out = []
-    let ind = -1
-
-    while (++ind < src.length) {
-      const pair = tableCellPair(src[ind])
-      out[ind] = pair
-      cols[ind] = Math.max(cols[ind] | 0, pair[1])
-    }
-    return out
-  }
-
-  function alignRow(src) {return src.map(alignCell)}
-
-  function alignCell([val, len], ind) {
-    if (isLastCol(ind)) return val
-    return tableCellPad(val, len, cols[ind] | 0)
-  }
-
-  function isLastCol(ind) {
-    while (++ind < cols.length) if (cols[ind]) return false
-    return true
-  }
+// Each row must begin with a string. We align on that string by padding it.
+export function alignCol(rows) {
+  rows = a.compact(rows)
+  const max = maxBy(rows, rowPreLen) | 0
+  const alignRow = ([head, ...tail]) => [head.padEnd(max, ` `), ...tail]
+  return a.map(rows, alignRow)
 }
 
-function tableCellPair(src) {
-  if (a.isNode(src)) return [src, src.textContent.length]
-  src = a.renderLax(src)
-  return [src, src.length]
-}
-
-function tableCellPad(src, len, max) {
-  if (a.isNode(src)) return [src, ` `.repeat(Math.max(0, max - len))]
-  return src.padEnd(max | 0, ` `)
-}
+function rowPreLen(src) {return a.reqStr(a.reqArr(src)[0]).length}
 
 // Suboptimal implementation.
 export function preSpacedOpt(src, pre) {
@@ -1162,8 +1124,12 @@ export const TOOLTIP = E(
     class: a.spaced(
       `fixed py-1 px-2 leading-1 decoration-none whitespace-pre rounded pointer-events-none`,
       `text-white bg-neutral-800 dark:text-black dark:bg-neutral-200`,
+      `bg-opacity-60 dark:bg-opacity-60`,
     ),
-    style: {transform: `translate(-50%, calc(-100% - 0.5rem))`},
+    style: {
+      transform: `translate(-50%, calc(-100% - 0.5rem))`,
+      backdropFilter: `blur(2px)`,
+    },
   },
 )
 

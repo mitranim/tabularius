@@ -30,7 +30,7 @@ cmdPlot.help = function cmdPlotHelp() {
       BtnAppend(`-c`),
       ` -- use cloud data; the default without "-c" is to use local data, which`,
       ` requires granting access to the history directory via `,
-      os.BtnCmdWithHelp(`init -h`),
+      os.BtnCmdWithHelp(fs.HISTORY_DIR_CONF.cmd),
       `; also see `, BtnAppend(`-f`), ` for fetching specific files`,
     ],
 
@@ -106,8 +106,8 @@ cmdPlot.help = function cmdPlotHelp() {
 
     `tip: try ctrl+click / cmd+click / shift+click on plot legend labels`,
     [`tip: `, os.BtnCmdWithHelp(`verbose`), ` mode shows full opts after expanding presets`],
-    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local runs`],
-    [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud runs`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local files`],
+    [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud files`],
 
     u.LogLines(
       `more examples:`,
@@ -152,7 +152,7 @@ or are satisfied with them staying as-is.
 */
 export async function cmdPlotLocal({sig, args, opt, user}) {
   opt = s.validPlotAggOpt(opt)
-  await d.datLoad({sig, dat: d.DAT, opt, user})
+  await d.datLoad({sig, dat: d.DAT, opt})
 
   const agg = makeAgg()
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
@@ -307,27 +307,26 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
 }
 
 // SYNC[plot_title_text].
+// SYNC[plot_group_stat_type_z_versus_y].
 function plotTitleText({X, Y, Z, agg}) {
   a.reqValidStr(X)
-  a.reqValidStr(Y)
+  a.optStr(Y)
   a.reqValidStr(Z)
   a.reqValidStr(agg)
 
-  const pre = agg
-  const suf = ` per ` + Z + ` per ` + X
-  if (Z === `stat_type`) return pre + suf
-  return pre + ` of ` + Y + suf
+  if (Z === `stat_type`) return agg + ` of ` + Z + ` per ` + X
+  a.reqValidStr(Y)
+  return agg + ` of ` + Y + ` per ` + Z + ` per ` + X
 }
 
 // SYNC[plot_title_text].
-export function PlotTitle({elem, opt, args, pre: prefix, close}) {
+// SYNC[plot_group_stat_type_z_versus_y].
+export function PlotTitle({elem, opt, args, pre, close}) {
   a.reqElement(elem)
   a.reqDict(opt)
   args = u.stripPreSpaced(args, cmdPlot.cmd)
 
   const {X, Y, Z, agg} = opt
-  const pre = u.Bold(agg)
-  const suf = [u.Muted(` per `), u.Bold(Z), u.Muted(` per `), u.Bold(X)]
   const btn = a.vac(args) && BtnAppend(args)
 
   if (btn) {
@@ -349,7 +348,16 @@ export function PlotTitle({elem, opt, args, pre: prefix, close}) {
       E(
         `span`,
         {class: `w-full trunc text-center`},
-        prefix, pre, Z === `stat_type` ? suf : [u.Muted(` of `), u.Bold(Y), ...suf],
+        pre,
+        (
+          Z === `stat_type`
+          ? [
+            u.Bold(agg), u.Muted(` of `), u.Bold(Z), u.Muted(` per `), u.Bold(X),
+          ]
+          : [
+            u.Bold(agg), u.Muted(` of `), u.Bold(Y), u.Muted(` per `), u.Bold(Z), u.Muted(` per `), u.Bold(X)
+          ]
+        ),
       ),
       btn,
     ),
@@ -635,20 +643,38 @@ Otherwise, show a sample run for prettiness sake.
 */
 export async function plotDefault({sig}) {
   try {
-    if (await fs.hasHistoryDir(sig)) {
-      return await cmdPlot({sig, args: `plot -p=dmg user_id=all run_id=latest`})
-    }
+    if (await fs.historyDirOpt(sig)) return await plotDefaultLocal(sig)
   }
   catch (err) {
     if (u.LOG_VERBOSE) u.log.err(`error analyzing latest run: `, err)
     u.log.verb(`unable to plot latest run, plotting example run`)
   }
-  return plotExampleRun(sig)
+  return plotDefaultExample(sig)
 }
 
-export function plotExampleRun(sig) {
+export async function plotDefaultLocalOpt(sig) {
+  u.reqSig(sig)
+  if (!ui.MEDIA.isDefault()) return
+  if (!await fs.hasRoundFile(sig).catch(u.logErr)) return
+  await plotDefaultLocal()
+}
+
+export async function plotDefaultLocal() {
+  // Passing the previous proc's promise to the next proc delays the output
+  // but not the execution, ensuring proper ordering of outputs.
+  let waitFor
+  for (const val of defaultLocalPlotCmds()) {
+    waitFor = os.runCmd(val, {waitFor})
+  }
+  await waitFor
+}
+
+export async function plotDefaultExample(sig) {
   const args = `plot -f=samples/example_run.gd -p=dmg user_id=all run_id=all`
-  return cmdPlotFetch({sig, args, opt: decodePlotAggOpt(args), example: true})
+  const out = await cmdPlotFetch({sig, args, opt: decodePlotAggOpt(args), example: true})
+  a.reqInst(out, os.Combo)
+  for (const val of out.mediaItems) ui.markElementMediaDefault(val)
+  return out
 }
 
 /*
@@ -1102,14 +1128,17 @@ export class TooltipPlugin extends a.Emp {
   }
 
   makeTooltip() {
+    // Inline styles bypass `all: unset` we accidentally apply to this in `index.html`.
+    // TODO un-apply `all: unset` and convert to Tailwind classes.
     return E(`div`, {
-      // TODO convert inline styles to Tailwind classes.
       style: {
         padding: `0.3rem`,
         pointerEvents: `none`,
         position: `absolute`,
         background: `oklch(0.45 0.31 264.05 / 0.1)`,
         whiteSpace: `pre`,
+        backdropFilter: `blur(2px)`,
+        borderRadius: `0.25rem`,
       },
     })
   }
@@ -1306,7 +1335,7 @@ export function apiPlotAgg(sig, body) {
 }
 
 cmdPlotLink.cmd = `plot_link`
-cmdPlotLink.desc = `make shareable plot link for latest run`
+cmdPlotLink.desc = `easily make a link for analyzing a local or cloud run`
 
 cmdPlotLink.help = function cmdPlotLinkHelp() {
   return u.LogParagraphs(
@@ -1315,56 +1344,135 @@ cmdPlotLink.help = function cmdPlotLinkHelp() {
     [
       `  `,
       os.BtnCmd(`plot_link`),
-      ` -- get shareable plot link for latest run of current user; requires `,
-      os.BtnCmdWithHelp(`auth`),
+      ` -- get a link that shows multiple plots analyzing the latest local run;`,
+      ` the analysis is always for the latest run, and is live (always up-to-date);`,
+      ` the link can be shared, but other users will see their own local runs, not yours;`,
+      ` requires `, os.BtnCmdWithHelp(`init`), ` to grant FS access and start building`,
+      ` a local run history`,
+    ],
+    [
+      `  `,
+      os.BtnCmd(`plot_link -c`),
+      ` -- get a shareable link that shows multiple plots analyzing the currently-latest`,
+      ` cloud run of the current user; requires `, os.BtnCmdWithHelp(`init`),
+      ` for building the local run history and `, os.BtnCmdWithHelp(`auth`),
+      ` for uploading it to the cloud`,
     ],
     [
       `  `,
       ui.BtnPromptReplace({
-        val: cmdPlotLink.cmd + ` `,
-        chi: [`plot_link `, u.Muted(`<user_id>`)],
+        val: cmdPlotLink.cmd + ` -c `,
+        chi: [`plot_link -c `, u.Muted(`<user_id>`)],
       }),
-      ` -- get shareable plot link for specific user`,
+      ` -- get a shareable link for the currently-latest cloud run of a specific user`,
     ],
   )
 }
 
 export async function cmdPlotLink({sig, args}) {
-  args = a.tail(u.splitCliArgs(args))
-  if (args.length > 1) {
-    return u.LogParagraphs(`too many inputs`, os.cmdHelpDetailed(cmdPlotLink))
+  const cmd = cmdPlotLink.cmd
+  args = u.stripPreSpaced(args, cmd)
+
+  let cloud
+  const userIds = []
+
+  for (const [key, val, pair] of u.cliDecode(args)) {
+    if (key === `-c`) {
+      cloud = ui.cliBool(cmd, key, val)
+      continue
+    }
+    if (key) {
+      return u.LogParagraphs(
+        [`unrecognized `, ui.BtnPromptAppend(cmd, pair)],
+        os.cmdHelpDetailed(cmdPlotLink),
+      )
+    }
+    if (!val) continue
+    userIds.push(val)
   }
 
-  const userId = args[0] || au.reqUserId()
-  const current = !args[0] || args[0] === au.STATE.userId
-
-  const run = await apiLatestRun(sig, userId)
-  if (!run) {
-    return [`no runs found for user `, userId, a.vac(current) && ` (current)`]
+  if (!cloud && userIds.length) {
+    return u.LogParagraphs(
+      [
+        `unexpected user id inputs ${a.show(userIds)} in local mode;`,
+        ` did you mean `, ui.BtnPromptAppend(cmd, ` -c ` + args),
+        `?`,
+      ],
+      os.cmdHelpDetailed(cmdPlotLink),
+    )
   }
 
-  const runId = a.reqValidStr(run.run_id)
-  const url = new URL(window.location)
-  url.hash = ``
-  url.search = ``
-  url.searchParams.append(`run`, plotLinkPlot(runId, `dmg_over`))
-  url.searchParams.append(`run`, plotLinkPlot(runId, `dmg`))
-  url.searchParams.append(`run`, plotLinkPlot(runId, `eff`))
-  url.searchParams.append(`run`, plotLinkPlot(runId, `chi_dmg`))
+  if (!cloud) {
+    const url = urlClean()
+    for (const val of defaultLocalPlotCmds()) {
+      url.searchParams.append(`run`, val)
+    }
 
-  const href = url.href.replaceAll(`+`, `%20`)
-  const copied = await u.copyToClipboard(href).catch(u.logErr)
+    return u.LogParagraphs(
+      (await msgPlotLink(url)),
+      [
+        `note: this link can be shared, but other users will see`,
+        ` their own local runs, not yours;`, ` use `, os.BtnCmd(`plot_link -c`),
+        ` to create a shareable link`,
+      ],
+      a.vac(!await fs.historyDirOpt(sig).catch(u.logErr)) && [
+        `warning: local FS not initialized; run `,
+        os.BtnCmdWithHelp(`init -h`), ` to grant access`,
+      ],
+    )
+  }
 
-  return u.LogParagraphs(
-    (copied ? `copied plot link to clipboard:` : `plot link:`),
-    E(`a`, {href, class: u.CLS_BTN_INLINE, ...ui.TARBLAN}, href),
-  )
+  if (!userIds.length) userIds.push(au.reqUserId())
+
+  for (const userId of userIds) {
+    const current = userId === au.STATE.userId
+    const run = await apiLatestRun(sig, userId)
+    if (!run) {
+      u.log.info(`no runs found for user `, userId, a.vac(current) && ` (current)`)
+      continue
+    }
+
+    const runId = a.reqValidStr(run.run_id)
+    const url = urlClean()
+    for (const val of PLOT_LINK_PRESETS) {
+      url.searchParams.append(`run`, plotCmdCloud(val, runId))
+    }
+    u.log.info(...await msgPlotLink(url))
+  }
 }
 
-function plotLinkPlot(runId, preset) {
+async function msgPlotLink(url) {
+  const href = a.reqValidStr(a.render(url).replaceAll(`+`, `%20`))
+  const copied = await u.copyToClipboard(href).catch(u.logErr)
+
+  return [
+    (copied ? `copied plot link to clipboard: ` : `plot link: `),
+    E(`a`, {href, class: u.CLS_BTN_INLINE, ...ui.TARBLAN}, href),
+  ]
+}
+
+const PLOT_LINK_PRESETS = [`dmg_over`, `dmg`, `eff`, `chi_dmg`]
+
+function plotCmdLocal(preset) {
+  ui.cliEnum(cmdPlot.cmd, `-p`, preset, PLOT_PRESETS)
+  return `plot -p=${preset}`
+}
+
+function plotCmdCloud(preset, runId) {
   a.reqValidStr(runId)
   ui.cliEnum(cmdPlot.cmd, `-p`, preset, PLOT_PRESETS)
   return `plot -c -p=${preset} user_id=all run_id=${runId}`
+}
+
+function defaultLocalPlotCmds() {
+  return a.map(PLOT_LINK_PRESETS, plotCmdLocal)
+}
+
+function urlClean() {
+  const url = new URL(window.location)
+  url.hash = ``
+  url.search = ``
+  return url
 }
 
 export function apiLatestRun(sig, user) {
@@ -1382,6 +1490,9 @@ export class PlotTotals extends u.ReacElem {
     this.src = a.reqObj(src)
   }
 
+  logPrefix = undefined
+  title = undefined
+
   run() {
     const args = a.reqStr(this.src.args)
     const totals = a.reqDict(this.src.totals)
@@ -1392,12 +1503,18 @@ export class PlotTotals extends u.ReacElem {
       this,
       {class: `inline-block w-full whitespace-pre`},
       u.LogLines(
-        E(`span`, {class: `w-full trunc`},
+        this.title ??= E(`span`, {class: `w-full trunc`},
+          this.logPrefix,
           `totals for `, BtnReplace(args), `:`,
         ),
         ...a.map(a.keys(counts), a.bind(PlotTotalEntry, counts, values)),
       ),
     )
+  }
+
+  addLogPrefix(val) {
+    this.logPrefix = val
+    this.title?.prepend(val)
   }
 }
 

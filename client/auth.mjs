@@ -92,7 +92,7 @@ export async function authLogin(sig) {
   u.storageSet(localStorage, STORAGE_KEY_SEC_KEY, secKeyStr)
 
   optStartUploadAfterAuth().catch(u.logErr)
-  return [`authed as `, pubKeyStr]
+  return AuthedAs(pubKeyStr)
 }
 
 export function authLogout() {
@@ -254,18 +254,24 @@ function loadSecKey() {
 
 export class AuthStatusMini extends u.ReacElem {
   run() {
-    E(this, {}, isAuthed() ? [`authed as `, STATE.userId] : `not authed`)
+    const id = STATE.userId
+    E(this, {}, id ? AuthedAs(id) : `not authed`)
   }
 }
 
 export class AuthStatus extends u.ReacElem {
   run() {
+    const id = STATE.userId
     E(this, {},
-      isAuthed()
-      ? [`authed as `, STATE.userId]
+      id
+      ? AuthedAs(id)
       : [`not authed; run `, os.BtnCmdWithHelp(`auth`), ` to authenticate`]
     )
   }
+}
+
+function AuthedAs(id) {
+  return [`authed as `, a.reqValidStr(id), ` `, u.BtnClip(id)]
 }
 
 function pubKeyEncode(src) {return u.byteArr_to_hexStr(src)}
@@ -299,7 +305,7 @@ function wordlistInitErr(err) {u.log.err(`unable to init wordlist: `, err)}
 // TODO consolidate with `recommendAuthIfNeededOrRunUpload` and `optStartUploadAfterInit`.
 export async function optStartUploadAfterAuth() {
   if (!await fs.loadedHistoryDir(u.sig).catch(u.logErr)) return undefined
-  return os.runCmd(`upload -p -l /`)
+  return os.runCmd(`upload -p -l`)
 }
 
 function isByteArrEq(one, two) {
@@ -317,11 +323,11 @@ function roundTripErrMsg(type) {
 
 export async function listDirsFiles(sig, path) {
   u.reqSig(sig)
-  path = u.paths.clean(a.laxStr(path))
+  path = u.paths.cleanTop(a.laxStr(path))
   try {
     const entry = await apiLs(sig, u.paths.join(reqUserId(), path))
     if (!entry) return `cloud file or dir ${a.show(path)} not found`
-    return fs.showLsEntry({...entry, path, cloud: true})
+    return fs.LsEntry({...entry, path, cloud: true})
   }
   catch (err) {
     throw Error(`unable to list cloud files: ${err}`, {cause: err})

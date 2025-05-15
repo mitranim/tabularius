@@ -41,7 +41,7 @@ export async function migrateRuns() {
     return state
   }
 
-  if (!await fs.hasPermission(sig, root, {mode: `readwrite`})) {
+  if (!await fs.withPermission(sig, root, {mode: `readwrite`})) {
     u.log.info(`[fs_mig] skipping migration: insufficient permissions on history dir`)
     return state
   }

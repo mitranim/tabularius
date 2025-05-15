@@ -850,7 +850,7 @@ Upon inspection, it seems like after being defeated and clicking "back", the sav
 
 <!-- (Added `show_saves`.) -->
 
-The various FS-walking commands, such as `ls`, should let you choose between the save folder and the history dir. How?
+<!-- The various FS-walking commands, such as `ls`, should let you choose between the save folder and the history dir. How? (See later tasks.) -->
 
 ---
 
@@ -1046,7 +1046,7 @@ Include more fields into `facts`, retroactively. Requires a migration.
 
 ---
 
-When the very first round backup is made by `watch`, switch from default example plot to latest run plot.
+* [x] When the very first round backup is made by `watch`, switch from default example plot to latest run plot.
 
 ---
 
@@ -1296,18 +1296,6 @@ https://fly.io/docs/networking/custom-domain/ -->
 
 ---
 
-Change progress file handle to saves dir handle (`init -s`).
-
-Still load the old progress file handle and use it and show in status, but call it "legacy mode" and recommend `init -s`.
-
-`show` for `saves` requires `init -s` and doesn't need a picker every time.
-
-`ls /` now lists contents of _both_ `saves` and `history`; those are special names which can be used as the first element of a path to list just that dir.
-
-`ls -c /` now lists user dirs; `ls -c current` lists the current user's runs.
-
----
-
 * [x] Prevent accidental merging of runs, when the same "user" uploads rounds from multiple machines, where run nums overlap.
   * [x] For each run: `run_id = user_id + run_num + run_ms` where `run_ms` is the timestamp of the first round in the run.
   * [x] `apiPlotAgg`: `qLatestRunId`: use `run_ms`.
@@ -1431,7 +1419,48 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
 
 ---
 
-Add a command for unlocking commanders, difficulties, etc. Requires switching from picking just the progress file, to picking the whole save dir.
+* [x] Instead of picking just the progress file, pick the whole save dir (`init -s`).
+  * [x] In `init`, replace progress file picking with save dir picking.
+  * [x] Do load and use an existing progress file handle when available, as a fallback when save dir is not available.
+* ~~[ ] Remove code related to progress file picking.~~
+
+---
+
+* [x] `ls`: at the top level, display available handles as entries; for non-deprecated handles, if not inited, suggest initing.
+
+---
+
+* [ ] `ls -c /` should list all user dirs; `ls -c current` should list the current user's runs.
+
+---
+
+* [ ] `show`: use the same interface as `ls`:
+  * [ ] Display available FS entries.
+  * [ ] Clicking a directory displays inner entries.
+  * [ ] Clicking a file runs `showFile`.
+  * [ ] Drop support for combining multiple files in a directory.
+  * This also unifies the handling of save dir and history dir.
+
+---
+
+* [ ] `show`: support cloud source.
+  * Same as `ls -c`: all user dirs by default, `-c current` for current user, `-c current/latest` for latest run of current user, and so on.
+
+---
+
+* [x] `historyDirReq`: drop auto-picking and the `user` flag.
+
+---
+
+* [ ] Rename "plot totals" to something better. Maybe "plot summary".
+
+---
+
+* [ ] When save dir and history dir are available, periodically make a backup of the entire save dir. Keep two latest versions.
+
+---
+
+* [ ] Add a command for unlocking commanders, difficulties, etc. Requires access to save dir.
 
 ---
 
@@ -1484,20 +1513,33 @@ Plot totals: add `round_num`.
 
 ---
 
-`show`: pretty JSON by default.
+* [x] `show`: pretty JSON by default.
 
 ---
 
-Add a `make` command or script for backing up cloud data by downloading, preferably the entire volume.
+* [ ] Add a `make` command or script for backing up cloud data by downloading, preferably the entire volume.
 
 ---
 
-Add a command for downloading all of a user's cloud backups, either merging them into the history dir, or (as an option) placing into a sub-dir.
+* [ ] Add a command for downloading all of a user's cloud backups, either merging them into the history dir, or (as an option) placing into a sub-dir.
 
 ---
 
-`show`: support cloud source.
+* [ ] `plot`: add a flag acting as a shortcut for `user_id=all run_id=all`.
 
 ---
 
-`plot`: add a flag acting as a shortcut for `user_id=all run_id=all`.
+`game_const.mjs` / `plot` / `titledToCoded`: support matching full (or at least fuller) building names, not just our shortenings. Motive: using full names in plot URLs makes them less likely to break when we change short names in our table. Also, users could type them without having to remember our very specific short names.
+
+---
+
+* [ ] `ls` entries: use truncation with ellipsis, like plot totals.
+
+---
+
+* [ ] `init`: convert validation exceptions to warnings.
+
+---
+
+* [ ] `log`: make it easy to make part of a log msg appear error-like.
+  * [ ] Use this in all cases where a command returns error msg + full help.

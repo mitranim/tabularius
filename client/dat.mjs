@@ -82,19 +82,18 @@ function validRunId(run) {
   return a.reqStr(id)
 }
 
-export async function datLoad({sig, dat, opt, user}) {
+export async function datLoad({sig, dat, opt}) {
   a.reqStruct(dat)
   opt = a.laxStruct(opt)
-  a.optBool(user)
 
   const where = a.laxDict(opt.where)
-  const root = await fs.historyDirReq(sig, user)
+  const root = await fs.historyDirReq(sig)
   const runNums = new Set(a.optArr(where.run_num))
   const runNames = new Set(a.map(a.optArr(where.run_id), s.runIdToRunNameReq))
   const roundNums = new Set(a.optArr(where.round_num))
 
   if (opt.runLatest) {
-    const name = await fs.findLatestRunName(sig, root)
+    const name = (await fs.findLatestRunDir(sig, root))?.name
     if (name) runNames.add(name)
   }
 
@@ -115,26 +114,6 @@ export async function datLoad({sig, dat, opt, user}) {
     }
   }
 }
-
-/*
-export async function datLoadRun({sig, dat, user, runName}) {
-  const root = await fs.historyDirReq(sig, user)
-  const runDir = await fs.chdir(sig, root, runName)
-  await datLoadRunFromHandle(sig, dat, runDir)
-}
-*/
-
-/*
-export async function datLoadRunFromHandle(sig, dat, dir) {
-  a.reqStruct(dat)
-  a.reqInst(dir, FileSystemDirectoryHandle)
-
-  const [run_num, run_ms] = s.splitRunName(dir.name)
-  for (const file of await fs.readRunRoundHandlesAsc(sig, dir)) {
-    await datLoadRoundFromHandle({sig, dat, file, run_num, run_ms})
-  }
-}
-*/
 
 export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms}) {
   a.reqStruct(dat)

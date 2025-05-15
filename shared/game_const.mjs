@@ -189,7 +189,7 @@ export const BUI_COSTS = dict({
   F106: {base: 150, upg: [[250, 75], [150, 250], [1000, 450]]},
 
   HQ02: {base: 0, upg: [[150, 175], [350, 400], [1500, 5000]]},
-  F201: {base: 1500, upg: [[300, 1250], [350, 2000], [250, 400]]},
+  F201: {base: 1500, upg: [[400, 1250], [350, 2000], [250, 400]]},
   F202: {base: 2600, upg: [[500, 700], [1000, 2250], [2300, 7500]]},
   F207: {base: 100, upg: [[100, 675], [200, 10], [800, 0]]},
 
@@ -253,10 +253,10 @@ export const DIFF_MAX_ROUND_NUM = new Map()
 
 export const MAX_KNOWN_ROUND_NUM = 35
 
-function dict(val) {return Object.assign(Object.create(null), val)}
+function dict(val) {return a.assign(a.Emp(), val)}
 
 function invert(src) {
-  const out = Object.create(null)
-  for (const [key, val] of Object.entries(src)) out[val] = key
+  const out = a.Emp()
+  for (const [key, val] of a.entries(src)) out[val] = key
   return out
 }

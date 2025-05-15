@@ -628,7 +628,7 @@ await t.test(async function test_plotAgg() {
     },
     [5, 6, 7, 8, 9, 10, 11],
     [`CB04`],
-    numsToBigInts([[1, 1, 1, 2, 2, 2, 2]]),
+    [[1, 1, 1, 2, 2, 2, 2]],
   )
 
   await test(
@@ -640,7 +640,7 @@ await t.test(async function test_plotAgg() {
     },
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35],
     [`CB01`, `CB01R_AB`, `CB01R_ABA`, `CB01_A`, `CB01_AA`, `CB01_AAA`, `CB01_ABA`, `CB01_BB`, `CB01_BBA`, `CB02`, `CB02_B`, `CB02_BA`, `CB02_BB`, `CB02_BBB`, `CB03`, `CB03R_A`, `CB04`, `CB04_A`, `CB04_AA`, `CB04_AAA`, `CB04_AAB`, `CB05_B`, `CB05_BAB`, `CB05_BB`, `CB05_BBA`, `CB05_BBB`, `CB06_B`, `CB07`, `CB09_B`, `CB09_BBB`, `CB11_AAA`, `CB12A`, `CB12_B`, `CB12_BB`, `CB14`, `CB14_AB`, `CB14_ABA`, `CB15`, `CB15R_A`, `CB15R_AA`, `CB15R_AAA`, `CB15R_AAB`, `CB15_A`, `CB15_AA`, `CB15_AAA`, `CB15_AAB`, `CB15_B`, `CB15_BA`, `CB15_BAA`, `CB17`, `CB17R_ABB`, `CB17_ABB`, `CB17_BBB`, `CB19_AB`, `CB19_BA`, `CB19_BAA`, `CB20_AAA`, `CB20_AAB`, `CB21`, `CB21_A`, `CB21_AB`, `F101_AA`, `F101_BA`, `F101_BAA`, `F102_B`, `F102_BB`, `F102_BBB`, `F106_A`, `F106_AA`, `F106_AAA`, `F302`, `F302_B`, `F302_BA`, `F302_BAB`, `HQ01_AA`, `HQ01_AAA`, `HQ03_AB`, `SB01_B`, `SB01_BB`, `SB01_BBA`, `SB01_BBB`, `SB06`, `SB07A`, `SB07_AA`, `SB07_AAA`],
-    numsToBigInts([
+    [
       [null, null, null, null, null, null, null, null, null, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, null, null, null, null, null, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3],
       [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1, 1, null, null, null, null, null, null, null],
       [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1, 1, 1, 1, 1, 1, 1],
@@ -726,17 +726,17 @@ await t.test(async function test_plotAgg() {
       [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3],
       [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    ]),
+    ],
   )
 })
 
-function bigIntsToNums(src) {
+function _bigIntsToNums(src) {
   if (a.isArr(src)) return a.map(src, bigIntsToNums)
   if (a.isBigInt(src)) return Number(src)
   return src
 }
 
-function numsToBigInts(src) {
+function _numsToBigInts(src) {
   if (a.isArr(src)) return a.map(src, numsToBigInts)
   if (a.isNum(src)) return BigInt(src)
   return src

@@ -148,13 +148,11 @@ fly.repl:
 	fly ssh console -a tabularius
 
 fly.file:
-	fly ssh sftp get -a tabularius /app/data/$(src_file) ./local/$(out_file)
+	fly ssh sftp get -a tabularius /app/data/$(src_path) local/$(out_path)
 
-# Must provide `out_file=...`. Note that the `.duckdb` file may be heavily
-# outdated if a lot of recent data is currently in the `.wal` file, which
-# we're not bothering to download.
+# Must provide `out_path=...`.
 fly.db.dump:
-	$(MAKE) fly.file src_file=tabularius.duckdb
+	curl https://tabularius.mitranim.com/api/db > local/$(out_path)
 
 # Keeps .dockerignore in sync with .gitignore.
 #
