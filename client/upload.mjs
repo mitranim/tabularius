@@ -433,7 +433,14 @@ export class DirUploadProgress extends FileUploadProgress {
     const {done, status, runsChecked, roundsChecked, roundsUploaded} = this.state
 
     E(this, {},
-      `[upload] `, (done ? `uploaded` : `uploading`), ` `, a.show(path),
+      `[upload] `,
+      (
+        roundsUploaded
+        ? (done ? `uploaded` : `uploading`)
+        : (done ? `checked` : `checking`)
+      ),
+      ` `,
+      a.show(path),
       u.joinLines(
         `: `,
         `  status: ${status}`,

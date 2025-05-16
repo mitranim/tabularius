@@ -171,7 +171,7 @@ export async function cmdPlotLocal({sig, args, opt, user}) {
   }
 
   return new os.Combo({
-    logMsgs: [obs ? new PlotTotals(obs) : user ? undefined : msgPlot(args)],
+    logMsgs: a.vac(obs) && [new PlotTotals(obs)],
     mediaItems: [new LivePlotter(opts, makeOpts)],
   })
 }
@@ -230,13 +230,7 @@ function showPlot({opts, totals, args, user}) {
   a.reqStr(args)
 
   return new os.Combo({
-    logMsgs: [
-      totals
-      ? new PlotTotals({args, totals})
-      : user
-      ? undefined
-      : msgPlot(args)
-    ],
+    logMsgs: a.vac(totals) && [new PlotTotals({args, totals})],
     mediaItems: [new Plotter(opts)],
   })
 }
@@ -418,6 +412,9 @@ export function decodePlotAggOpt(src) {
     }
 
     if (key === `-t`) {
+      // Can disable preset totals via `-t=false`.
+      if (val === `false`) continue
+
       out.totals ??= []
       if (!val) continue
 
@@ -670,7 +667,7 @@ export async function plotDefaultLocal() {
 }
 
 export async function plotDefaultExample(sig) {
-  const args = `plot -f=samples/example_run.gd -p=dmg user_id=all run_id=all`
+  const args = `plot -f=samples/example_run.gd -p=dmg -t=false user_id=all run_id=all`
   const out = await cmdPlotFetch({sig, args, opt: decodePlotAggOpt(args), example: true})
   a.reqInst(out, os.Combo)
   for (const val of out.mediaItems) ui.markElementMediaDefault(val)
@@ -1308,8 +1305,6 @@ function msgMissing(key) {
     `consider using a preset such as `, BtnAppend(`-p=dmg`),
   )
 }
-
-function msgPlot(args) {return [`plotting `, BtnReplace(args)]}
 
 export function plotArgsToAggOpt(src) {
   return s.validPlotAggOpt(decodePlotAggOpt(src))
