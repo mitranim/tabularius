@@ -66,16 +66,18 @@ export const PROGRESS_FILE_CONF = new FileConf({
     `pick your game progress file`,
     PROGRESS_FILE_LOCATION,
   ),
-  cmd: `init -p`,
+  cmd: `deprecated`,
   mode: `read`,
   deprecated: true,
   pick: pickProgressFile,
   validate: undefined,
 })
 
+export const SAVE_DIR_PATH = `C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\${SAVE_DIR_NAME}`
+
 export const SAVE_DIR_LOCATION = u.joinParagraphs(
   `location of game save directory; note that "AppData" is hidden by default:`,
-  `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\${SAVE_DIR_NAME}`,
+  `  ` + SAVE_DIR_PATH,
 )
 
 export const SAVE_DIR_CONF = new FileConf({
@@ -85,15 +87,17 @@ export const SAVE_DIR_CONF = new FileConf({
     `pick your game save directory`,
     SAVE_DIR_LOCATION,
   ),
-  cmd: `init -s`,
+  cmd: `saves`,
   mode: `read`,
   pick: pickSaveDir,
   validate: validateSaveDir,
 })
 
+export const HISTORY_DIR_SUGGESTED_PATH = `C:\\Users\\<user>\\Documents\\tower_dominion_history`
+
 export const HISTORY_DIR_LOCATION = u.joinParagraphs(
-  `suggested location of run history dir; create it yourself:`,
-  `  C:\\Users\\<user>\\Documents\\tower_dominion_history`,
+  `suggested location of run history dir; create it yourself; use a name without spaces:`,
+  `  ` + HISTORY_DIR_SUGGESTED_PATH,
 )
 
 export const HISTORY_DIR_CONF = new FileConf({
@@ -103,7 +107,7 @@ export const HISTORY_DIR_CONF = new FileConf({
     `pick directory for run history (backups)`,
     HISTORY_DIR_LOCATION,
   ),
-  cmd: `init -h`,
+  cmd: `history`,
   mode: `readwrite`,
   pick: pickHistoryDir,
   validate: validateHistoryDir,
@@ -273,8 +277,8 @@ export async function validateSaveDir(sig, handle) {
       `unable to locate `, a.show(PROG_FILE_NAME),
     ],
     [
-      `may need to run `, os.BtnCmdWithHelp(`deinit`), ` and `,
-      os.BtnCmd(`init -s`), ` to try again`,
+      `may need to run `, os.BtnCmdWithHelp(`saves revoke`), ` and `,
+      os.BtnCmd(`saves`), ` to try again`,
     ],
     SAVE_DIR_LOCATION,
   ))
@@ -310,14 +314,6 @@ export async function validateHistoryDir(sig, handle) {
 export async function dirHasProgressFile(sig, dir) {
   a.reqInst(dir, FileSystemDirectoryHandle)
   return !!await getFileHandle(sig, dir, PROG_FILE_NAME).catch(a.nop)
-}
-
-export async function deinitFileHandles(sig) {
-  return a.compact([
-    a.vac(PROGRESS_FILE_CONF.handle) && await fileConfDeinit(sig, PROGRESS_FILE_CONF),
-    await fileConfDeinit(sig, SAVE_DIR_CONF),
-    await fileConfDeinit(sig, HISTORY_DIR_CONF),
-  ])
 }
 
 export async function fileConfDeinit(sig, conf) {
@@ -697,16 +693,20 @@ export async function cmdShow({sig, args}) {
   const opt = a.Emp()
   const paths = []
 
-  for (const [key, val] of a.tail(u.cliDecode(args))) {
+  for (const [key, val, pair] of a.tail(u.cliDecode(args))) {
     if (key === `-c`) opt.copy = ui.cliBool(cmd, key, val)
     else if (key === `-l`) opt.log = ui.cliBool(cmd, key, val)
     else if (key === `-w`) opt.write = ui.cliBool(cmd, key, val)
     else if (!key) paths.push(val)
-    else return u.LogParagraphs(`unrecognized flag ${a.show(key)}`, os.cmdHelpDetailed(cmdShow))
+    else {
+      u.log.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
+      return os.cmdHelpDetailed(cmdShow)
+    }
   }
 
   if (!paths.length) {
-    return u.LogParagraphs(`missing input paths`, os.cmdHelpDetailed(cmdShow))
+    u.log.err(`missing input paths in `, ui.BtnPromptReplace({val: args}))
+    return os.cmdHelpDetailed(cmdShow)
   }
 
   if (!(opt.copy || opt.log || opt.write)) {

@@ -328,6 +328,7 @@ export const log = new class Log extends Elem {
 
     const msgLog = this.messageLog
     const prevMsg = msgLog.lastElementChild
+
     if (prevMsg) {
       // `?.` is used because not all entries are `LogMsg`.
       // For example, `this.removedMessageNotice` is plain.
@@ -341,7 +342,6 @@ export const log = new class Log extends Elem {
 
     // Scroll all the way to the bottom.
     msgLog.scrollTop = msgLog.scrollHeight
-
     return nextMsg
   }
 
@@ -410,7 +410,7 @@ export const log = new class Log extends Elem {
   }
 }()
 
-const LOG_MSG_CLS = `block w-full px-2 font-mono whitespace-pre-wrap border-l-4`
+const LOG_MSG_CLS = `block w-full px-2 font-mono whitespace-pre-wrap overflow-wrap-anywhere border-l-4`
 const LOG_MSG_CLS_ERR = `text-red-600 dark:text-red-500 border-red-400 dark:border-red-600`
 const LOG_MSG_CLS_INFO = `border-transparent`
 const LOG_MSG_CLS_INFO_LATEST = `border-yellow-600 dark:border-yellow-800`
@@ -427,8 +427,6 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
     const msg = msgRen.E(
       new this(),
       {
-        // TODO find if there's a class for this. Twind seems to lack `break-anywhere`.
-        style: {overflowWrap: `anywhere`},
         class: a.spaced(
           LOG_MSG_CLS,
           a.vac(isErr) && LOG_MSG_CLS_ERR,
@@ -664,6 +662,12 @@ export async function asyncIterCollect(sig, src) {
     }
   }
   return out
+}
+
+export function cliArgSet(cmd, args) {
+  a.reqValidStr(cmd)
+  a.reqStr(args)
+  return new Set(splitCliArgs(stripPreSpaced(args, cmd)))
 }
 
 export function firstCliArg(src) {return splitCliArgs(src)[0]}
@@ -1141,6 +1145,32 @@ export function withTooltip({elem, chi}) {
   elem.onpointermove = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}
   elem.onpointerleave = function deinit() {tooltipDeinitFor(elem)}
   return elem
+}
+
+/*
+Probably like 5 times more complicated and 10 times slower than it could be.
+TODO improve.
+*/
+export function ellMid(src, max) {
+  src = a.laxStr(src)
+  a.reqInt(max)
+  if (src.length <= max) return src
+  if (!(max > 0)) return ``
+
+  const chars = [...src]
+  if (chars.length <= max) return src
+
+
+  const inf = `…`
+  let lenPre = (max / 2) | 0
+  let lenSuf = (max / 2) | 0
+
+  while ((lenPre + lenSuf) >= max) {
+    if (lenSuf > 0) lenSuf--
+    else if (lenPre > 0) lenPre--
+    else break
+  }
+  return chars.slice(0, lenPre).concat(inf).concat(chars.slice(-lenSuf)).join(``)
 }
 
 /*

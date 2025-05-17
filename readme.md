@@ -29,11 +29,11 @@ Data analysis with plots! Arbitrary options can be composed:
 Automatically plots the latest run! Automatically watches the game save, makes backups, and updates the current plot!
 - Bonus tip: can change the startup plot behavior via the `?run=` URL query parameter.
 - Bonus tip: can have any number of plots at once!
-- Note: FS access requires running the `init` command once.
+- Note: FS access requires running the `saves` and `history` commands once.
 
 ![watching and plotting](https://github.com/user-attachments/assets/ca042028-824e-414b-9ab7-7430d57852b3)
 
-After running `init` (to grant FS access) and `auth google`, the app automatically uploads your run history to the cloud.
+After running `saves` and `history` (to grant FS access) and `auth`, the app automatically uploads your run history to the cloud.
 - _Any_ cloud run can be analyzed with `plot`!
 - Compare your runs with others'!
 - Help the developers balance the game!

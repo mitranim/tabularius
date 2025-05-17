@@ -15,27 +15,36 @@ export const UPLOAD_LOCK_NAME = `tabularius.upload`
 export const UPLOAD_RETRY_INTERVAL_MS = a.minToMs(1)
 export const UPLOAD_MAX_ERRS = 3
 
+export async function uploadStartOpt() {
+  if (!await shouldStartUpload()) return
+  os.runCmd(`upload -p -l`).catch(u.logErr)
+}
+
+export async function shouldStartUpload() {
+  return (
+    !isUploadingLocal() &&
+    au.isAuthed() &&
+    !!(await fs.historyDirOpt(u.sig).catch(u.logErr))
+  )
+}
+
 export function isUploadingGlobal() {return u.lockHeld(UPLOAD_LOCK_NAME)}
 export function isUploadingLocal() {return !!os.procByName(`upload`)}
 
 cmdUpload.cmd = `upload`
 cmdUpload.desc = function cmdUploadDesc() {
   return [
-    `upload runs to the cloud`,
-    `; requires FS access (run `, os.BtnCmdWithHelp(`init`), ` once)`,
-    ` and authentication (run `, os.BtnCmdWithHelp(`auth`), ` once)`,
+    `upload runs to the cloud;`,
+    ` requires `, os.BtnCmdWithHelp(`history`),
+    ` and `, os.BtnCmdWithHelp(`auth`),
   ]
 }
 cmdUpload.help = function cmdUploadHelp() {
   return u.LogParagraphs(
     cmdUpload.desc(),
     [
-      `upload is invoked `,
-      E(`b`, {}, `automatically`),
-      ` after running `,
-      os.BtnCmdWithHelp(`init`),
-      ` and `,
-      os.BtnCmdWithHelp(`auth`),
+      `upload is invoked `, u.Bold(`automatically`), ` after running `,
+      os.BtnCmdWithHelp(`history`), ` and `, os.BtnCmdWithHelp(`auth`),
       ` in any order; you generally don't need to run it manually`,
     ],
     `usage:`,
@@ -63,18 +72,20 @@ cmdUpload.help = function cmdUploadHelp() {
       [`  `, ui.BtnPromptAppend(`upload`, `-q`), ` -- quiet mode, minimal logging`],
     ),
     `the upload is idempotent, which means no duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
-    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local files`],
-    [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud files`],
+    [
+      `tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local files`,
+      ` and `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud files`,
+    ],
   )
 }
 
 export async function cmdUpload(proc) {
   const cmd = cmdUpload.cmd
-  const args = u.stripPreSpaced(proc.args, cmd)
+  const {args} = proc
   const opt = a.Emp()
   let path = ``
 
-  for (const [key, val, pair] of u.cliDecode(args)) {
+  for (const [key, val, pair] of u.cliDecode(u.stripPreSpaced(args, cmd))) {
     if (key === `-p`) {
       opt.persistent = ui.cliBool(cmd, key, val)
       continue
@@ -91,18 +102,20 @@ export async function cmdUpload(proc) {
       opt.force = ui.cliBool(cmd, key, val)
       continue
     }
+
     if (key) {
-      throw new u.ErrLog(...u.LogParagraphs(
-        [`unrecognized `, ui.BtnPromptAppend(cmd, pair)],
-        os.cmdHelpDetailed(cmdUpload),
-      ))
+      u.log.err(
+        `unrecognized `, ui.BtnPromptAppend(cmd, pair),
+        ` in `, ui.BtnPromptReplace({val: args}),
+      )
+      return os.cmdHelpDetailed(cmdUpload)
     }
+
     if (!val) continue
+
     if (path) {
-      throw new u.ErrLog(...u.LogParagraphs(
-        `redundant path ${a.show(val)}`,
-        os.cmdHelpDetailed(cmdUpload),
-      ))
+      u.log.err(`too many upload paths in `, ui.BtnPromptReplace({val: args}))
+      return os.cmdHelpDetailed(cmdUpload)
     }
     path = val
   }
@@ -465,20 +478,4 @@ export function apiUploadRound(sig, {body, isGzip}) {
     body,
   }
   return u.fetchJson(url, opt)
-}
-
-// TODO consolidate with `optStartUploadAfterInit` and `optStartUploadAfterAuth`.
-export function recommendAuthIfNeededOrRunUpload() {
-  if (au.isAuthed()) return os.runCmd(`upload -p -l`)
-  return recommendAuth()
-}
-
-// TODO consolidate with `recommendAuthIfNeededOrRunUpload` and `optStartUploadAfterAuth`.
-export function optStartUploadAfterInit() {
-  if (au.isAuthed()) return au.optStartUploadAfterAuth()
-  return recommendAuth()
-}
-
-export function recommendAuth() {
-  u.log.info(`recommended next step: run `, os.BtnCmdWithHelp(`auth`), ` to enable cloud backups and share your stats`)
 }

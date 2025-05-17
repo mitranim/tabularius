@@ -1370,11 +1370,11 @@ Additional:
 
 ---
 
-Cost calculation: add currency conversion rates. 1 Recon = 2 Supply. 1 Tech = ??? Supply.
+<!-- Cost calculation: add currency conversion rates. 1 Recon = 2 Supply. 1 Tech = ??? Supply. -->
 
 ---
 
-Consider supporting `-h` and `--help` flags in all commands. Some users may be likely to try those.
+* [ ] Consider supporting `-h` and `--help` flags in all commands. Some users may be likely to try those.
 
 ---
 
@@ -1460,7 +1460,73 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
 
 ---
 
-* [ ] Add a command for unlocking commanders, difficulties, etc. Requires access to save dir.
+* [ ] Add an `edit` command for unlocking commanders, difficulties, etc.
+  * [ ] Default without `-w`: dry run.
+    * [ ] Requires read access to save dir.
+  * [ ] Takes a `-w` flag to confirm overwriting the files.
+    * [ ] Requires readwrite access to history dir for backups.
+    * [ ] Requires readwrite access to save dir.
+  * [ ] With or without `-w`, we always report every change, as well as non-changes for the specified edits.
+    * Accumulate the entire summary and log it at once.
+  * [ ] With `-w`:
+    * [ ] Requires access to history dir.
+    * [ ] If don't have readwrite permission for save dir:
+      * [ ] Display a warning:
+        * Game files will be modified.
+        * Backups can be found in `<history_dir>/backup`.
+        * Game must be closed. If game is running, it will ignore and overwrite all edits.
+        * This warning is only displayed before granting readwrite access.
+      * [ ] Request readwrite permission.
+    * [ ] Make backups of all affected files:
+      * [ ] Add a timestamp after the name, like for runs.
+      * [ ] Write to `<history_dir>/backup`.
+  * [ ] Takes multiple inputs which specify which edits to make.
+  * [ ] Inputs are similar to plot filters. They act simultaneously as feature-enabling flags and as filters depending on the feature, due to co-dependencies. Examples:
+    * [ ] Unlocking commanders: `hero=all` unlocks all, filter `hero=A hero=B ...` limits which ones to unlock. In other edits, `hero=` is a filter.
+    * [ ] Unlocking buildings, or limiting which buildings are affected by other edits: `bui_type=Mirad bui_type=Bunk ...`. In other edits, `bui_type=` is a filter.
+      * [ ] Support full names as well; add a title-to-code table to `game_const.mjs` which includes both short and long titles.
+      * [ ] This also unlocks full building upgrades, skipping the initial level 1 lock.
+        * [ ] Key in unlockables: bui code + `AdvUpg`.
+      * [ ] `bui_type=all` unlocks all buildings.
+    * [ ] Unlocking commander difficulty badges: either `diff=` or `frontier=` tells us to perform this action, and `hero=` is an optional filter.
+      * [ ] Rename `frontier_diff` to `frontier` across the system.
+      * [ ] `diff=all` sets all badges to maximum.
+    * [ ] Unlocking difficulty: `diff=all` unlocks up to max, `diff=1|2|3|4|5` unlocks up to corresponding mode.
+      * `frontier=` (with or without any value) implies `diff=5`, suppresses other values of `diff=`, and unlocks Frontier.
+    * [ ] Unlocking doctrines: `doctrine=all` unlocks everything; `doctrine=A doctrine=B ...` specifies which to unlock, and acts as filter in other edits.
+      * [ ] Consider adding doctrine names to the code-title mapping tables.
+  * [ ] Support optionally specifying a source file and a target file.
+    * [ ] If only source is specified: error; requires target.
+      * Mention that you can specify just the target; print the modified command as clickable.
+    * [ ] If only target is specified: edit that file in-place (with a backup).
+    * [ ] If both specified, check if the two files share a common prefix (split on `.` then on `_`), display a warning if not.
+    * [ ] The rest of the behavior is unchanged, but flags which don't apply to the content of the source file raise warnings.
+    * [ ] When neither is specified: automatically look for "known" files which match the provided edit flags.
+  * [ ] Cheat options:
+    * [ ] Editing any field anywhere:
+      * Require a single specific source file.
+      * Dot-separated path-value: `one.two.three=<val>`.
+      * If value looks like a null, boolean, number, dict, or list, parse as JSON. Otherwise, use as-is.
+      * Split on dots, ignoring the leading dot. If leading dot with only one key, then it's at the top level.
+      * Ensure that everything up to the last key exists in the data.
+      * Set the value.
+    * [ ] Currency editing:
+      * [ ] `supply=`
+      * [ ] `recon=`
+      * [ ] `tech=`
+      * [ ] `supply_mul=`
+        * Mention that this is for Reinforcements only.
+      * [ ] `recon_mul=`
+        * Mention that this is for Reinforcements only.
+      * [ ] `grenadier=`
+      * [ ] `anysia=`
+        * Mention that it only works on Blue.
+      * Specify the expected format for each, with examples, like:
+        * `supply=1048576`
+        * `recon=65536`
+        * `tech=128`
+    * Discovery: `discovery=` (`.CurrentNeutralOdds`).
+      * Mention the format: 0 to 100.
 
 ---
 
@@ -1537,9 +1603,19 @@ Plot totals: add `round_num`.
 
 ---
 
-* [ ] `init`: convert validation exceptions to warnings.
+<!-- * [ ] `init`: convert validation exceptions to warnings. -->
 
 ---
 
-* [ ] `log`: make it easy to make part of a log msg appear error-like.
-  * [ ] Use this in all cases where a command returns error msg + full help.
+* [x] `log`: make it easy to make part of a log msg appear error-like.
+  * [x] Use this in all cases where a command returns error msg + full help.
+* Done by simply logging the error message and help separately.
+
+---
+
+* [x] Split `init` into `saves` and `history` for a more understandable setup flow.
+* [x] Replace all references to `init` and `deinit` in user-facing messages with references to the new commands.
+
+---
+
+* [x] Convert the "recommended next step" special cases into a reactive element which displays the full setup sequence, as a list with checkbox icons. Completing a step ticks the box and crosses-out the text.

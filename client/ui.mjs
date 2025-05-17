@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 79
+const VERSION = 80
 let INITED
 
 /*
@@ -561,6 +561,15 @@ export function BtnPromptReplace({val, chi}) {
   })
 }
 
+export function BtnExample(cmd, args) {
+  a.reqValidStr(cmd)
+  a.reqValidStr(args)
+  return BtnPromptReplace({
+    val: cmd + ` `,
+    chi: [cmd, ` `, u.Muted(args)],
+  })
+}
+
 cmdClear.cmd = `clear`
 cmdClear.desc = `clear log and/or media`
 cmdClear.help = function cmdClearHelp() {
@@ -577,7 +586,7 @@ cmdClear.help = function cmdClearHelp() {
       [`  `, os.BtnCmd(`clear -l`)],
       [`  `, os.BtnCmd(`clear -m`)],
     ),
-    [E(`b`, {}, `pro tip`), `: can also clear the log by pressing "ctrl+k" or "cmd+k"`],
+    `pro tip: can also clear the log by pressing "ctrl+k" or "cmd+k"`,
   )
 }
 

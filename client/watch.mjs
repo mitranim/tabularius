@@ -9,14 +9,17 @@ const tar = window.tabularius ??= a.Emp()
 tar.w = self
 a.patch(window, tar)
 
-export async function watchStarted() {
-  const sig = u.sig
+export async function watchStartOpt() {
+  if (!await shouldStartWatch()) return
+  os.runCmd(`watch`).catch(u.logErr)
+  u.log.info(`started `, os.BtnCmdWithHelp(`watch`))
+}
+
+export async function shouldStartWatch() {
   return (
-    isWatchingLocal() || (
-      !!(await fs.progressFileOpt(sig).catch(u.logErr)) &&
-      !!(await fs.historyDirOpt(sig).catch(u.logErr)) &&
-      (os.runCmd(`watch`).catch(u.logErr), true)
-    )
+    !isWatchingLocal() &&
+    !!(await fs.progressFileOpt(u.sig).catch(u.logErr)) &&
+    !!(await fs.historyDirOpt(u.sig).catch(u.logErr))
   )
 }
 
@@ -48,10 +51,14 @@ cmdWatch.desc = `watch the game's ${fs.PROGRESS_FILE_CONF.desc} for changes and 
 cmdWatch.help = function cmdWatchHelp() {
   return u.LogParagraphs(
     u.callOpt(cmdWatch.desc),
-    [`requires running `, os.BtnCmdWithHelp(`init`), ` first (just once) to grant FS access`],
     [
-      `can be stopped via `, os.BtnCmd(`kill watch`), ` (one-off) or `,
-      os.BtnCmdWithHelp(`deinit`), ` (permanent until `, os.BtnCmd(`init`),`)`,
+      `watch is invoked `, u.Bold(`automatically`), ` after running `,
+      os.BtnCmdWithHelp(`saves`), ` and `, os.BtnCmdWithHelp(`history`),
+      ` in any order; you generally don't need to run it manually`,
+    ],
+    [
+      `can be stopped via `, os.BtnCmd(`kill watch`),
+      ` or by revoking FS access`,
     ],
   )
 }
@@ -64,7 +71,7 @@ export async function cmdWatch(proc) {
   const {sig} = proc
 
   if (unlock) {
-    u.log.info(`[watch] starting`)
+    u.log.verb(`[watch] starting`)
   }
   else {
     const start = Date.now()
@@ -96,7 +103,11 @@ export async function cmdWatchUnsync(sig) {
       if (u.errIs(err, u.isErrAbort)) return
       errs++
       if (u.errIs(err, fs.isErrFs)) {
-        u.log.err(`[watch] filesystem error, may need to run "deinit" and "init": `, err)
+        u.log.err(
+          `[watch] filesystem error, may need to revoke FS access and grant it again;`,
+          ` see `, os.BtnCmd(`help saves`), ` and `, os.BtnCmd(`help history`), `; error: `,
+          err,
+        )
       }
       if (errs >= WATCH_MAX_ERRS) {
         throw Error(`unexpected error; reached max error count ${errs}, exiting: ${err}`, {cause: err})
@@ -238,5 +249,5 @@ function afterRoundBackup(eve) {
   if (!au.STATE.userId) return
   const {runDirName, roundFileName} = eve
   os.runCmd(`upload ${u.paths.join(runDirName, roundFileName)}`).catch(u.logErr)
-  if (!eve.prevRunNum) p.plotDefaultLocalOpt(u.sig).catch(u.logErr)
+  if (!eve.prevRunNum) p.plotDefaultLocalOpt().catch(u.logErr)
 }

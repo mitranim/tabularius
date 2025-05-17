@@ -81,6 +81,8 @@ cmdPlot.help = function cmdPlotHelp() {
       [`  -t`, `                      -- all additional totals`],
       [`  -t <stat>`, `               -- one specific stat`],
       [`  -t <stat> -t <stat> ...`, ` -- several specific totals`],
+      `also:`
+      [`  `, BtnAppend(`-t=false`), ` -- disable totals (preset override)`],
     ),
 
     u.LogLines(
@@ -150,7 +152,7 @@ Seems kinda sloppy, but is very simple, and makes for an okay UX. If the user
 clicks a button to remove a plot, they either no longer care about its stats,
 or are satisfied with them staying as-is.
 */
-export async function cmdPlotLocal({sig, args, opt, user}) {
+export async function cmdPlotLocal({sig, args, opt}) {
   opt = s.validPlotAggOpt(opt)
   await d.datLoad({sig, dat: d.DAT, opt})
 
@@ -226,7 +228,7 @@ export async function cmdPlotCloud({sig, args, opt, user}) {
 }
 
 // Note: `cmdPlotLocal` does it differently.
-function showPlot({opts, totals, args, user}) {
+function showPlot({opts, totals, args}) {
   a.reqStr(args)
 
   return new os.Combo({
@@ -321,7 +323,7 @@ export function PlotTitle({elem, opt, args, pre, close}) {
   args = u.stripPreSpaced(args, cmdPlot.cmd)
 
   const {X, Y, Z, agg} = opt
-  const btn = a.vac(args) && BtnAppend(args)
+  const btn = a.vac(args) && BtnReplace(args, args)
 
   if (btn) {
     btn.className = a.spaced(btn.className, `w-full trunc`)
@@ -412,12 +414,13 @@ export function decodePlotAggOpt(src) {
     }
 
     if (key === `-t`) {
-      // Can disable preset totals via `-t=false`.
+      // Allow to disable preset totals via `-t=false`.
       if (val === `false`) continue
 
       out.totals ??= []
-      if (!val) continue
+      if (!val || val === `true`) continue
 
+      // TODO this error message should mention `true` and `false` as valid.
       try {out.totals.push(ui.cliEnum(cmd, key, val, s.SUPPORTED_TOTAL_KEYS))}
       catch (err) {errs.push(err)}
       continue
@@ -638,9 +641,13 @@ function plotAggOptExpandPresets(src) {
 Goal: if FS is inited and we have an actual latest run, show its analysis.
 Otherwise, show a sample run for prettiness sake.
 */
-export async function plotDefault({sig}) {
+export async function plotDefault({sig, args}) {
+  const totals = u.splitCliArgs(args).includes(`-t`)
+
   try {
-    if (await fs.historyDirOpt(sig)) return await plotDefaultLocal(sig)
+    if (await fs.historyDirOpt(sig)) {
+      return await plotDefaultLocal({sig, quiet: !totals})
+    }
   }
   catch (err) {
     if (u.LOG_VERBOSE) u.log.err(`error analyzing latest run: `, err)
@@ -649,18 +656,19 @@ export async function plotDefault({sig}) {
   return plotDefaultExample(sig)
 }
 
-export async function plotDefaultLocalOpt(sig) {
-  u.reqSig(sig)
+export async function plotDefaultLocalOpt({sig = u.sig, quiet} = {}) {
+  u.optSig(sig)
+  a.optBool(quiet)
   if (!ui.MEDIA.isDefault()) return
   if (!await fs.hasRoundFile(sig).catch(u.logErr)) return
-  await plotDefaultLocal()
+  await plotDefaultLocal({quiet})
 }
 
-export async function plotDefaultLocal() {
+export async function plotDefaultLocal(opt) {
   // Passing the previous proc's promise to the next proc delays the output
   // but not the execution, ensuring proper ordering of outputs.
   let waitFor
-  for (const val of defaultLocalPlotCmds()) {
+  for (const val of defaultLocalPlotCmds(opt)) {
     waitFor = os.runCmd(val, {waitFor})
   }
   await waitFor
@@ -1110,10 +1118,11 @@ export class TooltipPlugin extends a.Emp {
     const axisNameY = preY + (plot.axes?.[1]?.secretName || `Y`)
     const nameSuf = `: `
     const nameLen = nameSuf.length + Math.max(axisNameX.length, axisNameY.length)
-
+    const label = u.ellMid(a.render(series.label), LEGEND_LEN_MAX)
     const elem = this.tooltip ??= this.makeTooltip()
+
     elem.textContent = u.joinLines(
-      series.label,
+      label,
       (axisNameX + nameSuf).padEnd(nameLen, ` `) + formatVal(valX),
       (axisNameY + nameSuf).padEnd(nameLen, ` `) + formatVal(valY),
     )
@@ -1201,8 +1210,11 @@ function BtnAppend(val, alias) {
   return ui.BtnPromptAppend(cmdPlot.cmd, val, alias)
 }
 
-function BtnReplace(val) {
-  return ui.BtnPromptReplace({val: u.preSpacedOpt(val, cmdPlot.cmd)})
+function BtnReplace(val, alias) {
+  return ui.BtnPromptReplace({
+    val: u.preSpacedOpt(val, cmdPlot.cmd),
+    chi: alias,
+  })
 }
 
 function BtnAppendEq(key) {
@@ -1342,14 +1354,16 @@ cmdPlotLink.help = function cmdPlotLinkHelp() {
       ` -- get a link that shows multiple plots analyzing the latest local run;`,
       ` the analysis is always for the latest run, and is live (always up-to-date);`,
       ` the link can be shared, but other users will see their own local runs, not yours;`,
-      ` requires `, os.BtnCmdWithHelp(`init`), ` to grant FS access and start building`,
+      ` requires `, os.BtnCmdWithHelp(`saves`), ` and `, os.BtnCmdWithHelp(`history`),
+      ` to grant FS access and start building`,
       ` a local run history`,
     ],
     [
       `  `,
       os.BtnCmd(`plot_link -c`),
       ` -- get a shareable link that shows multiple plots analyzing the currently-latest`,
-      ` cloud run of the current user; requires `, os.BtnCmdWithHelp(`init`),
+      ` cloud run of the current user; requires `,
+      os.BtnCmdWithHelp(`saves`), ` and `, os.BtnCmdWithHelp(`history`),
       ` for building the local run history and `, os.BtnCmdWithHelp(`auth`),
       ` for uploading it to the cloud`,
     ],
@@ -1366,34 +1380,33 @@ cmdPlotLink.help = function cmdPlotLinkHelp() {
 
 export async function cmdPlotLink({sig, args}) {
   const cmd = cmdPlotLink.cmd
-  args = u.stripPreSpaced(args, cmd)
-
   let cloud
   const userIds = []
 
-  for (const [key, val, pair] of u.cliDecode(args)) {
+  for (const [key, val, pair] of u.cliDecode(u.stripPreSpaced(args, cmd))) {
     if (key === `-c`) {
       cloud = ui.cliBool(cmd, key, val)
       continue
     }
+
     if (key) {
-      return u.LogParagraphs(
-        [`unrecognized `, ui.BtnPromptAppend(cmd, pair)],
-        os.cmdHelpDetailed(cmdPlotLink),
+      u.log.err(
+        `unrecognized `, ui.BtnPromptAppend(cmd, pair),
+        ` in `, ui.BtnPromptReplace({val: args})
       )
+      return os.cmdHelpDetailed(cmdPlotLink)
     }
+
     if (!val) continue
     userIds.push(val)
   }
 
   if (!cloud && userIds.length) {
-    return u.LogParagraphs(
-      [
-        `unexpected user id inputs ${a.show(userIds)} in local mode;`,
-        ` did you mean `, ui.BtnPromptAppend(cmd, ` -c ` + args),
-        `?`,
-      ],
-      os.cmdHelpDetailed(cmdPlotLink),
+    throw new u.ErrLog(
+      `unexpected user id inputs ${a.show(userIds)} in local mode;`,
+      ` did you mean `,
+      ui.BtnPromptReplace({val: a.spaced(args, `-c`)}),
+      `?`,
     )
   }
 
@@ -1411,8 +1424,8 @@ export async function cmdPlotLink({sig, args}) {
         ` to create a shareable link`,
       ],
       a.vac(!await fs.historyDirOpt(sig).catch(u.logErr)) && [
-        `warning: local FS not initialized; run `,
-        os.BtnCmdWithHelp(`init -h`), ` to grant access`,
+        `warning: run history directory not initialized; run `,
+        os.BtnCmdWithHelp(`history`), ` to grant access`,
       ],
     )
   }
@@ -1448,19 +1461,20 @@ async function msgPlotLink(url) {
 
 const PLOT_LINK_PRESETS = [`dmg_over`, `dmg`, `eff`, `chi_dmg`]
 
-function plotCmdLocal(preset) {
+function plotCmdLocal(preset, opt) {
+  const quiet = a.optBool(a.optDict(opt)?.quiet)
   ui.cliEnum(cmdPlot.cmd, `-p`, preset, PLOT_PRESETS)
-  return `plot -p=${preset}`
+  return a.spaced(`plot -p=${preset}`, a.vac(quiet) && `-t=false`)
 }
 
 function plotCmdCloud(preset, runId) {
   a.reqValidStr(runId)
   ui.cliEnum(cmdPlot.cmd, `-p`, preset, PLOT_PRESETS)
-  return `plot -c -p=${preset} user_id=all run_id=${runId}`
+  return `plot -p=${preset} -c run_id=${runId} user_id=all`
 }
 
-function defaultLocalPlotCmds() {
-  return a.map(PLOT_LINK_PRESETS, plotCmdLocal)
+function defaultLocalPlotCmds(opt) {
+  return a.map(PLOT_LINK_PRESETS, val => plotCmdLocal(val, opt))
 }
 
 function urlClean() {

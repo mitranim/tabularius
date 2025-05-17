@@ -27,10 +27,10 @@ cmdAuth.help = function cmdAuthHelp() {
     `enter a passphrase or password to authenticate`,
     u.LogLines(
       `easy and anonymous:`,
-      `- no signup`,
-      `- no email`,
-      `- no 3rd party services`,
-      `- no personal information requested`,
+      `* no signup`,
+      `* no email`,
+      `* no 3rd party services`,
+      `* no personal information requested`,
     ),
     u.LogLines(
       `usage:`,
@@ -41,18 +41,29 @@ cmdAuth.help = function cmdAuthHelp() {
   )
 }
 
-export function cmdAuth({sig, args}) {
-  args = a.tail(u.splitCliArgs(args))
-  if (args.length > 1) return u.LogParagraphs(`too many inputs;`, cmdAuth.help())
-  const mode = args[0]
+export async function cmdAuth({sig, args}) {
+  const inps = u.splitCliArgs(u.stripPreSpaced(args, cmdAuth.cmd))
 
-  if (!mode) {
-    if (isAuthed()) return new AuthStatusMini()
-    return authLogin(sig)
+  if (inps.length > 1) {
+    u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    return os.cmdHelpDetailed(cmdAuth)
   }
 
-  if (mode === `logout`) return authLogout()
-  throw Error(`unknown auth mode ${a.show(mode)}`)
+  const mode = inps[0]
+  if (mode && mode !== `logout`) {
+    u.log.err(
+      `unrecognized auth mode `, a.show(mode), ` in `,
+      ui.BtnPromptReplace({val: args}),
+    )
+    return os.cmdHelpDetailed(cmdAuth)
+  }
+
+  const se = await import(`./setup.mjs`)
+  try {
+    if (mode === `logout`) return authLogout()
+    return await authLogin(sig)
+  }
+  finally {se.updateSetupFlowMsg()}
 }
 
 export async function authLogin(sig) {
@@ -91,7 +102,7 @@ export async function authLogin(sig) {
   u.storageSet(sessionStorage, STORAGE_KEY_SEC_KEY, secKeyStr)
   u.storageSet(localStorage, STORAGE_KEY_SEC_KEY, secKeyStr)
 
-  optStartUploadAfterAuth().catch(u.logErr)
+  uploadOpt().catch(u.logErr)
   return AuthedAs(pubKeyStr)
 }
 
@@ -106,6 +117,8 @@ export function authLogout() {
   u.storageSet(localStorage, STORAGE_KEY_PUB_KEY)
   u.storageSet(sessionStorage, STORAGE_KEY_SEC_KEY)
   u.storageSet(localStorage, STORAGE_KEY_SEC_KEY)
+
+  os.procKillOpt(`upload`)
   return `logged out successfully`
 }
 
@@ -271,7 +284,11 @@ export class AuthStatus extends u.ReacElem {
 }
 
 function AuthedAs(id) {
-  return [`authed as `, a.reqValidStr(id), ` `, u.BtnClip(id)]
+  return [
+    `authed as `,
+    E(`span`, {class: `break-all`}, a.reqValidStr(id)),
+    ` `, u.BtnClip(id),
+  ]
 }
 
 function pubKeyEncode(src) {return u.byteArr_to_hexStr(src)}
@@ -301,12 +318,6 @@ export async function initWordlist() {
 }
 
 function wordlistInitErr(err) {u.log.err(`unable to init wordlist: `, err)}
-
-// TODO consolidate with `recommendAuthIfNeededOrRunUpload` and `optStartUploadAfterInit`.
-export async function optStartUploadAfterAuth() {
-  if (!await fs.loadedHistoryDir(u.sig).catch(u.logErr)) return undefined
-  return os.runCmd(`upload -p -l`)
-}
 
 function isByteArrEq(one, two) {
   a.reqInst(one, Uint8Array)
@@ -338,4 +349,9 @@ export function apiLs(sig, path) {
   const url = u.paths.join(u.API_URL, `ls`, a.laxStr(path))
   const opt = {signal: u.reqSig(sig)}
   return u.fetchJson(url, opt)
+}
+
+async function uploadOpt() {
+  const up = await import(`./upload.mjs`)
+  return up.uploadStartOpt()
 }

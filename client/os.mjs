@@ -80,6 +80,12 @@ export function procByName(name) {
   return a.find(PROCS, val => u.firstCliArg(val.args) === name)
 }
 
+// Suboptimal but doesn't matter.
+export function procsByName(name) {
+  a.reqStr(name)
+  return a.filter(PROCS, val => u.firstCliArg(val.args) === name)
+}
+
 export async function runCmd(args, opt) {
   args = a.trim(args)
   const name = u.firstCliArg(args)
@@ -213,48 +219,69 @@ cmdKill.help = function cmdKillHelp() {
     u.callOpt(cmdKill.desc),
     u.LogLines(
       `usage:`,
-      [`  `, BtnCmd(`kill -a`), `           -- kill all processes`],
-      `  kill <id>          -- kill by id`,
-      `  kill <name>        -- kill by name`,
-      `  kill <id> <id> ... -- kill multiple`,
+      [
+        `  `,
+        ui.BtnPromptReplace({val: `kill -a`}),
+        `            -- kill all processes`
+      ],
+      [`  `, ui.BtnExample(`kill`, `<id>`), `          -- kill by id`],
+      [`  `, ui.BtnExample(`kill`, `<name>`), `        -- kill by name`],
+      [`  `, ui.BtnExample(`kill`, `<id> <id> ...`), ` -- kill multiple`],
     ),
     new Kill(),
   )
 }
 
 export function cmdKill({args}) {
-  args = a.tail(u.splitCliArgs(args))
-  const all = u.arrRemoved(args, `-a`)
+  const inps = u.splitCliArgs(u.stripPreSpaced(args, cmdKill.cmd))
+  const all = u.arrRemoved(inps, `-a`)
 
   if (all) {
-    if (args.length) {
-      return u.LogParagraphs(`too many inputs`, os.cmdHelpDetailed(cmdKill))
+    if (inps.length) {
+      u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+      return os.cmdHelpDetailed(cmdKill)
     }
     return procKillAll()
   }
 
-  if (!args.length) {
-    return u.LogParagraphs(
-      `missing process id or name`,
-      os.cmdHelpDetailed(cmdKill),
-    )
+  if (!inps.length) {
+    u.log.err(`missing process id or name`)
+    return os.cmdHelpDetailed(cmdKill)
   }
 
-  const msgs = a.mapCompact(args, procKill)
-  const killed = args.length - msgs.length
+  const {count, msgs} = procKill(...inps)
 
-  return a.joinOptLax([
-    u.LOG_VERBOSE && killed ? `sent kill signal to ${killed} processes` : ``,
+  return u.LogLines(
+    a.vac(u.LOG_VERBOSE && count) && `sent kill signal to ${killed} processes`,
     ...msgs,
-  ], `; `)
+  )
 }
 
-export function procKill(key) {
-  a.reqStr(key)
-  const proc = PROCS[key] || procByName(key)
-  if (!proc) return `no process with id or name ${a.show(key)}`
-  proc.deinit()
-  return undefined
+export function procKill(...keys) {
+  let count = 0
+  const msgs = []
+
+  for (const key of keys) {
+    a.reqStr(key)
+
+    if (PROCS[key]) {
+      PROCS[key].deinit()
+      count++
+      continue
+    }
+
+    const procs = procsByName(key)
+    if (!procs.length) {
+      msgs.push(`no process with id or name ${a.show(key)}`)
+      continue
+    }
+
+    for (const proc of procs) {
+      proc.deinit()
+      count++
+    }
+  }
+  return {count, msgs}
 }
 
 export function procKillAll() {
@@ -304,8 +331,7 @@ export function cmdHelp({args}) {
       `available commands:`,
       ...a.map(CMDS, cmdHelpShort),
       [
-        E(`b`, {}, `pro tip`),
-        `: can run commands on startup via URL query parameters; for example, try appending to the URL: `,
+        `pro tip: run commands on page load via URL query; for example, try appending to the URL: `,
         u.BtnUrlAppend(`?run=plot -c -p=dmg user_id=all run_id=latest`),
       ],
     )

@@ -174,6 +174,11 @@ export const NAMES_TO_CODES_SHORT = invert(CODES_TO_NAMES_SHORT)
 
 export const SELL_COST_MUL = 0.8
 
+/*
+We treat SmokSig as having the cost of an AirCom added to it.
+But Trevia's one is different and requires special handling.
+See `buiCost`.
+*/
 const COST_AIR_COM = 1500
 const BUI_CODE_SMOK_SIG = `CB12A`
 

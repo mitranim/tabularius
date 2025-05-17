@@ -126,7 +126,12 @@ export function datAddRound({
     const runRoundBuiIds = {...runBuiIds, bui_inst}
     const bui_upg = encodeUpgrades(bui.PurchasedUpgrades)
     const bui_type_upg = u.joinKeys(bui_type, bui_upg)
-    const bui_cost = buiCost(bui_type, bui.PurchasedUpgrades, bui.SellPrice)
+    const bui_cost = buiCost({
+      bui_type,
+      upgs: bui.PurchasedUpgrades,
+      sell: bui.SellPrice,
+      hero,
+    })
 
     if (run_round_buis) {
       dat.run_round_buis ??= new Map()
@@ -947,8 +952,11 @@ only accounts for the building's own cost, but not for any of its upgrades.
 Which makes it unusable for our purposes, since we want to calculate cost
 efficiency _with_ upgrades.
 */
-export function buiCost(type, upg) {
+export function buiCost({bui_type: type, upgs, sell, hero}) {
   a.reqStr(type)
+  a.optArr(upgs)
+  a.optFin(sell)
+  a.optStr(hero)
 
   const costs = gc.BUI_COSTS[type]
 
@@ -962,25 +970,40 @@ export function buiCost(type, upg) {
     return 0
   }
 
+  /*
+  SmokSig is a double special case. We handle Trevia here, and the regular 1500
+  cost is special-cased in `BUI_COSTS`.
+  */
+  if (
+    type === gc.BUI_CODE_SMOK_SIG &&
+    hero === gc.HEROS_TO_CODES_SHORT.Trevia &&
+    a.isFin(sell) &&
+    // It's always 500 at the time of writing.
+    // We're being fuzzy in case of future changes.
+    sell > 50
+  ) {
+    return sell
+  }
+
   let out = a.reqFin(costs.base)
-  if (!a.isArr(upg) || !upg.length) return out
+  if (!upgs?.length) return out
 
   const upgCosts = a.optArr(costs.upg)
   if (!upgCosts?.length) {
     if (!LOGGED_MISSING_COSTS[type]) {
-      console.error(`building type ${a.show(type)} claims to have upgrades, but we don't have upgrade cost data for it:`, upg)
+      console.error(`building type ${a.show(type)} claims to have upgrades, but we don't have upgrade cost data for it:`, upgs)
       LOGGED_MISSING_COSTS[type] = true
     }
     return out
   }
 
   let ind = -1
-  while (++ind < upg.length) {
-    const upgInd = upg[ind]?.Index
+  while (++ind < upgs.length) {
+    const upgInd = upgs[ind]?.Index
 
     if (!a.isNat(upgInd)) {
       if (!LOGGED_MISSING_COSTS[type]) {
-        console.error(`unrecognized upgrade format for building type ${a.show(type)}:`, upg)
+        console.error(`unrecognized upgrade format for building type ${a.show(type)}:`, upgs)
         LOGGED_MISSING_COSTS[type] = true
         return out
       }
@@ -991,7 +1014,7 @@ export function buiCost(type, upg) {
 
     if (a.isNil(upgCost)) {
       if (!LOGGED_MISSING_COSTS[type]) {
-        console.error(`our upgrade cost data seems incomplete for the building type ${a.show(type)}, which claims the following upgrades:`, upg)
+        console.error(`our upgrade cost data seems incomplete for the building type ${a.show(type)}, which claims the following upgrades:`, upgs)
         LOGGED_MISSING_COSTS[type] = true
       }
       return out

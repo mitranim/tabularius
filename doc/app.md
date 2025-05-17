@@ -49,13 +49,13 @@ We have terminal commands for initializing the FS access, and showing the curren
 
 ## Backups
 
-The `init` command requests FS access and starts the `watch` process, which can also be killed and started separately.
+The commands `saves` and `history` grant FS access and start the `watch` process, which can also be killed and started separately.
 
 The `watch` process watches the progress file in the save directory, detects modifications, detects new rounds, makes one backup per round per run (no redundancies), making new run directories when necessary. It also broadcasts FS events to all instances of our app (browser tabs), making it possible to update locally-sourced plots on the fly.
 
 ## Cloud
 
-When authenticated, progress file snapshots are uploaded to our server, which derives a schema suitable for analytics.
+When authenticated via `auth`, progress file snapshots are uploaded to our server, which derives a schema suitable for analytics.
 
 We check the entire run history on app startup and auto-upload it. When `watch` makes a new backup, we upload just the newly created file.
 
