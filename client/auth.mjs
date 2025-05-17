@@ -61,9 +61,10 @@ export async function cmdAuth({sig, args}) {
   const se = await import(`./setup.mjs`)
   try {
     if (mode === `logout`) return authLogout()
+    if (isAuthed()) return new AuthStatusMini()
     return await authLogin(sig)
   }
-  finally {se.updateSetupFlowMsg()}
+  finally {se.updateSetupFlowMsg(true)}
 }
 
 export async function authLogin(sig) {

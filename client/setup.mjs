@@ -41,7 +41,7 @@ export async function cmdSaves({sig, args}) {
     if (!set.has(`revoke`)) await savesGrant({sig, args})
     else await savesRevoke(sig)
   }
-  finally {updateSetupFlowMsg()}
+  finally {updateSetupFlowMsg(true)}
 }
 
 export async function savesGrant({sig, args}) {
@@ -87,7 +87,7 @@ export async function cmdHistory({sig, args}) {
     if (!set.has(`revoke`)) await historyGrant({sig, args})
     else await historyRevoke(sig)
   }
-  finally {updateSetupFlowMsg()}
+  finally {updateSetupFlowMsg(true)}
 }
 
 export async function historyGrant({sig, args}) {
@@ -113,8 +113,13 @@ export async function confGranted({sig, conf, args}) {
   if (handle) {
     const {name} = handle
     u.log.info(
-      conf.desc, `: access granted; browse with `,
-      os.BtnCmd(a.spaced(`ls`, name)),
+      conf.desc, `: access granted`,
+      // TODO: support quotes in CLI parsing.
+      (
+        name.includes(` `)
+        ? `: ` + name
+        : [`; browse with `, os.BtnCmd(a.spaced(`ls`, name))]
+      ),
     )
     return false
   }
@@ -167,7 +172,8 @@ setup steps.
 
 SYNC[setup_state].
 */
-export function updateSetupFlowMsg() {
+export function updateSetupFlowMsg(opt) {
+  a.optBool(opt)
   const save = !!fs.SAVE_DIR_CONF.handle
   const hist = !!fs.HISTORY_DIR_CONF.handle
   const auth = !!au.STATE.userId
@@ -175,7 +181,7 @@ export function updateSetupFlowMsg() {
   const change = state !== SETUP_FLOW_PREV_STATE
 
   SETUP_FLOW_PREV_STATE = state
-  if (!change) return
+  if (!change || (opt && save && hist && auth)) return
 
   SETUP_FLOW_PREV_MSG?.remove()
   SETUP_FLOW_PREV_MSG = u.log.info(SetupFlow({save, hist, auth}))

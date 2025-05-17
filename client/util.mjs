@@ -672,6 +672,7 @@ export function cliArgSet(cmd, args) {
 
 export function firstCliArg(src) {return splitCliArgs(src)[0]}
 
+// TODO support quotes.
 export function splitCliArgs(src) {return a.split(src, /\s+/)}
 
 export function cliDecode(src) {return splitCliArgs(src).map(cliDecodeArg)}
