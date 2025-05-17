@@ -166,9 +166,8 @@ let SETUP_FLOW_PREV_STATE
 let SETUP_FLOW_PREV_MSG
 
 /*
-We could easily define a reactive component to keep it always up to date, but we
-also want to keep this message at the end of the log, guiding the user through
-setup steps.
+Moves the message to the end of the log when relevant, ensuring that we guide
+the user through the setup steps.
 
 SYNC[setup_state].
 */
@@ -184,38 +183,45 @@ export function updateSetupFlowMsg(opt) {
   if (!change || (opt && save && hist && auth)) return
 
   SETUP_FLOW_PREV_MSG?.remove()
-  SETUP_FLOW_PREV_MSG = u.log.info(SetupFlow({save, hist, auth}))
+  SETUP_FLOW_PREV_MSG = u.log.info(new SetupFlow())
 }
 
-function SetupFlow({save, hist, auth}) {
-  return u.LogParagraphs(
-    u.LogLines(
-      u.Bold(`essential setup steps:`),
-      Step(save,
-        `run `, os.BtnCmdWithHelp(`saves`),
-        ` to grant access to the game save directory`
+class SetupFlow extends u.ReacElem {
+  // SYNC[setup_state].
+  run() {
+    const save = !!fs.SAVE_DIR_CONF.handle
+    const hist = !!fs.HISTORY_DIR_CONF.handle
+    const auth = !!au.STATE.userId
+
+    E(this, {}, ...u.LogParagraphs(
+      u.LogLines(
+        u.Bold(`essential setup steps:`),
+        Step(save,
+          `run `, os.BtnCmdWithHelp(`saves`),
+          ` to grant access to the game save directory`
+        ),
+        Step(hist,
+          `create a directory for run history and backups`,
+        ),
+        Step(hist,
+          `run `, os.BtnCmdWithHelp(`history`),
+          ` to grant access to the run history directory`
+        ),
+        Step(auth,
+          `run `, os.BtnCmdWithHelp(`auth`), ` to enable cloud backups`,
+        ),
       ),
-      Step(hist,
-        `create a directory for run history and backups`,
+      (
+        !save
+        ? NextStepSaves()
+        : !hist
+        ? NextStepHist()
+        : !auth
+        ? NextStepAuth()
+        : `setup done; all features available! 🎉`
       ),
-      Step(hist,
-        `run `, os.BtnCmdWithHelp(`history`),
-        ` to grant access to the run history directory`
-      ),
-      Step(auth,
-        `run `, os.BtnCmdWithHelp(`auth`), ` to enable cloud backups`,
-      ),
-    ),
-    (
-      !save
-      ? NextStepSaves()
-      : !hist
-      ? NextStepHist()
-      : !auth
-      ? NextStepAuth()
-      : `setup done; all features available! 🎉`
-    ),
-  )
+    ))
+  }
 }
 
 function Step(ok, ...chi) {
