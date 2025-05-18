@@ -632,23 +632,31 @@ cmdShow.help = function cmdShowHelp() {
 
     u.LogLines(
       `usage:`,
-      `  show <flags> <path>            -- one dir or file`,
-      `  show <flags> <path> ... <path> -- any dirs or files`,
+      [
+        `  `,
+        ui.BtnPrompt({full: true, cmd: `show`, eph: `<flags> <path>`}),
+        `            -- one dir or file`,
+      ],
+      [
+        `  `,
+        ui.BtnPrompt({full: true, cmd: `show`, eph: `<flags> <path> ... <path>`}),
+        ` -- any dirs or files`,
+      ],
     ),
 
     u.LogLines(
       `flags:`,
-      [`  `, ui.BtnPromptAppend(`show`, `-c`), ` -- copy decoded JSON to clipboard`],
-      [`  `, ui.BtnPromptAppend(`show`, `-l`), ` -- log decoded data to browser console`],
-      [`  `, ui.BtnPromptAppend(`show`, `-w`), ` -- write JSON file to "`, (histDir || `<run_history>`), `/show/"`],
+      [`  `, ui.BtnPrompt({cmd: `show`, suf: `-c`}), ` -- copy decoded JSON to clipboard`],
+      [`  `, ui.BtnPrompt({cmd: `show`, suf: `-l`}), ` -- log decoded data to browser console`],
+      [`  `, ui.BtnPrompt({cmd: `show`, suf: `-w`}), ` -- write JSON file to "`, (histDir || `<run_history>`), `/show/"`],
     ),
 
     u.LogLines(
       `path segments can be magic:`,
-      [`  <num>         -- run num`],
-      [`  latest        -- latest run`],
-      [`  latest/<num>  -- round num in latest run`],
-      [`  latest/latest -- latest round`],
+      [`  `, ui.BtnPrompt({cmd: `show`, eph: `<num>`}), `         -- run num`],
+      [`  `, ui.BtnPrompt({cmd: `show`, suf: `latest`}), `        -- latest run`],
+      [`  `, ui.BtnPrompt({cmd: `show`, suf: `latest/`, eph: `<num>`}), `  -- round num in latest run`],
+      [`  `, ui.BtnPrompt({cmd: `show`, suf: `latest/latest`}), ` -- latest round`],
     ),
 
     (
@@ -659,10 +667,10 @@ cmdShow.help = function cmdShowHelp() {
       ]
       : u.LogLines(
         `examples for game files:`,
-        [`  `, ui.BtnPromptAppend(`show`,  ` -l ` + saveDir), ` -- log all game files`],
-        [`  `, ui.BtnPromptAppend(`show`, ` -l -c -w ` + saveDir), ` -- log, clipboard, write decoded content of all game files`],
-        [`  `, ui.BtnPromptAppend(`show`, ` -l ` + u.paths.join(saveDir, `Progress.gd`)), ` -- log current progress`],
-        [`  `, ui.BtnPromptAppend(`show`, ` -w ` + u.paths.join(saveDir, `Unlockables.gd`)), ` -- write decoded unlockables file`],
+        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, saveDir)}), ` -- log all game files`],
+        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l -c -w`, saveDir)}), ` -- log, clipboard, write decoded content of all game files`],
+        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, u.paths.join(saveDir, `Progress.gd`))}), ` -- log current progress`],
+        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-w`, u.paths.join(saveDir, `Unlockables.gd`))}), ` -- write decoded unlockables file`],
       )
     ),
 
@@ -676,10 +684,10 @@ cmdShow.help = function cmdShowHelp() {
       ]
       : u.LogLines(
         `examples for run history:`,
-        [`  `, ui.BtnPromptAppend(`show`, ` -l ` + u.paths.join(histDir, `latest`)), ` -- log all rounds in latest run`],
-        [`  `, ui.BtnPromptAppend(`show`, ` -l ` + u.paths.join(histDir, `latest/latest`)), ` -- log latest round in latest run`],
-        [`  `, ui.BtnPromptAppend(`show`, ` -l -c -w ` + u.paths.join(histDir, `latest`)), ` -- log, clipboard, write all rounds in latest run`],
-        [`  `, ui.BtnPromptAppend(`show`, ` -l -c -w ` + u.paths.join(histDir, `latest/latest`)), ` -- log, clipboard, write latest round in latest run`],
+        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, u.paths.join(histDir, `latest`))}), ` -- log all rounds in latest run`],
+        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, u.paths.join(histDir, `latest/latest`))}), ` -- log latest round in latest run`],
+        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l -c -w`, u.paths.join(histDir, `latest`))}), ` -- log, clipboard, write all rounds in latest run`],
+        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l -c -w`, u.paths.join(histDir, `latest/latest`))}), ` -- log, clipboard, write latest round in latest run`],
       )
     ),
 
@@ -798,6 +806,85 @@ export async function showData({sig, path, data, opt}) {
   }
 }
 
+cmdRollback.cmd = `rollback`
+cmdRollback.desc = `roll back the latest round`
+cmdRollback.help = function cmdRollbackHelp() {
+  return u.LogParagraphs(
+    cmdRollback.desc,
+    [
+      `finds the latest round in the latest run in the history directory and copies it to the game's save directory, overwriting `,
+      a.show(fs.PROG_FILE_NAME),
+    ],
+    [
+      `requires `, os.BtnCmdWithHelp(`saves`), `, to grant access to the save directory,`,
+      ` and `, os.BtnCmdWithHelp(`history`), `, to grant access to the run history directory`,
+    ],
+    `when invoked for the first time, will request read-write access to the save directory`,
+    `makes an additional backup before writing the file`,
+    `game must be closed before running this command, otherwise this will have no effect, the game will ignore and overwrite the file`,
+  )
+}
+
+export async function cmdRollback({sig, args}) {
+  const cmd = cmdRollback.cmd
+  if (u.stripPreSpaced(args, cmd)) {
+    throw new u.ErrLog(
+      `too many inputs; `, os.BtnCmd(cmd), ` takes no inputs`,
+    )
+  }
+
+  const histDir = await historyDirReq(sig)
+  const runDir = await findLatestRunDir(sig, histDir)
+  const roundFile = await findLatestRoundFile(sig, runDir)
+  const targetFile = await progressFileReq(sig)
+  await requireOrRequestReadwrite(sig, targetFile)
+  const body = await readFileByteArr(sig, roundFile)
+
+  const srcPath = u.paths.join(histDir.name, runDir.name, roundFile.name)
+
+  const tarPath = u.paths.join(
+    a.laxStr(SAVE_DIR_CONF.handle?.name),
+    targetFile.name,
+  )
+
+  const backPath = u.paths.join(
+    histDir.name,
+    await backupFile(sig, targetFile, histDir),
+  )
+
+  u.log.info(...u.LogLines(
+    `backed up:`,
+    [`  `, a.show(tarPath)],
+    `  to:`,
+    [`  `, a.show(backPath)],
+  ))
+
+  await writeFile(sig, targetFile, body)
+
+  return u.LogParagraphs(
+    u.LogLines(
+      `overwrote the content of:`,
+      [`  `, a.show(tarPath)],
+      `  with the content of:`,
+      [`  `, a.show(srcPath)],
+    ),
+    `if the game is currently running, it will ignore this edit and overwrite the file; make sure to close it before running the command`,
+  )
+}
+
+export async function getBackupDir(sig, dir) {
+  a.optInst(dir, FileSystemDirectoryHandle)
+  dir ??= await historyDirReq(sig)
+  return getDirectoryHandle(sig, dir, `backup`, {create: true})
+}
+
+export async function backupFile(sig, file, dir) {
+  dir = await getBackupDir(sig, dir)
+  const body = await readFileByteArr(sig, file)
+  await writeDirFile(sig, dir, file.name, body)
+  return u.paths.join(dir.name, file.name)
+}
+
 export async function findLatestDirEntryReq(sig, dir, fun) {
   const out = await findLatestDirEntryOpt(sig, dir, fun)
   if (out) return out
@@ -817,9 +904,9 @@ export async function findLatestDirEntryOpt(sig, dir, fun) {
 }
 
 export async function hasRoundFile(sig) {
-  const root = await historyDirOpt(sig)
-  if (!root) return false
-  for await (const runDir of readDir(sig, root, isHandleRunDir)) {
+  const histDir = await historyDirOpt(sig)
+  if (!histDir) return false
+  for await (const runDir of readDir(sig, histDir, isHandleRunDir)) {
     for await (const _ of readDir(sig, runDir, isHandleRoundFile)) {
       return true
     }
@@ -830,16 +917,6 @@ export async function hasRoundFile(sig) {
 export function findLatestRoundFile(sig, runDir) {
   return findLatestDirEntryOpt(sig, runDir, isHandleGameFile)
 }
-
-/*
-export function findLatestRoundFile(sig, runDir, progressFileHandle) {
-  a.reqInst(progressFileHandle, FileSystemFileHandle)
-  const ext = progressFileHandle ? u.paths.ext(progressFileHandle.name) : ``
-  return findLatestDirEntryOpt(sig, runDir, function testDirEntry(val) {
-    return isFile(val) && u.paths.ext(val.name) === ext
-  })
-}
-*/
 
 export async function findHandleByIntPrefixReq(sig, dir, int) {
   const out = await findHandleByIntPrefixOpt(sig, dir, int)
@@ -859,23 +936,23 @@ export async function findHandleByIntPrefixOpt(sig, dir, int) {
 }
 
 // Caution: the iteration order is unstable.
-export function readRuns(sig, root) {
-  return readDir(sig, root, isHandleRunDir)
+export function readRuns(sig, hist) {
+  return readDir(sig, hist, isHandleRunDir)
 }
 
-export async function readRunsAsc(sig, root) {
-  return (await readDirAsc(sig, root)).filter(isHandleRunDir)
+export async function readRunsAsc(sig, hist) {
+  return (await readDirAsc(sig, hist)).filter(isHandleRunDir)
 }
 
-export async function readRunsByNamesAscOpt(sig, root, names) {
+export async function readRunsByNamesAscOpt(sig, hist, names) {
   u.reqSig(sig)
-  a.reqInst(root, FileSystemDirectoryHandle)
+  a.reqInst(hist, FileSystemDirectoryHandle)
   const out = []
 
   for (const name of a.values(names)) {
     let dir
     try {
-      dir = await getDirectoryHandle(sig, root, name)
+      dir = await getDirectoryHandle(sig, hist, name)
     }
     catch (err) {
       if (err?.cause?.name === `NotFoundError`) continue
@@ -921,9 +998,9 @@ export async function* readRunRoundHandles(sig, dir) {
   }
 }
 
-export async function findLatestRunDir(sig, root) {
-  a.reqInst(root, FileSystemDirectoryHandle)
-  return a.head((await readDirDesc(sig, root)).filter(isDir))
+export async function findLatestRunDir(sig, hist) {
+  a.reqInst(hist, FileSystemDirectoryHandle)
+  return a.head((await readDirDesc(sig, hist)).filter(isDir))
 }
 
 // SYNC[run_id_name_format].
@@ -1128,8 +1205,11 @@ export async function writeDirFile(sig, dir, name, body) {
 export async function writeFile(sig, file, body, path) {
   u.reqSig(sig)
   a.reqInst(file, FileSystemFileHandle)
-  a.reqValidStr(body)
   a.optStr(path)
+
+  if (!a.isStr(body) && !a.isInst(body, Uint8Array)) {
+    throw TypeError(`unable to write to ${a.show(file.name)}: body must be a string or a Uint8Array, got ${a.show(body)}`)
+  }
 
   const wri = await u.wait(sig, file.createWritable())
   try {
@@ -1192,14 +1272,34 @@ export async function queryPermission(sig, src, opt) {
 export async function requestPermission(sig, handle, opt) {
   u.reqSig(sig)
   a.reqInst(handle, FileSystemHandle)
+  const mode = a.laxStr(a.optObj(opt)?.mode)
+
   try {
     return await u.wait(sig, handle.requestPermission(opt))
   }
   catch (err) {
-    throw new ErrFsPerm(`unable to request permission for ${handle.name}: ${err}`, {cause: err})
+    throw new ErrFsPerm(`unable to get${mode && ` `}${mode} permission for ${handle.name}: ${err}`, {cause: err})
   }
 }
 
+export async function requireOrRequestReadwrite(sig, handle) {
+  const mode = `readwrite`
+  const perm0 = await queryPermission(sig, handle, {mode})
+  if (perm0 === `granted`) return handle
+
+  u.log.info(`requesting `, mode, ` permission for `, a.show(handle.name))
+
+  const perm1 = await requestPermission(sig, handle, {mode})
+  if (perm1 !== `granted`) {
+    throw new ErrFsPerm(`needed ${mode} permission "granted", got permission ${a.show(perm1 || perm0)}`)
+  }
+  return handle
+}
+
+/*
+Also see `getFileHandle` which is more specialized.
+This one can be invoked on directory entries.
+*/
 export async function getFile(sig, src, opt) {
   u.reqSig(sig)
   a.reqInst(src, FileSystemHandle)

@@ -95,8 +95,7 @@ export async function historyGrant({sig, args}) {
   if (!await confGranted({sig, conf, args})) return
   await w.watchStartOpt()
   await up.uploadStartOpt()
-  // Suppress totals here to avoid polluting the log during setup.
-  p.plotDefaultLocalOpt({quiet: true}).catch(u.logErr)
+  p.plotDefaultLocalOpt().catch(u.logErr)
 }
 
 export async function historyRevoke(sig) {

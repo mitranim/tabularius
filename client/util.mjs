@@ -1140,6 +1140,7 @@ export const TOOLTIP = E(
 
 let TOOLTIP_LAST_ELEM
 
+// TODO: also remove the tooltip from the DOM when the element leaves the DOM.
 export function withTooltip({elem, chi}) {
   a.reqElement(elem)
   elem.onpointerover = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}

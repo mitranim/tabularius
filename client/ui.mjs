@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 82
+const VERSION = 83
 let INITED
 
 /*
@@ -423,8 +423,8 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
   }
 
   addSpaced(pre, suf) {
-    if (a.reqValidStr(suf))
-    if (a.reqValidStr(pre))
+    a.reqValidStr(pre)
+    a.optStr(suf)
     if (this.value) this.value = a.spaced(a.trim(this.value), a.trim(suf))
     else this.value = a.spaced(a.trim(pre), a.trim(suf))
     this.focus()
@@ -523,18 +523,24 @@ export const PROMPT = E(
   PROMPT_INPUT,
 )
 
-export function BtnPrompt(src) {
-  const [head, ...tail] = u.splitCliArgs(src)
-  return BtnPromptAppend(head, tail.join(` `), src)
+export function BtnPrompt({full, cmd, suf, chi, eph, ...opt}) {
+  a.optBool(full)
+  a.reqValidStr(cmd)
+  a.optStr(suf)
+  a.optStr(eph)
+
+  chi ??= [
+    a.vac(full) && cmd,
+    a.vac(full && cmd && (suf || eph)) && ` `,
+    suf,
+    a.vac(eph) && u.Muted(eph),
+  ]
+  return BtnPromptAppend({pre: cmd, suf, chi, ...opt})
 }
 
-export function BtnPromptAppend(pre, suf, chi) {
-  return BtnPromptAppendWith({pre, suf, chi})
-}
-
-export function BtnPromptAppendWith({pre, suf, chi, ...opt}) {
+export function BtnPromptAppend({pre, suf, chi, ...opt}) {
   a.reqValidStr(pre)
-  a.reqValidStr(suf)
+  a.optStr(suf)
 
   return u.FakeBtnInline({
     ...opt,
@@ -561,15 +567,6 @@ export function BtnPromptReplace({val, chi}) {
   })
 }
 
-export function BtnExample(cmd, args) {
-  a.reqValidStr(cmd)
-  a.reqValidStr(args)
-  return BtnPromptReplace({
-    val: cmd + ` `,
-    chi: [cmd, ` `, u.Muted(args)],
-  })
-}
-
 cmdClear.cmd = `clear`
 cmdClear.desc = `clear log and/or media`
 cmdClear.help = function cmdClearHelp() {
@@ -577,8 +574,8 @@ cmdClear.help = function cmdClearHelp() {
     u.callOpt(cmdClear.desc),
     u.LogLines(
       `flags:`,
-      [`  `, ui.BtnPromptAppend(`clear`, `-l`), ` -- clear only the log`],
-      [`  `, ui.BtnPromptAppend(`clear`, `-m`), ` -- clear only the media`],
+      [`  `, BtnPrompt({cmd: `clear`, suf: `-l`}), ` -- clear only the log`],
+      [`  `, BtnPrompt({cmd: `clear`, suf: `-m`}), ` -- clear only the media`],
     ),
     u.LogLines(
       `usage:`,
@@ -586,7 +583,7 @@ cmdClear.help = function cmdClearHelp() {
       [`  `, os.BtnCmd(`clear -l`)],
       [`  `, os.BtnCmd(`clear -m`)],
     ),
-    `pro tip: can also clear the log by pressing "ctrl+k" or "cmd+k"`,
+    `pro tip: clear the log by pressing "ctrl+k" or "cmd+k"`,
   )
 }
 
@@ -622,10 +619,10 @@ export function cliEnum(cmd, flag, val, coll) {
   if (coll.has(val)) return val
 
   throw new u.ErrLog(...u.LogLines(
-    [`unrecognized `, BtnPromptAppend(cmd, u.cliEq(flag, val)), `, must be one of:`],
+    [`unrecognized `, BtnPrompt({cmd, suf: u.cliEq(flag, val)}), `, must be one of:`],
     ...a.map(
       a.keys(coll),
-      key => BtnPromptAppend(cmd, u.cliEq(flag, key)),
+      key => BtnPrompt({cmd, suf: u.cliEq(flag, key)}),
     ).map(u.indentNode),
   ))
 }

@@ -35,17 +35,17 @@ export async function migrateRuns() {
   */
   const sig = u.sig
 
-  const root = await fs.historyDirOpt(sig)
-  if (!root) {
+  const hist = await fs.historyDirOpt(sig)
+  if (!hist) {
     u.log.info(`[fs_mig] skipping migration: history dir handle not available`)
     return state
   }
 
-  if (!await fs.withPermission(sig, root, {mode: `readwrite`})) {
+  if (!await fs.withPermission(sig, hist, {mode: `readwrite`})) {
     u.log.info(`[fs_mig] skipping migration: insufficient permissions on history dir`)
     return state
   }
-  const runDirs = await fs.readRunsAsc(sig, root)
+  const runDirs = await fs.readRunsAsc(sig, hist)
   if (!runDirs.length) return state
 
   /*
@@ -130,7 +130,7 @@ export async function migrateRuns() {
     }
 
     await migrateRunDir({
-      sig, state, dirHandleParent: root, dirHandlePrev: runHandle, runMs,
+      sig, state, dirHandleParent: hist, dirHandlePrev: runHandle, runMs,
     })
     state.runsMigrated++
   }

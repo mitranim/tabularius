@@ -87,20 +87,20 @@ export async function datLoad({sig, dat, opt}) {
   opt = a.laxStruct(opt)
 
   const where = a.laxDict(opt.where)
-  const root = await fs.historyDirReq(sig)
+  const hist = await fs.historyDirReq(sig)
   const runNums = new Set(a.optArr(where.run_num))
   const runNames = new Set(a.map(a.optArr(where.run_id), s.runIdToRunNameReq))
   const roundNums = new Set(a.optArr(where.round_num))
 
   if (opt.runLatest) {
-    const name = (await fs.findLatestRunDir(sig, root))?.name
+    const name = (await fs.findLatestRunDir(sig, hist))?.name
     if (name) runNames.add(name)
   }
 
   const runHandles = await (
     runNames.size
-    ? fs.readRunsByNamesAscOpt(sig, root, runNames)
-    : fs.readRunsAsc(sig, root)
+    ? fs.readRunsByNamesAscOpt(sig, hist, runNames)
+    : fs.readRunsAsc(sig, hist)
   )
 
   for (const dir of runHandles) {

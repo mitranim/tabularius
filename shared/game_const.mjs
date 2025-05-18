@@ -117,7 +117,7 @@ export const CODES_TO_BUIS_SHORT = dict({
   F302: `Barric`,
   F303: `SiegCit`,
   F3H07CB01: `ExpPulse`,
-  F3H07CB01A1: `UnderChargeSys`,
+  F3H07CB01A1: `CharSys`,
   F3H10CB01: `Scarlett`,
   F3H10CB01A: `ScarTig`,
   F3H10SB01: `CampAlph`,
@@ -179,8 +179,9 @@ We treat SmokSig as having the cost of an AirCom added to it.
 But Trevia's one is different and requires special handling.
 See `buiCost`.
 */
-const COST_AIR_COM = 1500
-const BUI_CODE_SMOK_SIG = `CB12A`
+export const COST_AIR_COM = 1500
+export const BUI_CODE_SMOK_SIG = `CB12A`
+export const BUI_CODE_EXP_CHAR_SYS = `F3H07CB01A`
 
 /*
 As a special case, all Tech costs are 0. That's because their values are so low
@@ -206,7 +207,8 @@ export const BUI_COSTS = dict({
   F3H07CB01: {base: 0, upg: [[50, 250], [250, 250], [800, 800]]},
   F2H09CB01: {base: 50},
   F2H10CB01: {base: 50, upg: [[50, 80], [100, 100], [250, 250]]},
-  F3H07CB01A1: {base: 50}, // Can also be 0. Deals no damage anyway.
+  [BUI_CODE_EXP_CHAR_SYS]: {base: 50}, // Can also be 0. Deals no damage anyway.
+  F3H07CB01A1: {base: 50}, // TODO find out if this is real.
   F3H10CB01A: {base: 200},
   F3H10SB01: {base: 350, upg: [[50, 50], [125, 125], [250, 250]]},
 

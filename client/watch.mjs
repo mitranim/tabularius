@@ -47,7 +47,7 @@ export const WATCH_INTERVAL_MS_LONG = a.minToMs(1)
 export const WATCH_MAX_ERRS = 3
 
 cmdWatch.cmd = `watch`
-cmdWatch.desc = `watch the game's ${fs.PROGRESS_FILE_CONF.desc} for changes and create backups`
+cmdWatch.desc = `watch the game's ${fs.PROGRESS_FILE_CONF.desc} for changes and create backups; runs automatically`
 cmdWatch.help = function cmdWatchHelp() {
   return u.LogParagraphs(
     u.callOpt(cmdWatch.desc),

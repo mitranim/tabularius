@@ -25,6 +25,7 @@ os.addCmd(se.cmdHistory)
 os.addCmd(au.cmdAuth)
 os.addCmd(p.cmdPlot)
 os.addCmd(p.cmdPlotLink)
+os.addCmd(fs.cmdRollback)
 
 cmdLs.cmd = `ls`
 cmdLs.desc = cmdLsDesc
@@ -54,7 +55,7 @@ export function cmdStatus() {
 }
 
 function cmdLsDesc() {
-  return `list local dirs/files, or cloud runs/rounds`
+  return `list local dirs / files, or cloud runs / rounds`
 }
 
 function cmdLsHelp() {
@@ -69,36 +70,35 @@ function cmdLsHelp() {
         os.BtnCmdWithHelp(`history`),
       ],
       [
-        `  cloud -- `, ui.BtnPromptAppend(`ls`, `-c`),
+        `  cloud -- `, ui.BtnPrompt({cmd: `ls`, suf: `-c`}),
         `      -- requires `, os.BtnCmdWithHelp(`auth`),
       ],
     ),
     u.LogLines(
       `local usage:`,
-      [`  `, ui.BtnPrompt(`ls /`)],
-      [`  `, ui.BtnPrompt(`ls -s`), ` -- additional stats`],
-      [`  `, os.BtnCmd(`ls /`)],
-      [`  `, os.BtnCmd(`ls -s`)],
-      [`  `, ui.BtnExample(`ls`, `<some_dir>`)],
-      [`  `, ui.BtnExample(`ls`, `<some_dir>/<some_file>`)],
+      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, suf: `/`})],
+      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, suf: `-s`}), ` -- additional stats`],
+      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, eph: `<some_dir>`})],
+      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, eph: `<some_dir>/<some_file>`})],
     ),
     u.LogLines(
       `cloud usage:`,
-      [`  `, ui.BtnPrompt(`ls -c`)],
-      [`  `, os.BtnCmd(`ls -c`)],
-      [`  `, ui.BtnExample(`ls -c`, `<some_run_id>`)],
+      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, suf: `-c`})],
+      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, suf: `-c `, eph: `<some_run_id>`})],
     ),
     u.LogLines(
       `tip: filter plots by run numbers from directory names; this works for both local and cloud plots:`,
-      [`  `, ui.BtnPromptAppendWith({
-        pre: `plot`,
+      [`  `, ui.BtnPrompt({
+        full: true,
+        cmd: `plot`,
         suf: `user_id=current run_id=all run_num=`,
-        chi: [`plot user_id=current run_id=all run_num=<dir_name>`],
+        eph: `<dir_name>`,
       })],
-      [`  `, ui.BtnPromptAppendWith({
-        pre: `plot`,
+      [`  `, ui.BtnPrompt({
+        full: true,
+        cmd: `plot`,
         suf: `user_id=current run_id=all run_num=`,
-        chi: [`plot user_id=current run_id=all run_num=<dir_0> run_num=<dir_1>`],
+        eph: `<dir_0> run_num=<dir_1>`,
       })],
     ),
   )
@@ -139,7 +139,7 @@ export function cmdLs({sig, args}) {
 
   if (cloud) {
     if (stat) {
-      u.log.err(`ignoring `, ui.BtnPromptAppend(cmd, `-s`), ` in cloud mode in `, ui.BtnPromptReplace({val: args}))
+      u.log.err(`ignoring `, ui.BtnPrompt({cmd, suf: `-s`}), ` in cloud mode in `, ui.BtnPromptReplace({val: args}))
     }
     // TODO use user id as directory name.
     return au.listDirsFiles(sig, path)
@@ -226,7 +226,7 @@ async function main() {
   if (!ranPlots && ui.MEDIA.isDefault()) {
     await os.runProc({
       fun: p.plotDefault,
-      args: a.spaced(`plot_default`, a.vac(setupDone) && `-t`),
+      args: `plot_default`,
       desc: `running default analysis`,
     }).catch(u.logErr)
   }

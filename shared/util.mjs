@@ -159,17 +159,20 @@ export function arrOfUniqValidStr(src) {
 }
 
 export function jsonDecodeOpt(src) {
-  return isJsonColl(src) ? JSON.parse(src) : undefined
+  return isStrJsonLike(src) ? JSON.parse(src) : undefined
 }
 
-/*
-We only deal with data collections. Covering other JSON cases, particularly
-numbers, could produce false positives for some base64 text. We're avoiding
-try/catch parsing because it interferes with debugging.
-*/
-function isJsonColl(src) {
-  src = a.trim(src)[0]
-  return src === `{` || src === `[`
+function isStrJsonLike(src) {
+  src = a.trim(src)
+  return (
+    src === `null` ||
+    src === `false` ||
+    src === `true` ||
+    /^-?\d/.test(src) ||
+    src.startsWith(`"`) ||
+    src.startsWith(`{`) ||
+    src.startsWith(`[`)
+  )
 }
 
 /*

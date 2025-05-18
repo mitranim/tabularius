@@ -985,6 +985,13 @@ export function buiCost({bui_type: type, upgs, sell, hero}) {
     return sell
   }
 
+  /*
+  Jorg's Charge System can cost either 50 or 0. The game reports the sell price.
+  The building has no upgrades. So just like with Trevia's SmokSig, we can
+  actually use the number provided by the game.
+  */
+  if (type === gc.BUI_CODE_EXP_CHAR_SYS && a.isFin(sell)) return sell
+
   let out = a.reqFin(costs.base)
   if (!upgs?.length) return out
 

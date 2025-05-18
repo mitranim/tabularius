@@ -459,7 +459,8 @@ let LS_TIMER_ID = 0
 If invoked at the root (empty path), this leaks the name of `ctx.userRunsDir`.
 That's fine.
 
-Missing feature: converting `/` to `\` on Windows. Not necessary.
+Missing feature: converting `/` to `\` on Windows. Not necessary since we
+never run the server on Windows, and Deno should do that for us anyway.
 */
 export async function apiLs(ctx, path) {
   const id = ++LS_TIMER_ID

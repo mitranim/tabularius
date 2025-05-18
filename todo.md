@@ -990,7 +990,7 @@ In `plot` help, unusable / useless parameters should be shown but disabled (grey
 
 ---
 
-Implement an easy rollback option.
+* [x] Implement an easy rollback option.
 
 ---
 
@@ -1495,13 +1495,14 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
       * `frontier=` (with or without any value) implies `diff=5`, suppresses other values of `diff=`, and unlocks Frontier.
     * [ ] Unlocking doctrines: `doctrine=all` unlocks everything; `doctrine=A doctrine=B ...` specifies which to unlock, and acts as filter in other edits.
       * [ ] Consider adding doctrine names to the code-title mapping tables.
-  * [ ] Support optionally specifying a source file and a target file.
+  * [ ] Support specifying a source file and a target file.
     * [ ] If only source is specified: error; requires target.
       * Mention that you can specify just the target; print the modified command as clickable.
     * [ ] If only target is specified: edit that file in-place (with a backup).
     * [ ] If both specified, check if the two files share a common prefix (split on `.` then on `_`), display a warning if not.
     * [ ] The rest of the behavior is unchanged, but flags which don't apply to the content of the source file raise warnings.
     * [ ] When neither is specified: automatically look for "known" files which match the provided edit flags.
+    * [ ] Source and target may be provided repeatedly; they apply to all subsequent edit options; providing them again overrides them for the further options.
   * [ ] Cheat options:
     * [ ] Editing any field anywhere:
       * Require a single specific source file.
@@ -1551,7 +1552,8 @@ Add a stat "overkill efficiency" (damage / overkill) to the schema, and a plot p
 
 ---
 
-Getting warnings about missing costs for building type `F3H07CB01A`, find out what that is.
+* [x] Getting warnings about missing costs for building type `F3H07CB01A`, which is the Experimental Pulse Charge System (CharSys).
+* [x] Add a special case to use the `.SellPrice` specified in the game data (50 or 0). Make sure to avoid creating the building facts if it has no damage stats, which it never will.
 
 ---
 

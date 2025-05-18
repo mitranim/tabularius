@@ -221,12 +221,12 @@ cmdKill.help = function cmdKillHelp() {
       `usage:`,
       [
         `  `,
-        ui.BtnPromptReplace({val: `kill -a`}),
-        `            -- kill all processes`
+        ui.BtnPrompt({full: true, cmd: `kill`, suf: `-a`}),
+        `            -- kill all processes`,
       ],
-      [`  `, ui.BtnExample(`kill`, `<id>`), `          -- kill by id`],
-      [`  `, ui.BtnExample(`kill`, `<name>`), `        -- kill by name`],
-      [`  `, ui.BtnExample(`kill`, `<id> <id> ...`), ` -- kill multiple`],
+      [`  `, ui.BtnPrompt({full: true, cmd: `kill`, eph: `<id>`}), `          -- kill by id`],
+      [`  `, ui.BtnPrompt({full: true, cmd: `kill`, eph: `<name>`}), `        -- kill by name`],
+      [`  `, ui.BtnPrompt({full: true, cmd: `kill`, eph: `<id> <id> ...`}), ` -- kill multiple`],
     ),
     new Kill(),
   )
@@ -343,7 +343,7 @@ export function cmdHelp({args}) {
 export function cmdHelpDetailed(val) {
   reqCmd(val)
   return [
-    `command `, BtnCmd(val.cmd), `: `,
+    `command `, ui.BtnPrompt({full: true, cmd: val.cmd}), `: `,
     u.callOpt(val.help) || u.callOpt(val.desc),
   ]
 }

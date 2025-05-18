@@ -32,16 +32,10 @@ export function isUploadingGlobal() {return u.lockHeld(UPLOAD_LOCK_NAME)}
 export function isUploadingLocal() {return !!os.procByName(`upload`)}
 
 cmdUpload.cmd = `upload`
-cmdUpload.desc = function cmdUploadDesc() {
-  return [
-    `upload runs to the cloud;`,
-    ` requires `, os.BtnCmdWithHelp(`history`),
-    ` and `, os.BtnCmdWithHelp(`auth`),
-  ]
-}
+cmdUpload.desc = `upload runs to the cloud; runs automatically`
 cmdUpload.help = function cmdUploadHelp() {
   return u.LogParagraphs(
-    cmdUpload.desc(),
+    cmdUpload.desc,
     [
       `upload is invoked `, u.Bold(`automatically`), ` after running `,
       os.BtnCmdWithHelp(`history`), ` and `, os.BtnCmdWithHelp(`auth`),
@@ -58,20 +52,25 @@ cmdUpload.help = function cmdUploadHelp() {
     ),
     u.LogLines(
       `upload one arbitrary run:`,
-      `  upload <run_dir>`,
+      [`  `, ui.BtnPrompt({full: true, cmd: `upload`, eph: `<run_dir>`})],
     ),
     u.LogLines(
       `upload one arbitrary round:`,
-      `  upload <run_dir>/<round_file>`,
+      [`  `, ui.BtnPrompt({full: true, cmd: `upload`, eph: `<run_dir>/<round_file>`})],
     ),
     `FS paths are relative to the run history directory`,
     u.LogLines(
       `flags:`,
-      [`  `, ui.BtnPromptAppend(`upload`, `-p`), ` -- persistent mode`],
-      [`  `, ui.BtnPromptAppend(`upload`, `-l`), ` -- lazy mode: skip all runs if latest/latest is already uploaded`],
-      [`  `, ui.BtnPromptAppend(`upload`, `-q`), ` -- quiet mode, minimal logging`],
+      [`  `, ui.BtnPrompt({cmd: `upload`, suf: `-p`}), ` -- persistent mode`],
+      [
+        `  `, ui.BtnPrompt({cmd: `upload`, suf: `-l`}),
+        ` -- lazy mode: skip all runs if `,
+        ui.BtnPrompt({cmd: `upload`, suf: `latest/latest`}),
+        ` is already uploaded`,
+      ],
+      [`  `, ui.BtnPrompt({cmd: `upload`, suf: `-q`}), ` -- quiet mode, minimal logging`],
     ),
-    `the upload is idempotent, which means no duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
+    `upload is idempotent, meaning no duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
     [
       `tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local files`,
       ` and `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud files`,
@@ -105,7 +104,7 @@ export async function cmdUpload(proc) {
 
     if (key) {
       u.log.err(
-        `unrecognized `, ui.BtnPromptAppend(cmd, pair),
+        `unrecognized `, ui.BtnPrompt({cmd, suf: pair}),
         ` in `, ui.BtnPromptReplace({val: args}),
       )
       return os.cmdHelpDetailed(cmdUpload)
@@ -149,19 +148,18 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
 
   const persistent = a.optBool(opt.persistent)
   const quiet = a.optBool(opt.quiet)
-  const root = await fs.historyDirReq(sig)
+  const hist = await fs.historyDirReq(sig)
   const userId = au.reqUserId()
-  const rootPath = `/` + root.name
+  const rootPath = `/` + hist.name
   const relPath = (
     u.paths.isAbs(srcPath)
     ? u.paths.strictRelTo(srcPath, rootPath)
     : u.paths.clean(srcPath)
   )
   const [_, handle, resolvedPath] = await fs.handleAtPath({
-    sig, handle: root, path: relPath, magic: true,
+    sig, handle: hist, path: relPath, magic: true,
   })
   const absPath = u.paths.join(rootPath, resolvedPath)
-
   const state = a.vac(!quiet) && o.obs({
     done: false,
     status: ``,
@@ -179,16 +177,38 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
     }
   }
 
-  const inp = {sig, root, path: resolvedPath, opt, userId, state}
-  if (!persistent) return cmdUploadStep(inp)
+  function canceledOpt(err) {
+    if (u.errIs(err, u.isErrAbort)) {
+      if (state) state.status = `canceled`
+      return true
+    }
+    return false
+  }
+
+  const inp = {sig, hist, path: resolvedPath, opt, userId, state}
+
+  if (!persistent) {
+    try {return await cmdUploadStep(inp)}
+    catch (err) {
+      if (canceledOpt(err)) return
+      throw err
+    }
+  }
 
   let errs = 0
-  while (!sig.aborted) {
+
+  for (;;) {
+    if (sig.aborted) {
+      if (state) state.status = `canceled`
+      return
+    }
+
     try {
       return await cmdUploadStep(inp)
     }
     catch (err) {
-      if (u.errIs(err, u.isErrAbort)) return
+      if (canceledOpt(err)) return
+
       errs++
 
       if (errs >= UPLOAD_MAX_ERRS) {
@@ -205,7 +225,7 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
   }
 }
 
-async function cmdUploadStep({sig, root, path, opt, userId, state}) {
+async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
   u.reqSig(sig)
   a.reqStr(path)
   a.reqDict(opt)
@@ -219,7 +239,7 @@ async function cmdUploadStep({sig, root, path, opt, userId, state}) {
   if (!segs.length) {
     if (state) state.status = `checking runs`
 
-    const runHandles = await fs.readRunsAsc(sig, root)
+    const runHandles = await fs.readRunsAsc(sig, hist)
     if (lazy && await isRunUploaded({sig, dir: a.last(runHandles), state})) {
       uploadDone({state, lazy: true})
       return
@@ -233,7 +253,7 @@ async function cmdUploadStep({sig, root, path, opt, userId, state}) {
     return
   }
 
-  const dir = await fs.getDirectoryHandle(sig, root, segs.shift())
+  const dir = await fs.getDirectoryHandle(sig, hist, segs.shift())
 
   if (!segs.length) {
     if (lazy && await isRunUploaded({sig, dir, state})) {

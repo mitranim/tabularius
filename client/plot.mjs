@@ -641,13 +641,10 @@ function plotAggOptExpandPresets(src) {
 Goal: if FS is inited and we have an actual latest run, show its analysis.
 Otherwise, show a sample run for prettiness sake.
 */
-export async function plotDefault({sig, args}) {
-  const totals = u.splitCliArgs(args).includes(`-t`)
-
+export async function plotDefault() {
+  const sig = u.sig
   try {
-    if (await fs.historyDirOpt(sig)) {
-      return await plotDefaultLocal({sig, quiet: !totals})
-    }
+    if (await fs.historyDirOpt(sig)) return await plotDefaultLocal()
   }
   catch (err) {
     if (u.LOG_VERBOSE) u.log.err(`error analyzing latest run: `, err)
@@ -656,19 +653,17 @@ export async function plotDefault({sig, args}) {
   return plotDefaultExample(sig)
 }
 
-export async function plotDefaultLocalOpt({sig = u.sig, quiet} = {}) {
-  u.optSig(sig)
-  a.optBool(quiet)
+export async function plotDefaultLocalOpt() {
   if (!ui.MEDIA.isDefault()) return
-  if (!await fs.hasRoundFile(sig).catch(u.logErr)) return
-  await plotDefaultLocal({quiet})
+  if (!await fs.hasRoundFile(u.sig).catch(u.logErr)) return
+  await plotDefaultLocal()
 }
 
-export async function plotDefaultLocal(opt) {
+export async function plotDefaultLocal() {
   // Passing the previous proc's promise to the next proc delays the output
   // but not the execution, ensuring proper ordering of outputs.
   let waitFor
-  for (const val of defaultLocalPlotCmds(opt)) {
+  for (const val of defaultLocalPlotCmds()) {
     waitFor = os.runCmd(val, {waitFor})
   }
   await waitFor
@@ -1207,7 +1202,7 @@ export function titledToCoded(key, val) {
 }
 
 function BtnAppend(val, alias) {
-  return ui.BtnPromptAppend(cmdPlot.cmd, val, alias)
+  return ui.BtnPrompt({cmd: cmdPlot.cmd, suf: val, chi: alias})
 }
 
 function BtnReplace(val, alias) {
@@ -1223,8 +1218,8 @@ function BtnAppendEq(key) {
 
 function BtnAppendTrunc({key, val, width}) {
   val = a.render(val)
-  return ui.BtnPromptAppendWith({
-    pre: cmdPlot.cmd,
+  return ui.BtnPrompt({
+    cmd: cmdPlot.cmd,
     suf: u.cliEq(key, val),
     chi: val,
     trunc: true,
@@ -1369,10 +1364,7 @@ cmdPlotLink.help = function cmdPlotLinkHelp() {
     ],
     [
       `  `,
-      ui.BtnPromptReplace({
-        val: cmdPlotLink.cmd + ` -c `,
-        chi: [`plot_link -c `, u.Muted(`<user_id>`)],
-      }),
+      ui.BtnPrompt({full: true, cmd: `plot_link`, suf: `-c `, eph: `<user_id>`}),
       ` -- get a shareable link for the currently-latest cloud run of a specific user`,
     ],
   )
@@ -1391,7 +1383,7 @@ export async function cmdPlotLink({sig, args}) {
 
     if (key) {
       u.log.err(
-        `unrecognized `, ui.BtnPromptAppend(cmd, pair),
+        `unrecognized `, ui.BtnPrompt({cmd, suf: pair}),
         ` in `, ui.BtnPromptReplace({val: args})
       )
       return os.cmdHelpDetailed(cmdPlotLink)
@@ -1473,8 +1465,8 @@ function plotCmdCloud(preset, runId) {
   return `plot -p=${preset} -c run_id=${runId} user_id=all`
 }
 
-function defaultLocalPlotCmds(opt) {
-  return a.map(PLOT_LINK_PRESETS, val => plotCmdLocal(val, opt))
+function defaultLocalPlotCmds() {
+  return a.map(PLOT_LINK_PRESETS, plotCmdLocal)
 }
 
 function urlClean() {
