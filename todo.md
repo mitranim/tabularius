@@ -1621,3 +1621,7 @@ Plot totals: add `round_num`.
 ---
 
 * [x] Convert the "recommended next step" special cases into a reactive element which displays the full setup sequence, as a list with checkbox icons. Completing a step ticks the box and crosses-out the text.
+
+---
+
+`watch`: don't assume new run if `.tabularius_run_num` matches.

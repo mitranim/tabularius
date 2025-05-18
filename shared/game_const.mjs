@@ -117,7 +117,7 @@ export const CODES_TO_BUIS_SHORT = dict({
   F302: `Barric`,
   F303: `SiegCit`,
   F3H07CB01: `ExpPulse`,
-  F3H07CB01A1: `CharSys`,
+  F3H07CB01A: `CharSys`,
   F3H10CB01: `Scarlett`,
   F3H10CB01A: `ScarTig`,
   F3H10SB01: `CampAlph`,
@@ -204,11 +204,12 @@ export const BUI_COSTS = dict({
   F302: {base: 150, upg: [[100, 220], [250, 30], [1, 350]]},
 
   F1H07CB01: {base: 200, upg: [[200, 200], [250, 1100], [3500, 300]]},
-  F3H07CB01: {base: 0, upg: [[50, 250], [250, 250], [800, 800]]},
   F2H09CB01: {base: 50},
   F2H10CB01: {base: 50, upg: [[50, 80], [100, 100], [250, 250]]},
-  [BUI_CODE_EXP_CHAR_SYS]: {base: 50}, // Can also be 0. Deals no damage anyway.
-  F3H07CB01A1: {base: 50}, // TODO find out if this is real.
+
+  F3H07CB01: {base: 50, upg: [[50, 250], [200, 250], [800, 800]]},
+  [BUI_CODE_EXP_CHAR_SYS]: {base: 50}, // Can also be 0. We special-case it in `buiCost`.
+
   F3H10CB01A: {base: 200},
   F3H10SB01: {base: 350, upg: [[50, 50], [125, 125], [250, 250]]},
 

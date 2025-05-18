@@ -49,7 +49,7 @@ export const PROG_FILE_NAME = `Progress.gd`
 
 // Deprecated, TODO drop.
 export const PROGRESS_FILE_LOCATION = u.joinParagraphs(
-  `location of progress file; note that "AppData" is hidden by default:`,
+  `typical location of progress file; note that "AppData" is hidden by default:`,
   `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\${SAVE_DIR_NAME}\\${PROG_FILE_NAME}`,
 )
 
@@ -76,7 +76,7 @@ export const PROGRESS_FILE_CONF = new FileConf({
 export const SAVE_DIR_PATH = `C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\${SAVE_DIR_NAME}`
 
 export const SAVE_DIR_LOCATION = u.joinParagraphs(
-  `location of game save directory; note that "AppData" is hidden by default:`,
+  `typical location of game save directory; note that "AppData" is hidden by default:`,
   `  ` + SAVE_DIR_PATH,
 )
 
