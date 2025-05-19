@@ -655,7 +655,7 @@ export async function plotDefault() {
 
 export async function plotDefaultLocalOpt({sig = u.sig, quiet} = {}) {
   if (!ui.MEDIA.isDefault()) return
-  if (!await fs.hasRoundFile(u.sig).catch(u.logErr)) return
+  if (!await fs.hasRoundFile(sig).catch(u.logErr)) return
   await plotDefaultLocal({quiet})
 }
 

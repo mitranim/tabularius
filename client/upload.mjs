@@ -481,7 +481,7 @@ export class DirUploadProgress extends FileUploadProgress {
       ),
       ` `,
       a.show(path),
-      u.joinLines(
+      u.LogLines(
         `: `,
         `  status: ${status}`,
         `  runs checked: ${runsChecked}`,
