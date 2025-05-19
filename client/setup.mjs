@@ -235,8 +235,7 @@ function NextStepSaves() {
     [
       u.Bold(`recommended next step:`),
       ` click `, os.BtnCmdWithHelp(`saves`),
-      ` and pick the game's save directory`,
-      ` (read-only and safe); note that "AppData" is hidden by default; path:`,
+      ` and pick the game's save directory (read-only and safe)`,
     ],
     fs.SaveDirLocation(),
     u.LogLines(
