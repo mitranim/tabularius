@@ -465,6 +465,13 @@ export class DirUploadProgress extends FileUploadProgress {
     const {path} = this
     const {done, status, runsChecked, roundsChecked, roundsUploaded} = this.state
 
+    if (done && !roundsChecked) {
+      E(this, {},
+        `[upload] checked the run history directory, found no round backups; build your history by playing the game!`,
+      )
+      return
+    }
+
     E(this, {},
       `[upload] `,
       (

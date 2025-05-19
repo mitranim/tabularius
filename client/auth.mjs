@@ -27,10 +27,10 @@ cmdAuth.help = function cmdAuthHelp() {
     `enter a passphrase or password to authenticate`,
     u.LogLines(
       `easy and anonymous:`,
-      `* no signup`,
-      `* no email`,
-      `* no 3rd party services`,
-      `* no personal information requested`,
+      `  * no signup`,
+      `  * no email`,
+      `  * no 3rd party services`,
+      `  * no personal information requested`,
     ),
     u.LogLines(
       `usage:`,

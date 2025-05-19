@@ -21,7 +21,7 @@ cmdSaves.help = function cmdSavesHelp() {
       [`  `, os.BtnCmd(`saves revoke`), ` -- revoke access`],
     ),
 
-    fs.SAVE_DIR_LOCATION,
+    fs.SaveDirLocation(),
     tipEnablesFeatures(),
     `access is read-only and safe`,
   )
@@ -68,7 +68,7 @@ cmdHistory.help = function cmdSavesHelp() {
       [`  `, os.BtnCmd(`history revoke`), ` -- revoke access`],
     ),
 
-    fs.HISTORY_DIR_LOCATION,
+    fs.HistDirSuggestedLocation(),
     tipEnablesFeatures(),
   )
 }
@@ -95,7 +95,7 @@ export async function historyGrant({sig, args}) {
   if (!await confGranted({sig, conf, args})) return
   await w.watchStartOpt()
   await up.uploadStartOpt()
-  p.plotDefaultLocalOpt().catch(u.logErr)
+  p.plotDefaultLocalOpt({quiet: true}).catch(u.logErr)
 }
 
 export async function historyRevoke(sig) {
@@ -236,10 +236,17 @@ function NextStepSaves() {
       u.Bold(`recommended next step:`),
       ` click `, os.BtnCmdWithHelp(`saves`),
       ` and pick the game's save directory`,
-      ` (read-only and safe); note that "AppData" is hidden by default:`,
+      ` (read-only and safe); note that "AppData" is hidden by default; path:`,
     ],
-    [`  `, fs.SAVE_DIR_PATH],
-    tipEnablesFeatures(),
+    fs.SaveDirLocation(),
+    u.LogLines(
+      `how to access "AppData":`,
+      `  * open Explorer`,
+      `  * goto your user directory; if you're unsure where, goto "C:\\Users" and look for your username`,
+      `  * in the ribbon above: click View → tick "Hidden items"`,
+      `  * look for "AppData" in your user directory`,
+    ),
+    // AfterSavesAndHistory(),
   )
 }
 
@@ -252,17 +259,14 @@ function NextStepHist() {
       ` create a directory for your run history and backups; suggested location below; use a name without spaces:`,
     ],
 
-    [`  `, fs.HISTORY_DIR_SUGGESTED_PATH],
+    [`  `, fs.HistDirSuggestedPath()],
 
     [
       checkmark(), ` click `, os.BtnCmdWithHelp(`history`),
       ` and pick the directory you created above`,
     ],
 
-    [
-      `the app will automatically watch save files, build the run history,`,
-      ` and display plots for analysis via `, os.BtnCmdWithHelp(`plot`),
-    ],
+    // AfterSavesAndHistory(),
   )
 }
 
@@ -280,6 +284,14 @@ function NextStepAuth() {
       ` runs with others via `, os.BtnCmdWithHelp(`plot_link -c`),
     ],
   )
+}
+
+function AfterSavesAndHistory() {
+  return [
+    `after `, os.BtnCmdWithHelp(`saves`), ` and `, os.BtnCmdWithHelp(`history`),
+    `, the app will automatically watch save files, build the run history`,
+    `, and display plots for analysis via `, os.BtnCmdWithHelp(`plot`),
+  ]
 }
 
 function checkmark(ok) {return a.optBool(ok) ? `✅` : `➡️`}

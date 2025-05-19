@@ -26,7 +26,7 @@ export class FileConf extends a.Emp {
     super()
     this.key = a.reqValidStr(src.key)
     this.desc = a.reqValidStr(src.desc)
-    this.help = a.reqValidStr(src.help)
+    this.help = a.reqFun(src.help)
     this.cmd = a.reqValidStr(src.cmd)
     this.mode = a.reqValidStr(src.mode)
     this.deprecated = a.optBool(src.deprecated)
@@ -47,12 +47,6 @@ export const SAVE_DIR_NAME = `SaveFolder`
 export const SAVE_BACKUP_DIR_NAME = `Backup`
 export const PROG_FILE_NAME = `Progress.gd`
 
-// Deprecated, TODO drop.
-export const PROGRESS_FILE_LOCATION = u.joinParagraphs(
-  `typical location of progress file; note that "AppData" is hidden by default:`,
-  `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\${SAVE_DIR_NAME}\\${PROG_FILE_NAME}`,
-)
-
 /*
 "Picking" a progress file is deprecated and no longer supported in the CLI
 interface. The preferred approach is to pick the entire save dir. That said,
@@ -62,10 +56,7 @@ granted access to the save dir.
 export const PROGRESS_FILE_CONF = new FileConf({
   key: `progress_file`,
   desc: `progress file`,
-  help: u.joinParagraphs(
-    `pick your game progress file`,
-    PROGRESS_FILE_LOCATION,
-  ),
+  help: progFileHelp,
   cmd: `deprecated`,
   mode: `read`,
   deprecated: true,
@@ -73,45 +64,72 @@ export const PROGRESS_FILE_CONF = new FileConf({
   validate: undefined,
 })
 
-export const SAVE_DIR_PATH = `C:\\Users\\<user>\\AppData\\LocalLow\\Parallel-45\\tower-dominion\\${SAVE_DIR_NAME}`
-
-export const SAVE_DIR_LOCATION = u.joinParagraphs(
-  `typical location of game save directory; note that "AppData" is hidden by default:`,
-  `  ` + SAVE_DIR_PATH,
-)
+// Deprecated, TODO drop.
+function progFileHelp() {
+  return u.LogParagraphs(
+    `pick your game progress file`,
+    `typical location of progress file; note that "AppData" is hidden by default:`,
+    `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel45\\tower-dominion\\${SAVE_DIR_NAME}\\${PROG_FILE_NAME}`,
+  )
+}
 
 export const SAVE_DIR_CONF = new FileConf({
   key: `save_dir`,
   desc: `save dir`,
-  help: u.joinParagraphs(
-    `pick your game save directory`,
-    SAVE_DIR_LOCATION,
-  ),
+  help: saveDirHelp,
   cmd: `saves`,
   mode: `read`,
   pick: pickSaveDir,
   validate: validateSaveDir,
 })
 
-export const HISTORY_DIR_SUGGESTED_PATH = `C:\\Users\\<user>\\Documents\\tower_dominion_history`
+function saveDirHelp() {
+  return u.LogParagraphs(`pick your game save directory`, SaveDirLocation())
+}
 
-export const HISTORY_DIR_LOCATION = u.joinParagraphs(
-  `suggested location of run history dir; create it yourself; use a name without spaces:`,
-  `  ` + HISTORY_DIR_SUGGESTED_PATH,
-)
+export function SaveDirLocation() {
+  return u.LogParagraphs(
+    `typical location of game save directory; note that "AppData" is hidden by default:`,
+    [`  `, SaveDirPath()],
+  )
+}
+
+export function SaveDirPath() {
+  return u.Bold(
+    `C:\\Users\\`, u.Muted(`<user>`),
+    `\\AppData\\LocalLow\\Parallel45\\tower-dominion\\SaveFolder`,
+  )
+}
 
 export const HISTORY_DIR_CONF = new FileConf({
   key: `history_dir`,
   desc: `history dir`,
-  help: u.joinParagraphs(
-    `pick directory for run history (backups)`,
-    HISTORY_DIR_LOCATION,
-  ),
+  help: histDirHelp,
   cmd: `history`,
   mode: `readwrite`,
   pick: pickHistoryDir,
   validate: validateHistoryDir,
 })
+
+function histDirHelp() {
+  return u.LogParagraphs(
+    `pick directory for run history (backups)`,
+    HistDirSuggestedLocation(),
+  )
+}
+
+export function HistDirSuggestedLocation() {
+  return u.LogParagraphs(
+    `suggested location of run history dir; create it yourself; use a name without spaces:`,
+    [`  `, SaveDirPath()],
+  )
+}
+
+export function HistDirSuggestedPath() {
+  return u.Bold(
+    `C:\\Users\\`, u.Muted(`<user>`), `\\Documents\\tower_dominion_history`,
+  )
+}
 
 export const CONFS = [
   PROGRESS_FILE_CONF,
@@ -227,7 +245,7 @@ export async function fileConfInited(sig, conf) {
   if (!conf.handle) await fileConfLoad(conf)
 
   if (!conf.handle) {
-    u.log.info(help)
+    u.log.info(help())
     conf.handle = a.reqInst(await u.wait(sig, pick()), FileSystemHandle)
   }
 
@@ -261,7 +279,7 @@ export async function validateSaveDir(sig, handle) {
     throw new u.ErrLog(...u.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's backup directory; please pick the actual save directory (one level higher)`,
       msgRerun(cmd),
-      SAVE_DIR_LOCATION,
+      SaveDirLocation(),
     ))
   }
 
@@ -270,7 +288,7 @@ export async function validateSaveDir(sig, handle) {
     throw new u.ErrLog(...u.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's data directory; please pick the save directory inside`,
       msgRerun(cmd),
-      SAVE_DIR_LOCATION,
+      SaveDirLocation(),
     ))
   }
 
@@ -280,7 +298,7 @@ export async function validateSaveDir(sig, handle) {
       `unable to locate `, a.show(PROG_FILE_NAME),
     ],
     msgRerun(cmd),
-    SAVE_DIR_LOCATION,
+    SaveDirLocation(),
   ))
 }
 
@@ -297,7 +315,7 @@ export async function validateHistoryDir(sig, handle) {
     throw new u.ErrLog(...u.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's data directory; your run history directory must be located outside of game directories`,
       msgRerun(cmd),
-      HISTORY_DIR_LOCATION,
+      HistDirSuggestedLocation(),
     ))
   }
 
@@ -314,7 +332,7 @@ export async function validateHistoryDir(sig, handle) {
   throw new u.ErrLog(...u.LogParagraphs(
     `${a.show(handle.name)} appears to be the game's ${desc} (found ${a.show(PROG_FILE_NAME)}); your run history directory must be located outside of game directories`,
     msgRerun(cmd),
-    HISTORY_DIR_LOCATION,
+    HistDirSuggestedLocation(),
   ))
 }
 
@@ -1007,7 +1025,7 @@ export async function* readRunRoundHandles(sig, dir) {
 
 export async function findLatestRunDir(sig, hist) {
   a.reqInst(hist, FileSystemDirectoryHandle)
-  return a.head((await readDirDesc(sig, hist)).filter(isDir))
+  return a.head((await readDirDesc(sig, hist)).filter(isHandleRunDir))
 }
 
 // SYNC[run_id_name_format].

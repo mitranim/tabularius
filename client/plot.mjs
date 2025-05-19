@@ -644,7 +644,7 @@ Otherwise, show a sample run for prettiness sake.
 export async function plotDefault() {
   const sig = u.sig
   try {
-    if (await fs.historyDirOpt(sig)) return await plotDefaultLocal()
+    if (await fs.hasRoundFile(sig)) return await plotDefaultLocal()
   }
   catch (err) {
     if (u.LOG_VERBOSE) u.log.err(`error analyzing latest run: `, err)
@@ -653,17 +653,17 @@ export async function plotDefault() {
   return plotDefaultExample(sig)
 }
 
-export async function plotDefaultLocalOpt() {
+export async function plotDefaultLocalOpt({sig = u.sig, quiet} = {}) {
   if (!ui.MEDIA.isDefault()) return
   if (!await fs.hasRoundFile(u.sig).catch(u.logErr)) return
-  await plotDefaultLocal()
+  await plotDefaultLocal({quiet})
 }
 
-export async function plotDefaultLocal() {
+export async function plotDefaultLocal(opt) {
   // Passing the previous proc's promise to the next proc delays the output
   // but not the execution, ensuring proper ordering of outputs.
   let waitFor
-  for (const val of defaultLocalPlotCmds()) {
+  for (const val of defaultLocalPlotCmds(opt)) {
     waitFor = os.runCmd(val, {waitFor})
   }
   await waitFor
@@ -1466,8 +1466,8 @@ function plotCmdCloud(preset, runId) {
   return `plot -p=${preset} -c run_id=${runId} user_id=all`
 }
 
-function defaultLocalPlotCmds() {
-  return a.map(PLOT_LINK_PRESETS, plotCmdLocal)
+function defaultLocalPlotCmds(opt) {
+  return a.map(PLOT_LINK_PRESETS, val => plotCmdLocal(val, opt))
 }
 
 function urlClean() {
