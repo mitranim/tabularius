@@ -1625,3 +1625,7 @@ Plot totals: add `round_num`.
 ---
 
 `watch`: don't assume new run if `.tabularius_run_num` matches.
+
+---
+
+`watch` and `upload`: avoid the overhead of re-reading the freshly backed-up file, pass the data to the upload code. Since we still want it to be invoked as a process, this requires us to introduce the ability to pass inputs other than CLI arguments to commands / processes.

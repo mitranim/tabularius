@@ -941,7 +941,7 @@ export function callOpt(val) {return a.isFun(val) ? val() : val}
 /*
 In a few places we suggest appending `?<some_stuff>` to the URL query.
 Most users wouldn't know that if there's already stuff in the query,
-then you must apppend with `&` rather than `?`. And it's a pain even
+then you must append with `&` rather than `?`. And it's a pain even
 if you know it. Frankly, whoever designed the format made a mistake.
 So we rectify it.
 */
@@ -951,14 +951,7 @@ export function urlQuery(src) {
 
 export function BtnUrlAppend(val) {
   const href = window.location.href + a.reqValidStr(val)
-  return FakeBtnInline({
-    onclick(eve) {
-      a.eventKill(eve)
-      window.location.href = href
-    },
-    href,
-    chi: val,
-  })
+  return FakeBtnInline({href, chi: val})
 }
 
 /*
@@ -986,7 +979,7 @@ buttons is common.
 `<button>` in current engines.)
 */
 export function FakeBtnInline({onclick, href, chi, trunc, width}) {
-  a.reqFun(onclick)
+  a.optFun(onclick)
   a.optStr(width)
   href = a.reqValidStr(a.render(href))
 
@@ -1001,12 +994,12 @@ export function FakeBtnInline({onclick, href, chi, trunc, width}) {
         a.vac(trunc) && `trunc`,
         width,
       ),
-      onkeydown(eve) {
+      onkeydown: a.vac(onclick) && function fakeBtnOnKeydown(eve) {
         if (a.isEventModified(eve)) return
         if (eve.key === `Enter`) this.onclick(eve)
         if (eve.key === ` `) this.onclick(eve)
       },
-      onclick(eve) {
+      onclick: a.vac(onclick) && function fakeBtnOnclick(eve) {
         if (a.isEventModified(eve)) return
         onclick(eve)
       },

@@ -253,12 +253,14 @@ export async function fileConfInited(sig, conf) {
 
 export async function validateSaveDir(sig, handle) {
   a.reqInst(handle, FileSystemDirectoryHandle)
+  const cmd = SAVE_DIR_CONF.cmd
 
   if (await dirHasProgressFile(sig, handle)) {
     if (handle.name !== SAVE_BACKUP_DIR_NAME) return
 
     throw new u.ErrLog(...u.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's backup directory; please pick the actual save directory (one level higher)`,
+      msgRerun(cmd),
       SAVE_DIR_LOCATION,
     ))
   }
@@ -267,30 +269,34 @@ export async function validateSaveDir(sig, handle) {
   if (subDir && await dirHasProgressFile(sig, subDir)) {
     throw new u.ErrLog(...u.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's data directory; please pick the save directory inside`,
+      msgRerun(cmd),
       SAVE_DIR_LOCATION,
     ))
   }
 
-  u.log.err(...u.LogParagraphs(
+  throw new u.ErrLog(...u.LogParagraphs(
     [
       a.show(handle.name), ` doesn't appear to be the game's save directory: `,
       `unable to locate `, a.show(PROG_FILE_NAME),
     ],
-    [
-      `may need to run `, os.BtnCmdWithHelp(`saves revoke`), ` and `,
-      os.BtnCmd(`saves`), ` to try again`,
-    ],
+    msgRerun(cmd),
     SAVE_DIR_LOCATION,
   ))
 }
 
+function msgRerun(cmd) {
+  return [`rerun `, os.BtnCmdWithHelp(cmd), ` to try again`]
+}
+
 export async function validateHistoryDir(sig, handle) {
   a.reqInst(handle, FileSystemDirectoryHandle)
+  const cmd = HISTORY_DIR_CONF.cmd
 
   const subDir = await getDirectoryHandle(sig, handle, SAVE_DIR_NAME).catch(a.nop)
   if (subDir && await dirHasProgressFile(sig, subDir)) {
     throw new u.ErrLog(...u.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's data directory; your run history directory must be located outside of game directories`,
+      msgRerun(cmd),
       HISTORY_DIR_LOCATION,
     ))
   }
@@ -307,6 +313,7 @@ export async function validateHistoryDir(sig, handle) {
 
   throw new u.ErrLog(...u.LogParagraphs(
     `${a.show(handle.name)} appears to be the game's ${desc} (found ${a.show(PROG_FILE_NAME)}); your run history directory must be located outside of game directories`,
+    msgRerun(cmd),
     HISTORY_DIR_LOCATION,
   ))
 }

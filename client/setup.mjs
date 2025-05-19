@@ -147,7 +147,7 @@ export async function confRevoked({sig, conf}) {
 
 function tipEnablesFeatures() {
   return [
-    `this enables backups, run history, and analyzing runs with `,
+    `needed for backups, run history, and analyzing runs with `,
     os.BtnCmdWithHelp(`plot`),
   ]
 }
@@ -194,7 +194,7 @@ class SetupFlow extends u.ReacElem {
 
     E(this, {}, ...u.LogParagraphs(
       u.LogLines(
-        u.Bold(`essential setup steps:`),
+        u.Bold(`essential setup steps (any order):`),
         Step(save,
           `run `, os.BtnCmdWithHelp(`saves`),
           ` to grant access to the game save directory`

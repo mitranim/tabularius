@@ -1131,6 +1131,7 @@ export class TooltipPlugin extends a.Emp {
   makeTooltip() {
     // Inline styles bypass `all: unset` we accidentally apply to this in `index.html`.
     // TODO un-apply `all: unset` and convert to Tailwind classes.
+    // Also TODO lighter background in dark mode.
     return E(`div`, {
       style: {
         padding: `0.3rem`,
