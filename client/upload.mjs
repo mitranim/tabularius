@@ -472,23 +472,21 @@ export class DirUploadProgress extends FileUploadProgress {
       return
     }
 
-    E(this, {},
-      `[upload] `,
-      (
-        roundsUploaded
-        ? (done ? `uploaded` : `uploading`)
-        : (done ? `checked` : `checking`)
-      ),
-      ` `,
-      a.show(path),
-      u.LogLines(
-        `: `,
-        `  status: ${status}`,
-        `  runs checked: ${runsChecked}`,
-        `  rounds checked: ${roundsChecked}`,
-        [`  rounds uploaded: ${roundsUploaded}`, a.vac(done && !roundsUploaded) && ` (none needed)`],
-      ),
-    )
+    E(this, {}, ...u.LogLines(
+      [
+        `[upload] `,
+        (
+          roundsUploaded
+          ? (done ? `uploaded` : `uploading`)
+          : (done ? `checked` : `checking`)
+        ),
+        ` `, a.show(path), `:`,
+      ],
+      `  status: ${status}`,
+      `  runs checked: ${runsChecked}`,
+      `  rounds checked: ${roundsChecked}`,
+      [`  rounds uploaded: ${roundsUploaded}`, a.vac(done && !roundsUploaded) && ` (none needed)`],
+    ))
   }
 }
 
