@@ -48,6 +48,7 @@ async function respond(ctx, req) {
 
   return await (
     (rou.preflight() && new u.Res()) ||
+    (rou.get(`/robots.txt`) && new Response(ROBOTS_TXT)) ||
     (rou.pre(`/api`) && api.apiRes(ctx, rou)) ||
     (
       a.vac(DIR_ABS) &&
@@ -60,3 +61,8 @@ async function respond(ctx, req) {
     rou.notFound()
   )
 }
+
+const ROBOTS_TXT = `
+User-agent: *
+Disallow: /
+`.trim()
