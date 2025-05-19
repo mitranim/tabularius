@@ -486,7 +486,7 @@ export class DirUploadProgress extends FileUploadProgress {
         `  status: ${status}`,
         `  runs checked: ${runsChecked}`,
         `  rounds checked: ${roundsChecked}`,
-        `  rounds uploaded: ${roundsUploaded}`,
+        [`  rounds uploaded: ${roundsUploaded}`, a.vac(done && !roundsUploaded) && ` (none needed)`],
       ),
     )
   }
