@@ -1639,9 +1639,9 @@ Plot totals: add `round_num`.
 
 * [x] `plot`: in help and plot titles, add tooltips which expand abbreviated terms to longer ones.
 * [x] Add missing glossary entries.
-* [ ] Add glossary tooltips to _all_ occurrences of abbreviated terms.
-  * In multi-entry append/replace buttons, add tooltips to individual entries.
-* [ ] Add dotted underlines to tooltipped terms which don't have them, like in plot titles (but no color indicator).
+* [x] Add dotted underlines to tooltipped terms which don't have them, like in plot titles (but no color indicator).
+* [x] Add glossary tooltips to more occurrences of abbreviated terms.
+* [ ] In multi-entry append/replace buttons, add tooltips to individual entries.
 
 ---
 

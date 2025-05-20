@@ -27,15 +27,15 @@ cmdPlot.help = function cmdPlotHelp() {
     `build your query by clicking the buttons below!`,
 
     [
-      BtnAppend(`-c`),
+      BtnAppend({val: `-c`, glos: `-c`}),
       ` -- use cloud data; the default without "-c" is to use local data, which`,
       ` requires granting access to the history directory via `,
       os.BtnCmdWithHelp(fs.HISTORY_DIR_CONF.cmd),
-      `; also see `, BtnAppend(`-f`), ` for fetching specific files`,
+      `; also see `, BtnAppend({val: `-f`, glos: `-f`}), ` for fetching specific files`,
     ],
 
     u.LogLines(
-      [BtnAppend(`-p`), ` -- preset; supported values:`],
+      [BtnAppendEq(`-p`), ` -- preset; supported values:`],
       u.LogParagraphs(
         ...a.map(a.entries(PLOT_PRESETS), Help_preset).map(u.indentNode),
       ),
@@ -43,31 +43,31 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       [
-        BtnAppend(`-x`),
-        ` -- X axis (progress); supported values:`,
+        BtnAppendEq(`-x`),
+        ` -- X axis: progression; supported values:`,
       ],
       ...FlagAppendBtns(a.keys(s.ALLOWED_X_KEYS), `-x`).map(u.indentNode),
     ),
 
     u.LogLines(
       [
-        BtnAppend(`-y`),
-        ` -- Y axis (stat type); supported values:`,
+        BtnAppendEq(`-y`),
+        ` -- Y axis: stat type; supported values:`,
       ],
       ...FlagAppendBtns(a.keys(s.ALLOWED_TOTAL_TYPE_FILTERS), `-y`).map(u.indentNode),
     ),
 
     u.LogLines(
       [
-        BtnAppend(`-z`),
-        ` -- Z axis (plot series); supported values:`,
+        BtnAppendEq(`-z`),
+        ` -- Z axis: plot series; supported values:`,
       ],
       ...a.map(a.keys(s.ALLOWED_Z_KEYS), Help_Z).map(u.indentNode),
     ),
 
     u.LogLines(
       [
-        BtnAppend(`-a`),
+        BtnAppendEq(`-a`),
         ` -- aggregation mode; supported values:`,
       ],
       ...FlagAppendBtns(a.keys(s.AGGS), `-a`).map(u.indentNode),
@@ -75,24 +75,23 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       [
-        BtnAppend(`-t`),
+        BtnAppend({val: `-t`, glos: `-t`}),
         ` -- log totals from the aggregated data; usage:`,
       ],
       [`  -t`, `                      -- all additional totals`],
       [`  -t <stat>`, `               -- one specific stat`],
       [`  -t <stat> -t <stat> ...`, ` -- several specific totals`],
-      `also:`
-      [`  `, BtnAppend(`-t=false`), ` -- disable totals (override preset)`],
+      [`  `, BtnAppendEq(`-t`, `false`), `                -- disable totals (override preset)`],
     ),
 
     u.LogLines(
       [
-        BtnAppend(`-f`),
+        BtnAppendEq(`-f`),
         ` -- fetch a run file / rounds file from the given URL; overrides `,
-        BtnAppend(`-c`), `; examples:`
+        BtnAppend({val: `-c`, glos: `-c`}), `; examples:`
       ],
-      [`  `, BtnAppend(`-f=samples/example_run.gd user_id=all run_id=all -p=dmg`)],
-      [`  `, BtnAppend(`-f=samples/example_runs.gd user_id=all run_id=all -p=dmg`)],
+      [`  `, BtnAppend({val: `-f=samples/example_run.gd user_id=all run_id=all -p=dmg`})],
+      [`  `, BtnAppend({val: `-f=samples/example_runs.gd user_id=all run_id=all -p=dmg`})],
     ),
 
     u.LogLines(
@@ -102,8 +101,8 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       [`tip: repeat a filter to combine via logical "OR"; examples:`],
-      [`  `, BtnAppend(`run_num=1 run_num=2`), `     -- first and second runs`],
-      [`  `, BtnAppend(`round_num=1 round_num=2`), ` -- first and second rounds`],
+      [`  `, BtnAppend({val: `run_num=1 run_num=2`, glos: `run_num`}), `     -- first and second runs`],
+      [`  `, BtnAppend({val: `round_num=1 round_num=2`, glos: `round_num`}), ` -- first and second rounds`],
     ),
 
     `tip: try ctrl+click / cmd+click / shift+click on plot legend labels`,
@@ -113,12 +112,12 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       `more examples:`,
-      [`  `, BtnAppend(`-c -p=dmg user_id=all`), ` -- building damages in latest run`],
-      [`  `, BtnAppend(`-c -p=chi_dmg user_id=all`), ` -- weapon damages in latest run`],
-      [`  `, BtnAppend(`-c -p=eff user_id=all run_id=all`), ` -- building efficiency across all runs and all users`],
-      [`  `, BtnAppend(`-c -p=eff user_id=all run_id=all -z=bui_type`), ` -- simplified building efficiency`],
-      [`  `, BtnAppend(`-c -p=dmg_runs user_id=all -z=user_id`), ` -- user damage trajectory`],
-      [`  `, BtnAppend(`-c -p=eff_runs user_id=all -z=user_id`), ` -- user efficiency trajectory`],
+      [`  `, BtnAppend({val: `-c -p=dmg user_id=all`}), ` -- building damages in latest run`],
+      [`  `, BtnAppend({val: `-c -p=chi_dmg user_id=all`}), ` -- weapon damages in latest run`],
+      [`  `, BtnAppend({val: `-c -p=eff user_id=all run_id=all`}), ` -- building efficiency across all runs and all users`],
+      [`  `, BtnAppend({val: `-c -p=eff user_id=all run_id=all -z=bui_type`}), ` -- simplified building efficiency`],
+      [`  `, BtnAppend({val: `-c -p=dmg_runs user_id=all -z=user_id`}), ` -- user damage trajectory`],
+      [`  `, BtnAppend({val: `-c -p=eff_runs user_id=all -z=user_id`}), ` -- user efficiency trajectory`],
     ),
   )
 }
@@ -219,7 +218,7 @@ export async function cmdPlotCloud({sig, args, opt, user}) {
     // SYNC[plot_user_current_err_msg].
     throw new u.ErrLog(
       `filtering cloud data by current user requires authentication; run `,
-      os.BtnCmdWithHelp(`auth`), ` or use `, BtnAppend(`user_id=all`),
+      os.BtnCmdWithHelp(`auth`), ` or use `, BtnAppendEq(`user_id`, `all`, TOOLTIP_USER_ALL),
     )
   }
 
@@ -244,9 +243,9 @@ function plotReqUserId() {
   if (id) return id
   throw new u.ErrLog(
     `filtering plot data by `,
-    BtnAppend(`user_id=current`),
+    BtnAppendEq(`user_id`, `current`, TOOLTIP_USER_CURRENT),
     ` requires `, os.BtnCmdWithHelp(`auth`),
-    `; alternatively, use `, BtnAppend(`user_id=all`),
+    `; alternatively, use `, BtnAppendEq(`user_id`, `all`, TOOLTIP_USER_ALL),
   )
 }
 
@@ -381,7 +380,7 @@ export function decodePlotAggOpt(src) {
 
   if (u.LOG_VERBOSE && srcPairs.length !== outPairs.length) {
     const opts = a.map(outPairs, u.cliEncodePair).join(` `)
-    if (opts) u.LOG.verb(`[plot] expanded opts: `, BtnAppend(opts))
+    if (opts) u.LOG.verb(`[plot] expanded opts: `, BtnAppend({val: opts}))
   }
 
   for (let [key, val, pair] of outPairs) {
@@ -438,7 +437,7 @@ export function decodePlotAggOpt(src) {
       if (val) out.fetch = val
       else {
         errs.push([
-          BtnAppend(`-f`),
+          BtnAppendEq(`-f`),
           ` must be a non-empty path or URL pointing to a ".gd" or ".json" file which must contain a sequence of rounds to be aggregated and analyzed`,
         ])
       }
@@ -453,7 +452,7 @@ export function decodePlotAggOpt(src) {
 
     if (!key) {
       errs.push([
-        `unrecognized `, BtnAppend(val),
+        `unrecognized `, BtnAppend({val}),
         `, plot args must be in one of the following forms: "-flag", "-flag=val", or "field=val"`,
         `, see `, os.BtnCmd(`help plot`), ` for available options`,
       ])
@@ -462,11 +461,11 @@ export function decodePlotAggOpt(src) {
 
     if (!s.ALLOWED_FILTER_KEYS.has(key)) {
       if (key.startsWith(`-`)) {
-        errs.push([`unrecognized flag `, BtnAppend(pair)])
+        errs.push([`unrecognized flag `, BtnAppend({val: pair})])
       }
       else {
         errs.push(u.LogLines(
-          [`unrecognized filter `, BtnAppend(pair), `, filters must be among:`],
+          [`unrecognized filter `, BtnAppend({val: pair}), `, filters must be among:`],
           ...a.map(
             a.keys(s.ALLOWED_FILTER_KEYS),
             BtnAppendEq,
@@ -508,7 +507,7 @@ export function decodePlotAggOpt(src) {
       out.runLatest ??= false
       const int = u.toNatOpt(val)
       if (a.isNil(int)) {
-        errs.push([BtnAppend(key), ` must begin with a positive integer, got `, a.show(val)])
+        errs.push([BtnAppendEq(key, val), ` must begin with a positive integer, got `, a.show(val)])
         continue
       }
       u.dictPush(out.where, key, int)
@@ -522,7 +521,7 @@ export function decodePlotAggOpt(src) {
     ) {
       const int = u.toNatOpt(val)
       if (a.isNil(int)) {
-        errs.push([BtnAppend(key), ` must begin with a positive integer, got `, a.show(val)])
+        errs.push([BtnAppendEq(key, val), ` must begin with a positive integer, got `, a.show(val)])
         continue
       }
       u.dictPush(out.where, key, int)
@@ -556,9 +555,9 @@ export function decodePlotAggOpt(src) {
   // SYNC[plot_agg_z_chi_type].
   if (out.Z === `chi_type` && !a.includes(out.where.ent_type, s.FACT_ENT_TYPE_CHI)) {
     errs.push([
-      BtnAppend(`-z=chi_type`),
+      BtnAppendEq(`-z`, `chi_type`),
       ` requires `,
-      BtnAppend(`ent_type=` + s.FACT_ENT_TYPE_CHI),
+      BtnAppendEq(`ent_type`, s.FACT_ENT_TYPE_CHI),
       a.vac(out.where.ent_type) && [
         `, got `,
         FlagAppendBtns(out.where.ent_type, `ent_type`),
@@ -573,8 +572,8 @@ export function decodePlotAggOpt(src) {
   ) {
     const got = FlagAppendBtns(out.where.ent_type, `ent_type`)
     errs.push([
-      BtnAppend(`-y=` + out.Y), ` requires `,
-      BtnAppend(`ent_type=` + s.FACT_ENT_TYPE_BUI),
+      BtnAppendEq(`-y`, out.Y), ` requires `,
+      BtnAppendEq(`ent_type`, s.FACT_ENT_TYPE_BUI),
       a.vac(got) && `, got `, got,
     ])
   }
@@ -590,16 +589,66 @@ export function decodePlotAggOpt(src) {
 
 export const PLOT_PRESETS = u.dict({
   // SYNC[plot_agg_opt_dmg].
-  dmg: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
-  chi_dmg: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
-  chi_dmg_over: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
-  eff: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
-  dmg_over: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
-  dmg_runs: `-x=run_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
-  eff_runs: `-x=run_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
-  round_stats: `-x=round_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
-  run_stats: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
-  run_stats_all: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=all`,
+  dmg: {
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    help: `
+damage per building type with upgrades
+per round in latest run
+`.trim(),
+  },
+  chi_dmg: {
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
+    help: `
+damage per child type
+per round in latest run
+`.trim(),
+  },
+  chi_dmg_over: {
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
+    help: `
+damage overkill per child type
+per round in latest run
+`.trim(),
+  },
+  eff: {
+    args: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    help: `
+cost efficiency per building type with upgrades
+per round in latest run
+`.trim(),
+  },
+  dmg_over: {
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    help: `
+damage overkill per building type with upgrades
+per round in latest run
+`.trim(),
+  },
+  dmg_runs: {
+    args: `-x=run_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+    help: `damage per building type with upgrades per run`,
+  },
+  eff_runs: {
+    args: `-x=run_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+    help: `cost efficiency per building type with upgrades per run`,
+  },
+  /*
+  Summarizing efficiencies doesn't really work.
+  This needs a finer approach.
+
+    round_stats: {
+      args: `-x=round_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+      help: ``,
+    },
+    run_stats: {
+      args: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+      help: ``,
+    },
+    run_stats_all: {
+      args: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=all`,
+      help: ``,
+    },
+  */
 })
 
 function plotAggOptExpandPresets(src) {
@@ -616,7 +665,7 @@ function plotAggOptExpandPresets(src) {
     }
 
     ui.cliEnum(cmdPlot.cmd, `-p`, val, PLOT_PRESETS)
-    const args = PLOT_PRESETS[val]
+    const {args} = PLOT_PRESETS[val]
 
     for (const prePair of u.cliDecode(args)) {
       if (over.has(prePair[0])) continue
@@ -1191,10 +1240,6 @@ export function titledToCoded(key, val) {
   return val
 }
 
-function BtnAppend(val, alias) {
-  return ui.BtnPrompt({cmd: cmdPlot.cmd, suf: val, chi: alias})
-}
-
 function BtnReplace(val, alias) {
   return ui.BtnPromptReplace({
     val: u.preSpacedOpt(val, cmdPlot.cmd),
@@ -1202,8 +1247,17 @@ function BtnReplace(val, alias) {
   })
 }
 
-function BtnAppendEq(key) {
-  return BtnAppend(a.reqValidStr(key) + `=`)
+function BtnAppend({val, glos, alias}) {
+  const elem = ui.BtnPrompt({cmd: cmdPlot.cmd, suf: val, chi: alias})
+  if (!a.optStr(glos)) return elem
+  return withGlossary(elem, glos)
+}
+
+function BtnAppendEq(key, val, tooltip) {
+  const elem = ui.BtnPrompt({cmd: cmdPlot.cmd, suf: u.cliEq(key, a.laxStr(val))})
+  if (!a.vac(tooltip)) return withGlossary(elem, key, val)
+  elem.classList.add(`cursor-help`)
+  return u.withTooltip({elem, chi: tooltip})
 }
 
 function BtnAppendTrunc({key, val, width}) {
@@ -1218,47 +1272,69 @@ function BtnAppendTrunc({key, val, width}) {
 }
 
 function FlagAppendBtns(src, flag) {
-  return a.map(src, key => withGlossary(key, BtnAppend(a.str(flag, `=`, key))))
+  return a.map(src, key => BtnAppendEq(flag, key))
 }
 
-function Help_preset([key, args]) {
-  return [BtnAppend(`-p=${key}`), ` -- `, BtnAppend(args)]
+function Help_preset([key, {args, help}]) {
+  return [BtnAppendEq(`-p`, key, help), ` -- `, BtnAppend({val: args})]
 }
 
 function Help_Z(key) {
   a.reqValidStr(key)
-  const btn = withGlossary(key, BtnAppend(`-z=${key}`))
+  const btn = BtnAppendEq(`-z`, key)
   if (key === `round_num`) {
-    return [btn, ` (recommended: also `, BtnAppend(`-x=run_num`), `)`]
+    return [btn, ` (recommended: also `, BtnAppendEq(`-x`, `run_num`), `)`]
   }
   if (key === `stat_type`) {
     // SYNC[plot_group_stat_type_z_versus_y].
-    return [btn, ` (disables `, BtnAppend(`-y`), `)`]
+    return [btn, ` (disables `, BtnAppend({val: `-y`, glos: `-y`}), `)`]
   }
   return btn
 }
 
+const TOOLTIP_USER_CURRENT = `uses current user id; requires auth`
+const TOOLTIP_USER_ALL = `disables preset user_id=current`
+const TOOLTIP_RUN_LATEST = `uses latest run according to user filter`
+const TOOLTIP_RUN_ALL = `disables preset run_id=latest`
+
 function Help_filter(key) {
   a.reqValidStr(key)
-  const btn = withGlossary(key, BtnAppend(`${key}=`))
+  const btn = BtnAppendEq(key)
+
   if (key === `user_id`) {
-    return [btn, ` (special: `, BtnAppend(`user_id=all`), ` `, BtnAppend(`user_id=current`), `)`]
+    return [
+      btn,
+      ` (special: `,
+      BtnAppendEq(`user_id`, `current`, TOOLTIP_USER_CURRENT),
+      ` `,
+      BtnAppendEq(`user_id`, `all`, TOOLTIP_USER_ALL),
+      `)`,
+    ]
   }
+
   if (key === `run_id`) {
-    return [btn, ` (special: `, BtnAppend(`run_id=all`), ` `, BtnAppend(`run_id=latest`), `)`]
+    return [
+      btn,
+      ` (special: `,
+      BtnAppendEq(`run_id`, `latest`, TOOLTIP_RUN_LATEST),
+      ` `,
+      BtnAppendEq(`run_id`, `all`, TOOLTIP_RUN_ALL),
+      `)`,
+    ]
   }
+
   if (key === `bui_type`) {
-    return [btn, ` (short name, like `, BtnAppend(`bui_type=MedMort`), `)`]
+    return [btn, ` (short name, like `, BtnAppendEq(`bui_type`, `MedMort`), `)`]
   }
   if (key === `bui_type_upg`) {
-    return [btn, ` (short name, like `, BtnAppend(`bui_type_upg=MedMort_ABA`), `)`]
+    return [btn, ` (short name, like `, BtnAppendEq(`bui_type_upg`, `MedMort_ABA`), `)`]
   }
   // SYNC[plot_group_ent_type_no_mixing].
   if (key === `ent_type`) {
-    return [btn, ` (exactly one is required unless `, BtnAppend(`-z=ent_type`), `)`]
+    return [btn, ` (exactly one is required unless `, BtnAppendEq(`-z`, `ent_type`), `)`]
   }
   if (key === `hero`) {
-    return [btn, ` (short name, like `, BtnAppend(`hero=Anysia`), `)`]
+    return [btn, ` (short name, like `, BtnAppendEq(`hero`, `Anysia`), `)`]
   }
   return btn
 }
@@ -1283,20 +1359,20 @@ function msgPlotDataEmpty(args, opt) {
   return u.LogParagraphs(
     [`no data found for `, BtnReplace(args)],
     a.vac(opt.userCurrent && (opt.cloud || opt.fetch)) && [
-      `data was filtered by `, BtnAppend(`user_id=current`),
-      `, consider `, BtnAppend(`user_id=all`),
+      `data was filtered by `, BtnAppendEq(`user_id`, `current`, TOOLTIP_USER_CURRENT),
+      `, consider `, BtnAppendEq(`user_id`, `all`, TOOLTIP_USER_ALL),
     ],
     a.vac(opt.runLatest) && [
-      `data was filtered by `, BtnAppend(`run_id=latest`),
-      `, consider `, BtnAppend(`run_id=all`),
+      `data was filtered by `, BtnAppendEq(`run_id`, `latest`, TOOLTIP_RUN_LATEST),
+      `, consider `, BtnAppendEq(`run_id`, `all`, TOOLTIP_RUN_ALL),
     ],
   )
 }
 
 function msgMissing(key) {
   return new u.ErrLog(
-    `missing `, BtnAppend(key), `, `,
-    `consider using a preset such as `, BtnAppend(`-p=dmg`),
+    `missing `, BtnAppend({val: key, glos: key}), `, `,
+    `consider using a preset such as `, BtnAppendEq(`-p`, `dmg`),
   )
 }
 
@@ -1578,19 +1654,35 @@ function Sample({key, val, pre, preLen}) {
   return [pre, btn, inf, clip]
 }
 
+export const PLOT_GLOSSARY = u.dict({
+  ...s.GLOSSARY,
+  '-p': `preset`,
+  '-c': `cloud data rather than local data`,
+  '-x': `X axis: progression`,
+  '-y': `Y axis: stat type`,
+  '-z': `Z axis: plot series`,
+  '-a': `aggregation mode`,
+  '-t': `print totals in the log`,
+  '-f': `fetch a specific run file`,
+  ...a.map(PLOT_PRESETS, val => val.help),
+})
+
 // The underline offset prevents the underline from overlapping with `_`.
 function Glos(key) {
   return withGlossary(
-    key,
     E(`span`, {class: `underline decoration-dotted underline-offset-4`}, key),
+    key,
   )
 }
 
-function withGlossary(key, elem) {
-  a.reqValidStr(key)
+function withGlossary(elem, key, val) {
   a.reqElement(elem)
-  const chi = s.GLOSSARY[a.reqStr(key)]
+  key = a.laxStr(key)
+  val = a.laxStr(val)
+
+  const chi = PLOT_GLOSSARY[val] || PLOT_GLOSSARY[key]
   if (!chi) return elem
+
   elem.classList.add(`cursor-help`)
   return u.withTooltip({elem, chi})
 }
