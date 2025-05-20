@@ -964,7 +964,7 @@ missing -a, consider using a preset such as -p=dmg`,
   )
 
   test(
-    `-p=dmg bui_type=Mirad`,
+    `-p=dmg bui_type=Mirador`,
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`,
@@ -986,7 +986,7 @@ missing -a, consider using a preset such as -p=dmg`,
   )
 
   test(
-    `-p=dmg bui_type_upg=Mirad`,
+    `-p=dmg bui_type_upg=Mirador`,
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`,
@@ -1008,7 +1008,7 @@ missing -a, consider using a preset such as -p=dmg`,
   )
 
   test(
-    `-p=dmg bui_type_upg=Mirad_AAA`,
+    `-p=dmg bui_type_upg=Mirador_AAA`,
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`,
@@ -1234,10 +1234,10 @@ t.test(function test_codedToTitled() {
   test(`any`, `CB01_ABA`, `CB01_ABA`)
 
   test(`bui_type`, `23c410a2e505496a`, `23c410a2e505496a`)
-  test(`bui_type`, `CB01`, `Bunk`)
+  test(`bui_type`, `CB01`, `Bunker`)
 
   test(`bui_type_upg`, `9021b77f5da047af`, `9021b77f5da047af`)
-  test(`bui_type_upg`, `CB01_ABA`, `Bunk_ABA`)
+  test(`bui_type_upg`, `CB01_ABA`, `Bunker_ABA`)
 })
 
 // TODO test generic XYZ aggregation; see `schema.mjs`.
