@@ -111,7 +111,7 @@ export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends u.ReacElem {
       )
     )
   }
-}
+}()
 
 // A reactive element that shows running processes.
 export const PROCESS_LIST = new class ProcessList extends u.ReacElem {
@@ -142,7 +142,7 @@ export const PROCESS_LIST = new class ProcessList extends u.ReacElem {
 
 /*
 Holds all dynamically added media items.
-The styling is done in CSS. See `index.html`.
+Styled in CSS. See `index.html`.
 */
 export const MEDIA_GRID = E(`div`, {class: `media-grid`})
 
@@ -198,7 +198,8 @@ export const MEDIA = new class MediaPanel extends u.Elem {
   updatePlaceholder() {
     if (this.isDefault()) {
       this.insertBefore(PLOT_PLACEHOLDER, PROCESS_LIST)
-    } else {
+    }
+    else {
       PLOT_PLACEHOLDER.remove()
     }
   }
@@ -261,7 +262,7 @@ export function BtnKill({class: cls, ...attrs}) {
   }, `✕`)
 }
 
-export const MIDDLE = E(`div`, {class: `flex flex-1 min-h-0`}, u.log, MEDIA)
+export const MIDDLE = E(`div`, {class: `flex flex-1 min-h-0`}, u.LOG, MEDIA)
 
 export const PROMPT_FOCUS_KEY = `/`
 export const PROMPT_HIST_KEY = `tabularius.prompt_hist`
@@ -343,7 +344,7 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
   // Command submission (on Enter).
   submitCmd() {
     if (this.type === `password`) {
-      u.log.err(`internal: unexpected attempt to submit a command in password mode`)
+      u.LOG.err(`internal: unexpected attempt to submit a command in password mode`)
       return
     }
 
@@ -351,7 +352,7 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
     if (!src) return
 
     const obs = o.obs({proc: undefined})
-    u.log.inp(new SubmittedCmd(src, obs))
+    u.LOG.inp(new SubmittedCmd(src, obs))
     this.histPush(src)
     os.runCmd(src, {obs, user: true}).catch(u.logErr)
   }
@@ -361,7 +362,6 @@ class PromptInput extends dr.MixReg(HTMLInputElement) {
 
     this.type = `password`
     this.value = ``
-
     u.replaceClasses(this, PROMPT_INPUT_CLS_REGULAR, PROMPT_INPUT_CLS_PASSWORD)
 
     if (document.activeElement === this) this.onFocus()
@@ -448,7 +448,7 @@ class SubmittedCmd extends u.ReacElem {
         ` `,
         u.Muted(
           `(`, a.vac(proc.desc) || `running`, `; `, os.BtnCmd(`kill ${proc.id}`), `)`
-        )
+        ),
       ],
     )
   }
@@ -486,7 +486,7 @@ function onKeydownGlobal(eve) {
     (eve.key === `k` && !eve.altKey && eve.ctrlKey && !eve.metaKey && !eve.shiftKey)
   ) {
     a.eventKill(eve)
-    u.log.clear()
+    u.LOG.clear()
     PROMPT_INPUT.focus()
     return
   }
@@ -595,7 +595,7 @@ export function cmdClear({args}) {
   const media = args.delete(`-m`)
   if (args.size) return os.cmdHelpDetailed(cmdClear)
 
-  if (log || !media) u.log.clear()
+  if (log || !media) u.LOG.clear()
   if (media || !log) MEDIA.clear()
 }
 

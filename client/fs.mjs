@@ -178,7 +178,7 @@ export async function fileConfLoadedWithPerm(sig, conf, req) {
 
   const err = new u.ErrLog(...msgNotGranted(conf))
   if (req) throw err
-  u.log.err(err)
+  u.LOG.err(err)
   return undefined
 }
 
@@ -198,14 +198,14 @@ export async function fileConfLoad(conf) {
     if (a.isNil(handle)) return
   }
   catch (err) {
-    u.log.err(desc, `: error loading handle from DB:`, err)
+    u.LOG.err(desc, `: error loading handle from DB:`, err)
     return
   }
 
-  u.log.verb(desc, `: loaded handle from DB`)
+  u.LOG.verb(desc, `: loaded handle from DB`)
 
   if (!a.isInst(handle, FileSystemHandle)) {
-    u.log.info(desc, `: expected FileSystemHandle; deleting corrupted DB entry`)
+    u.LOG.info(desc, `: expected FileSystemHandle; deleting corrupted DB entry`)
     i.dbDel(store, key).catch(u.logErr)
     return
   }
@@ -245,7 +245,7 @@ export async function fileConfInited(sig, conf) {
   if (!conf.handle) await fileConfLoad(conf)
 
   if (!conf.handle) {
-    u.log.info(help())
+    u.LOG.info(help())
     conf.handle = a.reqInst(await u.wait(sig, pick()), FileSystemHandle)
   }
 
@@ -261,10 +261,10 @@ export async function fileConfInited(sig, conf) {
 
   try {
     await u.wait(sig, i.dbPut(i.IDB_STORE_HANDLES, key, conf.handle))
-    u.log.info(desc, `: stored handle to DB`)
+    u.LOG.info(desc, `: stored handle to DB`)
   }
   catch (err) {
-    u.log.err(desc, `: error storing handle to DB:`, err)
+    u.LOG.err(desc, `: error storing handle to DB:`, err)
   }
   return conf.handle
 }
@@ -349,12 +349,12 @@ export async function fileConfDeinit(sig, conf) {
     await u.wait(sig, i.dbDel(i.IDB_STORE_HANDLES, key))
   }
   catch (err) {
-    u.log.err(desc, `: error deleting from DB:`, err)
+    u.LOG.err(desc, `: error deleting from DB:`, err)
   }
 
-  if (!conf.handle) return `${desc}: not initialized`
+  if (!conf.handle) return `${desc}: access not granted`
   conf.clear()
-  return `${desc}: deinitialized`
+  return `${desc}: access revoked`
 }
 
 export class FileConfStatus extends u.ReacElem {
@@ -395,7 +395,7 @@ export async function fileConfRequireOrRequestPermission(sig, conf) {
   conf.perm = await queryPermission(sig, handle, {mode})
   if (conf.perm === `granted`) return handle
 
-  u.log.info(desc, `: permission: `, a.show(conf.perm), `, requesting permission`)
+  u.LOG.info(desc, `: permission: `, a.show(conf.perm), `, requesting permission`)
   conf.perm = await requestPermission(sig, handle, {mode})
   if (conf.perm === `granted`) return handle
 
@@ -404,7 +404,7 @@ export async function fileConfRequireOrRequestPermission(sig, conf) {
 
 function msgNotInited(conf) {
   const {desc, cmd} = a.reqInst(conf, FileConf)
-  return [desc, `: not initialized, run `, os.BtnCmdWithHelp(cmd), ` to grant access`]
+  return [desc, `: access not granted, run `, os.BtnCmdWithHelp(cmd), ` to grant access`]
 }
 
 function msgNotGranted(conf) {
@@ -422,7 +422,7 @@ export function fileHandleStatStr(sig, handle) {
   a.reqInst(handle, FileSystemHandle)
   if (isDir(handle)) return dirStatStr(sig, handle)
   if (isFile(handle)) return fileStatStr(sig, handle)
-  u.log.err(errHandleKind(handle.kind))
+  u.LOG.err(errHandleKind(handle.kind))
   return undefined
 }
 
@@ -563,7 +563,7 @@ export async function FileConfLine(sig, conf, stat) {
   }
 
   if (deprecated) return undefined
-  return [desc + `: `, `not initialized, run `, os.BtnCmdWithHelp(conf.cmd)]
+  return [desc + `: `, `access not granted, run `, os.BtnCmdWithHelp(conf.cmd)]
 }
 
 async function dirEntries(sig, dir, stat) {
@@ -678,10 +678,10 @@ cmdShow.help = function cmdShowHelp() {
 
     u.LogLines(
       `path segments can be magic:`,
-      [`  `, ui.BtnPrompt({cmd: `show`, eph: `<num>`}), `         -- run num`],
-      [`  `, ui.BtnPrompt({cmd: `show`, suf: `latest`}), `        -- latest run`],
-      [`  `, ui.BtnPrompt({cmd: `show`, suf: `latest/`, eph: `<num>`}), `  -- round num in latest run`],
-      [`  `, ui.BtnPrompt({cmd: `show`, suf: `latest/latest`}), ` -- latest round`],
+      [`  `, ui.BtnPrompt({cmd: `show`, eph: u.paths.join(histDir, `<num>`)}), `         -- run num`],
+      [`  `, ui.BtnPrompt({cmd: `show`, suf: u.paths.join(histDir, `latest`)}), `        -- latest run`],
+      [`  `, ui.BtnPrompt({cmd: `show`, suf: u.paths.join(histDir, `latest/`), eph: `<num>`}), `  -- round num in latest run`],
+      [`  `, ui.BtnPrompt({cmd: `show`, suf: u.paths.join(histDir, `latest/latest`)}), ` -- latest round`],
     ),
 
     (
@@ -733,13 +733,13 @@ export async function cmdShow({sig, args}) {
     else if (key === `-w`) opt.write = ui.cliBool(cmd, key, val)
     else if (!key) paths.push(val)
     else {
-      u.log.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
+      u.LOG.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
       return os.cmdHelpDetailed(cmdShow)
     }
   }
 
   if (!paths.length) {
-    u.log.err(`missing input paths in `, ui.BtnPromptReplace({val: args}))
+    u.LOG.err(`missing input paths in `, ui.BtnPromptReplace({val: args}))
     return os.cmdHelpDetailed(cmdShow)
   }
 
@@ -752,7 +752,7 @@ export async function cmdShow({sig, args}) {
       await showPath({sig, path, opt})
     }
     catch (err) {
-      u.log.err(`[show] unable to show ${a.show(path)}: `, err)
+      u.LOG.err(`[show] unable to show ${a.show(path)}: `, err)
     }
   }
 }
@@ -779,7 +779,7 @@ export function showDirOrFile({sig, handle, path, opt}) {
 export async function showDir({sig, handle, path, opt}) {
   const data = await collectGameFilesAsc(sig, handle)
   if (!data.length) {
-    u.log.info(`no game files found in ${a.show(path)}`)
+    u.LOG.info(`no game files found in ${a.show(path)}`)
     return
   }
   await showData({sig, path, data, opt})
@@ -787,7 +787,7 @@ export async function showDir({sig, handle, path, opt}) {
 
 export async function showFile({sig, handle, path, opt}) {
   if (!isHandleGameFile(handle)) {
-    u.log.info(`unable to show file ${a.show(path || handle.name)}: unknown format`)
+    u.LOG.info(`unable to show file ${a.show(path || handle.name)}: unknown format`)
     return
   }
   const data = await readDecodeGameFile(sig, handle)
@@ -807,13 +807,13 @@ export async function showData({sig, path, data, opt}) {
   if (copy) {
     json ??= JSON.stringify(data, undefined, 2)
     await u.copyToClipboard(json)
-    u.log.info(`copied decoded content of ${a.show(path)} to clipboard`)
+    u.LOG.info(`copied decoded content of ${a.show(path)} to clipboard`)
   }
 
   if (log) {
     console.log(`[show] decoded content of ${a.show(path)}:`)
     console.log(data)
-    u.log.info(`logged decoded content of ${a.show(path)} to browser devtools console`)
+    u.LOG.info(`logged decoded content of ${a.show(path)} to browser devtools console`)
   }
 
   if (write) {
@@ -828,7 +828,7 @@ export async function showData({sig, path, data, opt}) {
     await writeDirFile(sig, outDir, outName, json)
 
     const outPath = u.paths.join(hist.name, outDirName, outName)
-    u.log.info(`wrote decoded content of ${a.show(path)} to ${a.show(outPath)}`)
+    u.LOG.info(`wrote decoded content of ${a.show(path)} to ${a.show(outPath)}`)
   }
 }
 
@@ -881,7 +881,7 @@ export async function cmdRollback({sig, args}) {
     await backupFile(sig, targetFile, histDir),
   )
 
-  u.log.info(...u.LogLines(
+  u.LOG.info(...u.LogLines(
     `backed up:`,
     [`  `, a.show(tarPath)],
     `  to:`,
@@ -1139,7 +1139,7 @@ export async function handleAtPathFromTop({sig, path, magic}) {
   const conf = matches[0]
   if (!conf.handle) {
     throw new u.ErrLog(...u.LogParagraphs(
-      [`top-level FS entry `, a.show(head), ` is not initialized;`],
+      [`access to top-level FS entry `, a.show(head), ` is not granted;`],
       msgTopEntries(confs),
     ))
   }
@@ -1316,7 +1316,7 @@ export async function requireOrRequestReadwrite(sig, handle) {
   const perm0 = await queryPermission(sig, handle, {mode})
   if (perm0 === `granted`) return handle
 
-  u.log.info(`requesting `, mode, ` permission for `, a.show(handle.name))
+  u.LOG.info(`requesting `, mode, ` permission for `, a.show(handle.name))
 
   const perm1 = await requestPermission(sig, handle, {mode})
   if (perm1 !== `granted`) {
@@ -1449,9 +1449,9 @@ export async function migOpt() {
     const fm = await import(`./fs_mig.mjs`)
     const out = await fm.migrateRuns()
     u.storageSet(store, storeKey, verNext)
-    u.log.verb(`updated run history from schema version ${verPrev} to ${verNext}, summary: `, out)
+    u.LOG.verb(`updated run history from schema version ${verPrev} to ${verNext}, summary: `, out)
   }
   catch (err) {
-    u.log.err(`unable to update run history schema: `, err)
+    u.LOG.err(`unable to update run history schema: `, err)
   }
 }

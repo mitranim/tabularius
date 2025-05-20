@@ -148,7 +148,7 @@ export async function uploadRound(ctx, req) {
 
 export async function apiPlotAgg(ctx, req) {
   const data = await plotAgg(ctx, req)
-  return new u.Res(a.jsonEncode(data, jsonReplacer))
+  return new u.Res(JSON.stringify(data, jsonReplacer))
 }
 
 /*
@@ -406,11 +406,12 @@ function qLatestRunId(opt) {
 
 const TOTAL_VAL_LIMIT = 4
 
-const TOTAL_VAL_LIMITS = new Map()
-  .set(`user_id`, TOTAL_VAL_LIMIT)
-  .set(`run_id`, TOTAL_VAL_LIMIT)
-  .set(`round_id`, TOTAL_VAL_LIMIT)
-  .set(`bui_inst`, TOTAL_VAL_LIMIT)
+const TOTAL_VAL_LIMITS = u.dict({
+  user_id: TOTAL_VAL_LIMIT,
+  run_id: TOTAL_VAL_LIMIT,
+  round_id: TOTAL_VAL_LIMIT,
+  bui_inst: TOTAL_VAL_LIMIT,
+})
 
 export function qPlotAggTotals(facts, opt) {
   a.reqInst(facts, u.Sql)
@@ -429,7 +430,7 @@ export function qPlotAggTotals(facts, opt) {
   for (const key of keys) {
     counts.push(/*sql*/`${key} := count(distinct ${key})::double`)
 
-    const limit = TOTAL_VAL_LIMITS.get(key)
+    const limit = TOTAL_VAL_LIMITS[key]
 
     if (limit) {
       values.push(/*sql*/`${key} := min(distinct ${key}, ${limit})`)

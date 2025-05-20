@@ -168,23 +168,23 @@ export function logCmdDone(name, out, ui) {
   a.reqValidStr(name)
 
   if (!a.vac(out)) {
-    u.log.verb(`[${name}] done`)
+    u.LOG.verb(`[${name}] done`)
     return
   }
 
   if (!a.isInst(out, Combo)) {
-    u.log.info(out)
+    u.LOG.info(out)
     return
   }
 
   const {logMsgs, mediaItems} = out
-  for (const val of a.laxArr(logMsgs)) u.log.info(val)
+  for (const val of a.laxArr(logMsgs)) u.LOG.info(val)
   for (const val of a.laxArr(mediaItems)) ui.MEDIA.add(val)
 }
 
 export function logCmdFail(name, err) {
   a.reqValidStr(name)
-  u.log.err(`[${name}] `, err)
+  u.LOG.err(`[${name}] `, err)
 }
 
 export function procToStatus(src) {
@@ -239,14 +239,14 @@ export function cmdKill({args}) {
 
   if (all) {
     if (inps.size) {
-      u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+      u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
       return os.cmdHelpDetailed(cmdKill)
     }
     return procKillAll()
   }
 
   if (!inps.size) {
-    u.log.err(`missing process id or name`)
+    u.LOG.err(`missing process id or name`)
     return os.cmdHelpDetailed(cmdKill)
   }
 
@@ -325,7 +325,7 @@ export function cmdHelp({args}) {
   if (u.hasHelpFlag(inps)) return os.cmdHelpDetailed(cmdHelp)
 
   if (inps.size) {
-    for (const cmd of inps) u.log.info(cmdHelpDetailed(reqCmdByName(cmd)))
+    for (const cmd of inps) u.LOG.info(cmdHelpDetailed(reqCmdByName(cmd)))
     return
   }
 
@@ -342,17 +342,14 @@ export function cmdHelp({args}) {
 export function cmdHelpDetailed(val) {
   reqCmd(val)
   return [
-    `command `, ui.BtnPrompt({full: true, cmd: val.cmd}), `: `,
+    `command `, BtnCmdWithHelp(val.cmd), `: `,
     u.callOpt(val.help) || u.callOpt(val.desc),
   ]
 }
 
 export function cmdHelpShort(val) {
   reqCmd(val)
-  return [
-    BtnCmdWithHelp(val),
-    `: `, u.callOpt(val.desc),
-  ]
+  return [BtnCmdWithHelp(val), `: `, u.callOpt(val.desc)]
 }
 
 export function BtnCmdWithHelp(cmd) {

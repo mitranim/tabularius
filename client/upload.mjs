@@ -104,7 +104,7 @@ export async function cmdUpload(proc) {
     }
 
     if (key) {
-      u.log.err(
+      u.LOG.err(
         `unrecognized `, ui.BtnPrompt({cmd, suf: pair}),
         ` in `, ui.BtnPromptReplace({val: args}),
       )
@@ -114,7 +114,7 @@ export async function cmdUpload(proc) {
     if (!val) continue
 
     if (path) {
-      u.log.err(`too many upload paths in `, ui.BtnPromptReplace({val: args}))
+      u.LOG.err(`too many upload paths in `, ui.BtnPromptReplace({val: args}))
       return os.cmdHelpDetailed(cmdUpload)
     }
     path = val
@@ -130,12 +130,12 @@ export async function cmdUpload(proc) {
     if (!opt.persistent) return `[upload] another process has a lock on uploading`
 
     const start = Date.now()
-    u.log.verb(`[upload] another process has a lock on uploading, waiting until it stops`)
+    u.LOG.verb(`[upload] another process has a lock on uploading, waiting until it stops`)
     proc.desc = `waiting for another "upload" process`
     unlock = await u.lock(sig, UPLOAD_LOCK_NAME)
     const end = Date.now()
 
-    u.log.verb(`[upload] acquired lock from another process after ${end - start}ms, proceeding to upload`)
+    u.LOG.verb(`[upload] acquired lock from another process after ${end - start}ms, proceeding to upload`)
   }
 
   proc.desc = `uploading backups to the cloud`
@@ -171,10 +171,10 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
 
   if (state) {
     if (fs.isFile(handle)) {
-      u.log.info(new FileUploadProgress(absPath, state))
+      u.LOG.info(new FileUploadProgress(absPath, state))
     }
     else {
-      u.log.info(new DirUploadProgress(absPath, state))
+      u.LOG.info(new DirUploadProgress(absPath, state))
     }
   }
 
@@ -218,7 +218,7 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
       }
 
       const sleep = UPLOAD_RETRY_INTERVAL_MS
-      u.log.err(`[upload] unexpected error (${errs} in a row), retrying after ${sleep}ms: `, err)
+      u.LOG.err(`[upload] unexpected error (${errs} in a row), retrying after ${sleep}ms: `, err)
 
       state.status = `waiting before retrying`
       if (!await a.after(sleep, sig)) return
@@ -268,7 +268,7 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
   }
 
   if (segs.length !== 1) {
-    u.log.err(`[upload] unsupported path ${a.show(path)}`)
+    u.LOG.err(`[upload] unsupported path ${a.show(path)}`)
     return os.cmdHelpDetailed(cmdUpload)
   }
 
@@ -283,7 +283,7 @@ export async function uploadRun({sig, dir, userId, state, force}) {
 
   // Questionable special case. TODO more general approach.
   if (runName === fs.SHOW_DIR) {
-    u.log.info(`[upload] skipping `, a.show(runName))
+    u.LOG.info(`[upload] skipping `, a.show(runName))
     return
   }
 
@@ -313,7 +313,7 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
 
   // Questionable special case. TODO more general approach.
   if (runName === fs.SHOW_DIR) {
-    u.log.info(`[upload] skipping `, a.show(path))
+    u.LOG.info(`[upload] skipping `, a.show(path))
     return
   }
 
@@ -332,7 +332,7 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
 
   const roundNumFromData = a.reqInt(round.RoundIndex)
   if (roundNum !== roundNumFromData) {
-    u.log.err(`data inconsistency: file ${a.show(path)} indicates round_num ${a.show(roundNum)} in the name, but has round_num ${a.show(roundNumFromData)} in the data; skipping upload`)
+    u.LOG.err(`data inconsistency: file ${a.show(path)} indicates round_num ${a.show(roundNum)} in the name, but has round_num ${a.show(roundNumFromData)} in the data; skipping upload`)
     return
   }
 
@@ -373,7 +373,7 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
     else {
       if (state) state.roundsUploaded++
       if (u.LOG_VERBOSE && info?.facts) {
-        u.log.info(`uploaded ${a.show(path)}: ${a.show(info.facts)} facts`)
+        u.LOG.info(`uploaded ${a.show(path)}: ${a.show(info.facts)} facts`)
       }
     }
   }
@@ -417,7 +417,7 @@ async function isRunUploaded({sig, dir, state}) {
     return isRoundUploaded(data)
   }
   catch (err) {
-    u.log.err(`unable to check if run ${a.show(dir.name)} is uploaded: `, err)
+    u.LOG.err(`unable to check if run ${a.show(dir.name)} is uploaded: `, err)
     return false
   }
 }

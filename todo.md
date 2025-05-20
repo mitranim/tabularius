@@ -1606,6 +1606,10 @@ Plot totals: add `round_num`.
 
 ---
 
+* [ ] `ls` entries: show brief info for run dirs, such as faction, commander, difficulty, round count.
+
+---
+
 <!-- * [ ] `init`: convert validation exceptions to warnings. -->
 
 ---
@@ -1634,5 +1638,19 @@ Plot totals: add `round_num`.
 ---
 
 * [x] `plot`: in help and plot titles, add tooltips which expand abbreviated terms to longer ones.
+* [x] Add missing glossary entries.
+* [ ] Add glossary tooltips to _all_ occurrences of abbreviated terms.
+  * In multi-entry append/replace buttons, add tooltips to individual entries.
+* [ ] Add dotted underlines to tooltipped terms which don't have them, like in plot titles (but no color indicator).
 
-Currently there's no indicator whether the target has a glossary tooltip or not. TODO improve.
+---
+
+Schema: account for weapon uptime. For each weapon, get `timeSpentThisGame` and `timeSpentThisWave` from its dummy bullet stats. Normalize them into a proportion of the largest corresponding time in that round. Factor this into cost efficiency. Also calculate DPS, dividing damage by uptime. This produces 6 new stats.
+
+---
+
+* [ ] CLI parsing:
+  * [ ] Support a set of operators: = < > ≤ ≥ ≠.
+  * [ ] Consider supporting ASCII digraphs: = == < <= >= > != <>.
+  * [ ] Return `{key, val, op, src}`.
+* [ ] Plot aggs: support those operators.

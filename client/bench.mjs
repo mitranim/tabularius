@@ -80,8 +80,8 @@ An earlier result had ≈1.2ms (Chrome 135).
 
 Much slower than the compiled version.
 
-A curious case and the reason we compile a function,
-instead of interpreting the data.
+A curious case and the reason we compile a function from filters,
+instead of interpreting the filters.
 */
 t.bench(function bench_whereFields_interpreted_dynamic() {
   const where = whereFieldsInterpreted(plotAggOpt.where)

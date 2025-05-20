@@ -172,7 +172,7 @@ export function storageGetJson(store, key) {
 
   try {return JSON.parse(src)}
   catch (err) {
-    log.err(`unable to decode ${a.show(src)}, deleting ${a.show(key)} from storage`)
+    LOG.err(`unable to decode ${a.show(src)}, deleting ${a.show(key)} from storage`)
     storageSet(store, key)
     return undefined
   }
@@ -189,7 +189,7 @@ export function storageSet(store, key, val) {
 
   try {val = a.render(val)}
   catch (err) {
-    log.err(`unable to store ${a.show(key)} in ${a.show(store)}:`, err)
+    LOG.err(`unable to store ${a.show(key)} in ${a.show(store)}:`, err)
     return false
   }
 
@@ -198,7 +198,7 @@ export function storageSet(store, key, val) {
     return true
   }
   catch (err) {
-    log.err(`unable to store ${a.show(key)} = ${a.show(val)} in ${a.show(store)}:`, err)
+    LOG.err(`unable to store ${a.show(key)} = ${a.show(val)} in ${a.show(store)}:`, err)
     return false
   }
 }
@@ -244,9 +244,9 @@ rejection. Usage:
   someAsyncFun().catch(u.logErr)
   somePromise.catch(u.logErr)
 */
-export function logErr(err) {log.err(err)}
+export function logErr(err) {LOG.err(err)}
 
-export const log = new class Log extends Elem {
+export const LOG = new class Log extends Elem {
   // Must be used for all info logging.
   info(...msg) {return this.addMsg({}, ...msg)}
 
@@ -649,7 +649,7 @@ at any time while the document is focused.
 */
 export async function copyToClipboard(src, report) {
   await navigator.clipboard.writeText(a.render(src))
-  if (report) log.info(`copied to clipboard: `, src)
+  if (report) LOG.info(`copied to clipboard: `, src)
   return true
 }
 
@@ -681,6 +681,13 @@ export function splitCliArgs(src) {return a.split(src, /\s+/)}
 
 export function cliDecode(src) {return splitCliArgs(src).map(cliDecodeArg)}
 
+/*
+TODO:
+  * Support a set of operators: = < > ≤ ≥ ≠
+  * Consider supporting ASCII digraphs: = == < <= >= > != <>
+  * Return {key, val, op, src}
+  * Support them in plot aggs
+*/
 export function cliDecodeArg(src) {
   const ind = src.indexOf(`=`)
   if (ind >= 0) {
@@ -902,11 +909,11 @@ through functions or field patterns for each tested value. See `./bench.mjs`.
 SYNC[field_pattern].
 */
 export function whereFields(src) {
-  const test = a.mapCompact(a.entries(src), whereField)
-  if (!test.length) return undefined
+  const tests = a.mapCompact(a.entries(src), whereField)
+  if (!tests.length) return undefined
 
   return Function(`
-return function whereFields(val) {return ${test.join(` && `)}}
+return function whereFields(val) {return ${tests.join(` && `)}}
 `)()
 }
 
@@ -914,6 +921,7 @@ function whereField([key, src]) {
   a.reqStr(key)
   src = a.values(src)
   if (!src.length) return undefined
+
   const out = []
   for (const val of src) {
     out.push(`val[${a.show(key)}] === ${a.show(a.reqPrim(val))}`)
@@ -955,8 +963,9 @@ export function BtnUrlAppend(val) {
 Using `<a>` for pseudo-buttons should generally be avoided.
 
 If you're reading this code, remember two things:
-- Use `<a>` for ALL links, and for NOTHING ELSE.
-- Use `<button>` for ALL programmatic click actions and form submissions,
+- Use `<a>` for ALL links, and for almost nothing else (with this one exception
+  explained below).
+- Use `<button>` for all programmatic click actions and form submissions,
   and for NOTHING ELSE.
   - But mind `<input>`, `<select><option>`, `<details><summary>`, `<dialog>`,
     and more...
@@ -970,10 +979,12 @@ native buttons don't play well with text. When internal text is too long, a
 button doesn't wrap like a normal inline element; first it breaks out of its
 line, then it wraps, and then it forces subsequent text to be placed on a new
 line. Madness, which is very inconvenient in our app, where very long text in
-buttons is common.
+buttons is common. The same problem applies to `<input type="button">` which
+seems equivalent to `<button>` in current engines.
 
-(The same problem applies to `<input type="button">` which seems equivalent to
-`<button>` in current engines.)
+Using `<a>` for pseudo-buttons also comes with a bonus: the user can
+middle-click / ctrl-click / cmd-click to open the link in another tab.
+Which is why we require the `href` to be provided.
 */
 export function FakeBtnInline({onclick, href, chi, trunc, width}) {
   a.optFun(onclick)
@@ -1151,7 +1162,6 @@ export function ellMid(src, max) {
 
   const chars = [...src]
   if (chars.length <= max) return src
-
 
   const inf = `…`
   let lenPre = (max / 2) | 0

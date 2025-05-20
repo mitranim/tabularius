@@ -1253,5 +1253,5 @@ t.test(function test_codedToTitled() {
 
 await import(`../shared/test.mjs`)
 const msg = `[test] ok`
-u.log.info(msg)
+u.LOG.info(msg)
 console.log(msg)

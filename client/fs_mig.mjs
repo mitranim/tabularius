@@ -37,12 +37,12 @@ export async function migrateRuns() {
 
   const hist = await fs.historyDirOpt(sig)
   if (!hist) {
-    u.log.info(`[fs_mig] skipping migration: history dir handle not available`)
+    u.LOG.info(`[fs_mig] skipping migration: history dir handle not available`)
     return state
   }
 
   if (!await fs.withPermission(sig, hist, {mode: `readwrite`})) {
-    u.log.info(`[fs_mig] skipping migration: insufficient permissions on history dir`)
+    u.LOG.info(`[fs_mig] skipping migration: insufficient permissions on history dir`)
     return state
   }
   const runDirs = await fs.readRunsAsc(sig, hist)
@@ -65,7 +65,7 @@ export async function migrateRuns() {
         const round = await fs.readDecodeGameFile(sig, roundHandle)
 
         if (!isRoundOld(round)) {
-          u.log.verb(`[fs_mig] skipping migration: latest run and round up to date`)
+          u.LOG.verb(`[fs_mig] skipping migration: latest run and round up to date`)
           state.runsChecked++
           state.roundsChecked++
           return state
@@ -84,7 +84,7 @@ export async function migrateRuns() {
     let runMs
 
     if (!logged) {
-      u.log.info(u.LogLines(
+      u.LOG.info(u.LogLines(
         `[fs_mig] updating the history dir to a newer schema; might take a minute because browser file system API is slow; current progress:`,
         new FsMigProg(state),
       ))
@@ -100,7 +100,7 @@ export async function migrateRuns() {
       state.roundsChecked++
 
       if (!isRoundOld(round)) {
-        u.log.verb(`[fs_mig] skipping up-to-date round: ${a.show(roundPath)}`)
+        u.LOG.verb(`[fs_mig] skipping up-to-date round: ${a.show(roundPath)}`)
         continue
       }
 
@@ -108,14 +108,14 @@ export async function migrateRuns() {
       round.tabularius_run_ms = runMs
 
       await fs.writeEncodeGameFile(sig, roundHandle, round)
-      u.log.verb(`[fs_mig] migrated round: ${a.show(roundPath)}`)
+      u.LOG.verb(`[fs_mig] migrated round: ${a.show(roundPath)}`)
 
       runRoundsMigrated++
       state.roundsMigrated++
     }
 
     if (!runRoundsChecked) {
-      u.log.verb(`[fs_mig] unexpected empty run dir: `, runDirName)
+      u.LOG.verb(`[fs_mig] unexpected empty run dir: `, runDirName)
       continue
     }
 
@@ -125,7 +125,7 @@ export async function migrateRuns() {
     }
 
     if (!runMs) {
-      u.log.err(`[fs_mig] internal: missing runMs for run: ${a.show(runDirName)}`)
+      u.LOG.err(`[fs_mig] internal: missing runMs for run: ${a.show(runDirName)}`)
       continue
     }
 
@@ -177,11 +177,11 @@ async function migrateRunDir({
       if (u.LOG_VERBOSE) console.timeEnd(`writing_file`)
     }
 
-    u.log.verb(`[fs_mig] copied run dir ${a.show(dirNamePrev)} to ${a.show(dirPathNext)}`)
+    u.LOG.verb(`[fs_mig] copied run dir ${a.show(dirNamePrev)} to ${a.show(dirPathNext)}`)
   }
   catch (err) {
     state.status = `error`
-    u.log.err(`[fs_mig] unable to migrate run dir ${a.show(dirNamePrev)}: ${err}`)
+    u.LOG.err(`[fs_mig] unable to migrate run dir ${a.show(dirNamePrev)}: ${err}`)
 
     // Clean up new dir on error.
     if (u.LOG_VERBOSE) console.time(`deleting_err`)
@@ -195,7 +195,7 @@ async function migrateRunDir({
   if (u.LOG_VERBOSE) console.time(`deleting_old_dir`)
   await dirHandleParent.removeEntry(dirNamePrev, {recursive: true})
   if (u.LOG_VERBOSE) console.timeEnd(`deleting_old_dir`)
-  u.log.verb(`[fs_mig] removed run dir ${a.show(dirNamePrev)}`)
+  u.LOG.verb(`[fs_mig] removed run dir ${a.show(dirNamePrev)}`)
 }
 
 export class FsMigProg extends u.ReacElem {

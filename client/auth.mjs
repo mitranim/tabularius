@@ -46,13 +46,13 @@ export async function cmdAuth({sig, args}) {
   if (u.hasHelpFlag(inps)) return os.cmdHelpDetailed(cmdAuth)
 
   if (inps.length > 1) {
-    u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
     return os.cmdHelpDetailed(cmdAuth)
   }
 
   const mode = inps[0]
   if (mode && mode !== `logout`) {
-    u.log.err(
+    u.LOG.err(
       `unrecognized auth mode `, a.show(mode), ` in `,
       ui.BtnPromptReplace({val: args}),
     )
@@ -72,7 +72,7 @@ export async function authLogin(sig) {
   const wordlist = await initWordlistOpt()
   const suggs = u.randomSamples(wordlist, 3)
 
-  u.log.info(authInstructions(suggs))
+  u.LOG.info(authInstructions(suggs))
   const pass = await readPassFromPrompt(sig)
   if (!pass) return `[auth] canceled`
 
@@ -169,31 +169,31 @@ function readPassFromPrompt(sig) {
     if (!text) return
 
     if (text !== text.trim()) {
-      u.log.info(`passphrase or password must not have leading or trailing whitespace`)
+      u.LOG.info(`passphrase or password must not have leading or trailing whitespace`)
       return
     }
 
     const LEN_MIN = 8
     if (u.strLenUni(text) < LEN_MIN) {
-      u.log.info(`passphrase or password must be at least `, LEN_MIN, ` characters long`)
+      u.LOG.info(`passphrase or password must be at least `, LEN_MIN, ` characters long`)
       return
     }
 
     if (text.includes(`  `)) {
-      u.log.info(`passphrase or password contains two spaces in a row; assuming this was a typo`)
+      u.LOG.info(`passphrase or password contains two spaces in a row; assuming this was a typo`)
       return
     }
 
     if (!count) {
       prev = text
       count++
-      u.log.info(`passphrase or password received; type it once more to confirm`)
+      u.LOG.info(`passphrase or password received; type it once more to confirm`)
       input.value = ``
       return
     }
 
     if (text === prev) {
-      u.log.info(`success: passphrase or password matched previous input`)
+      u.LOG.info(`success: passphrase or password matched previous input`)
       unlisten()
       input.disablePassMode()
       resolve(text)
@@ -202,7 +202,7 @@ function readPassFromPrompt(sig) {
 
     prev = ``
     count = 0
-    u.log.info(`mismatch with previous input; please type again`)
+    u.LOG.info(`mismatch with previous input; please type again`)
     input.value = ``
   }
 
@@ -248,7 +248,7 @@ export function loadedAuthKeys() {
     return true
   }
   catch (err) {
-    u.log.err(`unable to load auth keys: `, err)
+    u.LOG.err(`unable to load auth keys: `, err)
     return false
   }
 }
@@ -306,7 +306,7 @@ export async function initWordlist() {
   if (WORDLIST) return WORDLIST
 
   const text = new Text(`loading wordlist...`)
-  u.log.info(text)
+  u.LOG.info(text)
 
   try {
     const src = await u.fetchText(new URL(`wordlist.txt`, import.meta.url))
@@ -319,7 +319,7 @@ export async function initWordlist() {
   }
 }
 
-function wordlistInitErr(err) {u.log.err(`unable to init wordlist: `, err)}
+function wordlistInitErr(err) {u.LOG.err(`unable to init wordlist: `, err)}
 
 function isByteArrEq(one, two) {
   a.reqInst(one, Uint8Array)

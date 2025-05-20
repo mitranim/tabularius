@@ -76,13 +76,13 @@ cmdPlot.help = function cmdPlotHelp() {
     u.LogLines(
       [
         BtnAppend(`-t`),
-        ` -- print totals from the aggregated data; usage:`,
+        ` -- log totals from the aggregated data; usage:`,
       ],
       [`  -t`, `                      -- all additional totals`],
       [`  -t <stat>`, `               -- one specific stat`],
       [`  -t <stat> -t <stat> ...`, ` -- several specific totals`],
       `also:`
-      [`  `, BtnAppend(`-t=false`), ` -- disable totals (preset override)`],
+      [`  `, BtnAppend(`-t=false`), ` -- disable totals (override preset)`],
     ),
 
     u.LogLines(
@@ -102,7 +102,7 @@ cmdPlot.help = function cmdPlotHelp() {
 
     u.LogLines(
       [`tip: repeat a filter to combine via logical "OR"; examples:`],
-      [`  `, BtnAppend(`run_num=1 run_num=2`), ` -- first and second runs`],
+      [`  `, BtnAppend(`run_num=1 run_num=2`), `     -- first and second runs`],
       [`  `, BtnAppend(`round_num=1 round_num=2`), ` -- first and second rounds`],
     ),
 
@@ -350,20 +350,11 @@ export function PlotTitle({elem, opt, args, pre, close}) {
         (
           Z === `stat_type`
           ? [
-            withGlossary(agg, u.Bold(agg)),
-            u.Muted(` of `),
-            withGlossary(Z, u.Bold(Z)),
-            u.Muted(` per `),
-            withGlossary(X, u.Bold(X)),
+            Glos(agg), u.Muted(` of `), Glos(Z), u.Muted(` per `), Glos(X),
           ]
           : [
-            withGlossary(agg, u.Bold(agg)),
-            u.Muted(` of `),
-            withGlossary(Y, u.Bold(Y)),
-            u.Muted(` per `),
-            withGlossary(Z, u.Bold(Z)),
-            u.Muted(` per `),
-            withGlossary(X, u.Bold(X)),
+            Glos(agg), u.Muted(` of `), Glos(Y),
+            u.Muted(` per `), Glos(Z), u.Muted(` per `), Glos(X),
           ]
         ),
       ),
@@ -390,7 +381,7 @@ export function decodePlotAggOpt(src) {
 
   if (u.LOG_VERBOSE && srcPairs.length !== outPairs.length) {
     const opts = a.map(outPairs, u.cliEncodePair).join(` `)
-    if (opts) u.log.verb(`[plot] expanded opts: `, BtnAppend(opts))
+    if (opts) u.LOG.verb(`[plot] expanded opts: `, BtnAppend(opts))
   }
 
   for (let [key, val, pair] of outPairs) {
@@ -645,8 +636,8 @@ export async function plotDefault() {
     if (await fs.hasRoundFile(sig)) return await plotDefaultLocal()
   }
   catch (err) {
-    if (u.LOG_VERBOSE) u.log.err(`error analyzing latest run: `, err)
-    u.log.verb(`unable to plot latest run, plotting example run`)
+    if (u.LOG_VERBOSE) u.LOG.err(`error analyzing latest run: `, err)
+    u.LOG.verb(`unable to plot latest run, plotting example run`)
   }
   return plotDefaultExample(sig)
 }
@@ -1380,7 +1371,7 @@ export async function cmdPlotLink({sig, args}) {
     }
 
     if (key) {
-      u.log.err(
+      u.LOG.err(
         `unrecognized `, ui.BtnPrompt({cmd, suf: pair}),
         ` in `, ui.BtnPromptReplace({val: args})
       )
@@ -1414,8 +1405,8 @@ export async function cmdPlotLink({sig, args}) {
         ` to create a shareable link`,
       ],
       a.vac(!await fs.historyDirOpt(sig).catch(u.logErr)) && [
-        `warning: run history directory not initialized; run `,
-        os.BtnCmdWithHelp(`history`), ` to grant access`,
+        `warning: run history directory: access not granted; run `,
+        os.BtnCmdWithHelp(`history`), ` to grant`,
       ],
     )
   }
@@ -1426,7 +1417,7 @@ export async function cmdPlotLink({sig, args}) {
     const current = userId === au.STATE.userId
     const run = await apiLatestRun(sig, userId)
     if (!run) {
-      u.log.info(`no runs found for user `, userId, a.vac(current) && ` (current)`)
+      u.LOG.info(`no runs found for user `, userId, a.vac(current) && ` (current)`)
       continue
     }
 
@@ -1435,7 +1426,7 @@ export async function cmdPlotLink({sig, args}) {
     for (const val of PLOT_LINK_PRESETS) {
       url.searchParams.append(`run`, plotCmdCloud(val, runId))
     }
-    u.log.info(...await msgPlotLink(url))
+    u.LOG.info(...await msgPlotLink(url))
   }
 }
 
@@ -1527,7 +1518,7 @@ function PlotTotalEntry(counts, values, key) {
 
   // For the rest of this function we assume `omitted >= 0`.
   if (omitted < 0 && u.LOG_VERBOSE) {
-    u.log.verb(`[plot] unexpected state in plot totals: `, counts, values)
+    u.LOG.verb(`[plot] unexpected state in plot totals: `, counts, values)
   }
 
   if (!totalCount && !sampleCount) return undefined
@@ -1585,6 +1576,14 @@ function Sample({key, val, pre, preLen}) {
   })
   const clip = u.BtnClip(val)
   return [pre, btn, inf, clip]
+}
+
+// The underline offset prevents the underline from overlapping with `_`.
+function Glos(key) {
+  return withGlossary(
+    key,
+    E(`span`, {class: `underline decoration-dotted underline-offset-4`}, key),
+  )
 }
 
 function withGlossary(key, elem) {

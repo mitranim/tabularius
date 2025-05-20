@@ -78,14 +78,14 @@ function cmdLsHelp() {
     ),
     u.LogLines(
       `local usage:`,
-      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, suf: `/`})],
-      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, suf: `-s`}), ` -- additional stats`],
+      [`  `, os.BtnCmd(`ls /`)],
+      [`  `, os.BtnCmd(`ls -s`), ` -- additional stats`],
       [`  `, ui.BtnPrompt({full: true, cmd: `ls`, eph: `<some_dir>`})],
       [`  `, ui.BtnPrompt({full: true, cmd: `ls`, eph: `<some_dir>/<some_file>`})],
     ),
     u.LogLines(
       `cloud usage:`,
-      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, suf: `-c`})],
+      [`  `, os.BtnCmd(`ls -c`)],
       [`  `, ui.BtnPrompt({full: true, cmd: `ls`, suf: `-c `, eph: `<some_run_id>`})],
     ),
     u.LogLines(
@@ -129,21 +129,21 @@ export function cmdLs({sig, args}) {
     }
 
     if (key) {
-      u.log.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
+      u.LOG.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
       return os.cmdHelpDetailed(cmdLs)
     }
     paths.push(val)
   }
 
   if (paths.length > 1) {
-    u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
     return os.cmdHelpDetailed(cmdLs)
   }
   const path = paths[0]
 
   if (cloud) {
     if (stat) {
-      u.log.err(`ignoring `, ui.BtnPrompt({cmd, suf: `-s`}), ` in cloud mode in `, ui.BtnPromptReplace({val: args}))
+      u.LOG.err(`ignoring `, ui.BtnPrompt({cmd, suf: `-s`}), ` in cloud mode in `, ui.BtnPromptReplace({val: args}))
     }
     // TODO use user id as directory name.
     return au.listDirsFiles(sig, path)
@@ -172,11 +172,11 @@ async function main() {
     on the setup flow message, and avoid overwhelming them with help.
     */
     if (se.isSetupDone()) {
-      u.log.info(`welcome to Tabularius! 🚀`)
+      u.LOG.info(`welcome to Tabularius! 🚀`)
       await os.runCmd(`help`).catch(u.logErr)
     }
     else {
-      u.log.info(
+      u.LOG.info(
         `welcome to Tabularius! type or click `,
         os.BtnCmd(`help`), ` to see available commands 🚀`,
       )
@@ -206,7 +206,7 @@ async function main() {
         imported++
       }
       else {
-        u.log.err(`rejecting foreign import `, a.show(val), ` to avoid XSS`)
+        u.LOG.err(`rejecting foreign import `, a.show(val), ` to avoid XSS`)
       }
       continue
     }

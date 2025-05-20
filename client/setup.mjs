@@ -32,7 +32,7 @@ export async function cmdSaves({sig, args}) {
   if (u.hasHelpFlag(set)) return os.cmdHelpDetailed(cmdSaves)
 
   if (set.size > 1) {
-    u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
     return os.cmdHelpDetailed(cmdSaves)
   }
 
@@ -77,7 +77,7 @@ export async function cmdHistory({sig, args}) {
   if (u.hasHelpFlag(set)) return os.cmdHelpDetailed(cmdHistory)
 
   if (set.size > 1) {
-    u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
     return os.cmdHelpDetailed(cmdHistory)
   }
 
@@ -109,7 +109,7 @@ export async function confGranted({sig, conf, args}) {
   const handle = await fs.fileConfLoadedWithPermIdemp(sig, conf)
   if (handle) {
     const {name} = handle
-    u.log.info(
+    u.LOG.info(
       conf.desc, `: access granted`,
       // TODO: support quotes in CLI parsing.
       (
@@ -122,11 +122,11 @@ export async function confGranted({sig, conf, args}) {
   }
 
   if (!await fs.fileConfInitedIdemp(sig, conf)) {
-    u.log.info(conf.desc, `: not initialized; rerun `, os.BtnCmd(args))
+    u.LOG.info(conf.desc, `: access not granted; rerun `, os.BtnCmd(args))
     return false
   }
 
-  u.log.info(conf.desc, `: access granted`)
+  u.LOG.info(conf.desc, `: access granted`)
   return true
 }
 
@@ -134,12 +134,12 @@ export async function confRevoked({sig, conf}) {
   a.reqInst(conf, fs.FileConf)
 
   if (!conf.handle) {
-    u.log.info(conf.desc, `: access not granted`)
+    u.LOG.info(conf.desc, `: access not granted`)
     return false
   }
 
   await fs.fileConfDeinit(sig, conf)
-  u.log.info(conf.desc, `: access revoked`)
+  u.LOG.info(conf.desc, `: access revoked`)
   return true
 }
 
@@ -180,7 +180,7 @@ export function updateSetupFlowMsg(opt) {
   if (!change || (opt && save && hist && auth)) return
 
   SETUP_FLOW_PREV_MSG?.remove()
-  SETUP_FLOW_PREV_MSG = u.log.info(new SetupFlow())
+  SETUP_FLOW_PREV_MSG = u.LOG.info(new SetupFlow())
 }
 
 class SetupFlow extends u.ReacElem {
