@@ -727,6 +727,7 @@ export async function cmdShow({sig, args}) {
   const paths = []
 
   for (const [key, val, pair] of a.tail(u.cliDecode(args))) {
+    if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdShow)
     if (key === `-c`) opt.copy = ui.cliBool(cmd, key, val)
     else if (key === `-l`) opt.log = ui.cliBool(cmd, key, val)
     else if (key === `-w`) opt.write = ui.cliBool(cmd, key, val)
@@ -852,7 +853,10 @@ cmdRollback.help = function cmdRollbackHelp() {
 
 export async function cmdRollback({sig, args}) {
   const cmd = cmdRollback.cmd
-  if (u.stripPreSpaced(args, cmd)) {
+  args = u.splitCliArgs(u.stripPreSpaced(args, cmd))
+  if (u.hasHelpFlag(args)) return os.cmdHelpDetailed(cmdRollback)
+
+  if (args.length) {
     throw new u.ErrLog(
       `too many inputs; `, os.BtnCmd(cmd), ` takes no inputs`,
     )

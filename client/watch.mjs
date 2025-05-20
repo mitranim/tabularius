@@ -64,6 +64,7 @@ cmdWatch.help = function cmdWatchHelp() {
 }
 
 export async function cmdWatch(proc) {
+  if (u.hasHelpFlag(u.splitCliArgs(proc.args))) return os.cmdHelpDetailed(cmdWatch)
   if (isWatchingLocal()) return `already running`
 
   proc.desc = `acquiring lock`

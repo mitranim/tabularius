@@ -1374,7 +1374,7 @@ Additional:
 
 ---
 
-* [ ] Consider supporting `-h` and `--help` flags in all commands. Some users may be likely to try those.
+* [x] Consider supporting `-h` and `--help` flags in all commands. Some users may be likely to try those.
 
 ---
 
@@ -1526,8 +1526,9 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
         * `supply=1048576`
         * `recon=65536`
         * `tech=128`
-    * Discovery: `discovery=` (`.CurrentNeutralOdds`).
+    * [ ] Discovery: `discovery=` (`.CurrentNeutralOdds`).
       * Mention the format: 0 to 100.
+    * [ ] Get arbitrary amounts of arbitrary blueprints.
 
 ---
 
@@ -1629,3 +1630,9 @@ Plot totals: add `round_num`.
 ---
 
 `watch` and `upload`: avoid the overhead of re-reading the freshly backed-up file, pass the data to the upload code. Since we still want it to be invoked as a process, this requires us to introduce the ability to pass inputs other than CLI arguments to commands / processes.
+
+---
+
+* [x] `plot`: in help and plot titles, add tooltips which expand abbreviated terms to longer ones.
+
+Currently there's no indicator whether the target has a glossary tooltip or not. TODO improve.

@@ -43,6 +43,7 @@ cmdAuth.help = function cmdAuthHelp() {
 
 export async function cmdAuth({sig, args}) {
   const inps = u.splitCliArgs(u.stripPreSpaced(args, cmdAuth.cmd))
+  if (u.hasHelpFlag(inps)) return os.cmdHelpDetailed(cmdAuth)
 
   if (inps.length > 1) {
     u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))

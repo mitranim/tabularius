@@ -29,8 +29,7 @@ cmdSaves.help = function cmdSavesHelp() {
 
 export async function cmdSaves({sig, args}) {
   const set = u.cliArgSet(cmdSaves.cmd, args)
-  const help = set.has(`-h`) || set.has(`--help`)
-  if (help) return os.cmdHelpDetailed(cmdSaves)
+  if (u.hasHelpFlag(set)) return os.cmdHelpDetailed(cmdSaves)
 
   if (set.size > 1) {
     u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
@@ -75,8 +74,7 @@ cmdHistory.help = function cmdSavesHelp() {
 
 export async function cmdHistory({sig, args}) {
   const set = u.cliArgSet(cmdHistory.cmd, args)
-  const help = set.has(`-h`) || set.has(`--help`)
-  if (help) return os.cmdHelpDetailed(cmdHistory)
+  if (u.hasHelpFlag(set)) return os.cmdHelpDetailed(cmdHistory)
 
   if (set.size > 1) {
     u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
@@ -285,7 +283,8 @@ function NextStepAuth() {
   )
 }
 
-function AfterSavesAndHistory() {
+// Unused, TODO drop.
+function _AfterSavesAndHistory() {
   return [
     `after `, os.BtnCmdWithHelp(`saves`), ` and `, os.BtnCmdWithHelp(`history`),
     `, the app will automatically watch save files, build the run history`,

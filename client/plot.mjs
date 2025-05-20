@@ -128,6 +128,8 @@ export async function cmdPlot({sig, args, user}) {
   if (!args) return cmdPlot.help()
 
   const opt = decodePlotAggOpt(args)
+  if (opt.help) return os.cmdHelpDetailed(cmdPlot)
+
   const inp = {sig, args, opt, user}
   const {state} = ui.PLOT_PLACEHOLDER
   state.count++
@@ -348,10 +350,20 @@ export function PlotTitle({elem, opt, args, pre, close}) {
         (
           Z === `stat_type`
           ? [
-            u.Bold(agg), u.Muted(` of `), u.Bold(Z), u.Muted(` per `), u.Bold(X),
+            withGlossary(agg, u.Bold(agg)),
+            u.Muted(` of `),
+            withGlossary(Z, u.Bold(Z)),
+            u.Muted(` per `),
+            withGlossary(X, u.Bold(X)),
           ]
           : [
-            u.Bold(agg), u.Muted(` of `), u.Bold(Y), u.Muted(` per `), u.Bold(Z), u.Muted(` per `), u.Bold(X)
+            withGlossary(agg, u.Bold(agg)),
+            u.Muted(` of `),
+            withGlossary(Y, u.Bold(Y)),
+            u.Muted(` per `),
+            withGlossary(Z, u.Bold(Z)),
+            u.Muted(` per `),
+            withGlossary(X, u.Bold(X)),
           ]
         ),
       ),
@@ -382,6 +394,11 @@ export function decodePlotAggOpt(src) {
   }
 
   for (let [key, val, pair] of outPairs) {
+    if (u.isHelpFlag(key)) {
+      out.help = ui.cliBool(cmd, key, val)
+      return out
+    }
+
     keys.add(key)
 
     if (key === `-c`) {
@@ -580,38 +597,19 @@ export function decodePlotAggOpt(src) {
   return out
 }
 
-export const PLOT_PRESETS = new Map()
+export const PLOT_PRESETS = u.dict({
   // SYNC[plot_agg_opt_dmg].
-  .set(`dmg`, {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
-  })
-  .set(`chi_dmg`, {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
-  })
-  .set(`chi_dmg_over`, {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
-  })
-  .set(`eff`, {
-    args: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
-  })
-  .set(`dmg_over`, {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
-  })
-  .set(`dmg_runs`, {
-    args: `-x=run_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
-  })
-  .set(`eff_runs`, {
-    args: `-x=run_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
-  })
-  .set(`round_stats`, {
-    args: `-x=round_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
-  })
-  .set(`run_stats`, {
-    args: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
-  })
-  .set(`run_stats_all`, {
-    args: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=all`,
-  })
+  dmg: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+  chi_dmg: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
+  chi_dmg_over: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
+  eff: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+  dmg_over: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+  dmg_runs: `-x=run_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+  eff_runs: `-x=run_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+  round_stats: `-x=round_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+  run_stats: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+  run_stats_all: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=all`,
+})
 
 function plotAggOptExpandPresets(src) {
   const out = []
@@ -627,7 +625,7 @@ function plotAggOptExpandPresets(src) {
     }
 
     ui.cliEnum(cmdPlot.cmd, `-p`, val, PLOT_PRESETS)
-    const {args} = PLOT_PRESETS.get(val)
+    const args = PLOT_PRESETS[val]
 
     for (const prePair of u.cliDecode(args)) {
       if (over.has(prePair[0])) continue
@@ -1229,21 +1227,18 @@ function BtnAppendTrunc({key, val, width}) {
 }
 
 function FlagAppendBtns(src, flag) {
-  return a.map(src, key => BtnAppend(a.str(flag, `=`, key)))
+  return a.map(src, key => withGlossary(key, BtnAppend(a.str(flag, `=`, key))))
 }
 
-function Help_preset([key, {args, help}]) {
-  return [
-    BtnAppend(`-p=${key}`), ` -- `, BtnAppend(args),
-    a.vac(help) && [` `, help],
-  ]
+function Help_preset([key, args]) {
+  return [BtnAppend(`-p=${key}`), ` -- `, BtnAppend(args)]
 }
 
 function Help_Z(key) {
   a.reqValidStr(key)
-  const btn = BtnAppend(`-z=${key}`)
+  const btn = withGlossary(key, BtnAppend(`-z=${key}`))
   if (key === `round_num`) {
-    return [btn, ` (recommended: `, BtnAppend(`-x=run_num`), `)`]
+    return [btn, ` (recommended: also `, BtnAppend(`-x=run_num`), `)`]
   }
   if (key === `stat_type`) {
     // SYNC[plot_group_stat_type_z_versus_y].
@@ -1254,7 +1249,7 @@ function Help_Z(key) {
 
 function Help_filter(key) {
   a.reqValidStr(key)
-  const btn = BtnAppend(`${key}=`)
+  const btn = withGlossary(key, BtnAppend(`${key}=`))
   if (key === `user_id`) {
     return [btn, ` (special: `, BtnAppend(`user_id=all`), ` `, BtnAppend(`user_id=current`), `)`]
   }
@@ -1377,6 +1372,8 @@ export async function cmdPlotLink({sig, args}) {
   const userIds = []
 
   for (const [key, val, pair] of u.cliDecode(u.stripPreSpaced(args, cmd))) {
+    if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdPlotLink)
+
     if (key === `-c`) {
       cloud = ui.cliBool(cmd, key, val)
       continue
@@ -1588,4 +1585,13 @@ function Sample({key, val, pre, preLen}) {
   })
   const clip = u.BtnClip(val)
   return [pre, btn, inf, clip]
+}
+
+function withGlossary(key, elem) {
+  a.reqValidStr(key)
+  a.reqElement(elem)
+  const chi = s.GLOSSARY[a.reqStr(key)]
+  if (!chi) return elem
+  elem.classList.add(`cursor-help`)
+  return u.withTooltip({elem, chi})
 }

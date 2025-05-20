@@ -128,7 +128,7 @@ export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms}) 
     facts and mess up the stats. This is also why we use locking to avoid
     concurrent loading of the same round by multiple concurrent plot procs.
     */
-    if (dat.run_rounds?.has(round_id)) return
+    if (round_id in a.laxDict(dat.run_rounds)) return
 
     const round = await fs.readDecodeGameFile(sig, file)
     s.datAddRound({dat, round, user_id: USER_ID, run_num, run_ms, composite: true})

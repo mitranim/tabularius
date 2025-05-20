@@ -45,7 +45,9 @@ os.addCmd(u.cmdVerbose)
 os.addCmd(ui.cmdClear)
 
 // Show status of features and processes.
-export function cmdStatus() {
+export function cmdStatus({args}) {
+  if (u.hasHelpFlag(u.splitCliArgs(args))) return os.cmdHelpDetailed(cmdStatus)
+
   return u.LogParagraphs(
     new fs.FileConfStatus(fs.SAVE_DIR_CONF),
     new fs.FileConfStatus(fs.HISTORY_DIR_CONF),
@@ -114,6 +116,8 @@ export function cmdLs({sig, args}) {
   let stat
 
   for (const [key, val, pair] of pairs) {
+    if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdLs)
+
     if (key === `-c`) {
       cloud = ui.cliBool(cmd, key, val)
       continue
@@ -151,11 +155,6 @@ export function cmdLs({sig, args}) {
 async function main() {
   ui.init()
 
-  if (!u.QUERY.get(`import`)) {
-    u.log.info(`welcome to Tabularius! 🚀`)
-    await os.runCmd(`help`).catch(u.logErr)
-  }
-
   /*
   Attempt to load the FS handles before running anything else. Needed for FS
   migrations, and convenient for URL query "run" commands which rely on FS.
@@ -165,6 +164,24 @@ async function main() {
     fs.loadedSaveDir(u.sig).catch(u.logErr),
     fs.loadedHistoryDir(u.sig).catch(u.logErr),
   ]).catch(u.logErr)
+
+  if (!u.QUERY.get(`import`)) {
+    /*
+    Help is convenient to have on startup so you can click the commands. But
+    when the initial setup is not finished, we'd rather focus their attention
+    on the setup flow message, and avoid overwhelming them with help.
+    */
+    if (se.isSetupDone()) {
+      u.log.info(`welcome to Tabularius! 🚀`)
+      await os.runCmd(`help`).catch(u.logErr)
+    }
+    else {
+      u.log.info(
+        `welcome to Tabularius! type or click `,
+        os.BtnCmd(`help`), ` to see available commands 🚀`,
+      )
+    }
+  }
 
   // Other code relies on up-to-date FS state, so FS migrations run first.
   if (loadedHist) await fs.migOpt().catch(u.logErr)
@@ -221,8 +238,6 @@ async function main() {
   */
   if (lastProcPromise) await lastProcPromise
 
-  const setupDone = se.isSetupDone()
-
   if (!ranPlots && ui.MEDIA.isDefault()) {
     await os.runProc({
       fun: p.plotDefault,
@@ -231,7 +246,7 @@ async function main() {
     }).catch(u.logErr)
   }
 
-  if (!setupDone) se.updateSetupFlowMsg()
+  if (!se.isSetupDone()) se.updateSetupFlowMsg()
 }
 
 main().catch(u.logErr)

@@ -71,8 +71,8 @@ export function datAddRound({
   const time_ms = Date.parse(round.LastUpdated) || Date.now()
 
   if (runs) {
-    dat.runs ??= new Map()
-    dat.runs.set(run_id, {
+    dat.runs ??= a.Emp()
+    dat.runs[run_id] = {
       // schema_version: DATA_SCHEMA_VERSION,
       time_ms,
       ...runIds,
@@ -83,7 +83,7 @@ export function datAddRound({
       frontier_diff,
       frontier_doctrines: round.OwnedExpertSkills,
       // TODO game version!
-    })
+    }
   }
 
   const round_id = makeRoundId(user_id, run_num, run_ms, round.RoundIndex)
@@ -91,8 +91,8 @@ export function datAddRound({
   if (composite) roundIds.round_id = round_id
 
   if (run_rounds) {
-    dat.run_rounds ??= new Map()
-    dat.run_rounds.set(round_id, {
+    dat.run_rounds ??= a.Emp()
+    dat.run_rounds[round_id] = {
       // schema_version: DATA_SCHEMA_VERSION,
       time_ms,
       ...roundIds,
@@ -100,7 +100,7 @@ export function datAddRound({
       expired: round.MarkAsExpired,
       doctrines: round.Skills,
       neutral_odds: round.CurrentNeutralOdds,
-    })
+    }
   }
 
   if (!run_buis && !run_round_buis && !facts) return
@@ -113,13 +113,13 @@ export function datAddRound({
     const bui_kind = bui.BuildingType
 
     if (run_buis) {
-      dat.run_buis ??= new Map()
-      dat.run_buis.set(run_bui_id, {
+      dat.run_buis ??= a.Emp()
+      dat.run_buis[run_bui_id] = {
         // schema_version: DATA_SCHEMA_VERSION,
         ...runBuiIds,
         bui_type,
         bui_kind,
-      })
+      }
     }
 
     const run_round_bui_id = u.joinKeys(round_num, run_bui_id)
@@ -134,15 +134,15 @@ export function datAddRound({
     })
 
     if (run_round_buis) {
-      dat.run_round_buis ??= new Map()
-      dat.run_round_buis.set(run_round_bui_id, {
+      dat.run_round_buis ??= a.Emp()
+      dat.run_round_buis[run_round_bui_id] = {
         // schema_version: DATA_SCHEMA_VERSION,
         ...runRoundBuiIds,
         bui_upg,
         bui_type_upg,
         bui_cost,
         bui_cost_curr: bui.SellCurrencyType,
-      })
+      }
     }
 
     if (!facts) continue
@@ -442,15 +442,17 @@ export function encodeUpgrade(src) {
   return ind >= 0 ? `ABCDEFGHIJKLMNOPQRSTUVWXYZ`[ind] : ``
 }
 
-export const AGGS = new Map()
-  .set(`sum`, u.accSum)
-  .set(`avg`, u.accAvg)
-  .set(`count`, u.accCount)
+export const AGGS = u.dict({
+  sum: u.accSum,
+  avg: u.accAvg,
+  count: u.accCount,
+})
 
-export const AGG_TOTALS = new Map()
-  .set(`sum`, u.accSum)
-  .set(`avg`, u.accAvg)
-  .set(`count`, u.accSum)
+export const AGG_TOTALS = u.dict({
+  sum: u.accSum,
+  avg: u.accAvg,
+  count: u.accSum,
+})
 
 /*
 The "real" Y axis in our plots is always `.stat_val` of facts. Meanwhile, the
@@ -547,6 +549,44 @@ export const SUPPORTED_TOTAL_KEYS = new Set([
   `diff`,
   `frontier_diff`,
 ])
+
+export const GLOSSARY = u.dict({
+  dmg_done: `damage done`,
+  dmg_done_acc: `damage done accumulated`,
+
+  dmg_over: `damage overkill`,
+  dmg_over_acc: `damage overkill accumulated`,
+
+  cost_eff: `cost efficiency (dmg/cost)`,
+  cost_eff_acc: `cost efficiency accumulated`,
+
+  // user_id: undefined,
+  // run_id: undefined,
+  run_num: `run number (from 0)`,
+  // round_id: undefined,
+  round_num: `round number (from 1)`,
+  // stat_type: undefined,
+
+  agg: `aggregation`,
+  avg: `average`,
+  // sum: undefined,
+  // count: undefined,
+
+  ent_type: `entity type`,
+  bui_inst: `building instance`,
+  bui_type: `building type`,
+  bui_type_upg: `building type with upgrade`,
+  chi_type: `building child type`,
+
+  run_bui_id: `id of unique building in run`,
+  run_round_bui_chi: `child of a building in one round`,
+  run_round_bui: `a building in one round`,
+  run_round_bui_id: `id of a building in one round`,
+
+  hero: `commander`,
+  diff: `difficulty`,
+  frontier_diff: `frontier difficulty`,
+})
 
 export const SUPPORTED_TOTAL_KEYS_CHI = [...SUPPORTED_TOTAL_KEYS]
 export const SUPPORTED_TOTAL_KEYS_BUI = a.remove(SUPPORTED_TOTAL_KEYS_CHI, `chi_type`)
@@ -646,17 +686,17 @@ export function validPlotAggOpt(src) {
   if (!u.isIdent(agg)) {
     errs.push(`opt "-a" must be a valid aggregate name`)
   }
-  else if (!AGGS.has(agg)) {
+  else if (!(agg in AGGS)) {
     errs.push(`opt "-a" must be one of: ${a.show(a.keys(AGGS))}`)
   }
   else {
-    const totalFun = a.optFun(AGG_TOTALS.get(agg))
+    const totalFun = a.optFun(AGG_TOTALS[agg])
     if (!totalFun) {
       errs.push(`unknown how to calculate total for agg ${a.show(agg)}`)
     }
     else {
       out.agg = agg
-      out.aggFun = a.reqFun(AGGS.get(agg))
+      out.aggFun = a.reqFun(AGGS[agg])
       out.totalFun = totalFun
     }
   }

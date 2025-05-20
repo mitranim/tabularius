@@ -233,18 +233,19 @@ cmdKill.help = function cmdKillHelp() {
 }
 
 export function cmdKill({args}) {
-  const inps = u.splitCliArgs(u.stripPreSpaced(args, cmdKill.cmd))
-  const all = u.arrRemoved(inps, `-a`)
+  const inps = u.cliArgSet(cmdKill.cmd, args)
+  if (u.hasHelpFlag(inps)) return os.cmdHelpDetailed(cmdKill)
+  const all = inps.delete(`-a`)
 
   if (all) {
-    if (inps.length) {
+    if (inps.size) {
       u.log.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
       return os.cmdHelpDetailed(cmdKill)
     }
     return procKillAll()
   }
 
-  if (!inps.length) {
+  if (!inps.size) {
     u.log.err(`missing process id or name`)
     return os.cmdHelpDetailed(cmdKill)
   }
@@ -320,24 +321,22 @@ cmdHelp.cmd = `help`
 cmdHelp.desc = `brief summary of all commands, or detailed help on one command`
 
 export function cmdHelp({args}) {
-  args = u.splitCliArgs(args)
+  const inps = u.cliArgSet(cmdHelp.cmd, args)
+  if (u.hasHelpFlag(inps)) return os.cmdHelpDetailed(cmdHelp)
 
-  if (args.includes(`-h`) || args.includes(`--help`)) {
-    return os.cmdHelpDetailed(cmdHelp)
+  if (inps.size) {
+    for (const cmd of inps) u.log.info(cmdHelpDetailed(reqCmdByName(cmd)))
+    return
   }
 
-  if (args.length <= 1) {
-    return u.LogParagraphs(
-      `available commands:`,
-      ...a.map(CMDS, cmdHelpShort),
-      [
-        `pro tip: run commands on page load via URL query; for example, try appending to the URL: `,
-        u.BtnUrlAppend(`?run=plot -c -p=dmg user_id=all run_id=latest`),
-      ],
-    )
-  }
-
-  return cmdHelpDetailed(reqCmdByName(args[1]))
+  return u.LogParagraphs(
+    `available commands:`,
+    ...a.map(CMDS, cmdHelpShort),
+    [
+      `pro tip: run commands on page load via URL query; for example, try appending to the URL: `,
+      u.BtnUrlAppend(`?run=plot -c -p=dmg user_id=all run_id=latest`),
+    ],
+  )
 }
 
 export function cmdHelpDetailed(val) {

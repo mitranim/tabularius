@@ -213,7 +213,8 @@ export let LOG_VERBOSE = a.boolOpt(
 cmdVerbose.cmd = `verbose`
 cmdVerbose.desc = `toggle between quiet and verbose logging`
 
-export function cmdVerbose() {
+export function cmdVerbose({args}) {
+  if (u.hasHelpFlag(u.splitCliArgs(args))) return os.cmdHelpDetailed(cmdVerbose)
   LOG_VERBOSE = !LOG_VERBOSE
   storageSet(sessionStorage, STORAGE_KEY_VERBOSE, LOG_VERBOSE)
   storageSet(localStorage, STORAGE_KEY_VERBOSE, LOG_VERBOSE)
@@ -664,6 +665,9 @@ export async function asyncIterCollect(sig, src) {
   return out
 }
 
+export function isHelpFlag(val) {return val === `-h` || val === `--help`}
+export function hasHelpFlag(args) {return a.some(args, isHelpFlag)}
+
 export function cliArgSet(cmd, args) {
   a.reqValidStr(cmd)
   a.reqStr(args)
@@ -706,13 +710,6 @@ export function cliGroup(src) {
     else args.push(val)
   }
   return [flags, args]
-}
-
-// For super simple boolean CLI flags.
-export function arrRemoved(tar, val) {
-  const len = a.len(tar)
-  while (a.includes(tar, val)) tar.splice(a.indexOf(tar, val), 1)
-  return a.len(tar) < len
 }
 
 /*

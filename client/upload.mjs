@@ -85,6 +85,7 @@ export async function cmdUpload(proc) {
   let path = ``
 
   for (const [key, val, pair] of u.cliDecode(u.stripPreSpaced(args, cmd))) {
+    if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdUpload)
     if (key === `-p`) {
       opt.persistent = ui.cliBool(cmd, key, val)
       continue

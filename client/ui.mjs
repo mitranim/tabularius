@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 90
+const VERSION = 91
 let INITED
 
 /*
@@ -588,15 +588,12 @@ cmdClear.help = function cmdClearHelp() {
 }
 
 export function cmdClear({args}) {
-  args = u.splitCliArgs(args)
-  const log = u.arrRemoved(args, `-l`)
-  const media = u.arrRemoved(args, `-m`)
+  args = u.cliArgSet(cmdClear.cmd, args)
+  if (u.hasHelpFlag(args)) return os.cmdHelpDetailed(cmdClear)
 
-  switch (args.length) {
-    case 1:
-    case 2: break
-    default: return os.cmdHelpDetailed(cmdClear)
-  }
+  const log = args.delete(`-l`)
+  const media = args.delete(`-m`)
+  if (args.size) return os.cmdHelpDetailed(cmdClear)
 
   if (log || !media) u.log.clear()
   if (media || !log) MEDIA.clear()
@@ -616,7 +613,8 @@ export function cliEnum(cmd, flag, val, coll) {
   a.reqValidStr(flag)
   a.reqStr(val)
 
-  if (coll.has(val)) return val
+  const has = a.hasMeth(coll, `has`) ? coll.has(val) : val in u.reqPlainDict(coll)
+  if (has) return val
 
   throw new u.ErrLog(...u.LogLines(
     [`unrecognized `, BtnPrompt({cmd, suf: u.cliEq(flag, val)}), `, must be one of:`],
