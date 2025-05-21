@@ -8,10 +8,6 @@ import * as uc from './util_conf.mjs'
 export class Res extends Response {
   constructor(...src) {
     super(...src)
-    this.withCors()
-  }
-
-  withCors() {
     this.headers.append(`access-control-allow-origin`, `*`)
     this.headers.append(`access-control-allow-methods`, a.OPTIONS)
     this.headers.append(`access-control-allow-methods`, a.HEAD)
@@ -22,6 +18,7 @@ export class Res extends Response {
     this.headers.append(`access-control-allow-headers`, `cache-control`)
     this.headers.append(`access-control-allow-headers`, `content-type`)
     this.headers.append(`access-control-allow-headers`, `content-encoding`)
+    this.headers.append(`x-robots-tag`, `noindex, follow`)
     return this
   }
 }

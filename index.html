@@ -9,6 +9,18 @@
   <meta name="description" content="Book-keeper for Tower Dominion: run history, data analysis with plots, and more!">
   <meta name="og:description" content="Book-keeper for Tower Dominion: run history, data analysis with plots, and more!">
 
+  <!-- Instruct robots to index only one route without URL query stuff. -->
+  <link rel="canonical" href="https://mitranim.com/tabularius/">
+  <script id="meta_script">
+    document.getElementById(`meta_script`)?.remove()
+    if (window.location.search !== ``) {
+      const tar = document.createElement(`meta`)
+      tar.name = `robots`
+      tar.content = `noindex,follow`
+      document.head.append(tar)
+    }
+  </script>
+
   <style>
     html, body {
       width: 100vw;
