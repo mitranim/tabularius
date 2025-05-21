@@ -14,7 +14,7 @@ DOCKER_TAG_LATEST ?= $(PROJECT):latest
 DOCKER_ENV ?= --env-file=.env.default.properties
 DOCKER_VOL_PWD ?= -v=$(PWD):/app
 DOCKER_VOL_DATA ?= -v=$(PWD)/$(DATA_DIR):/app/$(DATA_DIR)
-DOCKER_PORTS ?= -p=$(PORT):$(PORT)
+DOCKER_PORTS ?= -p=$(SRV_PORT):$(SRV_PORT)
 DOCKER_BUILD := docker build --build-arg=PROJECT=$(PROJECT)
 DOCKER_RUN := docker run --init -it $(DOCKER_ENV)
 SRV := server/srv.mjs
@@ -38,7 +38,8 @@ dev:
 	$(MAKE_CONC) live srv
 
 dev_w dev: export DEV := $(DEV)
-srv_w srv: export PORT := $(PORT)
+srv_w srv: export SRV_HOST := $(SRV_HOST)
+srv_w srv: export SRV_PORT := $(SRV_PORT)
 srv_w srv: export LIVE_PORT := $(LIVE_PORT)
 srv_w srv: export LOG_DEBUG := $(LOG_DEBUG)
 srv_w srv: export DATA_DIR := $(DATA_DIR)
@@ -108,7 +109,7 @@ duck.script.mem:
 	duckdb < $(file)
 
 duck.attach.dev:
-	duckdb -cmd "attach 'http://localhost:$(PORT)/api/db' as db; use db;"
+	duckdb -cmd "attach 'http://localhost:$(SRV_PORT)/api/db' as db; use db;"
 
 duck.attach.prod:
 	duckdb -cmd "attach 'https://tabularius.mitranim.com/api/db' as db; use db;"

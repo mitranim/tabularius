@@ -16,7 +16,7 @@ In case of defeat, last snapshot indicates defeat.
 
 <!-- The app lets you view run history, per round, per run. -->
 
-The app may provide an option to roll back the save.
+* [x] The app may provide an option to roll back the save.
 
 <!-- Detect multiple concurrent instances of the app, only one should deal with files. -->
 
@@ -1654,3 +1654,7 @@ Schema: account for weapon uptime. For each weapon, get `timeSpentThisGame` and 
   * [ ] Consider supporting ASCII digraphs: = == < <= >= > != <>.
   * [ ] Return `{key, val, op, src}`.
 * [ ] Plot aggs: support those operators.
+
+---
+
+* [ ] A reminder to provide feedback (with links to Discord and GitHub).

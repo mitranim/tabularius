@@ -22,7 +22,8 @@ source = "tabularius_data"
 destination = "/app/data"
 
 [env]
-PORT = "8080"
+SRV_HOST = "0.0.0.0"
+SRV_PORT = "8080"
 LOG_DEBUG = "true"
 DATA_DIR = "/app/data"
 DB_FILE = "/app/data/tabularius.duckdb"

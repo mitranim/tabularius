@@ -25,8 +25,11 @@ async function main() {
 }
 
 function serve(ctx) {
-  const port = a.int(u.getEnv(`PORT`))
+  const hostname = u.getEnv(`SRV_HOST`)
+  const port = a.int(u.getEnv(`SRV_PORT`))
+
   Deno.serve({
+    hostname,
     port,
     handler: a.bind(respond, ctx),
     onListen({port, hostname}) {
