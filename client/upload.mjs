@@ -310,7 +310,7 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
 
   const path = u.paths.join(runName, file.name)
 
-  if (fs.isRunDirName(runName)) {
+  if (!fs.isRunDirName(runName)) {
     u.LOG.info(`[upload] skipping `, a.show(path), `: `, a.show(runName), ` doesn't appear to be a run directory`)
     return
   }
