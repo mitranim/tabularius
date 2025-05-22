@@ -455,3 +455,49 @@ export function isGameFileName(val) {
   a.reqStr(val)
   return val.endsWith(`.gd`) || val.endsWith(`.json`) || val.endsWith(`.json.gz`)
 }
+
+export class Semver extends a.Emp {
+  constructor(major, minor, patch) {
+    super()
+    this.major = a.isSome(major) ? BigInt(major) : 0n
+    this.minor = a.isSome(minor) ? BigInt(minor) : 0n
+    this.patch = a.isSome(patch) ? BigInt(patch) : 0n
+  }
+
+  static fromStringOpt(src) {
+    return a.isNil(src) ? undefined : this.fromString(src)
+  }
+
+  static fromString(src) {return new this().fromString(src)}
+
+  fromString(src) {
+    const parts = a.reqStr(src).replace(/^[vV]\.?/, ``).split(`.`).map(BigInt)
+    if (parts.length > 3) throw SyntaxError(`too many parts in semver ${a.show(src)}`)
+    const [major, minor, patch] = parts
+    this.major = major ?? 0n
+    this.minor = minor ?? 0n
+    this.patch = patch ?? 0n
+    return this
+  }
+
+  toString() {return this.major + `.` + this.minor + `.` + this.patch}
+
+  static compare(one, two) {
+    a.optInst(one, Semver)
+    a.optInst(two, Semver)
+
+    if (a.isSome(one) && a.isNil(two)) return -1
+    if (a.isNil(one) && a.isSome(two)) return 1
+
+    if (one.major < two.major) return -1
+    if (one.major > two.major) return 1
+
+    if (one.minor < two.minor) return -1
+    if (one.minor > two.minor) return 1
+
+    if (one.patch < two.patch) return -1
+    if (one.patch > two.patch) return 1
+
+    return 0
+  }
+}

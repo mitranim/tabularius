@@ -281,9 +281,8 @@ export async function uploadRun({sig, dir, userId, state, force}) {
   a.reqInst(dir, FileSystemDirectoryHandle)
   const runName = dir.name
 
-  // Questionable special case. TODO more general approach.
-  if (runName === fs.SHOW_DIR) {
-    u.LOG.info(`[upload] skipping `, a.show(runName))
+  if (!fs.isHandleRunDir(dir)) {
+    u.LOG.info(`[upload] skipping `, a.show(runName), `: doesn't appear to be a run directory`)
     return
   }
 
@@ -311,9 +310,8 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
 
   const path = u.paths.join(runName, file.name)
 
-  // Questionable special case. TODO more general approach.
-  if (runName === fs.SHOW_DIR) {
-    u.LOG.info(`[upload] skipping `, a.show(path))
+  if (fs.isRunDirName(runName)) {
+    u.LOG.info(`[upload] skipping `, a.show(path), `: `, a.show(runName), ` doesn't appear to be a run directory`)
     return
   }
 

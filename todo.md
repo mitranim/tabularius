@@ -1645,7 +1645,22 @@ Plot totals: add `round_num`.
 
 ---
 
-Schema: account for weapon uptime. For each weapon, get `timeSpentThisGame` and `timeSpentThisWave` from its dummy bullet stats. Normalize them into a proportion of the largest corresponding time in that round. Factor this into cost efficiency. Also calculate DPS, dividing damage by uptime. This produces 6 new stats.
+* [ ] More stats:
+  * [ ] Damage as percentage of total in round.
+  * [ ] Damage overkill as percentage of total in round.
+  * [ ] Uptime as percentage of total in round.
+  * [ ] DPS.
+  * [ ] DPS as percentage of total in round.
+  * [ ] Account for uptime in efficiency calculations, normalizing by max in round.
+
+* [ ] Uptime:
+  * [ ] For each weapon, get `timeSpentThisGame` and `timeSpentThisWave` from its dummy bullet stats.
+  * [ ] Normalize them into a proportion of the largest corresponding time in that round.
+
+---
+
+* [ ] `plot`: add an option to show Y as `%` of total per X. This can be done by post-processing a plot agg, for any stat.
+* [ ] When we add an overview table, this could be shown as separate columns.
 
 ---
 
@@ -1658,3 +1673,12 @@ Schema: account for weapon uptime. For each weapon, get `timeSpentThisGame` and 
 ---
 
 * [ ] A reminder to provide feedback (with links to Discord and GitHub).
+
+---
+
+* [x] Until the game declares its version in save files, do our own approximate version tracking.
+* [x] Version our hardcoded costs by game version.
+
+---
+
+`plot`: toggling a series should affect _all_ plots. Maybe even those which are added later.

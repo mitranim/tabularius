@@ -71,7 +71,8 @@ export function datQueryWhere(dat, opt) {
 // SYNC[plot_compare_run_desc].
 function compareRunDesc(one, two) {
   return (
-    a.reqNum(two.time_ms) - a.reqNum(one.time_ms) ||
+    a.reqNum(two.run_ms) - a.reqNum(one.run_ms) ||
+    a.reqNum(two.round_ms) - a.reqNum(one.round_ms) ||
     a.reqNum(two.run_num) - a.reqNum(one.run_num)
   )
 }

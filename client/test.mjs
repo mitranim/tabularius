@@ -1074,12 +1074,12 @@ missing -a, consider using a preset such as -p=dmg`,
   )
 
   test(
-    `-p=dmg frontier_diff=18`,
+    `-p=dmg frontier=18`,
     {
       X: `round_num`, Y: `dmg_done`, Z: `bui_type_upg`,
       agg: `sum`,
       userCurrent: true, runLatest: true,
-      where: {ent_type: [`run_round_bui`], frontier_diff: [18]},
+      where: {ent_type: [`run_round_bui`], frontier: [18]},
       totals: [],
     },
     {
@@ -1089,7 +1089,7 @@ missing -a, consider using a preset such as -p=dmg`,
       where: {
         ent_type: [`run_round_bui`],
         stat_type: [`dmg_done`],
-        frontier_diff: [18],
+        frontier: [18],
       },
       totals: [],
     },

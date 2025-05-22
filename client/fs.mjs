@@ -46,6 +46,8 @@ export class FileConf extends a.Emp {
 export const SAVE_DIR_NAME = `SaveFolder`
 export const SAVE_BACKUP_DIR_NAME = `Backup`
 export const PROG_FILE_NAME = `Progress.gd`
+export const BACKUP_DIR_NAME = `backup`
+export const SHOW_DIR_NAME = `show`
 
 /*
 "Picking" a progress file is deprecated and no longer supported in the CLI
@@ -643,8 +645,6 @@ export function StatTip(path) {
   return [`(tip: `, os.BtnCmd(a.spaced(cmd, path), cmd), ` adds stats)`]
 }
 
-export const SHOW_DIR = `show`
-
 cmdShow.cmd = `show`
 cmdShow.desc = `decode and show game files / runs / rounds, with flexible output options`
 
@@ -820,7 +820,7 @@ export async function showData({sig, path, data, opt}) {
     json ??= JSON.stringify(data, undefined, 2)
 
     const hist = await historyDirReq(sig)
-    const outDirName = SHOW_DIR
+    const outDirName = SHOW_DIR_NAME
     const outDir = await getDirectoryHandle(sig, hist, outDirName, {create: true})
 
     let outName = u.paths.name(path)
@@ -904,7 +904,7 @@ export async function cmdRollback({sig, args}) {
 export async function getBackupDir(sig, dir) {
   a.optInst(dir, FileSystemDirectoryHandle)
   dir ??= await historyDirReq(sig)
-  return getDirectoryHandle(sig, dir, `backup`, {create: true})
+  return getDirectoryHandle(sig, dir, BACKUP_DIR_NAME, {create: true})
 }
 
 export async function backupFile(sig, file, dir) {
@@ -1032,11 +1032,15 @@ export async function findLatestRunDir(sig, hist) {
   return a.head((await readDirDesc(sig, hist)).filter(isHandleRunDir))
 }
 
-// SYNC[run_id_name_format].
 export function isHandleRunDir(val) {
   a.reqInst(val, FileSystemHandle)
-  if (!isDir(val)) return false
-  const [run_num, run_ms] = u.splitKeys(val.name)
+  return isDir(val) && isRunDirName(val.name)
+}
+
+// SYNC[run_id_name_format].
+export function isRunDirName(val) {
+  if (!a.optStr(val)) return false
+  const [run_num, run_ms] = u.splitKeys(val)
   return a.isSome(u.toNatOpt(run_num)) && a.isSome(u.toNatOpt(run_ms))
 }
 

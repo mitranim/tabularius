@@ -174,6 +174,48 @@ export const NAMES_TO_CODES_SHORT = invert(CODES_TO_NAMES_SHORT)
 
 export const SELL_COST_MUL = 0.8
 
+export const DIFF_MAX_ROUND_NUM = new Map()
+  .set(0, 25)
+  .set(1, 28)
+  .set(2, 32)
+  .set(4, 35)
+  .set(5, 35)
+
+export const MAX_KNOWN_ROUND_NUM = 35
+
+function dict(val) {return a.assign(a.Emp(), val)}
+
+function invert(src) {
+  const out = a.Emp()
+  for (const [key, val] of a.entries(src)) out[val] = key
+  return out
+}
+
+export function findGameReleaseForMs(ms) {
+  a.reqFin(ms)
+
+  let prev
+  let next
+
+  for (next of GAME_RELEASES) {
+    if (!prev) {
+      prev = next
+      continue
+    }
+
+    // Fuzzy match: earliest available.
+    if (ms < prev.ms) return prev
+
+    // Precise match.
+    if (ms >= prev.ms && ms < next.ms) return next
+  }
+
+  if (!next) throw Error(`internal: no game release found for timestamp ${ms}`)
+
+  // Fuzzy match: latest available.
+  return next
+}
+
 /*
 We treat SmokSig as having the cost of an AirCom added to it.
 But Trevia's one is different and requires special handling.
@@ -188,7 +230,7 @@ As a special case, all Tech costs are 0. That's because their values are so low
 that they would dominate the plots without providing any useful info. Meanwhile,
 Recon costs are somewhat similar to Supply, so we mix them together.
 */
-export const BUI_COSTS = dict({
+export const BUI_COSTS_1_9 = dict({
   HQ01: {base: 0, upg: [[400, 250], [550, 200], [1500, 950]]},
   F101: {base: 300, upg: [[350, 300], [250, 280], [300, 0]]},
   F102: {base: 100, upg: [[100, 25], [150, 30], [200, 35]]},
@@ -244,27 +286,37 @@ export const BUI_COSTS = dict({
   SB07A: {base: 250},
 })
 
-BUI_COSTS.CB01R = a.reqObj(BUI_COSTS.CB01)
-BUI_COSTS.CB03R = a.reqObj(BUI_COSTS.CB03)
-BUI_COSTS.CB07R = a.reqObj(BUI_COSTS.CB07)
-BUI_COSTS.CB15R = a.reqObj(BUI_COSTS.CB15)
-BUI_COSTS.CB17R = a.reqObj(BUI_COSTS.CB17)
-BUI_COSTS.CB18R = a.reqObj(BUI_COSTS.CB18)
-BUI_COSTS.F101R = a.reqObj(BUI_COSTS.F101)
+BUI_COSTS_1_9.CB01R = a.reqObj(BUI_COSTS_1_9.CB01)
+BUI_COSTS_1_9.CB03R = a.reqObj(BUI_COSTS_1_9.CB03)
+BUI_COSTS_1_9.CB07R = a.reqObj(BUI_COSTS_1_9.CB07)
+BUI_COSTS_1_9.CB15R = a.reqObj(BUI_COSTS_1_9.CB15)
+BUI_COSTS_1_9.CB17R = a.reqObj(BUI_COSTS_1_9.CB17)
+BUI_COSTS_1_9.CB18R = a.reqObj(BUI_COSTS_1_9.CB18)
+BUI_COSTS_1_9.F101R = a.reqObj(BUI_COSTS_1_9.F101)
 
-export const DIFF_MAX_ROUND_NUM = new Map()
-  .set(0, 25)
-  .set(1, 28)
-  .set(2, 32)
-  .set(4, 35)
-  .set(5, 35)
+export const BUI_COSTS_1_11 = dict({
+  ...BUI_COSTS_1_9,
 
-export const MAX_KNOWN_ROUND_NUM = 35
+  //    {base: 525, upg: [[150, 175], [350, 0], [7200, 1050]]}
+  CB03: {base: 525, upg: [[150, 175], [350, 0], [4400, 1050]]},
 
-function dict(val) {return a.assign(a.Emp(), val)}
+  //    {base: 575, upg: [[100, 200], [300, 800], [850, 750]]}
+  CB02: {base: 575, upg: [[75, 200], [300, 800], [850, 750]]},
 
-function invert(src) {
-  const out = a.Emp()
-  for (const [key, val] of a.entries(src)) out[val] = key
-  return out
-}
+  //    {base: 850, upg: [[150, 40], [275, 250], [450, 0]]}
+  CB21: {base: 850, upg: [[150, 40], [275, 375], [450, 0]]},
+
+  //    {base: 900, upg: [[100, 450], [550, 1400], [0, 3250]]}
+  CB09: {base: 900, upg: [[100, 450], [550, 1400], [0, 2900]]},
+
+  //    {base: 2200, upg: [[400, 300], [350, 700], [0, 1250]]},
+  CB13: {base: 1600, upg: [[400, 300], [350, 700], [0, 1250]]},
+
+  //    {base: 270, upg: [[220, 450], [220, 350], [85, 600]]},
+  CB16: {base: 270, upg: [[120, 450], [120, 350], [85, 600]]},
+})
+
+export const GAME_RELEASES = [
+  {ver: `1.9.0`, ms: a.reqFin(Date.parse(`2025-05-15T16:00:00Z`)), costs: BUI_COSTS_1_9},
+  {ver: `1.11.0`, ms: a.reqFin(Date.parse(`2025-05-22T18:40:00Z`)), costs: BUI_COSTS_1_11},
+]

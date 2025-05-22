@@ -7,9 +7,15 @@ import * as u from './util.mjs'
 import * as gc from './game_const.mjs'
 
 /*
-TODO / missing: we need game versions in our stats.
+The game doesn't seem to provide its version in the game files. For now, we
+attempt to match the latest version and just hope that most of our users update
+both the game and our app together, which of course won't happen all the time.
+We need the game version actually specified in the game files!
 */
-export const DATA_SCHEMA_VERSION = 5
+export const GAME_SEMVER = Object.freeze(new u.Semver(1, 11))
+export const GAME_VER = GAME_SEMVER.toString()
+
+export const DATA_SCHEMA_VERSION = 6
 export const ROUND_FIELDS_SCHEMA_VERSION = 2
 export const DATA_DEBUG = false
 
@@ -39,9 +45,11 @@ export const DAT_TABLES_ALL = Object.freeze({
 const LOGGED_MISSING_COSTS = a.Emp()
 
 /*
-Decomposes a round into a flatter datasets for convenient aggregation.
+Decomposes a round into flatter datasets for convenient aggregation.
 The `composite` mode adds fields which are composite keys.
-On the client, they're necessary. On the server, they may be optional.
+At the moment, they're necessary on both client and server.
+If we ever implement support for ephemeral composite keys on the server,
+then the composite fields may be skipped when calling this in server code.
 */
 export function datAddRound({
   dat, round, user_id, run_num, run_ms, composite,
@@ -55,7 +63,6 @@ export function datAddRound({
   a.optBool(composite)
 
   let DEBUG_LOGGED = false
-
   const round_num = a.reqInt(round.RoundIndex)
 
   // Rounds with num 0 never have useful stats.
@@ -67,22 +74,22 @@ export function datAddRound({
 
   const hero = round.HeroType
   const diff = round.DifficultyLevel
-  const frontier_diff = round.CurrentExpertScore
-  const time_ms = Date.parse(round.LastUpdated) || Date.now()
+  const frontier = round.CurrentExpertScore
+  const round_ms = Date.parse(round.LastUpdated) || Date.now()
+  const release = gc.findGameReleaseForMs(round_ms)
+  const game_ver = a.reqValidStr(release.ver)
 
   if (runs) {
     dat.runs ??= a.Emp()
     dat.runs[run_id] = {
-      // schema_version: DATA_SCHEMA_VERSION,
-      time_ms,
+      game_ver,
       ...runIds,
       run_num,
       run_ms,
       hero,
       diff,
-      frontier_diff,
+      frontier,
       frontier_doctrines: round.OwnedExpertSkills,
-      // TODO game version!
     }
   }
 
@@ -93,10 +100,10 @@ export function datAddRound({
   if (run_rounds) {
     dat.run_rounds ??= a.Emp()
     dat.run_rounds[round_id] = {
-      // schema_version: DATA_SCHEMA_VERSION,
-      time_ms,
+      game_ver,
       ...roundIds,
       round_num,
+      round_ms,
       expired: round.MarkAsExpired,
       doctrines: round.Skills,
       neutral_odds: round.CurrentNeutralOdds,
@@ -115,7 +122,7 @@ export function datAddRound({
     if (run_buis) {
       dat.run_buis ??= a.Emp()
       dat.run_buis[run_bui_id] = {
-        // schema_version: DATA_SCHEMA_VERSION,
+        game_ver,
         ...runBuiIds,
         bui_type,
         bui_kind,
@@ -127,6 +134,7 @@ export function datAddRound({
     const bui_upg = encodeUpgrades(bui.PurchasedUpgrades)
     const bui_type_upg = u.joinKeys(bui_type, bui_upg)
     const bui_cost = buiCost({
+      release,
       bui_type,
       upgs: bui.PurchasedUpgrades,
       sell: bui.SellPrice,
@@ -136,7 +144,7 @@ export function datAddRound({
     if (run_round_buis) {
       dat.run_round_buis ??= a.Emp()
       dat.run_round_buis[run_round_bui_id] = {
-        // schema_version: DATA_SCHEMA_VERSION,
+        game_ver,
         ...runRoundBuiIds,
         bui_upg,
         bui_type_upg,
@@ -149,13 +157,13 @@ export function datAddRound({
     dat.facts ??= []
 
     const baseFact = {
-      // schema_version: DATA_SCHEMA_VERSION,
-      time_ms,
+      game_ver,
       run_ms,
+      round_ms,
       ...runRoundBuiIds,
       hero,
       diff,
-      frontier_diff,
+      frontier,
       run_num,
       round_num,
       bui_type,
@@ -504,6 +512,7 @@ where only the top series are kept.
 SYNC[plot_help_Z].
 */
 export const ALLOWED_Z_KEYS = new Set([
+  `game_ver`,
   `user_id`,
   `run_id`,
   `round_id`,
@@ -518,6 +527,7 @@ export const ALLOWED_Z_KEYS = new Set([
 ])
 
 export const ALLOWED_FILTER_KEYS = new Set([
+  `game_ver`,
   `user_id`,
   `run_id`,
   `run_num`,
@@ -532,11 +542,12 @@ export const ALLOWED_FILTER_KEYS = new Set([
   `stat_type`,
   `hero`,
   `diff`,
-  `frontier_diff`,
+  `frontier`,
 ])
 
 // SYNC[plot_agg_stats].
 export const SUPPORTED_TOTAL_KEYS = new Set([
+  `game_ver`,
   `user_id`,
   `run_id`,
   `run_num`,
@@ -547,7 +558,7 @@ export const SUPPORTED_TOTAL_KEYS = new Set([
   `chi_type`,
   `hero`,
   `diff`,
-  `frontier_diff`,
+  `frontier`,
 ])
 
 export const GLOSSARY = u.dict({
@@ -583,9 +594,10 @@ export const GLOSSARY = u.dict({
   run_round_bui: `a building in one round`,
   run_round_bui_id: `id of a building in one round`,
 
+  game_ver: `game version (known: ${a.head(gc.GAME_RELEASES).ver} -- ${a.last(gc.GAME_RELEASES).ver})`,
   hero: `commander`,
   diff: `difficulty`,
-  frontier_diff: `frontier difficulty`,
+  frontier: `frontier difficulty`,
 })
 
 export const SUPPORTED_TOTAL_KEYS_CHI = [...SUPPORTED_TOTAL_KEYS]
@@ -982,9 +994,7 @@ export function Z_X_totals(Z_X_Y, totalFun) {
 Note: we don't use this when calculating cost efficiency, because it wouldn't
 seem to make sense. Cost efficiency is per paid, not per would-be refunded.
 */
-export function buiSellPrice(type, upg) {
-  return buiCost(type, upg) * gc.SELL_COST_MUL
-}
+export function buiSellPrice(...src) {return buiCost(...src) * gc.SELL_COST_MUL}
 
 /*
 The game data specifies `bui.SellPrice`. However, at the time of writing, it
@@ -992,13 +1002,15 @@ only accounts for the building's own cost, but not for any of its upgrades.
 Which makes it unusable for our purposes, since we want to calculate cost
 efficiency _with_ upgrades.
 */
-export function buiCost({bui_type: type, upgs, sell, hero}) {
+export function buiCost({release, bui_type: type, upgs, sell, hero}) {
+  a.reqObj(release)
   a.reqStr(type)
   a.optArr(upgs)
   a.optFin(sell)
   a.optStr(hero)
 
-  const costs = gc.BUI_COSTS[type]
+  const costTable = a.reqObj(release.costs)
+  const costs = costTable[type]
 
   if (!costs) {
     // Neutral buildings don't have costs.
@@ -1084,12 +1096,18 @@ export function roundMigrated({round, userId, runNum, runMs}) {
   a.reqInt(runMs)
 
   let out = false
-
   if (changed(round, `tabularius_fields_schema_version`, ROUND_FIELDS_SCHEMA_VERSION)) out = true
+
+  if (
+    !a.isValidStr(round.tabularius_game_ver) &&
+    changed(round, `tabularius_game_ver`, GAME_VER)
+  ) out = true
+
   if (changed(round, `tabularius_user_id`, userId)) out = true
   if (changed(round, `tabularius_run_num`, runNum)) out = true
   if (changed(round, `tabularius_run_ms`, runMs)) out = true
 
+  // Drop deprecated fields.
   if (deleted(round, `tabularius_userId`)) out = true
   if (deleted(round, `tabularius_runId`)) out = true
   if (deleted(round, `tabularius_runNum`)) out = true

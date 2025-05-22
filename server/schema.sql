@@ -10,11 +10,7 @@ create table schema_version (
 /*
 There is no primary key because facts are always aggregated and never referenced.
 
-The constraints are for dev/debug purposes. TODO avoid them in production.
-We validate those fields in JS before creating facts (see `datAddRound`),
-so the DB-level constraints are redundant and waste performance.
-
-TODO rename `time_ms` to `round_ms`.
+`game_ver` must be normalized to our strict semver format; see `Semver`.
 
 TODO consider supporting (not in the data, but in the code) the ability to group
 on combinations of fields, for example (user_id, run_num).
@@ -39,19 +35,20 @@ table, instead of everything. The purpose would be to reduce the size of the
 impact on size and performance is unknown.
 */
 create table facts (
-  time_ms          bigint not null,
+  game_ver         text   not null,
   user_id          text   not null,
   run_id           text   not null,
   run_num          int    not null,
   run_ms           bigint not null,
   round_id         text   not null,
   round_num        int    not null,
+  round_ms         bigint not null,
   bui_inst         int    not null,
   run_bui_id       text   not null,
   run_round_bui_id text   not null,
   hero             text   not null,
   diff             int    not null,
-  frontier_diff    int    not null,
+  frontier         int    not null,
   bui_type         text   not null,
   bui_type_upg     text   not null,
   ent_type         text   not null,
@@ -62,6 +59,7 @@ create table facts (
   /*
   Sanity checks. Enable in development, disable in production.
   We validate this in JS before creating facts; see `datAddRound`.
+  DB-level constraints are redundant and waste performance.
   */
   /*
   constraint "facts.user_id"      check (user_id      <> ''),

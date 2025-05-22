@@ -122,4 +122,58 @@ t.test(function test_reversible_encoding_decoding_base64() {
   test([10, 20, 30, 40], `ChQeKA==`)
 })
 
+t.test(function test_Semver() {
+  function test(src, [major, minor, patch], expStr = src) {
+    const exp = new u.Semver(major, minor, patch)
+    const act = u.Semver.fromString(src)
+    t.eq({...act}, {...exp})
+    t.is(u.Semver.compare(act, exp), 0)
+    t.is(act.toString(), expStr)
+  }
+
+  t.is(u.Semver.fromStringOpt(), undefined)
+  t.is(u.Semver.fromStringOpt(undefined), undefined)
+  t.is(u.Semver.fromStringOpt(null), undefined)
+
+  test(``, [0, 0, 0], `0.0.0`)
+  test(`.`, [0, 0, 0], `0.0.0`)
+  test(`..`, [0, 0, 0], `0.0.0`)
+  test(`0`, [0, 0, 0], `0.0.0`)
+  test(`1`, [1, 0, 0], `1.0.0`)
+  test(`2`, [2, 0, 0], `2.0.0`)
+  test(`12`, [12, 0, 0], `12.0.0`)
+  test(`123`, [123, 0, 0], `123.0.0`)
+
+  test(`v`, [0, 0, 0], `0.0.0`)
+  test(`v1`, [1, 0, 0], `1.0.0`)
+  test(`v2`, [2, 0, 0], `2.0.0`)
+  test(`v12`, [12, 0, 0], `12.0.0`)
+  test(`v123`, [123, 0, 0], `123.0.0`)
+
+  test(`0.1`, [0, 1, 0], `0.1.0`)
+  test(`0.2`, [0, 2, 0], `0.2.0`)
+  test(`1.0`, [1, 0, 0], `1.0.0`)
+  test(`1.2`, [1, 2, 0], `1.2.0`)
+  test(`2.3`, [2, 3, 0], `2.3.0`)
+  test(`12.34`, [12, 34, 0], `12.34.0`)
+  test(`123.456`, [123, 456, 0], `123.456.0`)
+
+  test(`0.2.3`, [0, 2, 3])
+  test(`1.0.3`, [1, 0, 3])
+  test(`1.2.0`, [1, 2, 0])
+  test(`1.2.3`, [1, 2, 3])
+  test(`2.3.4`, [2, 3, 4])
+  test(`12.34.56`, [12, 34, 56])
+  test(`123.456.789`, [123, 456, 789])
+
+  function fail(src, msg) {
+    t.throws(() => u.Semver.fromString(src), Error, msg)
+  }
+
+  fail(`...`, `too many parts in semver "..."`)
+  fail(`str`, `Cannot convert str to a BigInt`)
+  fail(`10.str`, `Cannot convert str to a BigInt`)
+  fail(`10.20.str`, `Cannot convert str to a BigInt`)
+})
+
 console.log(`[test_shared] ok`)

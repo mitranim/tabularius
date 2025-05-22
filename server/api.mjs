@@ -56,7 +56,7 @@ let UPLOAD_TIMER_ID = 0
 export async function apiUploadRound(ctx, req) {
   const id = ++UPLOAD_TIMER_ID
   console.time(`[upload_${id}]`)
-  try {return new u.Res(a.jsonEncode(await uploadRound(ctx, req)))}
+  try {return new u.Res(jsonEncode(await uploadRound(ctx, req)))}
   finally {console.timeEnd(`[upload_${id}]`)}
 }
 
@@ -148,7 +148,7 @@ export async function uploadRound(ctx, req) {
 
 export async function apiPlotAgg(ctx, req) {
   const data = await plotAgg(ctx, req)
-  return new u.Res(JSON.stringify(data, jsonReplacer))
+  return new u.Res(jsonEncode(data))
 }
 
 /*
@@ -187,16 +187,12 @@ export async function plotAgg(ctx, req) {
     ${where}
   `
 
-  /*
-  The cast to `double` is redundant for most stats, but necessary for `count`
-  which otherwise produces a JS `BigInt` which is not JSON-serializable.
-  */
   const queryAggs = u.sql`
     with src as (${queryFacts})
     select
       ${u.sqlRaw(Z)} as Z,
       ${u.sqlRaw(X)} as X,
-      ${u.sqlRaw(opt.agg)}(stat_val)::double as Y
+      ${u.sqlRaw(opt.agg)}(stat_val) as Y
     from src
     group by
       ${u.sqlRaw(Z)},
@@ -396,7 +392,7 @@ function qLatestRunId(opt) {
       latest_runs as (
         select run_id
         from facts
-        order by run_ms desc, time_ms desc, run_num desc
+        order by run_ms desc, round_ms desc, run_num desc
         limit 1
       ),
     `,
@@ -428,7 +424,7 @@ export function qPlotAggTotals(facts, opt) {
   because `s.validPlotAggOpt` ensures stat keys are safe.
   */
   for (const key of keys) {
-    counts.push(/*sql*/`${key} := count(distinct ${key})::double`)
+    counts.push(/*sql*/`${key} := count(distinct ${key})`)
 
     const limit = TOTAL_VAL_LIMITS[key]
 
@@ -469,7 +465,7 @@ export async function apiLs(ctx, path) {
   try {
     path = u.gameFilePathFakeToReal(path)
     path = io.paths.join(ctx.userRunsDir, path)
-    return new u.Res(a.jsonEncode(await apiLsEntry(path)))
+    return new u.Res(jsonEncode(await apiLsEntry(path)))
   }
   finally {console.timeEnd(`[ls_${id}]`)}
 }
@@ -502,10 +498,19 @@ async function apiLsEntries(path) {
 
 function compareLsEntriesAsc(one, two) {return u.compareAsc(one.name, two.name)}
 
+function jsonEncode(src) {
+  // Workaround for default insanity of `JSON.stringify(undefined)` -> `undefined`.
+  if (a.isNil(src)) return `null`
+  return JSON.stringify(src, jsonReplacer)
+}
+
 /*
-We want to treat SQL `bigint` (`int64`) as JS number (`float64`) because we care
-more about actually showing data to client than about minor rounding errors.
-We could define a DB value converter, but this is much terser and easier.
+When sending the data back to clients, we treat SQL `int64` as JS `float64`
+rather than `BigInt`, because: `BigInt` requires special client-side code for
+decoding from JSON; we do not care about minor imprecision in count aggregates;
+we will probably never have imprecision in count aggregates; we will never have
+imprecision in millisecond timestamps since they come from JS. We could define
+a DB value converter, but this is much terser and easier for now.
 */
 function jsonReplacer(_, val) {
   if (a.isBigInt(val)) return Number(val)
@@ -524,7 +529,7 @@ async function apiLatestRun(ctx, userId) {
       run_ms
     from facts
     ${where}
-    order by run_ms desc, time_ms desc, run_num desc
+    order by run_ms desc, round_ms desc, run_num desc
     limit 1
   `
 
@@ -536,5 +541,5 @@ async function apiLatestRun(ctx, userId) {
   const out = await conn.queryDoc(text, args)
   if (out) out.run_ms = Number(out.run_ms)
 
-  return new u.Res(a.jsonEncode(out))
+  return new u.Res(jsonEncode(out))
 }

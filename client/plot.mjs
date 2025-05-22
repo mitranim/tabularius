@@ -475,6 +475,12 @@ export function decodePlotAggOpt(src) {
       continue
     }
 
+    if (key === `game_ver`) {
+      val = u.Semver.fromString(val).toString()
+      u.dictPush(out.where, key, val)
+      continue
+    }
+
     if (key === `user_id`) {
       if (val === `all`) {
         out.userCurrent = false
@@ -516,7 +522,7 @@ export function decodePlotAggOpt(src) {
 
     if (
       key === `diff` ||
-      key === `frontier_diff` ||
+      key === `frontier` ||
       key === `round_num`
     ) {
       const int = u.toNatOpt(val)
@@ -1516,7 +1522,7 @@ async function msgPlotLink(url) {
   ]
 }
 
-const PLOT_LINK_PRESETS = [`dmg_over`, `dmg`, `eff`, `chi_dmg`]
+export const PLOT_LINK_PRESETS = [`dmg_over`, `dmg`, `eff`, `chi_dmg`]
 
 function plotCmdLocal(preset, opt) {
   const quiet = a.optBool(a.optDict(opt)?.quiet)
