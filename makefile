@@ -25,28 +25,28 @@ TEST_TMP_DIR := .test_tmp
 help:
 	echo "Select one of the following commands."
 	echo "Run \`make -n <command_name>\` to see its definition."
-	echo "Recommended default for development: \`make dev_w\`."
+	echo "Recommended default for development: \`make dev.w\`."
 	echo
 	for val in $(MAKEFILE_LIST); do grep -E '^\S+:' $$val; done | sed 's/:.*//' | sort | uniq
 
-dev_w dev: export DEV := $(or $(DEV),true)
+dev.w dev: export DEV := $(or $(DEV),true)
 
-dev_w:
-	$(MAKE_CONC) live srv_w
+dev.w:
+	$(MAKE_CONC) live srv.w
 
 dev:
 	$(MAKE_CONC) live srv
 
-dev_w dev: export DEV := $(DEV)
-srv_w srv: export SRV_HOST := $(SRV_HOST)
-srv_w srv: export SRV_PORT := $(SRV_PORT)
-srv_w srv: export LIVE_PORT := $(LIVE_PORT)
-srv_w srv: export LOG_DEBUG := $(LOG_DEBUG)
-srv_w srv: export DATA_DIR := $(DATA_DIR)
-srv_w srv: export DB_FILE := $(DB_FILE)
-srv_w srv: export TMP_DIR := $(TMP_DIR)
+dev.w dev: export DEV := $(DEV)
+srv.w srv: export SRV_HOST := $(SRV_HOST)
+srv.w srv: export SRV_PORT := $(SRV_PORT)
+srv.w srv: export LIVE_PORT := $(LIVE_PORT)
+srv.w srv: export LOG_DEBUG := $(LOG_DEBUG)
+srv.w srv: export DATA_DIR := $(DATA_DIR)
+srv.w srv: export DB_FILE := $(DB_FILE)
+srv.w srv: export TMP_DIR := $(TMP_DIR)
 
-srv_w:
+srv.w:
 	$(DENO_WATCH) $(SRV)
 
 srv:
@@ -56,7 +56,7 @@ live: export LIVE_PORT := $(LIVE_PORT)
 live:
 	$(DENO_RUN) server/live.mjs
 
-run_w:
+run.w:
 	$(DENO_WATCH) $(run)
 
 run:
@@ -65,35 +65,35 @@ run:
 clean:
 	rm -rf $(TMP_DIR) $(TEST_TMP_DIR)
 
-server_test_w server_test shared_test_w shared_test: export TEST := true
-server_test_w server_test shared_test_w shared_test: export LOG_DEBUG := $(LOG_DEBUG)
+server.test.w server.test shared.test.w shared.test: export TEST := true
+server.test.w server.test shared.test.w shared.test: export LOG_DEBUG := $(LOG_DEBUG)
 
-server_test_w:
+server.test.w:
 	$(DENO_WATCH) server/test.mjs
 
-server_test: export LOG_DEBUG := $(LOG_DEBUG)
-server_test:
+server.test: export LOG_DEBUG := $(LOG_DEBUG)
+server.test:
 	$(DENO_RUN) server/test.mjs
 
-server_bench_w:
+server.bench.w:
 	$(DENO_WATCH) server/bench.mjs
 
-server_bench:
+server.bench:
 	$(DENO_RUN) server/bench.mjs
 
-shared_test_w:
+shared.test.w:
 	$(DENO_WATCH) shared/test.mjs
 
-shared_test:
+shared.test:
 	$(DENO_RUN) shared/test.mjs
 
-shared_bench_w:
+shared.bench.w:
 	$(DENO_WATCH) shared/bench.mjs
 
-shared_bench:
+shared.bench:
 	$(DENO_RUN) shared/bench.mjs
 
-mig_samples:
+mig.samples:
 	$(DENO_RUN) server/mig_samples.mjs
 
 repl:
