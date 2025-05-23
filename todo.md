@@ -1688,3 +1688,28 @@ Plot totals: add `round_num`.
 ---
 
 Set log width from URL query, use that in plot links (75% plot 25% log).
+
+---
+
+Server: start immediately, migrate DB asynchronously. While migrating, API requests which require DB access should return errors telling the client that the DB is being migrated, wait and retry later. We simply display those errors to users.
+
+Or, even better, for lower uptime:
+* On startup, if migration is needed:
+* Open a temporary DB file.
+* Build the new schema in the new DB.
+* During this operation, the upload endpoint builds a set of newly-uploaded rounds which are missing from the new DB.
+* After going through existing files, the migrate function enters a loop:
+  * Deduplicate the set of newly uploaded files with what it inserted (remember ids of all inserted rounds, or simply query the DB).
+  * Insert any missing rounds.
+  * As soon as there are no more pending rounds, acquire a lock on all DB operations, which we'll need to define, and which will be shared with all endpoints that use the DB.
+  * When the lock is acquired, check for newly uploaded rounds again.
+  * Once there are none:
+    * Checkpoint both DBs.
+    * Disconnect both DBs.
+    * Rename the old DB file.
+    * Rename the new DB file to the old file.
+    * Release the lock.
+
+---
+
+Figure out why some `facts` don't have `run_ms`, prevent it from happening. Similar for other timestamps.
