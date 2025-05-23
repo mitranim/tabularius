@@ -1474,8 +1474,10 @@ export async function cmdPlotLink({sig, args}) {
     )
   }
 
+  const url = urlClean()
+  url.searchParams.set(`log_width`, `25`)
+
   if (!cloud) {
-    const url = urlClean()
     for (const val of defaultLocalPlotCmds()) {
       url.searchParams.append(`run`, val)
     }
@@ -1505,7 +1507,6 @@ export async function cmdPlotLink({sig, args}) {
     }
 
     const runId = a.reqValidStr(run.run_id)
-    const url = urlClean()
     for (const val of PLOT_LINK_PRESETS) {
       url.searchParams.append(`run`, plotCmdCloud(val, runId))
     }

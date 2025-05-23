@@ -295,13 +295,14 @@ export const LOG = new class Log extends Elem {
   dragHandle = E(
     `div`,
     {
-      class: `w-1 shrink-0 h-full cursor-ew-resize bg-gray-400 dark:bg-neutral-600 opacity-50 hover:opacity-100 border-r border-gray-300 dark:border-neutral-700`,
+      class: `w-2 shrink-0 h-full cursor-ew-resize bg-gray-400 dark:bg-neutral-600 opacity-50 hover:opacity-100 border-r border-gray-300 dark:border-neutral-700`,
       onpointerdown: this.resizePointerdown,
       onpointerup: this.resizePointerup,
     },
   )
 
   currentWidth = (
+    percDecode(QUERY.get(`log_width`)) ??
     percDecode(sessionStorage.getItem(LOG_WIDTH_KEY)) ??
     percDecode(localStorage.getItem(LOG_WIDTH_KEY)) ??
     LOG_WIDTH_DEFAULT

@@ -1689,7 +1689,7 @@ Plot totals: add `round_num`.
 
 ---
 
-Set log width from URL query, use that in plot links (75% plot 25% log).
+* [x] Set log width from URL query, use that in plot links (75% plot 25% log).
 
 ---
 
