@@ -1661,6 +1661,8 @@ Plot totals: add `round_num`.
 
 * [ ] `plot`: add an option to show Y as `%` of total per X. This can be done by post-processing a plot agg, for any stat.
 * [ ] When we add an overview table, this could be shown as separate columns.
+* [ ] Or: add this as an _additional_ type of plot agg data, with a toggle to switch between the two modes on the fly; the plot tooltip would show a number from each mode.
+  * Plot tooltip should do this by default anyway.
 
 ---
 
@@ -1682,3 +1684,7 @@ Plot totals: add `round_num`.
 ---
 
 `plot`: toggling a series should affect _all_ plots. Maybe even those which are added later.
+
+---
+
+Set log width from URL query, use that in plot links (75% plot 25% log).
