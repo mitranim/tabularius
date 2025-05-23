@@ -1,5 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as o from '@mitranim/js/obs.mjs'
+import * as s from '../shared/schema.mjs'
 import {E} from './util.mjs'
 import * as u from './util.mjs'
 import * as i from './idb.mjs'
@@ -184,7 +185,8 @@ export async function fileConfLoadedWithPerm(sig, conf, req) {
   return undefined
 }
 
-export async function fileConfLoadIdemp(conf) {
+export async function fileConfLoadIdemp(sig, conf) {
+  u.reqSig(sig)
   const {handle} = a.reqInst(conf, FileConf)
   if (handle) await fileConfRequirePermission(sig, conf)
   else await fileConfLoad(conf)
@@ -839,7 +841,7 @@ cmdRollback.help = function cmdRollbackHelp() {
     cmdRollback.desc,
     [
       `finds the latest round in the latest run in the history directory and copies it to the game's save directory, overwriting `,
-      a.show(fs.PROG_FILE_NAME),
+      a.show(PROG_FILE_NAME),
     ],
     [
       `requires `, os.BtnCmdWithHelp(`saves`), `, to grant access to the save directory,`,
@@ -1423,13 +1425,15 @@ export async function getDirectoryHandle(sig, src, name, opt) {
 }
 
 export function reqFsFilePick() {
-  if (typeof showOpenFilePicker !== `function`) throw errFsApi()
-  return showOpenFilePicker
+  const fun = window.showOpenFilePicker
+  if (a.isFun(fun)) return fun
+  throw errFsApi()
 }
 
 export function reqFsDirPick() {
-  if (typeof showDirectoryPicker !== `function`) throw errFsApi()
-  return showDirectoryPicker
+  const fun = window.showDirectoryPicker
+  if (a.isFun(fun)) return fun
+  throw errFsApi()
 }
 
 export function errFsApi() {

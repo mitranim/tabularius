@@ -213,8 +213,12 @@ export let LOG_VERBOSE = a.boolOpt(
 cmdVerbose.cmd = `verbose`
 cmdVerbose.desc = `toggle between quiet and verbose logging`
 
-export function cmdVerbose({args}) {
-  if (u.hasHelpFlag(u.splitCliArgs(args))) return os.cmdHelpDetailed(cmdVerbose)
+export async function cmdVerbose({args}) {
+  if (hasHelpFlag(splitCliArgs(args))) {
+    const os = await import(`./os.mjs`)
+    return os.cmdHelpDetailed(cmdVerbose)
+  }
+
   LOG_VERBOSE = !LOG_VERBOSE
   storageSet(sessionStorage, STORAGE_KEY_VERBOSE, LOG_VERBOSE)
   storageSet(localStorage, STORAGE_KEY_VERBOSE, LOG_VERBOSE)
@@ -280,7 +284,7 @@ export const LOG = new class Log extends Elem {
   removedCount = 0
 
   removedMessageNotice = E(`div`, {
-    class: a.spaced(u.CLS_TEXT_GRAY, `text-center border-b border-gray-300 dark:border-neutral-700 pb-2`),
+    class: a.spaced(CLS_TEXT_GRAY, `text-center border-b border-gray-300 dark:border-neutral-700 pb-2`),
     hidden: true,
   })
 
@@ -411,8 +415,9 @@ export const LOG = new class Log extends Elem {
   }
 }()
 
+export const CLS_ERR = `text-red-600 dark:text-red-500`
 const LOG_MSG_CLS = `block w-full px-2 font-mono whitespace-pre-wrap overflow-wrap-anywhere border-l-4`
-const LOG_MSG_CLS_ERR = `text-red-600 dark:text-red-500 border-red-400 dark:border-red-600`
+const LOG_MSG_CLS_ERR = a.spaced(CLS_ERR, `border-red-400 dark:border-red-600`)
 const LOG_MSG_CLS_INFO = `border-transparent`
 const LOG_MSG_CLS_INFO_LATEST = `border-yellow-600 dark:border-yellow-800`
 const LOG_MSG_CLS_INFO_EVEN = `border-sky-600 dark:border-sky-800`
@@ -1245,4 +1250,8 @@ export function Bold(...chi) {
 
 export function Muted(...chi) {
   return E(`span`, {class: CLS_TEXT_GRAY}, ...chi)
+}
+
+export function ErrSpan(...chi) {
+  return E(`span`, {class: CLS_ERR}, ...chi)
 }

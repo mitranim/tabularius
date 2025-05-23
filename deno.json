@@ -7,12 +7,17 @@
   },
   "lint": {
     "rules": {
+      "include": [
+        "no-node-globals",
+        "no-process-global",
+        // "no-undef"
+      ],
       "exclude": [
         "no-window",
         "no-window-prefix",
         "constructor-super",
         "no-empty"
-      ]
-    }
+      ],
+    },
   }
 }

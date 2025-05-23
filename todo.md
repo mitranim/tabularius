@@ -1390,7 +1390,9 @@ Alternatively, get around that with `sw.mjs`.
 
 ---
 
-`make`: replace useless `deno lint` (fails to detect missing variable definitions) with `eslint`.
+* [ ] Replace `deno lint` with `eslint`.
+* [ ] Configure `eslint` with proper environment globals.
+  * [ ] Make sure to disable various gotcha globals nobody wants, like `name`.
 
 ---
 

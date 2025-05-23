@@ -2,6 +2,7 @@ import * as a from '@mitranim/js/all.mjs'
 import * as o from '@mitranim/js/obs.mjs'
 import {E} from './util.mjs'
 import * as u from './util.mjs'
+import * as ui from './ui.mjs'
 
 import * as self from './os.mjs'
 const tar = window.tabularius ??= a.Emp()
@@ -121,9 +122,6 @@ export async function runProc({fun, args, desc, obs, user, waitFor}) {
     return
   }
 
-  // Unfortunate cyclic dependency. TODO revise.
-  const ui = await import(`./ui.mjs`)
-
   if (!a.isPromise(out)) {
     if (waitFor) await waitFor.catch(u.logErr)
     logCmdDone(name, out, ui)
@@ -234,26 +232,26 @@ cmdKill.help = function cmdKillHelp() {
 
 export function cmdKill({args}) {
   const inps = u.cliArgSet(cmdKill.cmd, args)
-  if (u.hasHelpFlag(inps)) return os.cmdHelpDetailed(cmdKill)
+  if (u.hasHelpFlag(inps)) return cmdHelpDetailed(cmdKill)
   const all = inps.delete(`-a`)
 
   if (all) {
     if (inps.size) {
       u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
-      return os.cmdHelpDetailed(cmdKill)
+      return cmdHelpDetailed(cmdKill)
     }
     return procKillAll()
   }
 
   if (!inps.size) {
     u.LOG.err(`missing process id or name`)
-    return os.cmdHelpDetailed(cmdKill)
+    return cmdHelpDetailed(cmdKill)
   }
 
   const {count, msgs} = procKill(...inps)
 
   return u.LogLines(
-    a.vac(u.LOG_VERBOSE && count) && `sent kill signal to ${killed} processes`,
+    a.vac(u.LOG_VERBOSE && count) && `sent kill signal to ${count} processes`,
     ...msgs,
   )
 }
@@ -322,7 +320,7 @@ cmdHelp.desc = `brief summary of all commands, or detailed help on one command`
 
 export function cmdHelp({args}) {
   const inps = u.cliArgSet(cmdHelp.cmd, args)
-  if (u.hasHelpFlag(inps)) return os.cmdHelpDetailed(cmdHelp)
+  if (u.hasHelpFlag(inps)) return cmdHelpDetailed(cmdHelp)
 
   if (inps.size) {
     for (const cmd of inps) u.LOG.info(cmdHelpDetailed(reqCmdByName(cmd)))

@@ -115,7 +115,7 @@ duck.attach.prod:
 	duckdb -cmd "attach 'https://tabularius.mitranim.com/api/db' as db; use db;"
 
 lint:
-	deno lint
+	deno lint --compact
 
 docker.build.dev:
 	$(DOCKER_BUILD) -t=$(DOCKER_TAG_LATEST_DEV) -f=dockerfile_dev

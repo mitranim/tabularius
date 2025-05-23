@@ -731,13 +731,13 @@ await t.test(async function test_plotAgg() {
 })
 
 function _bigIntsToNums(src) {
-  if (a.isArr(src)) return a.map(src, bigIntsToNums)
+  if (a.isArr(src)) return a.map(src, _bigIntsToNums)
   if (a.isBigInt(src)) return Number(src)
   return src
 }
 
 function _numsToBigInts(src) {
-  if (a.isArr(src)) return a.map(src, numsToBigInts)
+  if (a.isArr(src)) return a.map(src, _numsToBigInts)
   if (a.isNum(src)) return BigInt(src)
   return src
 }
