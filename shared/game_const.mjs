@@ -199,15 +199,15 @@ export function findGameReleaseForMs(ms) {
 
   for (next of GAME_RELEASES) {
     if (!prev) {
+      // Fuzzy match: earliest available.
+      if (ms < next.ms) return next
+
       prev = next
       continue
     }
 
-    // Fuzzy match: earliest available.
-    if (ms < prev.ms) return prev
-
     // Precise match.
-    if (ms >= prev.ms && ms < next.ms) return next
+    if (ms >= prev.ms && ms < next.ms) return prev
   }
 
   if (!next) throw Error(`internal: no game release found for timestamp ${ms}`)
