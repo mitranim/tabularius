@@ -159,7 +159,7 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
     ? u.paths.strictRelTo(srcPath, rootPath)
     : u.paths.clean(srcPath)
   )
-  const [_, handle, resolvedPath] = await fs.handleAtPath({
+  const {handle, path: resolvedPath} = await fs.handleAtPathResolved({
     sig, handle: hist, path: relPath, magic: true,
   })
   const absPath = u.paths.join(rootPath, resolvedPath)

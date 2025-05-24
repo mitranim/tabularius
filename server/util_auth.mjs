@@ -6,13 +6,16 @@ import * as us from './util_srv.mjs'
 
 export const AUTH_TS_EXP = a.hourToMs(24)
 
-export function reqAuth(req) {
+export function reqAuthReq(req) {
   a.reqInst(req, Request)
-  const token = a.stripPre(req.headers.get(`authorization`), `Bearer `).trim()
-  let id
-  try {id = auth(token)}
+  try {return auth(reqBearer(req))}
   catch (err) {throw new us.ErrHttp(err, {cause: err, status: 401})}
-  return id
+}
+
+export function reqAuthOpt(req) {
+  a.reqInst(req, Request)
+  try {return auth(reqBearer(req))}
+  catch (err) {console.error(`ignoring auth token decoding error:`, err)}
 }
 
 export function auth(src, now) {
@@ -71,4 +74,9 @@ export function auth(src, now) {
     throw Error(`auth token: signature doesn't match claims`)
   }
   return pubHex
+}
+
+export function reqBearer(req) {
+  a.reqInst(req, Request)
+  a.stripPre(req.headers.get(`authorization`), `Bearer `).trim()
 }

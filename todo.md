@@ -1085,10 +1085,6 @@ Measure first. Get the execution times. Try querying facts from the client and c
 
 ---
 
-The command `show` needs to support cloud sources.
-
----
-
 `plot`: provide more detailed help on possible values of various filters. Should be collapsed by default.
 - [ ] `buiType`
 - [ ] `buiTypeUpg`
@@ -1497,6 +1493,8 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
       * `frontier=` (with or without any value) implies `diff=5`, suppresses other values of `diff=`, and unlocks Frontier.
     * [ ] Unlocking doctrines: `doctrine=all` unlocks everything; `doctrine=A doctrine=B ...` specifies which to unlock, and acts as filter in other edits.
       * [ ] Consider adding doctrine names to the code-title mapping tables.
+  * [ ] Log warnings about unused edit options.
+  * [ ] Support locking, an inverse of unlocking. Might be a boolean flag that flips the behavior for all unlocks, or something more specific and inline.
   * [ ] Support specifying a source file and a target file.
     * [ ] If only source is specified: error; requires target.
       * Mention that you can specify just the target; print the modified command as clickable.
@@ -1672,6 +1670,7 @@ Plot totals: add `round_num`.
   * [ ] Support a set of operators: = < > ≤ ≥ ≠.
   * [ ] Consider supporting ASCII digraphs: = == < <= >= > != <>.
   * [ ] Return `{key, val, op, src}`.
+  * [ ] Caller must opt into operators, otherwise only `=` is allowed.
 * [ ] Plot aggs: support those operators.
 
 ---
@@ -1715,3 +1714,9 @@ Or, even better, for lower uptime:
 ---
 
 Figure out why some `facts` don't have `run_ms`, prevent it from happening. Similar for other timestamps.
+
+---
+
+* [ ] Add an API for error reporting, and use it in `logErr`. Need to carefully select only "unexpected" errors, excluding `ErrLog`, abort errors, CLI decoding errors, and possibly more.
+  * [ ] Store reported errors in table `errs`.
+  * [ ] Send to Discord private server via webhook.

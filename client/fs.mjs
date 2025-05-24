@@ -539,7 +539,7 @@ export async function listDirsFiles({sig, path, stat}) {
     )
   }
 
-  const [_, handle, __] = await handleAtPathFromTop({sig, path})
+  const {handle} = await handleAtPathFromTop({sig, path})
   const {kind, name} = handle
 
   if (isFile(handle)) {
@@ -761,10 +761,10 @@ export async function cmdShow({sig, args}) {
 
 export async function showPath({sig, path, opt}) {
   u.reqSig(sig)
-  const [_, handle, resolvedPath] = await handleAtPathFromTop({
+  const {handle, path: resolved} = await handleAtPathFromTop({
     sig, path, magic: true,
   })
-  return showDirOrFile({sig, handle, path: resolvedPath, opt})
+  return showDirOrFile({sig, handle, path: resolved, opt})
 }
 
 export function showDirOrFile({sig, handle, path, opt}) {
@@ -994,6 +994,7 @@ export async function readRunsByNamesAscOpt(sig, hist, names) {
   return out
 }
 
+// TODO add file names.
 export async function collectGameFilesAsc(sig, dir) {
   const iter = readDir(sig, dir, isHandleGameFile)
   const handles = await u.asyncIterCollect(sig, iter)
@@ -1150,13 +1151,13 @@ export async function handleAtPathFromTop({sig, path, magic}) {
     ))
   }
 
-  const [parent, child, resolved] = await handleAtPath({
+  const {parent, handle, path: resolved} = await handleAtPathResolved({
     sig,
     handle: conf.handle,
     path: u.paths.join(...tail),
     magic,
   })
-  return [parent, child, u.paths.join(head, resolved)]
+  return {parent, handle, path: u.paths.join(head, resolved)}
 }
 
 function msgTopEntries(confs) {
@@ -1182,14 +1183,19 @@ function topEntryLines(confs) {
   return out
 }
 
-export async function handleAtPath({sig, handle, path, magic}) {
+export async function handleAtPath(opt) {
+  const {handle} = await handleAtPathResolved(opt)
+  return handle
+}
+
+export async function handleAtPathResolved({sig, handle, path, magic}) {
   u.reqSig(sig)
   a.reqInst(handle, FileSystemHandle)
   a.optBool(magic)
 
   path = u.paths.clean(a.laxStr(path))
   let parent = undefined
-  if (!path) return [parent, handle, path]
+  if (!path) return {parent, handle, path}
 
   const seg = []
   for (const name of u.paths.splitRel(path)) {
@@ -1201,7 +1207,7 @@ export async function handleAtPath({sig, handle, path, magic}) {
     )
     seg.push(handle.name)
   }
-  return [parent, handle, u.paths.join(...seg)]
+  return {parent, handle, path: u.paths.join(...seg)}
 }
 
 export function fileConfWithPermission(sig, conf) {
@@ -1384,43 +1390,43 @@ export async function getSubHandleMagic(sig, dir, name) {
   }
 }
 
-export async function getSubHandle(sig, src, name, opt) {
+export async function getSubHandle(sig, dir, name, opt) {
   u.reqSig(sig)
-  a.reqInst(src, FileSystemDirectoryHandle)
+  a.reqInst(dir, FileSystemDirectoryHandle)
   a.reqValidStr(name)
 
-  try {return await getFileHandle(sig, src, name, opt)}
+  try {return await getFileHandle(sig, dir, name, opt)}
   catch (err) {
     if (err?.cause?.name !== `TypeMismatchError`) throw err
   }
-  return await getDirectoryHandle(sig, src, name, opt)
+  return await getDirectoryHandle(sig, dir, name, opt)
 }
 
-export async function getFileHandle(sig, src, name, opt) {
+export async function getFileHandle(sig, dir, name, opt) {
   u.reqSig(sig)
-  a.reqInst(src, FileSystemDirectoryHandle)
+  a.reqInst(dir, FileSystemDirectoryHandle)
   a.reqValidStr(name)
 
   try {
-    return await u.wait(sig, src.getFileHandle(name, opt))
+    return await u.wait(sig, dir.getFileHandle(name, opt))
   }
   catch (err) {
-    throw new ErrFs(`unable to get file handle ${a.show(u.paths.join(src.name, name))}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to get file handle ${a.show(u.paths.join(dir.name, name))}: ${err}`, {cause: err})
   }
 }
 
-export async function getDirectoryHandle(sig, src, name, opt) {
+export async function getDirectoryHandle(sig, dir, name, opt) {
   u.reqSig(sig)
   a.reqValidStr(name)
 
-  if (!a.isInst(src, FileSystemDirectoryHandle)) {
-    throw new ErrFs(`unable to get directory handle ${a.show(u.paths.join(src.name, name))} because ${a.show(src.name)} is not a directory`)
+  if (!a.isInst(dir, FileSystemDirectoryHandle)) {
+    throw new ErrFs(`unable to get directory handle ${a.show(u.paths.join(dir.name, name))} because ${a.show(dir.name)} is not a directory`)
   }
   try {
-    return await u.wait(sig, src.getDirectoryHandle(name, opt))
+    return await u.wait(sig, dir.getDirectoryHandle(name, opt))
   }
   catch (err) {
-    throw new ErrFs(`unable to get directory handle ${a.show(u.paths.join(src.name, name))}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to get directory handle ${a.show(u.paths.join(dir.name, name))}: ${err}`, {cause: err})
   }
 }
 

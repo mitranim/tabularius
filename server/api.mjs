@@ -61,7 +61,7 @@ export async function apiUploadRound(ctx, req) {
 }
 
 export async function uploadRound(ctx, req) {
-  const reqUserId = u.reqAuth(req)
+  const reqUserId = u.reqAuthReq(req)
   if (!reqUserId) {
     throw new u.ErrHttp(`round upload requires authentication`, {status: 401})
   }
@@ -164,7 +164,7 @@ export async function plotAgg(ctx, req) {
 
   // SYNC[plot_user_current].
   if (opt.userCurrent) {
-    const id = u.reqAuth(req)
+    const id = u.reqAuthReq(req)
     if (!id) {
       // SYNC[plot_user_current_err_msg].
       throw new u.ErrHttp(`filtering cloud data by current user requires authentication`, {status: 401})
