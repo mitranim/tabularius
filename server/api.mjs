@@ -392,7 +392,7 @@ function qLatestRunId(opt) {
       latest_runs as (
         select run_id
         from facts
-        order by run_ms desc, round_ms desc, run_num desc
+        order by run_ms desc, run_num desc
         limit 1
       ),
     `,
