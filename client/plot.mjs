@@ -1524,7 +1524,7 @@ async function msgPlotLink(url) {
   ]
 }
 
-export const PLOT_LINK_PRESETS = [`dmg_over`, `chi_dmg`, `dmg`, `eff`]
+export const PLOT_LINK_PRESETS = [`dmg_over`, `chi_dmg`, `eff`, `dmg`]
 
 function plotCmdLocal(preset, opt) {
   const quiet = a.optBool(a.optDict(opt)?.quiet)
