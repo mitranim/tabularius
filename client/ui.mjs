@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 98
+const VERSION = 99
 let INITED
 
 /*

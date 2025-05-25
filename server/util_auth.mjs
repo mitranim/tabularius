@@ -78,5 +78,5 @@ export function auth(src, now) {
 
 export function reqBearer(req) {
   a.reqInst(req, Request)
-  a.stripPre(req.headers.get(`authorization`), `Bearer `).trim()
+  return a.stripPre(req.headers.get(`authorization`), `Bearer `).trim()
 }

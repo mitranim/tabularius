@@ -249,8 +249,8 @@ async function watchStep(sig, state) {
 
 function afterRoundBackup(eve) {
   u.broadcastToAllTabs(eve)
-  if (!au.STATE.userId) return
-  const {runDirName, roundFileName} = eve
+  const {prevRunNum, runDirName, roundFileName} = eve
+  if (!prevRunNum) p.plotDefaultLocalOpt({quiet: true}).catch(u.logErr)
+  if (!au.isAuthed()) return
   os.runCmd(`upload ${u.paths.join(runDirName, roundFileName)}`).catch(u.logErr)
-  if (!eve.prevRunNum) p.plotDefaultLocalOpt({quiet: true}).catch(u.logErr)
 }

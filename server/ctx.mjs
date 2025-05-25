@@ -29,7 +29,7 @@ export class Ctx extends a.Emp {
 
   async #dbInit() {
     const path = this.dbFile
-    if (path === `:memory:`) return
+    if (path === `:memory:`) return ud.DuckDb.create(path)
     await Deno.mkdir(io.paths.dir(path), {recursive: true})
     return ud.DuckDb.create(path)
   }
