@@ -295,7 +295,11 @@ export const LOG = new class Log extends Elem {
   dragHandle = E(
     `div`,
     {
-      class: `w-2 shrink-0 h-full cursor-ew-resize bg-gray-400 dark:bg-neutral-600 opacity-50 hover:opacity-100 border-r border-gray-300 dark:border-neutral-700`,
+      class: a.spaced(
+        `w-2 shrink-0 h-full cursor-ew-resize bg-gray-400 dark:bg-neutral-600 opacity-50 hover:opacity-100`,
+        `flex row-cen-cen`,
+        `after:content-[''] after:block after:w-[3px] after:h-8 after:shrink-1 after:min-w-0 after:bg-white dark:after:bg-black after:rounded`,
+      ),
       onpointerdown: this.resizePointerdown,
       onpointerup: this.resizePointerup,
     },
@@ -514,6 +518,26 @@ export function LogParagraphs(...chi) {return intersperseOpt(chi, LogNewlines)}
 export function LogNewline() {return `\n`}
 export function LogNewlines() {return `\n\n`}
 
+export function LogDetails({lvl, open, summary, summaryCls, chi}) {
+  a.optArr(chi)
+  lvl = a.laxNat(lvl)
+  if (!a.vac(chi)) return undefined
+
+  return E(`details`, {class: `inline-block w-full`, open},
+    E(
+      `summary`,
+      {class: `w-full trunc`},
+      `  `.repeat(lvl),
+      E(
+        `span`,
+        {class: summaryCls || `cursor-pointer hover:underline hover:decoration-dotted`},
+        summary,
+      ),
+    ),
+    ...chi,
+  )
+}
+
 export function removeClasses(tar, src) {tar.classList.remove(...splitCliArgs(src))}
 export function addClasses(tar, src) {tar.classList.add(...splitCliArgs(src))}
 
@@ -712,7 +736,18 @@ export function cliEncodePair([key, val]) {
 }
 
 export function cliEq(key, val) {
-  return a.reqStr(key) + `=` + a.reqStr(val)
+  return a.reqStr(key) + `=` + a.renderLax(val)
+}
+
+export function cliEqs(...pairs) {
+  const buf = []
+  for (const pair of pairs) {
+    const [key, val] = a.reqArr(pair)
+    a.reqValidStr(key)
+    if (a.isNil(val)) continue
+    buf.push(cliEq(key, val))
+  }
+  return buf.join(` `)
 }
 
 export function cliGroup(src) {
@@ -898,6 +933,16 @@ export const paths = new class PathsPosix extends pt.PathsPosix {
     src = this.clean(src)
     if (this.isRel(src)) return a.split(src, this.dirSep)
     throw Error(`${a.show(src)} is not a relative path`)
+  }
+
+  withNameSuffix(src, suf) {
+    a.reqValidStr(src)
+    a.reqValidStr(suf)
+    const dir = this.dir(src)
+    const base = this.base(src)
+    const seg = base.split(this.extSep)
+    seg[0] += suf
+    return this.join(dir, seg.join(this.extSep))
   }
 }()
 
@@ -1255,4 +1300,8 @@ export function Muted(...chi) {
 
 export function ErrSpan(...chi) {
   return E(`span`, {class: CLS_ERR}, ...chi)
+}
+
+export function External() {
+  return E(`span`, {class: `leading-none align-text-bottom`}, `↗`)
 }

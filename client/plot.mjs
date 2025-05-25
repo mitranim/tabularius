@@ -339,7 +339,7 @@ export function PlotTitle({elem, opt, args, pre, close}) {
       `div`,
       {
         class: a.spaced(
-          `flex-1 flex-shrink-1 w-full min-w-0`,
+          `flex-1 shrink-1 w-full min-w-0`,
           `flex col-sta-cen gap-2`,
         ),
       },
@@ -1520,7 +1520,7 @@ async function msgPlotLink(url) {
 
   return [
     (copied ? `copied plot link to clipboard: ` : `plot link: `),
-    E(`a`, {href, class: u.CLS_BTN_INLINE, ...ui.TARBLAN}, href),
+    E(`a`, {href, class: u.CLS_BTN_INLINE, ...ui.TARBLAN}, href, ` `, u.External()),
   ]
 }
 
@@ -1625,28 +1625,24 @@ function PlotTotalEntry(counts, values, key) {
 
   const INDENT2 = INDENT + INDENT
 
-  return E(`details`, {class: `inline-block w-full`},
-    E(
-      `summary`,
-      {class: `w-full trunc`},
-      INDENT,
-      E(`span`, {class: `cursor-pointer hover:underline hover:decoration-dotted`},
-        keyNode, totalCount,
-        // TODO: say "collapse" if already expanded.
-        u.Muted(
-          totalCount === sampleCount
-          ? ` (expand)`
-          : ` (expand ` + sampleCount + `)`
-        ),
+  return u.LogDetails({
+    lvl: 1,
+    summary: [
+      keyNode, totalCount,
+      // TODO: say "collapse" if already expanded.
+      u.Muted(
+        totalCount === sampleCount
+        ? ` (expand)`
+        : ` (expand ` + sampleCount + `)`
       ),
-    ),
-    ...u.LogLines(
+    ],
+    chi: u.LogLines(
       ...a.map(samples, val => Sample({key, val, pre: INDENT2})),
       a.vac(omitted) && u.Muted(
         INDENT2 + `... ` + omitted + ` omitted`,
       ),
     ),
-  )
+  })
 }
 
 function Sample({key, val, pre, preLen}) {

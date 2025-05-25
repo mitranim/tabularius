@@ -7,6 +7,7 @@ import * as ui from './ui.mjs'
 import * as au from './auth.mjs'
 import * as up from './upload.mjs'
 import * as p from './plot.mjs'
+import * as e from './edit.mjs'
 import * as se from './setup.mjs'
 
 import * as self from './main.mjs'
@@ -25,6 +26,7 @@ os.addCmd(se.cmdHistory)
 os.addCmd(au.cmdAuth)
 os.addCmd(p.cmdPlot)
 os.addCmd(p.cmdPlotLink)
+os.addCmd(e.cmdEdit)
 os.addCmd(fs.cmdRollback)
 
 cmdLs.cmd = `ls`

@@ -155,6 +155,356 @@ export const CODES_TO_BUIS_SHORT = dict({
 
 export const BUIS_TO_CODES_SHORT = invert(CODES_TO_BUIS_SHORT)
 
+// SYNC[bui_doct].
+export const BUI_DOCT = [
+  undefined,
+  `cost_1`,
+  `cost_2`,
+  `cost_3`,
+  `efficiency_1`,
+  `efficiency_2`,
+  `efficiency_3`,
+  `mastery`,
+]
+
+export const CODES_TO_DOCTS = dict({
+  D1_01: `First_reserve`,
+  D1_02: `Negotiation_skills`,
+  D1_03: `Solid_foundations`,
+  D1_04: `Personal_contact`,
+  D1_05: `Thorough_scouting`,
+  D1_06: `Drill_camps`,
+  D1_07: `Shooting_drills`,
+  D1_08: `Repair_team`,
+  D1_09: `Conquest_triumph`,
+  D1_10: `Stern_determination`,
+  D1_11: `First_defense_line`,
+  D1_12: `Structural_network`,
+  D1_13: `Reinforced_structure`,
+  D1_14: `Vicious_crossfire`,
+  D1_15: `Imperial_program`,
+  D1_16: `Simple_design`,
+  D1_17: `Non-standard_fabrication`,
+  D1_18: `Special_training`,
+  D1_19: `Military_academy`,
+  D1_20: `Intelligence_gathering`,
+  D1_21: `Direct_orders`,
+  D1_22: `Polyvalent_fireteams`,
+  D1_23: `Local_acquisition`,
+  D1_24: `Authority_requisition`,
+  D1_25: `Stock_control`,
+  D1_26: `Unbreakable_faith`,
+  D1_27: `Advanced_Mirador`,
+  D1_28: `Tight_ranks`,
+  D1_29: `Development_opportunity`,
+  D1_30: `Heavy_guns`,
+  D1_31: `Planified_installations`,
+  D1_32: `Local_collaboration`,
+  D1_33: `First_batch`,
+  D1_34: `Field_works`,
+  D1_35: `Hulky_fortress`,
+  D1_36: `Improved_foundation`,
+  D1_37: `Tireless_patrols`,
+  D1_38: `Batch_production`,
+  D1_39: `Lead_by_example`,
+  D1_40: `Simple_stock`,
+  D1_41: `Axiom_Omega`,
+  D1_42: `Axiom_Epsilon`,
+  D1_43: `Auxiliary_deployment`,
+  D2_01: `Optimised_setup`,
+  D2_02: `Heavy_draft`,
+  D2_03: `Polymesh_armor`,
+  D2_04: `Better_practices`,
+  D2_05: `Screening_patrol`,
+  D2_06: `Strict_obedience`,
+  D2_07: `Strenght_in_numbers`,
+  D2_08: `Special_coolants`,
+  D2_09: `Higher_intercession`,
+  D2_10: `High_Priority_Process`,
+  D2_11: `Mastercrafted_weapons`,
+  D2_12: `Rushed_installations`,
+  D2_13: `Efficient_design`,
+  D2_14: `Special_dotations`,
+  D2_15: `Surveying_sappers`,
+  D2_16: `Rapid_construction`,
+  D2_17: `Priority_clearance`,
+  D2_18: `Scouts_findings`,
+  D2_19: `High_orbit_relay`,
+  D2_20: `Imperial_research`,
+  D2_21: `Contingent_commission`,
+  D2_22: `Overclocked_cogitors`,
+  D2_23: `Headquarter_upgrade`,
+  D2_24: `Adjusted_priorities`,
+  D2_25: `Veteran_squads`,
+  D2_26: `Supply_chain`,
+  D2_27: `Acquisition_procedures`,
+  D2_28: `First_line`,
+  D2_29: `Imperial_fervor`,
+  D2_30: `Xenos_expertise`,
+  D2_31: `Pre-Calibrated_solutions`,
+  D2_32: `Advanced_Sturdy_bunker`,
+  D2_33: `Advanced_Durendal_position`,
+  D2_34: `Advanced_Scout_hideout`,
+  D2_35: `Advanced_Puma_position`,
+  D2_36: `Advanced_Claymore_defense`,
+  D2_37: `Advanced_Imperial_barrack`,
+  D2_38: `Supply_drops`,
+  D2_39: `Lofty_duties`,
+  D2_40: `Focus_militarization`,
+  D3_01: `High_grade_explosives`,
+  D3_02: `Heavy_industry`,
+  D3_03: `Best_armors`,
+  D3_04: `Honour_guard`,
+  D3_05: `Heavy_plating`,
+  D3_06: `Simple_mechanisms`,
+  D3_07: `For_the_Tsarina!`,
+  D3_08: `Final_stand`,
+  D3_09: `Suppressive_fire`,
+  D3_10: `High_ground`,
+  D3_11: `War_measures`,
+  D3_12: `Simple_tactics`,
+  D3_13: `Intelligence_expertise`,
+  D3_14: `Negotiation_expertise`,
+  D3_15: `Upgrade_Plans`,
+  D3_16: `Quality_over_quantity`,
+  D3_17: `Ionized_weapons`,
+  D3_18: `Air_domination`,
+  D3_19: `Unyielding_determination`,
+  D3_20: `Perfected_trackings`,
+  D3_21: `Final_mobilization`,
+  D3_22: `Immortal_fortress`,
+  D3_23: `Direct_assaults`,
+  D3_24: `Demand_forecast`,
+  D3_25: `Grande_offensive`,
+  D3_26: `Navy_collaboration`,
+  D3_27: `Veteran_garrison`,
+  D3_28: `Guard_of_the_Knotev`,
+  D3_29: `Grand_line`,
+
+  TBCB01D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB01), BUI_DOCT[1]),
+  TBCB01D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB01), BUI_DOCT[2]),
+  TBCB01D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB01), BUI_DOCT[3]),
+  TBCB01D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB01), BUI_DOCT[4]),
+  TBCB01D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB01), BUI_DOCT[5]),
+  TBCB01D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB01), BUI_DOCT[6]),
+  TBCB01D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB01), BUI_DOCT[7]),
+
+  TBCB02D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB02), BUI_DOCT[1]),
+  TBCB02D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB02), BUI_DOCT[2]),
+  TBCB02D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB02), BUI_DOCT[3]),
+  TBCB02D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB02), BUI_DOCT[4]),
+  TBCB02D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB02), BUI_DOCT[5]),
+  TBCB02D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB02), BUI_DOCT[6]),
+  TBCB02D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB02), BUI_DOCT[7]),
+
+  TBCB03D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB03), BUI_DOCT[1]),
+  TBCB03D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB03), BUI_DOCT[2]),
+  TBCB03D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB03), BUI_DOCT[3]),
+  TBCB03D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB03), BUI_DOCT[4]),
+  TBCB03D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB03), BUI_DOCT[5]),
+  TBCB03D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB03), BUI_DOCT[6]),
+  TBCB03D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB03), BUI_DOCT[7]),
+
+  TBCB04D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB04), BUI_DOCT[1]),
+  TBCB04D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB04), BUI_DOCT[2]),
+  TBCB04D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB04), BUI_DOCT[3]),
+  TBCB04D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB04), BUI_DOCT[4]),
+  TBCB04D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB04), BUI_DOCT[5]),
+  TBCB04D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB04), BUI_DOCT[6]),
+  TBCB04D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB04), BUI_DOCT[7]),
+
+  TBCB05D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB05), BUI_DOCT[1]),
+  TBCB05D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB05), BUI_DOCT[2]),
+  TBCB05D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB05), BUI_DOCT[3]),
+  TBCB05D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB05), BUI_DOCT[4]),
+  TBCB05D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB05), BUI_DOCT[5]),
+  TBCB05D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB05), BUI_DOCT[6]),
+  TBCB05D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB05), BUI_DOCT[7]),
+
+  TBCB06D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB06), BUI_DOCT[1]),
+  TBCB06D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB06), BUI_DOCT[2]),
+  TBCB06D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB06), BUI_DOCT[3]),
+  TBCB06D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB06), BUI_DOCT[4]),
+  TBCB06D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB06), BUI_DOCT[5]),
+  TBCB06D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB06), BUI_DOCT[6]),
+  TBCB06D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB06), BUI_DOCT[7]),
+
+  TBCB07D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB07), BUI_DOCT[1]),
+  TBCB07D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB07), BUI_DOCT[2]),
+  TBCB07D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB07), BUI_DOCT[3]),
+  TBCB07D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB07), BUI_DOCT[4]),
+  TBCB07D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB07), BUI_DOCT[5]),
+  TBCB07D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB07), BUI_DOCT[6]),
+  TBCB07D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB07), BUI_DOCT[7]),
+
+  TBCB08D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB08), BUI_DOCT[1]),
+  TBCB08D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB08), BUI_DOCT[2]),
+  TBCB08D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB08), BUI_DOCT[3]),
+  TBCB08D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB08), BUI_DOCT[4]),
+  TBCB08D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB08), BUI_DOCT[5]),
+  TBCB08D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB08), BUI_DOCT[6]),
+  TBCB08D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB08), BUI_DOCT[7]),
+
+  TBCB09D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB09), BUI_DOCT[1]),
+  TBCB09D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB09), BUI_DOCT[2]),
+  TBCB09D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB09), BUI_DOCT[3]),
+  TBCB09D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB09), BUI_DOCT[4]),
+  TBCB09D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB09), BUI_DOCT[5]),
+  TBCB09D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB09), BUI_DOCT[6]),
+  TBCB09D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB09), BUI_DOCT[7]),
+
+  TBCB10D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB10), BUI_DOCT[1]),
+  TBCB10D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB10), BUI_DOCT[2]),
+  TBCB10D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB10), BUI_DOCT[3]),
+  TBCB10D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB10), BUI_DOCT[4]),
+  TBCB10D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB10), BUI_DOCT[5]),
+  TBCB10D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB10), BUI_DOCT[6]),
+  TBCB10D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB10), BUI_DOCT[7]),
+
+  TBCB11D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB11), BUI_DOCT[1]),
+  TBCB11D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB11), BUI_DOCT[2]),
+  TBCB11D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB11), BUI_DOCT[3]),
+  TBCB11D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB11), BUI_DOCT[4]),
+  TBCB11D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB11), BUI_DOCT[5]),
+  TBCB11D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB11), BUI_DOCT[6]),
+  TBCB11D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB11), BUI_DOCT[7]),
+
+  TBCB13D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB13), BUI_DOCT[1]),
+  TBCB13D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB13), BUI_DOCT[2]),
+  TBCB13D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB13), BUI_DOCT[3]),
+  TBCB13D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB13), BUI_DOCT[4]),
+  TBCB13D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB13), BUI_DOCT[5]),
+  TBCB13D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB13), BUI_DOCT[6]),
+  TBCB13D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB13), BUI_DOCT[7]),
+
+  TBCB14D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB14), BUI_DOCT[1]),
+  TBCB14D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB14), BUI_DOCT[2]),
+  TBCB14D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB14), BUI_DOCT[3]),
+  TBCB14D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB14), BUI_DOCT[4]),
+  TBCB14D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB14), BUI_DOCT[5]),
+  TBCB14D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB14), BUI_DOCT[6]),
+  TBCB14D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB14), BUI_DOCT[7]),
+
+  TBCB15D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB15), BUI_DOCT[1]),
+  TBCB15D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB15), BUI_DOCT[2]),
+  TBCB15D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB15), BUI_DOCT[3]),
+  TBCB15D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB15), BUI_DOCT[4]),
+  TBCB15D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB15), BUI_DOCT[5]),
+  TBCB15D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB15), BUI_DOCT[6]),
+  TBCB15D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB15), BUI_DOCT[7]),
+
+  TBCB16D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB16), BUI_DOCT[1]),
+  TBCB16D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB16), BUI_DOCT[2]),
+  TBCB16D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB16), BUI_DOCT[3]),
+  TBCB16D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB16), BUI_DOCT[4]),
+  TBCB16D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB16), BUI_DOCT[5]),
+  TBCB16D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB16), BUI_DOCT[6]),
+  TBCB16D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB16), BUI_DOCT[7]),
+
+  TBCB17D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB17), BUI_DOCT[1]),
+  TBCB17D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB17), BUI_DOCT[2]),
+  TBCB17D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB17), BUI_DOCT[3]),
+  TBCB17D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB17), BUI_DOCT[4]),
+  TBCB17D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB17), BUI_DOCT[5]),
+  TBCB17D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB17), BUI_DOCT[6]),
+  TBCB17D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB17), BUI_DOCT[7]),
+
+  TBCB18D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB18), BUI_DOCT[1]),
+  TBCB18D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB18), BUI_DOCT[2]),
+  TBCB18D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB18), BUI_DOCT[3]),
+  TBCB18D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB18), BUI_DOCT[4]),
+  TBCB18D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB18), BUI_DOCT[5]),
+  TBCB18D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB18), BUI_DOCT[6]),
+  TBCB18D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB18), BUI_DOCT[7]),
+
+  TBCB19D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB19), BUI_DOCT[1]),
+  TBCB19D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB19), BUI_DOCT[2]),
+  TBCB19D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB19), BUI_DOCT[3]),
+  TBCB19D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB19), BUI_DOCT[4]),
+  TBCB19D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB19), BUI_DOCT[5]),
+  TBCB19D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB19), BUI_DOCT[6]),
+  TBCB19D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB19), BUI_DOCT[7]),
+
+  TBCB20D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB20), BUI_DOCT[1]),
+  TBCB20D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB20), BUI_DOCT[2]),
+  TBCB20D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB20), BUI_DOCT[3]),
+  TBCB20D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB20), BUI_DOCT[4]),
+  TBCB20D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB20), BUI_DOCT[5]),
+  TBCB20D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB20), BUI_DOCT[6]),
+  TBCB20D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB20), BUI_DOCT[7]),
+
+  TBCB21D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB21), BUI_DOCT[1]),
+  TBCB21D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB21), BUI_DOCT[2]),
+  TBCB21D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB21), BUI_DOCT[3]),
+  TBCB21D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB21), BUI_DOCT[4]),
+  TBCB21D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB21), BUI_DOCT[5]),
+  TBCB21D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB21), BUI_DOCT[6]),
+  TBCB21D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.CB21), BUI_DOCT[7]),
+
+  TBF101D1: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.F101), BUI_DOCT[1]),
+  TBF101D2: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.F101), BUI_DOCT[2]),
+  TBF101D3: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.F101), BUI_DOCT[3]),
+  TBF101D4: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.F101), BUI_DOCT[4]),
+  TBF101D5: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.F101), BUI_DOCT[5]),
+  TBF101D6: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.F101), BUI_DOCT[6]),
+  TBF101D7: joinKeys(a.reqValidStr(CODES_TO_BUIS_SHORT.F101), BUI_DOCT[7]),
+})
+
+export const DOCTS_TO_CODES = invert(CODES_TO_DOCTS)
+
+export const CODES_TO_CURSES = dict({
+  ND01: `Maintenance_debt`,
+  ND02: `Oversleeping_sentries`,
+  ND03: `Corrupted_datastone`,
+  ND04: `Safety_protocol_violation`,
+  ND05: `Unscheduled_inspection`,
+  ND06: `Low_grade_steel`,
+  ND07: `Faulty_wirings`,
+  ND08: `Scent_of_frizzled_meat`,
+  ND09: `Mutagen_leak`,
+  ND10: `Component_mismatch`,
+  ND11: `Crypted_blueprints`,
+  ND12: `Diplomatic_faux_pas`,
+  ND13: `Blocked_ramp`,
+  ND14: `Rushed_installations`,
+  ND15: `Top-down_planning`,
+  ND16: `Food_poisoning`,
+  ND17: `Battered_armor`,
+  ND18: `Local_landslide`,
+  ND19: `Tangled_deliveries`,
+  ND20: `Mixed_signals`,
+  ND21: `Unsettling_sightings`,
+  ND22: `Faulty_terrain`,
+  ND23: `Rushed_deadlines`,
+  ND24: `Faulty_radiator`,
+})
+
+export const CURSES_TO_CODES = invert(CODES_TO_CURSES)
+
+export const CODES_TO_DOTATIONS = dict({
+  FH01: `Vanguard_team`,
+  FH02: `Large_cargo`,
+  FH03: `Special_delivery`,
+  FH04: `Personal_stash`,
+  FH05: `Early_propaganda`,
+  FH06: `Light_mortars_delivery`,
+  FH07: `Ammo_depot_delivery`,
+  FH08: `Barricade_delivery`,
+  FH09: `Staging_ground_delivery`,
+  FH10: `Antenna_relay_delivery`,
+  FH11: `Advanced_Mirador_delivery`,
+  FH12: `Sturdy_bunkers_delivery`,
+  FH13: `Platforms_delivery`,
+  FH14: `Delayed_help`,
+  FH15: `Personal_squad`,
+  FH16: `Light_plating`,
+  FH17: `Engineering_skills`,
+  FH18: `Gunnery_skills`,
+  FH19: `Elite_regiment`,
+})
+
+export const DOTATIONS_TO_CODES = invert(CODES_TO_DOTATIONS)
+
 // TODO: add Scarlett, she probably has a special code like Laethissa.
 export const CODES_TO_CHIS_SHORT = dict({
   // Red commanders spawn as "children" of their HQ.
@@ -168,9 +518,67 @@ export const CHIS_TO_CODES_SHORT = invert(CODES_TO_CHIS_SHORT)
 export const CODES_TO_NAMES_SHORT = dict({
   ...CODES_TO_HEROS_SHORT,
   ...CODES_TO_BUIS_SHORT,
+  ...CODES_TO_DOCTS,
+  ...CODES_TO_CURSES,
+  ...CODES_TO_DOTATIONS,
 })
 
-export const NAMES_TO_CODES_SHORT = invert(CODES_TO_NAMES_SHORT)
+export const NAMES_TO_CODES = invert(CODES_TO_NAMES_SHORT)
+
+export const WEPS = new Set([
+  `AssaultTeam_Launcher`,
+  `Avenger_rack`,
+  `Barrage_LMG`,
+  `C2_mine_launcher`,
+  `C2_mine_launcher_area_denial`,
+  `Cruiser_canon`,
+  `Defender_M5`,
+  `Dual_Barrage_LMG`,
+  `Dual_Durendal_cannon`,
+  `Dual_Peacemaker_M3_pistol`,
+  `Durendal_blessed_canon`,
+  `Durendal_cannon`,
+  `Electric_arc_generator`,
+  `Eminus_M4`,
+  `Eminus_M4_F1`,
+  `Eminus_M4_modified`,
+  `F1H10CB01_Launcher`,
+  `Frag_launcher`,
+  `Gravity_well`,
+  `Heavy_flamer`,
+  `Heavy_vencedor`,
+  `Kladen_cannon`,
+  `Light_mortar_B2`,
+  `Mace`,
+  `Medium_mortar_B3`,
+  `Missile_launcher_GlorySeeker`,
+  `Missile_launcher_Python`,
+  `Multi_pulse`,
+  `Omega_emitter`,
+  `Omega_emitter_dual`,
+  `Pistol_flamer`,
+  `Protector_M2`,
+  `Pulse_cannon`,
+  `Pulse_rifle`,
+  `Quad_Barrage_LMG`,
+  `Rampart_silo`,
+  `Rampart_silo3A`,
+  `Reaper_cannon`,
+  `Retribution_rack`,
+  `Sanction_cannon_B5`,
+  `Sanction_cannon_B5_flak`,
+  `Shotgun_AS4`,
+  `Slovek_howitzer`,
+  `StormRifle_M8`,
+  `Super_Heavy_Pulse_cannon`,
+  `Super_Heavy_Pulse_cannon_experimental`,
+  `T8_Bomber`,
+  `Vencedor_MK2`,
+  `Vencedor_Pistol`,
+  `Warwolf_GM8`,
+  `Xenoprognosis_decelaration_field`,
+  `Xenoprognosis_modular_core`,
+])
 
 export const SELL_COST_MUL = 0.8
 
@@ -183,6 +591,11 @@ export const DIFF_MAX_ROUND_NUM = new Map()
 
 export const MAX_KNOWN_ROUND_NUM = 35
 
+export const DIFFS = new Set(a.range(1, 6))
+export const DIFF_MAX = a.last(DIFFS)
+export const FRONTIERS = new Set(a.range(1, 20))
+export const FRONTIER_MAX = a.last(FRONTIERS)
+
 function dict(val) {return a.assign(a.Emp(), val)}
 
 function invert(src) {
@@ -190,6 +603,52 @@ function invert(src) {
   for (const [key, val] of a.entries(src)) out[val] = key
   return out
 }
+
+export const ADV_UPG_SUF = `AdvUpg`
+
+export function buiCodeToAdvUpgCode(key) {
+  a.reqValidStr(key)
+  return key + ADV_UPG_SUF
+}
+
+export function advUpgCodeToBuiCode(key) {
+  a.reqValidStr(key)
+  if (!key.endsWith(ADV_UPG_SUF)) return undefined
+  return key.slice(0, -ADV_UPG_SUF.length)
+}
+
+export function codeToNameShort(key) {
+  a.reqStr(key)
+
+  const name = CODES_TO_NAMES_SHORT[key]
+  if (name) return name
+
+  const buiCode = advUpgCodeToBuiCode(key)
+  if (buiCode) return buiAdvUpgName(buiCode)
+
+  return key
+}
+
+// SYNC[bui_doct].
+export function masteryCodeToBuiCode(key) {
+  const mat = a.reqStr(key).match(/^TB(?<code>\S+)D7$/)
+  if (mat) return mat.groups.code
+  return undefined
+}
+
+export function masteryCodeToRelatedCodes(key) {
+  key = masteryCodeToBuiCode(key)
+  if (!key) return undefined
+  return a.map(a.range(1, BUI_DOCT.length), ind => `TB${key}D${ind}`)
+}
+
+export function buiAdvUpgName(key) {
+  a.reqValidStr(key)
+  const name = CODES_TO_BUIS_SHORT[key]
+  return joinKeys((name || key), `advanced_upgrades`)
+}
+
+function joinKeys(...src) {return a.joinOptLax(src, `_`)}
 
 export function findGameReleaseForMs(ms) {
   a.reqFin(ms)

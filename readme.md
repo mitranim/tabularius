@@ -1,6 +1,6 @@
 ## Overview
 
-Tabularius is a companion app for Tower Dominion. Automatic backups (local and cloud), run history, flexible data analysis, fancy plots!
+Tabularius is a companion app for Tower Dominion. Automatic backups (local and cloud), run history, save editing, flexible data analysis, fancy plots!
 
 ➡️ https://mitranim.com/tabularius/ 🚀
 
@@ -11,6 +11,7 @@ Tabularius is a companion app for Tower Dominion. Automatic backups (local and c
 - Terminal-style interface with command system
 - Automatic game save file tracking and backup
 - Local and cloud storage of game history
+- Save editing: lock or unlock any part of your meta-progression
 - Interactive data visualization and analytics
 - Cloud DB integration for global data comparison
 - Cross-tab synchronization
@@ -63,6 +64,14 @@ And more!
 - Periodic snapshots with deduplication
 - Organization by run and round IDs
 - Local storage with user-selected directory
+
+### Save Editing
+
+- Unlock or lock the maximum achieved difficulty
+- Unlock or lock any commanders, and set their difficulty badges
+- Unlock or lock any buildings
+- Unlock or lock any doctrines
+- See or unsee all weapons
 
 ### Data Analysis
 

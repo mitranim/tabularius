@@ -1459,42 +1459,43 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
 ---
 
 * [ ] Add an `edit` command for unlocking commanders, difficulties, etc.
-  * [ ] Default without `-w`: dry run.
-    * [ ] Requires read access to save dir.
-  * [ ] Takes a `-w` flag to confirm overwriting the files.
-    * [ ] Requires readwrite access to history dir for backups.
-    * [ ] Requires readwrite access to save dir.
-  * [ ] With or without `-w`, we always report every change, as well as non-changes for the specified edits.
+  * [x] Default without `-w`: dry run.
+    * [x] Requires read access to save dir.
+  * [x] Takes a `-w` flag to confirm overwriting the files.
+    * [x] Requires readwrite access to history dir for backups.
+    * [x] Requires readwrite access to save dir.
+  * [x] With or without `-w`, we always report every change, as well as non-changes for the specified edits.
     * Accumulate the entire summary and log it at once.
-  * [ ] With `-w`:
-    * [ ] Requires access to history dir.
-    * [ ] If don't have readwrite permission for save dir:
-      * [ ] Display a warning:
+  * [x] With `-w`:
+    * [x] Requires access to history dir.
+    * [x] If don't have readwrite permission for save dir:
+      * [x] Display a warning:
         * Game files will be modified.
         * Backups can be found in `<history_dir>/backup`.
         * Game must be closed. If game is running, it will ignore and overwrite all edits.
         * This warning is only displayed before granting readwrite access.
-      * [ ] Request readwrite permission.
-    * [ ] Make backups of all affected files:
-      * [ ] Add a timestamp after the name, like for runs.
-      * [ ] Write to `<history_dir>/backup`.
-  * [ ] Takes multiple inputs which specify which edits to make.
-  * [ ] Inputs are similar to plot filters. They act simultaneously as feature-enabling flags and as filters depending on the feature, due to co-dependencies. Examples:
-    * [ ] Unlocking commanders: `hero=all` unlocks all, filter `hero=A hero=B ...` limits which ones to unlock. In other edits, `hero=` is a filter.
+      * [x] Request readwrite permission.
+    * [x] Make backups of all affected files:
+      * [x] Add a timestamp after the name, like for runs.
+      * [x] Write to `<history_dir>/backup`.
+  * [x] Takes multiple inputs which specify which edits to make.
+  * [x] Inputs are similar to plot filters. They act simultaneously as feature-enabling flags and as filters depending on the feature, due to co-dependencies. Examples:
+    * [x] Unlocking commanders: `hero=all` unlocks all, filter `hero=A hero=B ...` limits which ones to unlock. In other edits, `hero=` is a filter.
     * [ ] Unlocking buildings, or limiting which buildings are affected by other edits: `bui_type=Mirad bui_type=Bunk ...`. In other edits, `bui_type=` is a filter.
       * [ ] Support full names as well; add a title-to-code table to `game_const.mjs` which includes both short and long titles.
-      * [ ] This also unlocks full building upgrades, skipping the initial level 1 lock.
-        * [ ] Key in unlockables: bui code + `AdvUpg`.
-      * [ ] `bui_type=all` unlocks all buildings.
-    * [ ] Unlocking commander difficulty badges: either `diff=` or `frontier=` tells us to perform this action, and `hero=` is an optional filter.
-      * [ ] Rename `frontier_diff` to `frontier` across the system.
-      * [ ] `diff=all` sets all badges to maximum.
-    * [ ] Unlocking difficulty: `diff=all` unlocks up to max, `diff=1|2|3|4|5` unlocks up to corresponding mode.
+      * [x] This also unlocks full building upgrades, skipping the initial level 1 lock.
+        * [x] Key in unlockables: bui code + `AdvUpg`.
+      * [x] `bui_type=all` unlocks all buildings.
+    * [x] Unlocking commander difficulty badges: either `diff=` or `frontier=` tells us to perform this action, and `hero=` is an optional filter.
+      * [x] Rename `frontier_diff` to `frontier` across the system.
+      * [x] `diff=all` sets all badges to maximum.
+    * [x] Unlocking difficulty: `diff=all` unlocks up to max, `diff=1|2|3|4|5` unlocks up to corresponding mode.
       * `frontier=` (with or without any value) implies `diff=5`, suppresses other values of `diff=`, and unlocks Frontier.
-    * [ ] Unlocking doctrines: `doctrine=all` unlocks everything; `doctrine=A doctrine=B ...` specifies which to unlock, and acts as filter in other edits.
-      * [ ] Consider adding doctrine names to the code-title mapping tables.
-  * [ ] Log warnings about unused edit options.
-  * [ ] Support locking, an inverse of unlocking. Might be a boolean flag that flips the behavior for all unlocks, or something more specific and inline.
+    * [x] Unlocking doctrines: `doctrine=all` unlocks everything; `doctrine=A doctrine=B ...` specifies which to unlock, and acts as filter in other edits.
+      * [x] Consider adding doctrine names to the code-title mapping tables.
+  * [x] Log warnings about unused edit options.
+  * [x] Support locking, an inverse of unlocking. Might be a boolean flag that flips the behavior for all unlocks, or something more specific and inline.
+  * [x] When unlocking something, make it "seen" for the Codex, and the opposite when locking.
   * [ ] Support specifying a source file and a target file.
     * [ ] If only source is specified: error; requires target.
       * Mention that you can specify just the target; print the modified command as clickable.
@@ -1720,3 +1721,19 @@ Figure out why some `facts` don't have `run_ms`, prevent it from happening. Simi
 * [ ] Add an API for error reporting, and use it in `logErr`. Need to carefully select only "unexpected" errors, excluding `ErrLog`, abort errors, CLI decoding errors, and possibly more.
   * [ ] Store reported errors in table `errs`.
   * [ ] Send to Discord private server via webhook.
+
+---
+
+* [ ] Update notifications:
+  * [ ] Move the UI version into a JSON file.
+  * [ ] Once a day, download that file and see if the version is increased.
+  * [ ] In the titlebar: the version indicator changes its appearance and suggests reloading to update.
+
+---
+
+* [ ] Consider packaging as a single executable which serves the UI on `localhost` and runs all FS operations in Deno. Requires downloading once, but no FS setup whatsoever.
+  * [ ] `deno compile` + GitHub Actions.
+  * [ ] Updating: click a button, app downloads a new executable and replaces the old one.
+    * [ ] Automatically check for updates and notify.
+  * [ ] Store data exactly like on the cloud server. Consolidate the code and remove client-side data manipulation.
+  * [ ] Instruct the user to place the executable into its own directory (suggest a path), where it will also store the accumulated data.

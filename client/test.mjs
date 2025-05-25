@@ -1,5 +1,5 @@
 /*
-Usage: add `import=js/test.mjs` to URL query.
+Usage: add `import=client/test.mjs` to URL query.
 */
 
 import * as a from '@mitranim/js/all.mjs'

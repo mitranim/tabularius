@@ -10,7 +10,7 @@
       "include": [
         "no-node-globals",
         "no-process-global",
-        // "no-undef"
+        // "no-undef",
       ],
       "exclude": [
         "no-window",

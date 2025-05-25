@@ -519,6 +519,7 @@ export const ALLOWED_Z_KEYS = new Set([
   `run_bui_id`,
   `run_num`,
   `round_num`,
+  `bui_inst`,
   `bui_type`,
   `bui_type_upg`,
   `ent_type`,

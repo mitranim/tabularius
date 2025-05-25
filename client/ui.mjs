@@ -11,7 +11,7 @@ tar.ui = self
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 97
+const VERSION = 98
 let INITED
 
 /*
@@ -65,7 +65,7 @@ export const TITLEBAR = E(
     E(`a`, {href: u.URL_CLEAN, class: u.CLS_BTN_INLINE}, `Tabularius`),
     ` — book-keeper for `,
     E(`a`, {href: STEAM_LINK, ...TARBLAN, class: u.CLS_BTN_INLINE},
-      `Tower Dominion`,
+      `Tower Dominion`, ` `, u.External(),
     ),
   ),
 
@@ -623,4 +623,21 @@ export function cliEnum(cmd, flag, val, coll) {
       key => BtnPrompt({cmd, suf: u.cliEq(flag, key)}),
     ).map(u.indentNode),
   ))
+}
+
+export function cliNat(cmd, key, val) {
+  a.reqValidStr(cmd)
+  a.reqValidStr(key)
+  a.reqStr(val)
+
+  const out = a.intOpt(val)
+  if (a.isSome(out)) return out
+
+  const pre = u.cliEq(key)
+
+  throw new u.ErrLog(
+    BtnPrompt({cmd, suf: pre}),
+    ` requires a positive integer, got `,
+    BtnPrompt({cmd, suf: pre, eph: val}),
+  )
 }

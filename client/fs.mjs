@@ -880,16 +880,9 @@ export async function cmdRollback({sig, args}) {
 
   const backPath = u.paths.join(
     histDir.name,
-    await backupFile(sig, targetFile, histDir),
+    await backupFile({sig, file: targetFile, dir: histDir}),
   )
-
-  u.LOG.info(...u.LogLines(
-    `backed up:`,
-    [`  `, a.show(tarPath)],
-    `  to:`,
-    [`  `, a.show(backPath)],
-  ))
-
+  u.LOG.info(...msgBackedUp(tarPath, backPath))
   await writeFile(sig, targetFile, body)
 
   return u.LogParagraphs(
@@ -909,11 +902,22 @@ export async function getBackupDir(sig, dir) {
   return getDirectoryHandle(sig, dir, BACKUP_DIR_NAME, {create: true})
 }
 
-export async function backupFile(sig, file, dir) {
-  dir = await getBackupDir(sig, dir)
+export async function backupFile({sig, file, dir, uniq}) {
+  const sub = await getBackupDir(sig, dir)
   const body = await readFileByteArr(sig, file)
-  await writeDirFile(sig, dir, file.name, body)
-  return u.paths.join(dir.name, file.name)
+  const name = (
+    a.optBool(uniq)
+    ? u.paths.withNameSuffix(file.name, `_` + Date.now())
+    : file.name
+  )
+  await writeDirFile(sig, sub, name, body)
+  return u.paths.join(dir.name, sub.name, name)
+}
+
+export function msgBackedUp(src, out) {
+  a.reqValidStr(src)
+  a.reqValidStr(out)
+  return [`backed up `, a.show(src), ` to `, a.show(out)]
 }
 
 export async function findLatestDirEntryReq(sig, dir, fun) {
@@ -1144,6 +1148,8 @@ export async function handleAtPathFromTop({sig, path, magic}) {
   }
 
   const conf = matches[0]
+
+  // This shouldn't even be possible since we require handles above.
   if (!conf.handle) {
     throw new u.ErrLog(...u.LogParagraphs(
       [`access to top-level FS entry `, a.show(head), ` is not granted;`],
@@ -1235,6 +1241,16 @@ export async function getSubFile(sig, dir, subDirName, fileName) {
   if (!subDir) return undefined
 
   return await getFileHandle(sig, subDir, fileName)
+}
+
+export async function copyFileTo(sig, file, dir) {
+  const body = await readFileByteArr(sig, file)
+  await writeDirFile(sig, dir, file.name, body)
+}
+
+export async function copyFileBetween(sig, srcDir, outDir, name) {
+  const file = await getFileHandle(sig, srcDir, name)
+  return copyFileTo(sig, file, outDir)
 }
 
 export async function writeDirFile(sig, dir, name, body) {
