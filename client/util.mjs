@@ -1,169 +1,21 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as p from '@mitranim/js/prax.mjs'
-import * as pt from '@mitranim/js/path.mjs'
 import * as o from '@mitranim/js/obs.mjs'
-import * as od from '@mitranim/js/obs_dom.mjs'
-import * as dr from '@mitranim/js/dom_reg.mjs'
-import * as tw from '@twind/core'
-import tp from '@twind/preset-autoprefix'
-import tt from '@twind/preset-tailwind'
-import * as su from '../shared/util.mjs'
+import * as pt from '@mitranim/js/path.mjs'
 export * from '../shared/util.mjs'
 
-import * as self from './util.mjs'
+import * as u from './util.mjs'
 const tar = window.tabularius ??= a.Emp()
-tar.u = self
-tar.lib ??= a.Emp()
-tar.lib.a = a
-tar.lib.p = p
-tar.lib.o = o
-tar.lib.od = od
-tar.lib.dr = dr
-tar.lib.tw = tw
+tar.u = u
 a.patch(window, tar)
-
-/*
-This library hacks into the DOM, detects changes in the `.className` of any
-element, and dynamically generates Tailwind-compliant styles for the classes
-we actually use.
-*/
-tw.install({
-  presets: [tp(), tt()],
-  hash: false,
-  theme: {
-    extend: {
-      /*
-      Twind accepts colors only in the hex and HSL (legacy only) formats.
-      Tailwind classes are defined in `oklah` by default. When experimenting
-      with colors in the `oklah` format, use https://oklch.com for converting
-      between `oklah` and hex. Beware of browser devtools: at the time of
-      writing, in Chrome 135, conversions involving `oklah` are buggy. For
-      colors, conversion to `oklah` from many other formats (tested with hex
-      and `hsl`) often produces incorrect results.
-      */
-      colors: {
-        'root-dark': `#0c0a09`, // stone-950
-        'base-dark': `#1c1917`, // stone-900
-      },
-      animation: {
-        'flash-light': `flash-light 1s ease-out`,
-        'flash-dark': `flash-dark 1s ease-out`,
-      },
-      keyframes: {
-        'flash-light': {
-          '0%, 100%': {backgroundColor: `transparent`},
-          '20%': {backgroundColor: `oklch(0.945 0.129 101.54)`}, // yellow-200
-        },
-        'flash-dark': {
-          '0%, 100%': {backgroundColor: `transparent`},
-          '20%': {backgroundColor: `oklch(0.476 0.114 61.907)`}, // yellow-800
-        },
-      },
-    },
-  },
-  rules: [
-    /*
-    Caller MUST also set width.
-
-    Uses `overflow-clip` rather than `overflow-hidden` because the latter
-    creates a new formatting context, requiring additional `align-top` or
-    `align-bottom` to avoid messing up alignment for other elements on the
-    same line. `overflow-clip` seems strictly superior.
-    */
-    [`trunc`, `inline-block min-w-0 whitespace-pre overflow-x-clip text-ellipsis`],
-    [`row-cen-cen`, `flex-row justify-center items-center`],
-    [`row-bet-cen`, `flex-row justify-between items-center`],
-    [`col-cen-cen`, `flex-col justify-center items-center`],
-    [`col-cen-sta`, `flex-col justify-center items-start`],
-    [`col-sta-str`, `flex-col justify-start items-stretch`],
-    [`col-sta-cen`, `flex-col justify-start items-center`],
-  ],
-  ignorelist: [`media-grid`],
-})
-
-/*
-Needed for `dr.MixReg`, which enables automatic registration of any custom
-elements that we define.
-*/
-dr.Reg.main.setDefiner(customElements)
 
 export const URL_CLEAN = new URL(window.location)
 URL_CLEAN.search = ``
 URL_CLEAN.hash = ``
 
 export const QUERY = urlQuery(window.location.search)
+export const DEV = a.boolOpt(QUERY.get(`dev`))
 export const API_LOCAL = a.boolOpt(QUERY.get(`local`))
 export const API_URL = API_LOCAL ? `/api/` : `https://tabularius.mitranim.com/api/`
-
-// Initialize renderer.
-const ren = new class Ren extends p.Ren {
-  /*
-  Minor workaround for a bug in the library code, where `.toNode` is not
-  supported properly. We need it for `ErrLog`.
-  */
-  appendChi(tar, src) {
-    if (a.hasMeth(src, `toNode`)) src = src.toNode()
-    return super.appendChi(tar, src)
-  }
-}()
-
-export const E = ren.E.bind(ren)
-export const S = ren.elemSvg.bind(ren)
-
-// Base class for UI components with custom behaviors.
-export class Elem extends dr.MixReg(HTMLElement) {}
-
-/*
-Base class for reactive, stateful UI components. The mixin `od.MixReac` causes
-the element to automatically monitor observables and re-render on changes:
-
-- On `.connectedCallback`, `.run` is invoked.
-- Any observables synchronously accessed during `.run` are automatically monitored.
-- When monitored observables change, `.run` is invoked.
-*/
-export class ReacElem extends od.MixReac(Elem) {}
-
-/*
-Reactive element. Shortcut for creating an element rendered via the given
-function, which automatically updates on changes to any observables previously
-accessed by the function.
-*/
-export function reac(fun) {return new FunReacElem(fun)}
-
-// A reactive element updated by calling the given function.
-class FunReacElem extends ReacElem {
-  constructor(fun) {super().fun = a.reqFun(fun)}
-  run() {this.fun(this)}
-}
-
-class DateTimeFormat extends Intl.DateTimeFormat {
-  /*
-  Workaround for an issue in Chrome/V8. When formatting 24-hour time, instead of
-  rendering 00:XX, it renders 24:XX. Safari doesn't have this problem.
-  */
-  format(val) {return a.laxStr(super.format(val)).replace(/\b24:/, `00:`)}
-}
-
-// By luck, the Swedish locale mostly adheres to ISO 8601.
-export const dateFormat = new DateTimeFormat(`sv-SE`, {
-  hour12: false,
-  timeZoneName: `short`,
-  year: `numeric`,
-  month: `2-digit`,
-  day: `2-digit`,
-  hour: `2-digit`,
-  minute: `2-digit`,
-})
-
-export const timeFormat = new DateTimeFormat(`sv-SE`, {
-  hour12: false,
-  hour: `2-digit`,
-  minute: `2-digit`,
-  second: `2-digit`,
-})
-
-function percDecode(val) {return a.isStr(val) ? a.onlyFin(parseFloat(val)) : undefined}
-function percEncode(val) {return a.isFin(val) ? val + `%` : ``}
 
 /*
 export function storageGetJson(store, key) {
@@ -179,6 +31,20 @@ export function storageGetJson(store, key) {
 }
 */
 
+export function storagesGet(key) {
+  a.reqValidStr(key)
+  return (
+    QUERY.get(key) ??
+    sessionStorage.getItem(key) ??
+    localStorage.getItem(key)
+  )
+}
+
+export function storagesSet(key, val) {
+  storageSet(sessionStorage, key, val)
+  storageSet(localStorage, key, val)
+}
+
 export function storageSet(store, key, val) {
   a.reqValidStr(key)
 
@@ -189,7 +55,7 @@ export function storageSet(store, key, val) {
 
   try {val = a.render(val)}
   catch (err) {
-    LOG.err(`unable to store ${a.show(key)} in ${a.show(store)}:`, err)
+    logErr(`unable to store ${a.show(key)}: `, err)
     return false
   }
 
@@ -198,358 +64,87 @@ export function storageSet(store, key, val) {
     return true
   }
   catch (err) {
-    LOG.err(`unable to store ${a.show(key)} = ${a.show(val)} in ${a.show(store)}:`, err)
+    logErr(`unable to store ${a.show(key)} = ${a.show(val)}: `, err)
     return false
   }
 }
 
-const STORAGE_KEY_VERBOSE = `tabularius.verbose`
+export function storageObs(...src) {return new StorageObs(...src)}
 
-export let LOG_VERBOSE = a.boolOpt(
-  sessionStorage.getItem(STORAGE_KEY_VERBOSE) ??
-  localStorage.getItem(STORAGE_KEY_VERBOSE)
-)
+// An observable with storage persistence. Reads and writes as needed.
+export class StorageObs extends a.Emp {
+  constructor(key) {
+    super()
+    this.key = a.reqValidStr(key)
+  }
+
+  #val = undefined
+  #obs = new o.ImpObs()
+  #synced = false
+
+  get val() {return this.#get(true)}
+  set val(val) {this.#set(val, true)}
+
+  get() {return this.#get(false)}
+  set(val) {this.#set(val, false)}
+
+  #get(sub) {
+    if (this.setSync(true)) this.#val = this.read()
+    if (sub) o.dyn.sub(this.#obs)
+    return this.#val
+  }
+
+  #set(val, trig) {
+    if (a.is(val, this.#val)) return
+    this.write(val)
+    this.setSync(true)
+    this.#val = val
+    if (trig) this.#obs.trig()
+  }
+
+  read() {return this.decode(storagesGet(this.key))}
+  write(val) {storagesSet(this.key, this.encode(val))}
+
+  decode(val) {return val}
+  encode(val) {return val}
+
+  setSync(val) {return this.#synced !== (this.#synced = a.reqBool(val))}
+}
+
+export function storageObsBool(...src) {return new StorageObsBool(...src)}
+
+export class StorageObsBool extends StorageObs {
+  decode(src) {return a.boolOpt(src)}
+  encode(src) {return a.renderOpt(src)}
+}
+
+export function storageObsFin(...src) {return new StorageObsFin(...src)}
+
+export class StorageObsFin extends StorageObs {
+  decode(src) {return a.onlyFin(parseFloat(src))}
+  encode(src) {return a.isNil(src) ? undefined : String(a.reqFin(src))}
+}
+
+export function storageObsJson(...src) {return new StorageObsJson(...src)}
+
+export class StorageObsJson extends StorageObs {
+  decode(src) {return u.jsonDecodeOpt(src)}
+  encode(src) {return JSON.stringify(src)}
+}
+
+export const VERBOSE = storageObsBool(`tabularius.verbose`)
 
 cmdVerbose.cmd = `verbose`
 cmdVerbose.desc = `toggle between quiet and verbose logging`
 
 export async function cmdVerbose({args}) {
-  if (hasHelpFlag(splitCliArgs(args))) {
+  if (u.hasHelpFlag(u.splitCliArgs(args))) {
     const os = await import(`./os.mjs`)
     return os.cmdHelpDetailed(cmdVerbose)
   }
 
-  LOG_VERBOSE = !LOG_VERBOSE
-  storageSet(sessionStorage, STORAGE_KEY_VERBOSE, LOG_VERBOSE)
-  storageSet(localStorage, STORAGE_KEY_VERBOSE, LOG_VERBOSE)
-  return `logging is now ` + (LOG_VERBOSE ? `verbose` : `selective`)
-}
-
-export const CLS_TEXT_GRAY = `text-gray-500 dark:text-neutral-400`
-export const CLS_TEXT_GRAY_BUSY = CLS_TEXT_GRAY + ` hover:text-gray-800 dark:hover:text-neutral-200`
-export const CLS_BTN_INLINE_BASE = `text-sky-700 dark:text-sky-300 hover:underline hover:decoration-dotted cursor-pointer text-left`
-export const CLS_BTN_INLINE = `inline ` + CLS_BTN_INLINE_BASE
-
-export const LOG_WIDTH_KEY = `tabularius.log_width`
-export const LOG_WIDTH_DEFAULT = 50 // % of parent width
-export const LOG_WIDTH_MIN = 10 // % of parent width
-export const LOG_WIDTH_MAX = 90 // % of parent width
-export const LOG_MAX_MSGS = 1024
-
-export const LOG_LINE_HEIGHT = `leading-[1.25]`
-export const LOG_SPACE_Y = `space-y-[1.25em]`
-export const LOG_GAP_Y = `gap-y-[1.25em]`
-
-/*
-Should be used when invoking any async function in sync context. In other words,
-at the top level of async invocation. Logs the error and suppresses the
-rejection. Usage:
-
-  someAsyncFun().catch(u.logErr)
-  somePromise.catch(u.logErr)
-*/
-export function logErr(err) {LOG.err(err)}
-
-export const LOG = new class Log extends Elem {
-  // Must be used for all info logging.
-  info(...msg) {return this.addMsg({}, ...msg)}
-
-  // Must be used for all error logging.
-  err(...msg) {
-    if (a.some(msg, isErrAbort)) return undefined
-    const out = this.addMsg({type: `err`}, ...msg)
-    if (out) console.error(...msg)
-    return out
-  }
-
-  // Should be used for optional verbose logging.
-  verb(...msg) {
-    if (!LOG_VERBOSE) return undefined
-    return this.addMsg({}, ...msg)
-  }
-
-  inp(...msg) {return this.addMsg({type: `inp`}, ...msg)}
-
-  clear() {
-    ren.clear(this.messageLog)
-    this.removedCount = 0
-    E(this.messageLog, {},
-      E(this.removedMessageNotice, {hidden: false}, `log cleared`)
-    )
-  }
-
-  // List of actual log messages.
-  messageLog = E(`div`, {class: a.spaced(`w-full py-2 overflow-x-clip overflow-y-auto`, LOG_LINE_HEIGHT)})
-
-  removedCount = 0
-
-  removedMessageNotice = E(`div`, {
-    class: a.spaced(CLS_TEXT_GRAY, `text-center border-b border-gray-300 dark:border-neutral-700 pb-2`),
-    hidden: true,
-  })
-
-  resizePointerdown = this.resizePointerdown.bind(this)
-  resizePointermove = this.resizePointermove.bind(this)
-  resizePointerup = this.resizePointerup.bind(this)
-
-  dragHandle = E(
-    `div`,
-    {
-      class: a.spaced(
-        `w-2 shrink-0 h-full cursor-ew-resize bg-gray-400 dark:bg-neutral-600 opacity-50 hover:opacity-100`,
-        `flex row-cen-cen`,
-        `after:content-[''] after:block after:w-[3px] after:h-8 after:shrink-1 after:min-w-0 after:bg-white dark:after:bg-black after:rounded`,
-      ),
-      onpointerdown: this.resizePointerdown,
-      onpointerup: this.resizePointerup,
-    },
-  )
-
-  currentWidth = (
-    percDecode(QUERY.get(`log_width`)) ??
-    percDecode(sessionStorage.getItem(LOG_WIDTH_KEY)) ??
-    percDecode(localStorage.getItem(LOG_WIDTH_KEY)) ??
-    LOG_WIDTH_DEFAULT
-  )
-
-  constructor() {
-    super()
-
-    E(
-      this,
-      {
-        class: `flex items-stretch min-w-0 bg-gray-100 text-black dark:bg-base-dark dark:text-white`,
-        style: {
-          width: percEncode(this.currentWidth),
-          // The following properties are needed for reliable resizing.
-          flex: `0 1 auto`,
-          overflowWrap: `anywhere`,
-          minWidth: `0`,
-        },
-      },
-      this.messageLog,
-      this.dragHandle,
-    )
-  }
-
-  addMsg(props, ...chi) {
-    const nextMsg = LogMsg.init(props, ...chi)
-    if (!nextMsg) return nextMsg
-
-    const msgLog = this.messageLog
-    const prevMsg = msgLog.lastElementChild
-
-    if (prevMsg) {
-      // `?.` is used because not all entries are `LogMsg`.
-      // For example, `this.removedMessageNotice` is plain.
-      prevMsg.unsetLatest?.()
-      prevMsg.setIndex?.(msgLog.childElementCount)
-    }
-
-    nextMsg.setLatest()
-    msgLog.appendChild(nextMsg)
-    this.enforceMessageLimit()
-
-    // Scroll all the way to the bottom.
-    msgLog.scrollTop = msgLog.scrollHeight
-    return nextMsg
-  }
-
-  resizePointerdown(eve) {
-    // Prevent text selection during drag.
-    a.eventKill(eve)
-
-    this.cursorX = eve.clientX
-    document.addEventListener(`pointermove`, this.resizePointermove)
-    document.addEventListener(`pointerup`, this.resizePointerup)
-
-    // Indicates the percentage visually while resizing.
-    document.body.appendChild(this.resizeIndicator ??= E(
-      `div`,
-      {class: `fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-2 py-1 rounded shadow-lg z-50`},
-      percEncode(Math.round(this.currentWidth)),
-    ))
-  }
-
-  resizePointermove(eve) {
-    // Assumes that this element is on the left and the drag handle is on the right.
-    const diffX = eve.clientX - this.cursorX
-    this.cursorX = eve.clientX
-
-    // Could also use `this.parentElement.getBoundingClientRect().width`.
-    // Unclear which is more correct.
-    const proportionDiff = diffX / window.innerWidth
-
-    const percDiff = proportionDiff * 100
-
-    const width = Math.max(
-      LOG_WIDTH_MIN,
-      Math.min(LOG_WIDTH_MAX, this.currentWidth + percDiff)
-    )
-
-    this.currentWidth = width
-    this.style.width = percEncode(width)
-    this.resizeIndicator.textContent = percEncode(Math.round(width))
-  }
-
-  resizePointerup(eve) {
-    a.eventKill(eve)
-    document.removeEventListener(`pointermove`, this.resizePointermove)
-    document.removeEventListener(`pointerup`, this.resizePointerup)
-    storageSet(sessionStorage, LOG_WIDTH_KEY, this.style.width)
-    storageSet(localStorage, LOG_WIDTH_KEY, this.style.width)
-    this.resizeIndicator?.remove()
-  }
-
-  enforceMessageLimit() {
-    this.removedMessageNotice.remove()
-
-    while (this.messageLog.childElementCount > LOG_MAX_MSGS) {
-      this.messageLog.removeChild(this.messageLog.firstElementChild)
-      this.removedCount++
-    }
-
-    E(
-      this.removedMessageNotice,
-      {hidden: !this.removedCount},
-      this.removedCount, ` older messages removed`,
-    )
-
-    // Move the notice to the top of the message log.
-    if (this.removedCount) this.messageLog.prepend(this.removedMessageNotice)
-  }
-}()
-
-export const CLS_ERR = `text-red-600 dark:text-red-500`
-const LOG_MSG_CLS = `block w-full px-2 font-mono whitespace-pre-wrap overflow-wrap-anywhere border-l-4`
-const LOG_MSG_CLS_ERR = a.spaced(CLS_ERR, `border-red-400 dark:border-red-600`)
-const LOG_MSG_CLS_INFO = `border-transparent`
-const LOG_MSG_CLS_INFO_LATEST = `border-yellow-600 dark:border-yellow-800`
-const LOG_MSG_CLS_INFO_EVEN = `border-sky-600 dark:border-sky-800`
-const LOG_MSG_CLS_INFO_ODD = `border-emerald-600 dark:border-emerald-800`
-
-export class LogMsg extends dr.MixReg(HTMLPreElement) {
-  isErr = undefined
-
-  static init({type} = {}, ...chi) {
-    const isErr = type === `err`
-    const isInp = type === `inp`
-
-    const msg = msgRen.E(
-      new this(),
-      {
-        class: a.spaced(
-          LOG_MSG_CLS,
-          a.vac(isErr) && LOG_MSG_CLS_ERR,
-          a.vac(isInp) && `animate-flash-light dark:animate-flash-dark`,
-        ),
-      },
-      ...chi,
-    )
-
-    const head = msg.firstChild
-    if (!head) return undefined
-
-    const pre = LogPrefix(isInp)
-    if (a.hasMeth(head, `addLogPrefix`)) head.addLogPrefix(pre)
-    else msg.prepend(pre)
-
-    msg.isErr = isErr
-    return msg
-  }
-
-  setLatest() {
-    if (this.isErr) return
-    replaceClasses(this, LOG_MSG_CLS_INFO, LOG_MSG_CLS_INFO_LATEST)
-  }
-
-  unsetLatest() {
-    if (this.isErr) return
-    replaceClasses(this, LOG_MSG_CLS_INFO_LATEST, LOG_MSG_CLS_INFO)
-  }
-
-  setIndex(ind) {
-    if (!a.optNat(ind)) return
-    if (this.isErr) return
-
-    replaceClasses(
-      this,
-      LOG_MSG_CLS_INFO,
-      (ind % 2 ? LOG_MSG_CLS_INFO_ODD : LOG_MSG_CLS_INFO_EVEN),
-    )
-  }
-}
-
-export const PROMPT_PREFIX = `>`
-
-function LogPrefix(inp) {
-  return withTooltip({
-    chi: timeFormat.format(Date.now()),
-    elem: E(
-      `span`,
-      {class: a.spaced(CLS_TEXT_GRAY, `cursor-help`)},
-      inp ? PROMPT_PREFIX + ` ` : `< `,
-    )
-  })
-}
-
-/*
-Special renderer just for log messages. Supports falling back on `a.show` for
-non-stringable data structures. Unfortunately the library code doesn't support
-this properly, so we had to duplicate some of its logic.
-*/
-const msgRen = new class MsgRen extends p.Ren {
-  appendChi(tar, src) {
-    if (a.hasMeth(src, `toNode`)) src = src.toNode()
-    if (a.isNil(src)) return undefined
-    if (a.isStr(src)) return tar.append(src)
-    if (a.isNode(src)) return tar.appendChild(src)
-    if (p.isRaw(src)) return this.appendRaw(tar, src)
-    if (a.isSeq(src)) return this.appendSeq(tar, src)
-    const out = a.renderOpt(src)
-    if (out) return this.appendChi(tar, out)
-    return this.appendChi(tar, a.show(src))
-  }
-}()
-
-export function LogWords(...chi) {return intersperseOpt(chi, ` `)}
-export function LogLines(...chi) {return intersperseOpt(chi, LogNewline)}
-export function LogParagraphs(...chi) {return intersperseOpt(chi, LogNewlines)}
-export function LogNewline() {return `\n`}
-export function LogNewlines() {return `\n\n`}
-
-export function LogDetails({lvl, open, summary, summaryCls, chi}) {
-  a.optArr(chi)
-  lvl = a.laxNat(lvl)
-  if (!a.vac(chi)) return undefined
-
-  return E(`details`, {class: `inline-block w-full`, open},
-    E(
-      `summary`,
-      {class: `w-full trunc`},
-      `  `.repeat(lvl),
-      E(
-        `span`,
-        {class: summaryCls || `cursor-pointer hover:underline hover:decoration-dotted`},
-        summary,
-      ),
-    ),
-    ...chi,
-  )
-}
-
-export function removeClasses(tar, src) {tar.classList.remove(...splitCliArgs(src))}
-export function addClasses(tar, src) {tar.classList.add(...splitCliArgs(src))}
-
-export function replaceClasses(tar, prev, next) {
-  removeClasses(tar, prev)
-  addClasses(tar, next)
-}
-
-export function formatSize(bytes) {
-  if (bytes < 1024) return `${bytes} bytes`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KiB`
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MiB`
+  const val = VERBOSE.val = !VERBOSE.val
+  return `logging is now ` + (val ? `verbose` : `selective`)
 }
 
 /*
@@ -594,8 +189,7 @@ export function optSig(val) {return a.opt(val, isSig)}
 
 /*
 The recommended way to wait for async operations. The signal is used for
-cancelation. The signal assertion prevents programmer errors such as
-accidentally passing a non-signal. Usage:
+cancelation. Usage:
 
   await u.wait(sig, someAsyncFun())
 
@@ -606,21 +200,6 @@ export function wait(sig, ...src) {
   if (!src.length) return undefined
   src.push(sig)
   return Promise.race(src)
-}
-
-/*
-Purpose: return true if the current element has its own handling of arbitrary
-text input or arbitrary keystrokes.
-*/
-export function isElemInput(val) {
-  return a.isElement(val) && (
-    a.isInst(val, HTMLInputElement) ||
-    a.isInst(val, HTMLTextAreaElement) ||
-    a.isInst(val, HTMLSelectElement) ||
-    val.contentEditable === `true` ||
-    val.contentEditable === `plaintext-only` ||
-    val.role === `textbox`
-  )
 }
 
 // Vaguely similar to Go's `errors.Is`.
@@ -634,37 +213,19 @@ export function errIs(err, fun) {
   return false
 }
 
-export class ErrAbort extends su.Err {}
+// Workaround for our cyclic dependency between modules.
+async function logErr(...src) {
+  const ui = await import(`./ui_log.mjs`)
+  ui.LOG.err(...src)
+}
+
+export class ErrAbort extends u.Err {}
 
 export function isErrAbort(err) {return errIs(err, isErrAbortAny)}
 
 function isErrAbortAny(val) {
   return a.isInst(val, ErrAbort) || a.isErrAbort(val)
 }
-
-/*
-Gets special treatment in the log, which appends the error's original nodes
-instead of its message string.
-*/
-export class ErrLog extends su.Err {
-  constructor(...nodes) {
-    const msg = E(`pre`, {}, ...nodes).textContent
-    super(msg)
-    this.nodes = nodes
-  }
-
-  // Special interface used by `logShow`.
-  toNode() {return this.nodes}
-}
-
-/*
-Usage:
-
-  u.darkModeMediaQuery.matches
-  u.darkModeMediaQuery.addEventListener(`change`, someListener)
-  function someListener(eve) {console.log(eve.matches)}
-*/
-export const darkModeMediaQuery = window.matchMedia(`(prefers-color-scheme: dark)`)
 
 export function boundInd(ind, len) {
   a.reqInt(ind)
@@ -679,7 +240,10 @@ at any time while the document is focused.
 */
 export async function copyToClipboard(src, report) {
   await navigator.clipboard.writeText(a.render(src))
-  if (report) LOG.info(`copied to clipboard: `, src)
+  if (report) {
+    const ui = await import(`./ui.mjs`)
+    ui.LOG.info(`copied to clipboard: `, src)
+  }
   return true
 }
 
@@ -754,7 +318,7 @@ export function cliGroup(src) {
   const flags = a.Emp()
   const args = []
   for (const [key, val] of src) {
-    if (key) su.dictPush(flags, key, val)
+    if (key) u.dictPush(flags, key, val)
     else args.push(val)
   }
   return [flags, args]
@@ -850,12 +414,12 @@ export const DEFAULT_EVENT_TYPE = `message`
 export const BROAD = new BroadcastChannel(`tabularius_broadcast`)
 
 BROAD.onmessage = function onBroadcastMessage(eve) {
-  if (!LOG_VERBOSE) return
+  if (!VERBOSE.val) return
   console.log(`broadcast message event:`, eve)
 }
 
 BROAD.onmessageerror = function onBroadcastError(eve) {
-  if (!LOG_VERBOSE) return
+  if (!VERBOSE.val) return
   console.error(`broadcast error event:`, eve)
 }
 
@@ -954,8 +518,9 @@ export function filterWhere(src, where) {
 }
 
 /*
-For large-ish datasets, this seems to perform better than a version that loops
-through functions or field patterns for each tested value. See `./bench.mjs`.
+For large-ish datasets, a function compiled on the fly, with inlined tests
+without loops, seems to perform better than a version that loops through
+functions or field patterns for each tested value. See `./bench.mjs`.
 
 SYNC[field_pattern].
 */
@@ -1005,105 +570,6 @@ export function urlQuery(src) {
   return new URLSearchParams(a.split(src, `?`).join(`&`))
 }
 
-export function BtnUrlAppend(val) {
-  const href = window.location.href + a.reqValidStr(val)
-  return FakeBtnInline({href, chi: val})
-}
-
-/*
-Using `<a>` for pseudo-buttons should generally be avoided.
-
-If you're reading this code, remember two things:
-- Use `<a>` for ALL links, and for almost nothing else (with this one exception
-  explained below).
-- Use `<button>` for all programmatic click actions and form submissions,
-  and for NOTHING ELSE.
-  - But mind `<input>`, `<select><option>`, `<details><summary>`, `<dialog>`,
-    and more...
-- Or the third more general thing: use built-in semantically-appropriate
-  elements with good accessibility support.
-
-But in this case, the browser rendering engines have left us no choice. It seems
-that the native `<button>` cannot be made actually properly inline. Even with
-`display: inline` and all available wrapping and word-breaking properties set,
-native buttons don't play well with text. When internal text is too long, a
-button doesn't wrap like a normal inline element; first it breaks out of its
-line, then it wraps, and then it forces subsequent text to be placed on a new
-line. Madness, which is very inconvenient in our app, where very long text in
-buttons is common. The same problem applies to `<input type="button">` which
-seems equivalent to `<button>` in current engines.
-
-Using `<a>` for pseudo-buttons also comes with a bonus: the user can
-middle-click / ctrl-click / cmd-click to open the link in another tab.
-Which is why we require the `href` to be provided.
-*/
-export function FakeBtnInline({onclick, href, chi, trunc, width}) {
-  a.optFun(onclick)
-  a.optStr(width)
-  href = a.reqValidStr(a.render(href))
-
-  if (trunc && !width) throw Error(`truncation requires width`)
-
-  return E(
-    `a`,
-    {
-      href,
-      class: a.spaced(
-        CLS_BTN_INLINE,
-        a.vac(trunc) && `trunc`,
-        width,
-      ),
-      onkeydown: a.vac(onclick) && function fakeBtnOnKeydown(eve) {
-        if (a.isEventModified(eve)) return
-        if (eve.key === `Enter`) this.onclick(eve)
-        if (eve.key === ` `) this.onclick(eve)
-      },
-      onclick: a.vac(onclick) && function fakeBtnOnclick(eve) {
-        if (a.isEventModified(eve)) return
-        onclick(eve)
-      },
-    },
-    chi ?? href,
-  )
-}
-
-export const ICON_BTN_SIZE = `1em`
-
-/*
-When using an SVG in a button, this must be set on BOTH.
-Otherwise dimensions and vertical alignment are out of whack.
-The `display: inline` property seems optional but added just in case.
-*/
-const CLS_INLINE_ICON = `inline w-[${ICON_BTN_SIZE}] h-[${ICON_BTN_SIZE}] align-text-top`
-
-export function BtnClip(val) {
-  val = a.renderLax(val)
-  if (!val) return undefined
-
-  return withTooltip({
-    chi: `clipboard`,
-    elem: E(
-      `button`,
-      {
-        type: `button`,
-        class: a.spaced(CLS_INLINE_ICON, `cursor-pointer hover:text-sky-700 dark:hover:text-sky-300`),
-        onclick() {copyToClipboard(val, true).catch(logErr)},
-      },
-      SvgClipboard(),
-    ),
-  })
-}
-
-function SvgClipboard() {return Svg(`clipboard`, {class: CLS_INLINE_ICON})}
-
-const SPRITE_PATH = `./client/svg.svg` + (API_LOCAL ? `?` + Date.now() : ``)
-
-export function Svg(key, attr) {
-  return S(`svg`, attr,
-    S(`use`, {href: SPRITE_PATH + `#` + a.reqValidStr(key)}),
-  )
-}
-
 // Each row must begin with a string. We align on that string by padding it.
 export function alignCol(rows) {
   rows = a.compact(rows)
@@ -1145,6 +611,10 @@ function toIntBetween(min, max, num) {
   return min + Math.floor((num / (0xffffffff + 1)) * (max - min + 1))
 }
 
+export function clampFin(min, val, max) {
+  return Math.max(a.reqFin(min), Math.min(a.reqFin(val), a.reqFin(max)))
+}
+
 export function randomSample(src) {
   if (!a.optArr(src)?.length) return undefined
   return src[randInt(0, src.length - 1)]
@@ -1174,34 +644,6 @@ export function maxBy(src, fun) {
   return out
 }
 
-// Single global because we wouldn't want multiple concurrent tooltips anyway.
-export const TOOLTIP = E(
-  `span`,
-  {
-    class: a.spaced(
-      `fixed py-1 px-2 leading-1 decoration-none whitespace-pre rounded pointer-events-none`,
-      `text-white bg-neutral-800 dark:text-black dark:bg-neutral-200`,
-      `bg-opacity-60 dark:bg-opacity-60`,
-    ),
-    style: {
-      transform: `translate(-50%, calc(-100% - 0.5rem))`,
-      backdropFilter: `blur(2px)`,
-    },
-  },
-)
-
-let TOOLTIP_LAST_ELEM
-
-// TODO: remove the tooltip from the DOM when the element leaves the DOM.
-export function withTooltip({elem, chi}) {
-  if (!a.vac(chi)) return a.optElement(elem)
-  a.reqElement(elem)
-  elem.onpointerover = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}
-  elem.onpointermove = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}
-  elem.onpointerleave = function deinit() {tooltipDeinitFor(elem)}
-  return elem
-}
-
 /*
 Probably like 5 times more complicated and 10 times slower than it could be.
 TODO improve.
@@ -1227,81 +669,35 @@ export function ellMid(src, max) {
   return chars.slice(0, lenPre).concat(inf).concat(chars.slice(-lenSuf)).join(``)
 }
 
-/*
-`capture` is required for detecting scroll inside elements.
-`passive` indicates we don't prevent default, good for scroll performance.
-*/
-const SCROLL_LISTEN_OPT = {passive: true, capture: true, once: true}
-
-function tooltipReinitFor(elem, chi, eve) {
-  a.reqElement(elem)
-
-  if (TOOLTIP_LAST_ELEM !== elem) E(TOOLTIP, {}, chi)
-  TOOLTIP_LAST_ELEM = elem
-
-  /*
-  TODO: snap to the element rather than the cursor, and remove the `pointermove`
-  listener. In plots, we snap tooltips to data points, which are, well, points.
-  For sized elements such as buttons, we'd have to figure out where in relation
-  to the element to position the tooltip. And elements can be partially outside
-  of the viewport.
-  */
-  tooltipOrient({
-    elem: TOOLTIP,
-    posX: eve.clientX,
-    posY: eve.clientY,
-    wid: window.innerWidth,
-    hei: window.innerHeight,
-    off: `0.5rem`,
-  })
-
-  if (!TOOLTIP.isConnected) {
-    document.body.appendChild(TOOLTIP)
-    document.addEventListener(`scroll`, tooltipDeinit, SCROLL_LISTEN_OPT)
+export function entrios(src) {
+  const out = []
+  const keys = a.structKeys(src)
+  let ind = -1
+  while (++ind < keys.length) {
+    const key = keys[ind]
+    out.push([ind, key, src[key]])
   }
+  return out
 }
 
-function tooltipDeinitFor(elem) {
-  if (TOOLTIP_LAST_ELEM === elem) tooltipDeinit()
+// Counterpart to `a.ancestor`. The library doesn't provide "last ancestor".
+export function lastAncestor(tar, cls) {
+  a.reqElement(tar)
+  a.reqCls(cls)
+
+  let out
+  while (tar) {
+    if (a.isInst(tar, cls)) out = tar
+    tar = tar.parentNode
+  }
+  return out
 }
 
-function tooltipDeinit() {
-  TOOLTIP.remove()
-  TOOLTIP_LAST_ELEM = undefined
-  document.removeEventListener(`scroll`, tooltipDeinit, SCROLL_LISTEN_OPT)
-}
-
-export function tooltipOrient({elem, posX, posY, wid, hei, off}) {
-  a.reqElement(elem)
-  a.reqFin(posX)
-  a.reqFin(posY)
-  a.reqFin(wid)
-  a.reqFin(hei)
-  a.optStr(off)
-
-  const isRig = posX > (wid / 2)
-  const isBot = posY > (hei / 2)
-  const tran = off ? `calc(-100% - ${off})` : `-100%`
-  const tranX = isRig ? tran : (off || `0`)
-  const tranY = isBot ? tran : (off || `0`)
-
-  elem.style.left = posX + `px`
-  elem.style.top = posY + `px`
-  elem.style.transform = `translate(${tranX}, ${tranY})`
-}
-
-export function Bold(...chi) {
-  return E(`b`, {}, ...chi)
-}
-
-export function Muted(...chi) {
-  return E(`span`, {class: CLS_TEXT_GRAY}, ...chi)
-}
-
-export function ErrSpan(...chi) {
-  return E(`span`, {class: CLS_ERR}, ...chi)
-}
-
-export function External() {
-  return E(`span`, {class: `leading-none align-text-bottom`}, `↗`)
+export function isEventModifiedPrimary(eve) {
+  return (
+    a.isEvent(eve) &&
+    !eve.altKey &&
+    (eve.ctrlKey || eve.metaKey) &&
+    !eve.shiftKey
+  )
 }

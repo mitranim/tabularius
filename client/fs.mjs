@@ -1,7 +1,7 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as o from '@mitranim/js/obs.mjs'
 import * as s from '../shared/schema.mjs'
-import {E} from './util.mjs'
+import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as i from './idb.mjs'
 import * as os from './os.mjs'
@@ -69,7 +69,7 @@ export const PROGRESS_FILE_CONF = new FileConf({
 
 // Deprecated, TODO drop.
 function progFileHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     `pick your game progress file`,
     `typical location of progress file; note that "AppData" is hidden by default:`,
     `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel45\\tower-dominion\\${SAVE_DIR_NAME}\\${PROG_FILE_NAME}`,
@@ -87,19 +87,19 @@ export const SAVE_DIR_CONF = new FileConf({
 })
 
 function saveDirHelp() {
-  return u.LogParagraphs(`pick your game save directory`, SaveDirLocation())
+  return ui.LogParagraphs(`pick your game save directory`, SaveDirLocation())
 }
 
 export function SaveDirLocation() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     `typical location of game save directory; note that "AppData" is hidden by default:`,
     [`  `, SaveDirPath()],
   )
 }
 
 export function SaveDirPath() {
-  return u.Bold(
-    `C:\\Users\\`, u.Muted(`<user>`),
+  return ui.Bold(
+    `C:\\Users\\`, ui.Muted(`<user>`),
     `\\AppData\\LocalLow\\Parallel45\\tower-dominion\\SaveFolder`,
   )
 }
@@ -115,22 +115,22 @@ export const HISTORY_DIR_CONF = new FileConf({
 })
 
 function histDirHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     `pick directory for run history (backups)`,
     HistDirSuggestedLocation(),
   )
 }
 
 export function HistDirSuggestedLocation() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     `suggested location of run history dir; create it yourself; use a name without spaces:`,
     [`  `, SaveDirPath()],
   )
 }
 
 export function HistDirSuggestedPath() {
-  return u.Bold(
-    `C:\\Users\\`, u.Muted(`<user>`), `\\Documents\\tower_dominion_history`,
+  return ui.Bold(
+    `C:\\Users\\`, ui.Muted(`<user>`), `\\Documents\\tower_dominion_history`,
   )
 }
 
@@ -172,16 +172,16 @@ export async function fileConfLoadedWithPerm(sig, conf, req) {
   await fileConfLoad(conf)
 
   if (!conf.handle) {
-    if (req) throw new u.ErrLog(...msgNotInited(conf))
+    if (req) throw new ui.ErrLog(...msgNotInited(conf))
     return undefined
   }
 
   conf.perm = await queryPermission(sig, conf.handle, {mode})
   if (conf.perm === `granted`) return conf.handle
 
-  const err = new u.ErrLog(...msgNotGranted(conf))
+  const err = new ui.ErrLog(...msgNotGranted(conf))
   if (req) throw err
-  u.LOG.err(err)
+  ui.LOG.err(err)
   return undefined
 }
 
@@ -202,15 +202,15 @@ export async function fileConfLoad(conf) {
     if (a.isNil(handle)) return
   }
   catch (err) {
-    u.LOG.err(desc, `: error loading handle from DB:`, err)
+    ui.LOG.err(desc, `: error loading handle from DB:`, err)
     return
   }
 
-  u.LOG.verb(desc, `: loaded handle from DB`)
+  ui.LOG.verb(desc, `: loaded handle from DB`)
 
   if (!a.isInst(handle, FileSystemHandle)) {
-    u.LOG.info(desc, `: expected FileSystemHandle; deleting corrupted DB entry`)
-    i.dbDel(store, key).catch(u.logErr)
+    ui.LOG.info(desc, `: expected FileSystemHandle; deleting corrupted DB entry`)
+    i.dbDel(store, key).catch(ui.logErr)
     return
   }
 
@@ -249,7 +249,7 @@ export async function fileConfInited(sig, conf) {
   if (!conf.handle) await fileConfLoad(conf)
 
   if (!conf.handle) {
-    u.LOG.info(help())
+    ui.LOG.info(help())
     conf.handle = a.reqInst(await u.wait(sig, pick()), FileSystemHandle)
   }
 
@@ -265,10 +265,10 @@ export async function fileConfInited(sig, conf) {
 
   try {
     await u.wait(sig, i.dbPut(i.IDB_STORE_HANDLES, key, conf.handle))
-    u.LOG.info(desc, `: stored handle to DB`)
+    ui.LOG.info(desc, `: stored handle to DB`)
   }
   catch (err) {
-    u.LOG.err(desc, `: error storing handle to DB:`, err)
+    ui.LOG.err(desc, `: error storing handle to DB:`, err)
   }
   return conf.handle
 }
@@ -280,7 +280,7 @@ export async function validateSaveDir(sig, handle) {
   if (await dirHasProgressFile(sig, handle)) {
     if (handle.name !== SAVE_BACKUP_DIR_NAME) return
 
-    throw new u.ErrLog(...u.LogParagraphs(
+    throw new ui.ErrLog(...ui.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's backup directory; please pick the actual save directory (one level higher)`,
       msgRerun(cmd),
       SaveDirLocation(),
@@ -289,14 +289,14 @@ export async function validateSaveDir(sig, handle) {
 
   const subDir = await getDirectoryHandle(sig, handle, SAVE_DIR_NAME).catch(a.nop)
   if (subDir && await dirHasProgressFile(sig, subDir)) {
-    throw new u.ErrLog(...u.LogParagraphs(
+    throw new ui.ErrLog(...ui.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's data directory; please pick the save directory inside`,
       msgRerun(cmd),
       SaveDirLocation(),
     ))
   }
 
-  throw new u.ErrLog(...u.LogParagraphs(
+  throw new ui.ErrLog(...ui.LogParagraphs(
     [
       a.show(handle.name), ` doesn't appear to be the game's save directory: `,
       `unable to locate `, a.show(PROG_FILE_NAME),
@@ -316,7 +316,7 @@ export async function validateHistoryDir(sig, handle) {
 
   const subDir = await getDirectoryHandle(sig, handle, SAVE_DIR_NAME).catch(a.nop)
   if (subDir && await dirHasProgressFile(sig, subDir)) {
-    throw new u.ErrLog(...u.LogParagraphs(
+    throw new ui.ErrLog(...ui.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's data directory; your run history directory must be located outside of game directories`,
       msgRerun(cmd),
       HistDirSuggestedLocation(),
@@ -333,7 +333,7 @@ export async function validateHistoryDir(sig, handle) {
     : `save or backup directory`
   )
 
-  throw new u.ErrLog(...u.LogParagraphs(
+  throw new ui.ErrLog(...ui.LogParagraphs(
     `${a.show(handle.name)} appears to be the game's ${desc} (found ${a.show(PROG_FILE_NAME)}); your run history directory must be located outside of game directories`,
     msgRerun(cmd),
     HistDirSuggestedLocation(),
@@ -353,7 +353,7 @@ export async function fileConfDeinit(sig, conf) {
     await u.wait(sig, i.dbDel(i.IDB_STORE_HANDLES, key))
   }
   catch (err) {
-    u.LOG.err(desc, `: error deleting from DB:`, err)
+    ui.LOG.err(desc, `: error deleting from DB:`, err)
   }
 
   if (!conf.handle) return `${desc}: access not granted`
@@ -361,7 +361,7 @@ export async function fileConfDeinit(sig, conf) {
   return `${desc}: access revoked`
 }
 
-export class FileConfStatus extends u.ReacElem {
+export class FileConfStatus extends ui.ReacElem {
   constructor(conf) {super().conf = a.reqInst(conf, FileConf)}
 
   // SYNC[file_conf_status].
@@ -394,16 +394,16 @@ SYNC[file_conf_status].
 */
 export async function fileConfRequireOrRequestPermission(sig, conf) {
   const {handle, desc, mode} = a.reqInst(conf, FileConf)
-  if (!handle) throw new u.ErrLog(...msgNotInited(conf))
+  if (!handle) throw new ui.ErrLog(...msgNotInited(conf))
 
   conf.perm = await queryPermission(sig, handle, {mode})
   if (conf.perm === `granted`) return handle
 
-  u.LOG.info(desc, `: permission: `, a.show(conf.perm), `, requesting permission`)
+  ui.LOG.info(desc, `: permission: `, a.show(conf.perm), `, requesting permission`)
   conf.perm = await requestPermission(sig, handle, {mode})
   if (conf.perm === `granted`) return handle
 
-  throw new u.ErrLog(...msgNotGranted(conf))
+  throw new ui.ErrLog(...msgNotGranted(conf))
 }
 
 function msgNotInited(conf) {
@@ -418,7 +418,7 @@ function msgNotGranted(conf) {
 
 export async function fileConfRequirePermission(sig, conf) {
   const msg = await fileConfStatusProblem(sig, conf)
-  if (msg) throw new u.ErrLog(...msg)
+  if (msg) throw new ui.ErrLog(...msg)
   return conf.handle
 }
 
@@ -426,12 +426,12 @@ export function fileHandleStatStr(sig, handle) {
   a.reqInst(handle, FileSystemHandle)
   if (isDir(handle)) return dirStatStr(sig, handle)
   if (isFile(handle)) return fileStatStr(sig, handle)
-  u.LOG.err(errHandleKind(handle.kind))
+  ui.LOG.err(errHandleKind(handle.kind))
   return undefined
 }
 
 export async function fileStatStr(sig, handle) {
-  return u.formatSize(await fileSize(sig, handle))
+  return formatSize(await fileSize(sig, handle))
 }
 
 export async function fileSize(sig, handle) {
@@ -443,7 +443,7 @@ export async function dirStatStr(sig, handle) {
   return a.joinOpt([
     fileCount ? `${fileCount} files` : ``,
     dirCount ? `${dirCount} dirs` : ``,
-    byteCount ? `${u.formatSize(byteCount)}` : ``,
+    byteCount ? `${formatSize(byteCount)}` : ``,
   ], `, `)
 }
 
@@ -490,17 +490,17 @@ export async function pickHistoryDir() {
 }
 
 export async function progressFileOpt(sig) {
-  const file = await fileConfWithPermission(sig, PROGRESS_FILE_CONF).catch(u.logErr)
+  const file = await fileConfWithPermission(sig, PROGRESS_FILE_CONF).catch(ui.logErr)
   if (file) return file
 
-  const dir = await saveDirOpt(sig).catch(u.logErr)
+  const dir = await saveDirOpt(sig).catch(ui.logErr)
   if (!dir) return undefined
 
-  return getFileHandle(sig, dir, PROG_FILE_NAME).catch(u.logErr)
+  return getFileHandle(sig, dir, PROG_FILE_NAME).catch(ui.logErr)
 }
 
 export async function progressFileReq(sig) {
-  const file = await fileConfWithPermission(sig, PROGRESS_FILE_CONF).catch(u.logErr)
+  const file = await fileConfWithPermission(sig, PROGRESS_FILE_CONF).catch(ui.logErr)
   if (file) return file
   const dir = await saveDirReq(sig)
   return getFileHandle(sig, dir, PROG_FILE_NAME)
@@ -529,7 +529,7 @@ export async function listDirsFiles({sig, path, stat}) {
   path = u.paths.cleanTop(a.laxStr(path))
 
   if (!path) {
-    return u.LogLines(
+    return ui.LogLines(
       [`top-level FS entries`, a.vac(!stat) && [` `, ...StatTip(path)], `:`],
       ...u.alignCol(
         await Promise.all(a.map(CONFS, val => (
@@ -612,7 +612,7 @@ export function LsEntry({kind, name, path, entries, stat, statStr, cloud}) {
     buf.push(EntryLine({entry, desc: kind, cmd, path, statStr}))
   }
 
-  return u.LogLines(
+  return ui.LogLines(
     [`contents of `, locPre, `directory ${a.show(path)}`, statSuf, `:`],
     ...u.alignCol(buf),
   )
@@ -636,7 +636,7 @@ export function EntryLine({entry, desc, cmd, path, statStr}) {
         : name
       ),
       ` `,
-      u.BtnClip(path),
+      ui.BtnClip(path),
       a.vac(statStr) && ` (${statStr})`,
     ]),
   ])
@@ -649,15 +649,14 @@ export function StatTip(path) {
 
 cmdShow.cmd = `show`
 cmdShow.desc = `decode and show game files / runs / rounds, with flexible output options`
-
 cmdShow.help = function cmdShowHelp() {
   const saveDir = a.laxStr(SAVE_DIR_CONF.handle?.name)
   const histDir = a.laxStr(HISTORY_DIR_CONF.handle?.name)
 
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     u.callOpt(cmdShow.desc),
 
-    u.LogLines(
+    ui.LogLines(
       `usage:`,
       [
         `  `,
@@ -671,14 +670,14 @@ cmdShow.help = function cmdShowHelp() {
       ],
     ),
 
-    u.LogLines(
+    ui.LogLines(
       `flags:`,
       [`  `, ui.BtnPrompt({cmd: `show`, suf: `-c`}), ` -- copy decoded JSON to clipboard`],
       [`  `, ui.BtnPrompt({cmd: `show`, suf: `-l`}), ` -- log decoded data to browser console`],
       [`  `, ui.BtnPrompt({cmd: `show`, suf: `-w`}), ` -- write JSON file to "`, (histDir || `<run_history>`), `/show/"`],
     ),
 
-    u.LogLines(
+    ui.LogLines(
       `path segments can be magic:`,
       [`  `, ui.BtnPrompt({cmd: `show`, eph: u.paths.join(histDir, `<num>`)}), `         -- run num`],
       [`  `, ui.BtnPrompt({cmd: `show`, suf: u.paths.join(histDir, `latest`)}), `        -- latest run`],
@@ -692,7 +691,7 @@ cmdShow.help = function cmdShowHelp() {
         `to decode and show game files, grant access to the original save directory`,
         ` via `, os.BtnCmdWithHelp(SAVE_DIR_CONF.cmd),
       ]
-      : u.LogLines(
+      : ui.LogLines(
         `examples for game files:`,
         [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, saveDir)}), ` -- log all game files`],
         [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l -c -w`, saveDir)}), ` -- log, clipboard, write decoded content of all game files`],
@@ -709,7 +708,7 @@ cmdShow.help = function cmdShowHelp() {
         `to build the run history in the first place, also grant access to the `,
         `original save directory via `, os.BtnCmdWithHelp(SAVE_DIR_CONF.cmd),
       ]
-      : u.LogLines(
+      : ui.LogLines(
         `examples for run history:`,
         [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, u.paths.join(histDir, `latest`))}), ` -- log all rounds in latest run`],
         [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, u.paths.join(histDir, `latest/latest`))}), ` -- log latest round in latest run`],
@@ -735,13 +734,13 @@ export async function cmdShow({sig, args}) {
     else if (key === `-w`) opt.write = ui.cliBool(cmd, key, val)
     else if (!key) paths.push(val)
     else {
-      u.LOG.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
+      ui.LOG.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
       return os.cmdHelpDetailed(cmdShow)
     }
   }
 
   if (!paths.length) {
-    u.LOG.err(`missing input paths in `, ui.BtnPromptReplace({val: args}))
+    ui.LOG.err(`missing input paths in `, ui.BtnPromptReplace({val: args}))
     return os.cmdHelpDetailed(cmdShow)
   }
 
@@ -754,7 +753,7 @@ export async function cmdShow({sig, args}) {
       await showPath({sig, path, opt})
     }
     catch (err) {
-      u.LOG.err(`[show] unable to show ${a.show(path)}: `, err)
+      ui.LOG.err(`[show] unable to show ${a.show(path)}: `, err)
     }
   }
 }
@@ -781,7 +780,7 @@ export function showDirOrFile({sig, handle, path, opt}) {
 export async function showDir({sig, handle, path, opt}) {
   const data = await collectGameFilesAsc(sig, handle)
   if (!data.length) {
-    u.LOG.info(`no game files found in ${a.show(path)}`)
+    ui.LOG.info(`no game files found in ${a.show(path)}`)
     return
   }
   await showData({sig, path, data, opt})
@@ -789,7 +788,7 @@ export async function showDir({sig, handle, path, opt}) {
 
 export async function showFile({sig, handle, path, opt}) {
   if (!isHandleGameFile(handle)) {
-    u.LOG.info(`unable to show file ${a.show(path || handle.name)}: unknown format`)
+    ui.LOG.info(`unable to show file ${a.show(path || handle.name)}: unknown format`)
     return
   }
   const data = await readDecodeGameFile(sig, handle)
@@ -809,13 +808,13 @@ export async function showData({sig, path, data, opt}) {
   if (copy) {
     json ??= JSON.stringify(data, undefined, 2)
     await u.copyToClipboard(json)
-    u.LOG.info(`copied decoded content of ${a.show(path)} to clipboard`)
+    ui.LOG.info(`copied decoded content of ${a.show(path)} to clipboard`)
   }
 
   if (log) {
     console.log(`[show] decoded content of ${a.show(path)}:`)
     console.log(data)
-    u.LOG.info(`logged decoded content of ${a.show(path)} to browser devtools console`)
+    ui.LOG.info(`logged decoded content of ${a.show(path)} to browser devtools console`)
   }
 
   if (write) {
@@ -830,14 +829,14 @@ export async function showData({sig, path, data, opt}) {
     await writeDirFile(sig, outDir, outName, json)
 
     const outPath = u.paths.join(hist.name, outDirName, outName)
-    u.LOG.info(`wrote decoded content of ${a.show(path)} to ${a.show(outPath)}`)
+    ui.LOG.info(`wrote decoded content of ${a.show(path)} to ${a.show(outPath)}`)
   }
 }
 
 cmdRollback.cmd = `rollback`
 cmdRollback.desc = `roll back the latest round`
 cmdRollback.help = function cmdRollbackHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     cmdRollback.desc,
     [
       `finds the latest round in the latest run in the history directory and copies it to the game's save directory, overwriting `,
@@ -859,7 +858,7 @@ export async function cmdRollback({sig, args}) {
   if (u.hasHelpFlag(args)) return os.cmdHelpDetailed(cmdRollback)
 
   if (args.length) {
-    throw new u.ErrLog(
+    throw new ui.ErrLog(
       `too many inputs; `, os.BtnCmd(cmd), ` takes no inputs`,
     )
   }
@@ -880,13 +879,13 @@ export async function cmdRollback({sig, args}) {
 
   const backPath = u.paths.join(
     histDir.name,
-    await backupFile({sig, file: targetFile, dir: histDir}),
+    await backupFile({sig, file: targetFile, dir: histDir, uniq: true}),
   )
-  u.LOG.info(...msgBackedUp(tarPath, backPath))
+  ui.LOG.info(...msgBackedUp(tarPath, backPath))
   await writeFile(sig, targetFile, body)
 
-  return u.LogParagraphs(
-    u.LogLines(
+  return ui.LogParagraphs(
+    ui.LogLines(
       `overwrote the content of:`,
       [`  `, a.show(tarPath)],
       `  with the content of:`,
@@ -1117,7 +1116,7 @@ export async function handleAtPathFromTop({sig, path, magic}) {
   const seg = u.paths.splitTop(path)
 
   if (!seg.length) {
-    throw new u.ErrLog(...u.LogParagraphs(
+    throw new ui.ErrLog(...ui.LogParagraphs(
       [
         `invalid FS path `, a.show(path),
         `: provide a non-empty path to choose a top-level FS entry`,
@@ -1130,14 +1129,14 @@ export async function handleAtPathFromTop({sig, path, magic}) {
   const matches = a.filter(confs, val => val.handle?.name === head)
 
   if (!matches.length) {
-    throw new u.ErrLog(...u.LogParagraphs(
+    throw new ui.ErrLog(...ui.LogParagraphs(
       [`missing top-level FS entry `, a.show(head)],
       msgTopEntries(confs),
     ))
   }
 
   if (matches.length !== 1) {
-    throw new u.ErrLog(...u.LogParagraphs(
+    throw new ui.ErrLog(...ui.LogParagraphs(
       [
         `ambiguous path `, a.show(path),
         `: multiple top-level matches for `, a.show(head), `:`,
@@ -1151,7 +1150,7 @@ export async function handleAtPathFromTop({sig, path, magic}) {
 
   // This shouldn't even be possible since we require handles above.
   if (!conf.handle) {
-    throw new u.ErrLog(...u.LogParagraphs(
+    throw new ui.ErrLog(...ui.LogParagraphs(
       [`access to top-level FS entry `, a.show(head), ` is not granted;`],
       msgTopEntries(confs),
     ))
@@ -1169,7 +1168,7 @@ export async function handleAtPathFromTop({sig, path, magic}) {
 function msgTopEntries(confs) {
   const lines = topEntryLines(confs)
   if (!lines.length) return undefined
-  return u.LogLines(`top-level FS entries:`, ...a.map(lines, u.indentNode))
+  return ui.LogLines(`top-level FS entries:`, ...a.map(lines, u.indentNode))
 }
 
 function topEntryLines(confs) {
@@ -1179,7 +1178,7 @@ function topEntryLines(confs) {
 
     if (handle) {
       const {name} = handle
-      out.push([name, ` `, u.BtnClip(name)])
+      out.push([name, ` `, ui.BtnClip(name)])
       continue
     }
 
@@ -1344,7 +1343,7 @@ export async function requireOrRequestReadwrite(sig, handle) {
   const perm0 = await queryPermission(sig, handle, {mode})
   if (perm0 === `granted`) return handle
 
-  u.LOG.info(`requesting `, mode, ` permission for `, a.show(handle.name))
+  ui.LOG.info(`requesting `, mode, ` permission for `, a.show(handle.name))
 
   const perm1 = await requestPermission(sig, handle, {mode})
   if (perm1 !== `granted`) {
@@ -1466,6 +1465,12 @@ export function errHandleKind(val) {
   return `unrecognized handle kind ${a.show(val)}`
 }
 
+export function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes} bytes`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KiB`
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MiB`
+}
+
 export const STORAGE_KEY_FS_SCHEMA_VERSION = `tabularius.fs_schema_version`
 
 export async function migOpt() {
@@ -1479,9 +1484,9 @@ export async function migOpt() {
     const fm = await import(`./fs_mig.mjs`)
     const out = await fm.migrateRuns()
     u.storageSet(store, storeKey, verNext)
-    u.LOG.verb(`updated run history from schema version ${verPrev} to ${verNext}, summary: `, out)
+    ui.LOG.verb(`updated run history from schema version ${verPrev} to ${verNext}, summary: `, out)
   }
   catch (err) {
-    u.LOG.err(`unable to update run history schema: `, err)
+    ui.LOG.err(`unable to update run history schema: `, err)
   }
 }

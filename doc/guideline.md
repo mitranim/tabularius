@@ -171,8 +171,8 @@ import * as od from '@mitranim/js/obs_dom.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
 
 // Create renderer.
-const ren = new p.Ren()
-const E = ren.E.bind(ren)
+const REN = new p.Ren()
+const E = REN.E.bind(REN)
 
 // Create or mutate elements via `E`.
 const elem = E(`div`, {class: `container`},
@@ -262,8 +262,8 @@ All client-side logging must be done via the element `log` in `./client/util.mjs
 Deconstruct imports for the function `E`; avoid import deconstruction in other cases:
 
 ```js
-import {E} from './util.mjs'
-import * as u from './util.mjs'
+import {E} from './ui.mjs'
+import * as ui from './ui.mjs'
 ```
 
 When hiding an element, use the property `.hidden`; avoid `.style.display`.

@@ -11,7 +11,6 @@
 !/.env.default.properties
 !/makefile
 !/readme.md
-!/todo.md
 !/claude.md
 
 !/doc
@@ -36,7 +35,9 @@
 /client/*
 !/client/*.mjs
 !/client/*.svg
+!/client/*.md
 !/client/wordlist.txt
 
-# TODO merge into `todo.md`.
-!/task.md
+!/todo
+/todo/*
+!/todo/*.md

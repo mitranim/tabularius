@@ -3,6 +3,7 @@ import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
+import * as ui from './ui.mjs'
 import * as au from './auth.mjs'
 import * as p from './plot.mjs'
 
@@ -13,15 +14,15 @@ a.patch(window, tar)
 
 export async function watchStartOpt() {
   if (!await shouldStartWatch()) return
-  os.runCmd(`watch`).catch(u.logErr)
-  u.LOG.info(`started `, os.BtnCmdWithHelp(`watch`))
+  os.runCmd(`watch`).catch(ui.logErr)
+  ui.LOG.info(`started `, os.BtnCmdWithHelp(`watch`))
 }
 
 export async function shouldStartWatch() {
   return (
     !isWatchingLocal() &&
-    !!(await fs.progressFileOpt(u.sig).catch(u.logErr)) &&
-    !!(await fs.historyDirOpt(u.sig).catch(u.logErr))
+    !!(await fs.progressFileOpt(u.sig).catch(ui.logErr)) &&
+    !!(await fs.historyDirOpt(u.sig).catch(ui.logErr))
   )
 }
 
@@ -51,10 +52,10 @@ export const WATCH_MAX_ERRS = 3
 cmdWatch.cmd = `watch`
 cmdWatch.desc = `watch the game's ${fs.PROGRESS_FILE_CONF.desc} for changes and create backups; runs automatically`
 cmdWatch.help = function cmdWatchHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     u.callOpt(cmdWatch.desc),
     [
-      `watch is invoked `, u.Bold(`automatically`), ` after running `,
+      `watch is invoked `, ui.Bold(`automatically`), ` after running `,
       os.BtnCmdWithHelp(`saves`), ` and `, os.BtnCmdWithHelp(`history`),
       ` in any order; you generally don't need to run it manually`,
     ],
@@ -67,6 +68,13 @@ cmdWatch.help = function cmdWatchHelp() {
 
 export async function cmdWatch(proc) {
   if (u.hasHelpFlag(u.splitCliArgs(proc.args))) return os.cmdHelpDetailed(cmdWatch)
+
+  /*
+  TODO: when already running, "nudge" the current watch process to hurry up,
+  reset its error count, and skip its current waiting interval. Do this by
+  broadcasting a special event to all tabs. Each `watch` should listen to this
+  broadcast whenever it's sleeping.
+  */
   if (isWatchingLocal()) return `already running`
 
   proc.desc = `acquiring lock`
@@ -74,15 +82,15 @@ export async function cmdWatch(proc) {
   const {sig} = proc
 
   if (unlock) {
-    u.LOG.verb(`[watch] starting`)
+    ui.LOG.verb(`[watch] starting`)
   }
   else {
     const start = Date.now()
-    u.LOG.verb(`[watch] another process has a lock on watching and backups, waiting until it stops`)
+    ui.LOG.verb(`[watch] another process has a lock on watching and backups, waiting until it stops`)
     proc.desc = `waiting for another "watch" process`
     unlock = await u.lock(sig, WATCH_LOCK_NAME)
     const end = Date.now()
-    u.LOG.verb(`[watch] acquired lock from another process after ${end - start}ms, proceeding to watch and backup`)
+    ui.LOG.verb(`[watch] acquired lock from another process after ${end - start}ms, proceeding to watch and backup`)
   }
 
   proc.desc = `watching and backing up`
@@ -106,7 +114,7 @@ export async function cmdWatchUnsync(sig) {
       if (u.errIs(err, u.isErrAbort)) return
       errs++
       if (u.errIs(err, fs.isErrFs)) {
-        u.LOG.err(
+        ui.LOG.err(
           `[watch] filesystem error, may need to revoke FS access and grant it again;`,
           ` see `, os.BtnCmd(`help saves`), ` and `, os.BtnCmd(`help history`), `; error: `,
           err,
@@ -117,11 +125,11 @@ export async function cmdWatchUnsync(sig) {
       }
       if (u.errIs(err, u.isErrDecoding)) {
         sleep = WATCH_INTERVAL_MS_SHORT
-        u.LOG.err(`[watch] file decoding error, retrying after ${sleep}ms: `, err)
+        ui.LOG.err(`[watch] file decoding error, retrying after ${sleep}ms: `, err)
       }
       else {
         sleep = WATCH_INTERVAL_MS_LONG
-        u.LOG.err(`[watch] unexpected error (${errs} in a row), retrying after ${sleep}ms: `, err)
+        ui.LOG.err(`[watch] unexpected error (${errs} in a row), retrying after ${sleep}ms: `, err)
       }
     }
     if (!await a.after(sleep, sig)) return
@@ -139,7 +147,7 @@ async function watchInit(sig, state) {
   const roundFile = runDir && await fs.findLatestRoundFile(sig, runDir)
   await state.setRoundFile(roundFile?.name)
 
-  u.LOG.info(`[watch] initialized: `, {
+  ui.LOG.info(`[watch] initialized: `, {
     run: state.runDirName,
     round: state.roundFileName,
   })
@@ -164,7 +172,7 @@ async function watchStep(sig, state) {
   }
 
   if (!nextRoundNum) {
-    u.LOG.verb(`[watch] current round is ${nextRoundNum}, no current run, skipping backup`)
+    ui.LOG.verb(`[watch] current round is ${nextRoundNum}, no current run, skipping backup`)
     return
   }
 
@@ -176,19 +184,19 @@ async function watchStep(sig, state) {
     prevFile = await fs.getSubFile(sig, state.historyDirHandle, runDirName, roundFileName)
   }
   catch (err) {
-    u.LOG.err(`[watch] unable to get latest backup file; assuming it was deleted and continuing; error:`, err)
+    ui.LOG.err(`[watch] unable to get latest backup file; assuming it was deleted and continuing; error:`, err)
     roundFileName = undefined
   }
 
   const prevTime = prevFile?.lastModified
   if (prevTime >= nextTime) {
-    // u.LOG.verb(`[watch] skipping: ${fs.PROGRESS_FILE_CONF.desc} unmodified`)
+    // ui.LOG.verb(`[watch] skipping: ${fs.PROGRESS_FILE_CONF.desc} unmodified`)
     return
   }
 
   const prevRoundNum = u.toNatOpt(roundFileName)
   if (prevRoundNum === nextRoundNum) {
-    // u.LOG.verb(`[watch] skipping: round is still ${prevRoundNum}`)
+    // ui.LOG.verb(`[watch] skipping: round is still ${prevRoundNum}`)
     return
   }
 
@@ -208,7 +216,7 @@ async function watchStep(sig, state) {
   }
 
   if (prevRoundNum < nextRoundNum) {
-    u.LOG.info(`[watch] round increased from ${prevRoundNum} to ${nextRoundNum}, backing up`)
+    ui.LOG.info(`[watch] round increased from ${prevRoundNum} to ${nextRoundNum}, backing up`)
     const dir = await u.wait(sig, state.historyDirHandle.getDirectoryHandle(
       runDirName,
       {create: true},
@@ -221,16 +229,16 @@ async function watchStep(sig, state) {
   }
 
   if (nextRoundNum < prevRoundNum) {
-    u.LOG.info(`[watch] round decreased from ${prevRoundNum} to ${nextRoundNum}, assuming new run`)
+    ui.LOG.info(`[watch] round decreased from ${prevRoundNum} to ${nextRoundNum}, assuming new run`)
   }
   else {
-    u.LOG.info(`[watch] round is now ${nextRoundNum}, assuming new run`)
+    ui.LOG.info(`[watch] round is now ${nextRoundNum}, assuming new run`)
   }
 
   const nextRunNum = a.isNil(prevRunNum) ? 0 : prevRunNum + 1
   const nextRunMs = Date.parse(roundData.LastUpdated)
   if (!a.isNat(nextRunMs)) {
-    u.LOG.err(`internal error: round ${nextRoundNum} has missing or invalid timestamp ${a.show(roundData.LastUpdated)}`)
+    ui.LOG.err(`internal error: round ${nextRoundNum} has missing or invalid timestamp ${a.show(roundData.LastUpdated)}`)
   }
 
   const nextRunDirName = s.makeRunName(nextRunNum, nextRunMs)
@@ -238,7 +246,7 @@ async function watchStep(sig, state) {
   state.setRunDir(nextRunDirName)
   await fs.writeDirFile(sig, dir, nextFileName, content)
   state.setRoundFile(nextFileName)
-  u.LOG.info(`[watch] backed up ${a.show(u.paths.join(dir.name, nextFileName))}`)
+  ui.LOG.info(`[watch] backed up ${a.show(u.paths.join(dir.name, nextFileName))}`)
 
   event.prevRunNum = event.run_num
   event.runDirName = nextRunDirName
@@ -250,7 +258,7 @@ async function watchStep(sig, state) {
 function afterRoundBackup(eve) {
   u.broadcastToAllTabs(eve)
   const {prevRunNum, runDirName, roundFileName} = eve
-  if (!prevRunNum) p.plotDefaultLocalOpt({quiet: true}).catch(u.logErr)
+  if (!prevRunNum) p.plotDefaultLocalOpt({quiet: true}).catch(ui.logErr)
   if (!au.isAuthed()) return
-  os.runCmd(`upload ${u.paths.join(runDirName, roundFileName)}`).catch(u.logErr)
+  os.runCmd(`upload ${u.paths.join(runDirName, roundFileName)}`).catch(ui.logErr)
 }

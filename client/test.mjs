@@ -6,6 +6,7 @@ import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
 import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
+import * as ui from './ui.mjs'
 import * as p from './plot.mjs'
 
 const tar = window.tabularius ??= a.Emp()
@@ -1223,9 +1224,9 @@ t.test(function test_stripPreSpaced() {
   test(`onetwo`, `one`, `onetwo`)
 })
 
-t.test(function test_codedToTitled() {
+t.test(function test_codedToNamed() {
   function test(key, src, exp) {
-    const out = p.codedToTitled(key, src)
+    const out = s.codedToNamed(key, src)
     t.is(out, exp)
   }
 
@@ -1253,5 +1254,5 @@ t.test(function test_codedToTitled() {
 
 await import(`../shared/test.mjs`)
 const msg = `[test] ok`
-u.LOG.info(msg)
+ui.LOG.info(msg)
 console.log(msg)

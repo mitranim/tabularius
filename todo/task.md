@@ -1,0 +1,35 @@
+<!-- - [ ] Add a new command (tentative name `show_round`) for showing a breakdown of a round, with various damage / efficiency stats, _and_ with weapon details.
+  - [x] Code location: `client/show_round.mjs`.
+  - [x] This is implemented as a "media" (non-text UI), and added to the media panel.
+  - [ ] At the top: various run details: game version, run number, round number, commander, difficulty, frontier, HQ HP, etc.
+  - [ ] Below: collapsed, expandable groups of doctrines:
+    - [ ] Regular doctrines.
+    - [ ] Frontier curses.
+    - [ ] Frontier dotations.
+    - [ ] Frontier modifiers.
+  - [ ] Below: table with various stats.
+    - [ ] The table has two levels: top level for stats, and sub-level for weapon details.
+    - [ ] For each building:
+      - [ ] One row for its own stats.
+      - [ ] One row for each statful weapon, with stats for that weapon.
+        - Statful weapon is defined as either currently enabled, or having had dealt some damage at any point during the run.
+      - [ ] One row for each non-weapon, non-bullet child, with its stats.
+      - [ ] If has at least one statful weapon:
+        - [ ] Add a full-colspan row below, which contains a sub-table.
+        - [ ] One row per statful weapon.
+        - [ ] Each row describes various details of that weapon: damage, rof, reload, mag, range, targeting, detection, and other properties.
+    - [ ] By default, weapon and child rows are collapsed (hidden).
+      - [ ] Clicking a building row toggles the weapon and child rows.
+      - [ ] The row containing the weapon details sub-table is toggled by clicking another row, just above it.
+      - [ ] Persist the latest "show"/"hide" preference for the toggled row type to storage, respect it for new tables.
+    - [ ] Support sorting by any column.
+      - [ ] Clicking a `th` cycles between sort types: desc, asc, none.
+      - [ ] Persist the latest sorting preference to storage, respect it for new tables.
+    - [ ] Stat cells have multiple numbers, displayed in a 2x2 fashion:
+      - [ ] Top left: value this round.
+      - [ ] Top right: % of value this round among all entities of this kind (bui vs (wep|chi)).
+      - [ ] Bottom left: accumulated value this run.
+      - [ ] Bottom right: % of accumulated value this run.
+      - [ ] Dim all except one (value this round), which is "canonical" and used for sorting.
+    - [ ] Use overflow ellipsis (our `trunc` class) in all cells, except for the cells which contain sub-tables. Ensure it works properly.
+    - [ ] Use `@container` queries to hide less-important columns when the container is narrow. -->

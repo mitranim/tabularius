@@ -19,13 +19,13 @@ export const PROGRESS_WEPS_KEY = `SeenWeapons`
 cmdEdit.cmd = `edit`
 cmdEdit.desc = `edit game files, lock or unlock parts of meta progression`
 cmdEdit.help = function cmdEditHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     cmdEdit.desc,
     `build your edit by clicking the buttons below!`,
 
     [
       BtnAppend(`-w`), ` -- write files; without this option, `,
-      u.Bold(`no files will be written`),
+      ui.Bold(`no files will be written`),
       `; by default, the command performs a safe "dry run", letting you preview the future changes; with `,
       BtnAppend(`-w`),
       `, the command will backup the files before writing; backups are placed in the `,
@@ -47,11 +47,11 @@ cmdEdit.help = function cmdEditHelp() {
       ` when unlocking`,
     ],
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppend(`diff=`),
         ` -- maximum achieved difficulty; known values: `,
-        ...u.LogWords(...a.map(gc.DIFFS, BtnAppendDiffShort)),
+        ...ui.LogWords(...a.map(gc.DIFFS, BtnAppendDiffShort)),
       ],
       [
         `  ↑ when combined with `,
@@ -60,11 +60,11 @@ cmdEdit.help = function cmdEditHelp() {
       ],
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppend(`frontier=`),
         ` -- maximum achieved Frontier; known values: `,
-        ...u.LogWords(...a.map(gc.FRONTIERS, BtnAppendFrontierShort)),
+        ...ui.LogWords(...a.map(gc.FRONTIERS, BtnAppendFrontierShort)),
       ],
 
       [`  ↑ automatically forces `, BtnAppendEq(`diff`, gc.DIFF_MAX)],
@@ -76,7 +76,7 @@ cmdEdit.help = function cmdEditHelp() {
       ],
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppend(`hero=`), ` -- select which commanders to edit`,
       ],
@@ -84,7 +84,7 @@ cmdEdit.help = function cmdEditHelp() {
       SpecificOptions({key: `hero`, coll: gc.CODES_TO_HEROS, type: `commanders`}),
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppend(`bui=`), ` -- select which buildings to lock or unlock`,
       ],
@@ -92,7 +92,7 @@ cmdEdit.help = function cmdEditHelp() {
       SpecificOptions({key: `bui`, coll: gc.CODES_TO_BUIS_SHORT, type: `buildings`}),
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppend(`doct=`), ` -- select which doctrines to lock or unlock`,
       ],
@@ -102,10 +102,10 @@ cmdEdit.help = function cmdEditHelp() {
 
     `tip: advanced building variants are hidden behind doctrines; in regular play, they're unlocked by finding an expertise doctrine for the corresponding regular building; here, they can be unlocked as doctrines`,
 
-    u.LogLines(
+    ui.LogLines(
       [
-        `all of the following examples are `,
-        u.Bold(`safe to run`),
+        `all of the following `, ui.Bold(`examples`),
+        ` are `, ui.Bold(`safe to run`),
         ` because `, BtnAppend(`-w`),
         ` is not included; you will be able to view the pending changes without any files being written:`
       ],
@@ -128,16 +128,16 @@ cmdEdit.help = function cmdEditHelp() {
 
     [
       `the game `,
-      u.Bold(`must be closed`),
+      ui.Bold(`must be closed`),
       ` before running this command, otherwise this will have no effect: the game will ignore and overwrite the files`,
     ],
 
     [
-      u.Bold(`reminder:`),
+      ui.Bold(`reminder:`),
       ` without `,
       BtnAppend(`-w`),
       `, the command is `,
-      u.Bold(`safe to run`),
+      ui.Bold(`safe to run`),
       ` because no files will be modified; you can safely preview changes`,
     ],
 
@@ -166,7 +166,7 @@ export async function edit(sig, state) {
   reqNoErrs(state)
 
   if (!state.hasActions()) {
-    u.LOG.info(...u.LogParagraphs(
+    ui.LOG.info(...ui.LogParagraphs(
       `no edit actions specified, nothing to be done`,
       os.cmdHelpDetailed(cmdEdit),
     ))
@@ -509,7 +509,7 @@ export async function editHeros(sig, state) {
   // `nonChanges` as appropriate. Do the same for buis and doctrines.
   msgs.push([
     preOpt(Btn), msgAction(lock, !heros.size), ` commanders: `,
-    ...u.LogWords(...a.map(codes, BtnAppendHeroShort)),
+    ...ui.LogWords(...a.map(codes, BtnAppendHeroShort)),
   ])
 
   for (const code of codes) {
@@ -647,7 +647,7 @@ export async function editBuis(sig, state) {
 
   msgs.push([
     preOpt(Btn), msgAction(lock, !buis.size), ` buildings: `,
-    ...u.LogWords(...a.map(buiCodes, BtnAppendBuiShort)),
+    ...ui.LogWords(...a.map(buiCodes, BtnAppendBuiShort)),
   ])
 
   for (const code of buiCodes) {
@@ -762,7 +762,7 @@ export async function editDocts(sig, state) {
 
   msgs.push([
     preOpt(Btn), msgAction(lock, !docts.size), ` doctrines: `,
-    ...u.LogWords(...a.map(codes, BtnAppendDoctShort)),
+    ...ui.LogWords(...a.map(codes, BtnAppendDoctShort)),
   ])
 
   const updatedCodes = new Set(codes)
@@ -831,7 +831,7 @@ export function editSeenAll({
     if (!seen.length) return
     changes.push([
       `marking all previously-seen ${type} as not seen: `,
-      ...u.LogWords(...a.map(seen, showShort)),
+      ...ui.LogWords(...a.map(seen, showShort)),
     ])
     seen.length = 0
     file.changed = true
@@ -884,7 +884,7 @@ export async function editCommit(sig, state) {
     msgs.unshift([
       (
         (changes.length || nonChanges.length)
-        ? [u.Bold(`planned actions`), ` in `]
+        ? [ui.Bold(`planned actions`), ` in `]
         : `notes in `
       ),
       ui.BtnPromptReplace({val: args}), `:`,
@@ -892,11 +892,11 @@ export async function editCommit(sig, state) {
   }
 
   if (changes.length) {
-    msgs.push(Collapsed(changes, `changes`))
+    msgs.push(ui.DetailsPre({summary: `changes`, chi: changes, chiLvl: 1}))
   }
 
   if (nonChanges.length) {
-    msgs.push(Collapsed(nonChanges, `non-changes`))
+    msgs.push(ui.DetailsPre({summary: `non-changes`, chi: nonChanges, chiLvl: 1}))
   }
 
   if (!changedFiles.length) {
@@ -911,7 +911,7 @@ export async function editCommit(sig, state) {
     }
   }
   else {
-    msgs.push(u.LogLines(
+    msgs.push(ui.LogLines(
       `the following files need to be modified:`,
       ...a.map(changedFiles, val => [`  `, val.path]),
     ))
@@ -922,14 +922,14 @@ export async function editCommit(sig, state) {
     else {
       msgs.push([
         `no `, BtnAppend(`-w`),
-        ` specified; showing a `, u.Bold(`preview`),
+        ` specified; showing a `, ui.Bold(`preview`),
         ` of the planned changes, `,
-        u.Bold(`without writing any files`),
+        ui.Bold(`without writing any files`),
       ])
     }
   }
 
-  u.LOG.info(...u.LogParagraphs(...msgs))
+  ui.LOG.info(...ui.LogParagraphs(...msgs))
   if (!write) return
 
   const histDir = await loadHistDir(sig, state)
@@ -938,15 +938,15 @@ export async function editCommit(sig, state) {
     const path = await fs.backupFile({
       sig, file: file.handle, dir: histDir, uniq: true,
     })
-    u.LOG.info(fs.msgBackedUp(file.path, path))
+    ui.LOG.info(fs.msgBackedUp(file.path, path))
   }
 
   for (const file of changedFiles) {
     await fs.writeEncodeGameFile(sig, file.handle, file.data)
-    u.LOG.info([`modified `, a.show(file.path)])
+    ui.LOG.info([`modified `, a.show(file.path)])
   }
 
-  u.LOG.info(`edit done! 🎉`)
+  ui.LOG.info(`edit done! 🎉`)
 }
 
 export function editUnlockConds({state, code, unlockables, file, pre}) {
@@ -1157,7 +1157,7 @@ export async function loadSaveFileAndValidate({sig, state, name, pre, entries}) 
   const out = u.dict({file, custom, data, msgs: [], entries: a.Emp()})
 
   if (!a.isDict(data)) {
-    out.msgs.push(u.ErrSpan(
+    out.msgs.push(ui.ErrSpan(
       preOpt(pre),
       `unexpected top-level data format in `, a.show(file.path),
     ))
@@ -1168,7 +1168,7 @@ export async function loadSaveFileAndValidate({sig, state, name, pre, entries}) 
     a.reqFun(fun)
 
     if (!a.hasOwn(data, key)) {
-      out.msgs.push(u.ErrSpan(
+      out.msgs.push(ui.ErrSpan(
         preOpt(pre),
         `missing top-level entry `, a.show(key),
         ` in `, a.show(file.path),
@@ -1179,7 +1179,7 @@ export async function loadSaveFileAndValidate({sig, state, name, pre, entries}) 
     const val = data[key]
 
     if (!fun(val)) {
-      out.msgs.push(u.ErrSpan(
+      out.msgs.push(ui.ErrSpan(
         preOpt(pre),
         `unrecognized top-level entry `, a.show(key),
         ` in `, a.show(file.path), `; expected a value that passes the test `,
@@ -1294,7 +1294,7 @@ function BtnEdit(key, set) {
   return ui.BtnPrompt({cmd, suf: u.cliEq(key), eph: `...`})
 }
 
-function Warn() {return u.Bold(`warning:`)}
+function Warn() {return ui.Bold(`warning:`)}
 
 function SpecificOptions({key, coll, type}) {
   a.reqValidStr(key)
@@ -1307,28 +1307,17 @@ function SpecificOptions({key, coll, type}) {
     return [pre, BtnAppendCoded({key, val, trunc: true, width})]
   }
 
-  return u.LogDetails({
+  return ui.Details({
     lvl: 1,
-    summary: u.Muted(`specific ${type}: click to expand`),
-    chi: u.LogLines(...a.map(a.keys(coll), Btn)),
-  })
-}
-
-function Collapsed(src, type) {
-  a.reqArr(src)
-  a.reqValidStr(type)
-
-  return u.LogDetails({
-    summary: type + ` (${src.length}): click to expand`,
-    summaryCls: `cursor-pointer underline decoration-dotted hover:decoration-solid`,
-    chi: u.LogLines(...src).map(u.indentNode),
+    summary: ui.Muted(`specific ${type}: click to expand`),
+    chi: ui.LogLines(...a.map(a.keys(coll), Btn)),
   })
 }
 
 function reqNoErrs(state) {
   const {errs, args} = a.reqInst(state, EditState)
   if (!errs.length) return
-  throw new u.ErrLog(...u.LogParagraphs(
+  throw new ui.ErrLog(...ui.LogParagraphs(
     [`errors in `, ui.BtnPromptReplace({val: args}), `:`],
     ...errs,
   ))
@@ -1339,7 +1328,7 @@ function msgEnumWarn(key, val, coll) {
   if (coll.has(val)) return undefined
 
   const cmd = cmdEdit.cmd
-  const vals = u.LogWords(...a.map(a.keys(coll), val => ui.BtnPrompt({
+  const vals = ui.LogWords(...a.map(a.keys(coll), val => ui.BtnPrompt({
     cmd, suf: u.cliEq(key, val), chi: val,
   })))
 

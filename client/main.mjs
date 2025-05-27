@@ -8,6 +8,7 @@ import * as au from './auth.mjs'
 import * as up from './upload.mjs'
 import * as p from './plot.mjs'
 import * as e from './edit.mjs'
+import * as sr from './show_round.mjs'
 import * as se from './setup.mjs'
 
 import * as self from './main.mjs'
@@ -26,6 +27,7 @@ os.addCmd(se.cmdHistory)
 os.addCmd(au.cmdAuth)
 os.addCmd(p.cmdPlot)
 os.addCmd(p.cmdPlotLink)
+os.addCmd(sr.cmdShowRound)
 os.addCmd(e.cmdEdit)
 os.addCmd(fs.cmdRollback)
 
@@ -50,7 +52,7 @@ os.addCmd(ui.cmdClear)
 export function cmdStatus({args}) {
   if (u.hasHelpFlag(u.splitCliArgs(args))) return os.cmdHelpDetailed(cmdStatus)
 
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     new fs.FileConfStatus(fs.SAVE_DIR_CONF),
     new fs.FileConfStatus(fs.HISTORY_DIR_CONF),
     [`auth: `, new au.AuthStatus()],
@@ -63,9 +65,9 @@ function cmdLsDesc() {
 }
 
 function cmdLsHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     cmdLs.desc(),
-    u.LogLines(
+    ui.LogLines(
       `supported sources:`,
       [
         `  local -- default -- requires `,
@@ -78,19 +80,19 @@ function cmdLsHelp() {
         `      -- requires `, os.BtnCmdWithHelp(`auth`),
       ],
     ),
-    u.LogLines(
+    ui.LogLines(
       `local usage:`,
       [`  `, os.BtnCmd(`ls /`)],
       [`  `, os.BtnCmd(`ls -s`), ` -- additional stats`],
       [`  `, ui.BtnPrompt({full: true, cmd: `ls`, eph: `<some_dir>`})],
       [`  `, ui.BtnPrompt({full: true, cmd: `ls`, eph: `<some_dir>/<some_file>`})],
     ),
-    u.LogLines(
+    ui.LogLines(
       `cloud usage:`,
       [`  `, os.BtnCmd(`ls -c`)],
       [`  `, ui.BtnPrompt({full: true, cmd: `ls`, suf: `-c `, eph: `<some_run_id>`})],
     ),
-    u.LogLines(
+    ui.LogLines(
       `tip: filter plots by run numbers from directory names; this works for both local and cloud plots:`,
       [`  `, ui.BtnPrompt({
         full: true,
@@ -131,21 +133,21 @@ export function cmdLs({sig, args}) {
     }
 
     if (key) {
-      u.LOG.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
+      ui.LOG.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
       return os.cmdHelpDetailed(cmdLs)
     }
     paths.push(val)
   }
 
   if (paths.length > 1) {
-    u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
     return os.cmdHelpDetailed(cmdLs)
   }
   const path = paths[0]
 
   if (cloud) {
     if (stat) {
-      u.LOG.err(`ignoring `, ui.BtnPrompt({cmd, suf: `-s`}), ` in cloud mode in `, ui.BtnPromptReplace({val: args}))
+      ui.LOG.err(`ignoring `, ui.BtnPrompt({cmd, suf: `-s`}), ` in cloud mode in `, ui.BtnPromptReplace({val: args}))
     }
     // TODO use user id as directory name.
     return au.listDirsFiles(sig, path)
@@ -162,10 +164,10 @@ async function main() {
   migrations, and convenient for URL query "run" commands which rely on FS.
   */
   const [_loadedProg, _loadedSave, loadedHist] = await Promise.all([
-    fs.loadedProgressFile(u.sig).catch(u.logErr),
-    fs.loadedSaveDir(u.sig).catch(u.logErr),
-    fs.loadedHistoryDir(u.sig).catch(u.logErr),
-  ]).catch(u.logErr)
+    fs.loadedProgressFile(u.sig).catch(ui.logErr),
+    fs.loadedSaveDir(u.sig).catch(ui.logErr),
+    fs.loadedHistoryDir(u.sig).catch(ui.logErr),
+  ]).catch(ui.logErr)
 
   if (!u.QUERY.get(`import`)) {
     /*
@@ -174,11 +176,11 @@ async function main() {
     on the setup flow message, and avoid overwhelming them with help.
     */
     if (se.isSetupDone()) {
-      u.LOG.info(`welcome to Tabularius! 🚀`)
-      await os.runCmd(`help`).catch(u.logErr)
+      ui.LOG.info(`welcome to Tabularius! 🚀`)
+      await os.runCmd(`help`).catch(ui.logErr)
     }
     else {
-      u.LOG.info(
+      ui.LOG.info(
         `welcome to Tabularius! type or click `,
         os.BtnCmd(`help`), ` to see available commands 🚀`,
       )
@@ -186,7 +188,7 @@ async function main() {
   }
 
   // Other code relies on up-to-date FS state, so FS migrations run first.
-  if (loadedHist) await fs.migOpt().catch(u.logErr)
+  if (loadedHist) await fs.migOpt().catch(ui.logErr)
 
   let imported = 0
   let ran = 0
@@ -204,11 +206,11 @@ async function main() {
         url.hostname === `127.0.0.1` ||
         url.hostname === `0.0.0.0`
       ) {
-        await import(new URL(val, window.location.href)).catch(u.logErr)
+        await import(new URL(val, window.location.href)).catch(ui.logErr)
         imported++
       }
       else {
-        u.LOG.err(`rejecting foreign import `, a.show(val), ` to avoid XSS`)
+        ui.LOG.err(`rejecting foreign import `, a.show(val), ` to avoid XSS`)
       }
       continue
     }
@@ -217,7 +219,7 @@ async function main() {
     if (key === `run`) {
       if (!val) continue
       ran++
-      lastProcPromise = os.runCmd(val, {waitFor: lastProcPromise}).catch(u.logErr)
+      lastProcPromise = os.runCmd(val, {waitFor: lastProcPromise}).catch(ui.logErr)
       if (val.startsWith(`plot `)) ranPlots++
     }
   }
@@ -228,8 +230,8 @@ async function main() {
   */
   if (imported) return
 
-  w.watchStartOpt().catch(u.logErr)
-  up.uploadStartOpt().catch(u.logErr)
+  w.watchStartOpt().catch(ui.logErr)
+  up.uploadStartOpt().catch(ui.logErr)
 
   /*
   For fresh visitors, we want to render some default chart, as a sample. For
@@ -245,10 +247,10 @@ async function main() {
       fun: p.plotDefault,
       args: `plot_default`,
       desc: `running default analysis`,
-    }).catch(u.logErr)
+    }).catch(ui.logErr)
   }
 
   if (!se.isSetupDone()) se.updateSetupFlowMsg()
 }
 
-main().catch(u.logErr)
+main().catch(ui.logErr)

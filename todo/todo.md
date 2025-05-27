@@ -1545,6 +1545,7 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
     * [ ] When neither is specified: automatically look for "known" files which match the provided edit flags.
     * [ ] Source and target may be provided repeatedly; they apply to all subsequent edit options; providing them again overrides them for the further options.
   * [x] `-a`: also lock or unlock difficilties.
+  * [ ] Add an option to only mark selected entities as "seen" without unlocking anything new.
   * [ ] Consider _not_ decreasing global max difficulty when `diff=` or `frontier=` is specified _and_ `hero=` is also specified.
   * [ ] Cheat options:
     * [ ] Editing any field anywhere:
@@ -1793,6 +1794,7 @@ Or, even better, for lower uptime:
 ---
 
 * [ ] Add a new command (tentative name `show_run`) which takes a run id (for cloud stuff) or a run num (for local stuff) and renders various default analyses (currently plots, but more in the future).
+  * [x] Preliminary implementation: only local and manual.
   * [ ] Server: add an endpoint that takes a run id and returns the data needed for this command.
   * [ ] Client: an analogous function.
   * [ ] Both environments:

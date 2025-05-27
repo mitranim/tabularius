@@ -21,6 +21,11 @@ export const USER_ID = `local_user`
 // Allows live plot updates on dat changes. See `LivePlotter`.
 u.listenMessage(u.BROAD, datOnBroadcast)
 
+export const DAT_QUERY_TABLES = Object.freeze(u.dict({
+  runs: true,
+  facts: true,
+}))
+
 export function datQueryFacts(dat, opt) {
   a.reqStruct(dat)
   return u.filterWhere(dat.facts, datQueryWhere(dat, opt))
@@ -83,7 +88,7 @@ function validRunId(run) {
   return a.reqStr(id)
 }
 
-export async function datLoad({sig, dat, opt}) {
+export async function datLoad({sig, dat, opt, tables}) {
   a.reqStruct(dat)
   opt = a.laxStruct(opt)
 
@@ -111,12 +116,12 @@ export async function datLoad({sig, dat, opt}) {
     for (const file of await fs.readRunRoundHandlesAsc(sig, dir)) {
       const round_num = u.toNatReq(file.name)
       if (roundNums.size && !roundNums.has(round_num)) continue
-      await datLoadRoundFromHandle({sig, dat, file, run_num, run_ms})
+      await datLoadRoundFromHandle({sig, dat, file, run_num, run_ms, tables})
     }
   }
 }
 
-export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms}) {
+export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms, tables}) {
   a.reqStruct(dat)
   a.reqInst(file, FileSystemFileHandle)
   const round_id = s.makeRoundId(USER_ID, run_num, run_ms, u.toNatOpt(file.name))
@@ -132,7 +137,7 @@ export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms}) 
     if (round_id in a.laxDict(dat.run_rounds)) return
 
     const round = await fs.readDecodeGameFile(sig, file)
-    s.datAddRound({dat, round, user_id: USER_ID, run_num, run_ms, composite: true})
+    s.datAddRound({dat, round, user_id: USER_ID, run_num, run_ms, composite: true, tables})
   }
   finally {unlock()}
 }
@@ -145,4 +150,36 @@ function datOnBroadcast(src) {
     dat: DAT, round, user_id: USER_ID, run_num, run_ms, composite: true,
   })
   u.dispatchMessage(DAT, src)
+}
+
+/*
+Mixin for various "live" media that want to receive notifications
+about new local data.
+*/
+export function MixDatSub(cls) {return MixDatSubCache.goc(cls)}
+
+class MixDatSubCache extends a.StaticCache {
+  static make(cls) {
+    return class MixDatSub extends cls {
+      datUnsub = undefined
+
+      onDatMsg(src) {
+        if (!this.isConnected) {
+          this.datSubDeinit()
+          return
+        }
+        if (src?.type !== `new_round`) return
+        this.onNewRound(src)
+      }
+
+      onNewRound() {}
+
+      datSubInit() {
+        this.datSubDeinit()
+        this.datUnsub = u.listenMessage(DAT, this.onDatMsg.bind(this))
+      }
+
+      datSubDeinit() {this.datUnsub = this.datUnsub?.()}
+    }
+  }
 }

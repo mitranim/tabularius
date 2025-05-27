@@ -1,5 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
-import {E} from './util.mjs'
+import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
@@ -12,10 +12,10 @@ import * as p from './plot.mjs'
 cmdSaves.cmd = `saves`
 cmdSaves.desc = `grant or revoke access to the game's saves directory`
 cmdSaves.help = function cmdSavesHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     cmdSaves.desc,
 
-    u.LogLines(
+    ui.LogLines(
       `usage:`,
       [`  `, os.BtnCmd(`saves`), `        -- grant access`],
       [`  `, os.BtnCmd(`saves revoke`), ` -- revoke access`],
@@ -32,7 +32,7 @@ export async function cmdSaves({sig, args}) {
   if (u.hasHelpFlag(set)) return os.cmdHelpDetailed(cmdSaves)
 
   if (set.size > 1) {
-    u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
     return os.cmdHelpDetailed(cmdSaves)
   }
 
@@ -58,10 +58,10 @@ export async function savesRevoke(sig) {
 cmdHistory.cmd = `history`
 cmdHistory.desc = `grant or revoke access to a run history directory`
 cmdHistory.help = function cmdSavesHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     cmdHistory.desc,
 
-    u.LogLines(
+    ui.LogLines(
       `usage:`,
       [`  `, os.BtnCmd(`history`), `        -- grant access`],
       [`  `, os.BtnCmd(`history revoke`), ` -- revoke access`],
@@ -77,7 +77,7 @@ export async function cmdHistory({sig, args}) {
   if (u.hasHelpFlag(set)) return os.cmdHelpDetailed(cmdHistory)
 
   if (set.size > 1) {
-    u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
     return os.cmdHelpDetailed(cmdHistory)
   }
 
@@ -93,7 +93,7 @@ export async function historyGrant({sig, args}) {
   if (!await confGranted({sig, conf, args})) return
   await w.watchStartOpt()
   await up.uploadStartOpt()
-  p.plotDefaultLocalOpt({quiet: true}).catch(u.logErr)
+  p.plotDefaultLocalOpt({quiet: true}).catch(ui.logErr)
 }
 
 export async function historyRevoke(sig) {
@@ -109,7 +109,7 @@ export async function confGranted({sig, conf, args}) {
   const handle = await fs.fileConfLoadedWithPermIdemp(sig, conf)
   if (handle) {
     const {name} = handle
-    u.LOG.info(
+    ui.LOG.info(
       conf.desc, `: access granted`,
       // TODO: support quotes in CLI parsing.
       (
@@ -122,11 +122,11 @@ export async function confGranted({sig, conf, args}) {
   }
 
   if (!await fs.fileConfInitedIdemp(sig, conf)) {
-    u.LOG.info(conf.desc, `: access not granted; rerun `, os.BtnCmd(args))
+    ui.LOG.info(conf.desc, `: access not granted; rerun `, os.BtnCmd(args))
     return false
   }
 
-  u.LOG.info(conf.desc, `: access granted`)
+  ui.LOG.info(conf.desc, `: access granted`)
   return true
 }
 
@@ -134,12 +134,12 @@ export async function confRevoked({sig, conf}) {
   a.reqInst(conf, fs.FileConf)
 
   if (!conf.handle) {
-    u.LOG.info(conf.desc, `: access not granted`)
+    ui.LOG.info(conf.desc, `: access not granted`)
     return false
   }
 
   await fs.fileConfDeinit(sig, conf)
-  u.LOG.info(conf.desc, `: access revoked`)
+  ui.LOG.info(conf.desc, `: access revoked`)
   return true
 }
 
@@ -180,19 +180,19 @@ export function updateSetupFlowMsg(opt) {
   if (!change || (opt && save && hist && auth)) return
 
   SETUP_FLOW_PREV_MSG?.remove()
-  SETUP_FLOW_PREV_MSG = u.LOG.info(new SetupFlow())
+  SETUP_FLOW_PREV_MSG = ui.LOG.info(new SetupFlow())
 }
 
-class SetupFlow extends u.ReacElem {
+class SetupFlow extends ui.ReacElem {
   // SYNC[setup_state].
   run() {
     const save = !!fs.SAVE_DIR_CONF.handle
     const hist = !!fs.HISTORY_DIR_CONF.handle
     const auth = !!au.STATE.userId
 
-    E(this, {}, ...u.LogParagraphs(
-      u.LogLines(
-        u.Bold(`essential setup steps (any order):`),
+    E(this, {}, ui.LogParagraphs(
+      ui.LogLines(
+        ui.Bold(`essential setup steps (any order):`),
         Step(save,
           `run `, os.BtnCmdWithHelp(`saves`),
           ` to grant access to the game save directory`
@@ -224,19 +224,19 @@ class SetupFlow extends u.ReacElem {
 function Step(ok, ...chi) {
   return [
     checkmark(ok), ` `,
-    E(`span`, {class: a.vac(ok) && `line-through`}, ...chi),
+    E(`span`, {class: a.vac(ok) && `line-through`}, chi),
   ]
 }
 
 function NextStepSaves() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     [
-      u.Bold(`recommended next step:`),
+      ui.Bold(`recommended next step:`),
       ` click `, os.BtnCmdWithHelp(`saves`),
       ` and pick the game's save directory (read-only and safe)`,
     ],
     fs.SaveDirLocation(),
-    u.LogLines(
+    ui.LogLines(
       `how to access "AppData":`,
       `  * open Explorer`,
       `  * goto your user directory; if you're unsure where, goto "C:\\Users" and look for your username`,
@@ -248,8 +248,8 @@ function NextStepSaves() {
 }
 
 function NextStepHist() {
-  return u.LogParagraphs(
-    u.Bold(`recommended next steps:`),
+  return ui.LogParagraphs(
+    ui.Bold(`recommended next steps:`),
 
     [
       checkmark(),
@@ -268,9 +268,9 @@ function NextStepHist() {
 }
 
 function NextStepAuth() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     [
-      u.Bold(`recommended next step:`),
+      ui.Bold(`recommended next step:`),
       ` click `, os.BtnCmdWithHelp(`auth`),
       ` and enter a password or passphrase to authenticate;`,
       ` easy and completely anonymous`,

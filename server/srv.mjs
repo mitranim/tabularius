@@ -34,8 +34,15 @@ function serve(ctx) {
     handler: a.bind(respond, ctx),
     onListen({port, hostname}) {
       if (hostname === `0.0.0.0`) hostname = `localhost`
-      const local = u.DEV ? `?local=true` : ``
-      console.log(`[srv] listening on http://${hostname}:${port}${local}`)
+
+      const url = new URL(`http://` + hostname)
+      url.port = a.renderLax(port)
+      if (u.DEV) {
+        url.searchParams.set(`dev`, `true`)
+        url.searchParams.set(`local`, `true`)
+      }
+
+      console.log(`[srv] listening on ${url}`)
     },
     onError(err) {
       if (a.isErrAbort(err)) return new u.Res()

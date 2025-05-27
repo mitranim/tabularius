@@ -26,6 +26,15 @@ export const STAT_TYPE_DMG_DONE_ACC = `dmg_done_acc`
 export const STAT_TYPE_DMG_OVER_ACC = `dmg_over_acc`
 export const STAT_TYPE_COST_EFF_ACC = `cost_eff_acc`
 
+export const STAT_TYPES = [
+  STAT_TYPE_DMG_DONE,
+  STAT_TYPE_DMG_OVER,
+  STAT_TYPE_COST_EFF,
+  STAT_TYPE_DMG_DONE_ACC,
+  STAT_TYPE_DMG_OVER_ACC,
+  STAT_TYPE_COST_EFF_ACC,
+]
+
 // TODO rename to `bui`.
 export const FACT_ENT_TYPE_BUI = `run_round_bui`
 
@@ -34,13 +43,14 @@ export const FACT_ENT_TYPE_CHI = `run_round_bui_chi`
 
 export const BUI_KIND_NEUTRAL = `Neutral`
 
-export const DAT_TABLES_ALL = Object.freeze({
+export const DAT_TABLES_ALL = Object.freeze(u.dict({
   runs: true,
   run_rounds: true,
   run_buis: true,
   run_round_buis: true,
+  round_buis: false,
   facts: true,
-})
+}))
 
 const LOGGED_MISSING_COSTS = a.Emp()
 
@@ -52,8 +62,7 @@ If we ever implement support for ephemeral composite keys on the server,
 then the composite fields may be skipped when calling this in server code.
 */
 export function datAddRound({
-  dat, round, user_id, run_num, run_ms, composite,
-  tables: {runs, run_rounds, run_buis, run_round_buis, facts} = DAT_TABLES_ALL,
+  dat, round, user_id, run_num, run_ms, composite, tables = DAT_TABLES_ALL,
 }) {
   a.reqObj(dat)
   a.reqDict(round)
@@ -61,6 +70,12 @@ export function datAddRound({
   a.reqNat(run_ms)
   a.reqValidStr(user_id)
   a.optBool(composite)
+  a.optBool(tables.runs)
+  a.optBool(tables.run_rounds)
+  a.optBool(tables.run_buis)
+  a.optBool(tables.run_round_buis)
+  a.optBool(tables.round_buis)
+  a.optBool(tables.facts)
 
   let DEBUG_LOGGED = false
   const round_num = a.reqInt(round.RoundIndex)
@@ -79,7 +94,7 @@ export function datAddRound({
   const release = gc.findGameReleaseForMs(round_ms)
   const game_ver = a.reqValidStr(release.ver)
 
-  if (runs) {
+  if (tables.runs) {
     dat.runs ??= a.Emp()
     dat.runs[run_id] = {
       game_ver,
@@ -97,7 +112,7 @@ export function datAddRound({
   const roundIds = runIds
   if (composite) roundIds.round_id = round_id
 
-  if (run_rounds) {
+  if (tables.run_rounds) {
     dat.run_rounds ??= a.Emp()
     dat.run_rounds[round_id] = {
       game_ver,
@@ -110,7 +125,14 @@ export function datAddRound({
     }
   }
 
-  if (!run_buis && !run_round_buis && !facts) return
+  if (!(
+    tables.run_buis ||
+    tables.run_round_buis ||
+    tables.round_buis ||
+    tables.facts
+  )) {
+    return
+  }
 
   for (const [bui_inst_str, bui] of a.entries(round.Buildings)) {
     const bui_inst = a.int(bui_inst_str)
@@ -119,7 +141,7 @@ export function datAddRound({
     const runBuiIds = {...roundIds, run_bui_id}
     const bui_kind = bui.BuildingType
 
-    if (run_buis) {
+    if (tables.run_buis) {
       dat.run_buis ??= a.Emp()
       dat.run_buis[run_bui_id] = {
         game_ver,
@@ -141,7 +163,7 @@ export function datAddRound({
       hero,
     })
 
-    if (run_round_buis) {
+    if (tables.run_round_buis) {
       dat.run_round_buis ??= a.Emp()
       dat.run_round_buis[run_round_bui_id] = {
         game_ver,
@@ -153,10 +175,22 @@ export function datAddRound({
       }
     }
 
-    if (!facts) continue
-    dat.facts ??= []
+    if (!(tables.round_buis || tables.facts)) continue
+    if (tables.round_buis) dat.round_buis ??= a.Emp()
+    if (tables.facts) dat.facts ??= []
 
-    const baseFact = {
+    const round_bui = a.Emp()
+    round_bui.inst = bui_inst_str
+    round_bui.bui_type = bui_type
+    round_bui.bui_type_upg = bui_type_upg
+    round_bui.cost = bui_cost
+    round_bui.wepTypes = new Set()
+    round_bui.dumBulTypes = new Set()
+    round_bui.enabledWepTypes = new Set()
+    round_bui.stats = a.vac(tables.round_buis) && a.Emp()
+    if (tables.round_buis) datRoundBuiAddUniq(dat.round_buis, round_bui)
+
+    const baseFact = a.vac(tables.facts) && {
       game_ver,
       run_ms,
       round_ms,
@@ -169,10 +203,10 @@ export function datAddRound({
       bui_type,
       bui_type_upg,
     }
-    if (composite) baseFact.run_round_bui_id = run_round_bui_id
+    if (baseFact && composite) baseFact.run_round_bui_id = run_round_bui_id
 
     /*
-    A building has `.LiveStats`, `.Weapons`, `.WeaponStats`, `.LiveChildStats`.
+    A building has `.LiveStats`, `.Weapons`, `.WeaponStats`, `.ChildLiveStats`.
 
     Damage from the building's own HP, such as for HQ, Barricade, Plasma Fence,
     is only counted in `.LiveStats`.
@@ -180,19 +214,23 @@ export function datAddRound({
     Damage from the building's own weapons is counted redundantly in:
     - `.LiveStats`
     - `.WeaponStats`
-    - `.LiveChildStats`
+    - `.ChildLiveStats`
 
     Damage from the troops spawned by the building, such as JOC assault teams,
-    is counted only in `.LiveChildStats`.
+    is counted only in `.ChildLiveStats`.
 
-    `.LiveChildStats` include stats for weapons _and_ so-called "dummy bullets"
+    `.ChildLiveStats` include stats for weapons _and_ so-called "dummy bullets"
     which are associated with weapons. Those stats are duplicated, redundantly.
 
     As a result, it seems that to compute a building's damage, we must add up:
     - Damage from `.LiveStats` (HP + weapons).
-    - Damage from `.LiveChildStats`, ONLY for non-weapons, non-dummy-bullets.
+    - Damage from `.ChildLiveStats`, ONLY for non-weapons, non-dummy-bullets.
 
-    We also calculate damages from `.WeaponStats` to double-check ourselves.
+    In `DATA_DEBUG` mode, we also calculate damages from `.WeaponStats` to
+    double-check ourselves.
+
+    TODO: use `timeSpentThisGame` and `timeSpentThisWave` to get uptime, and
+    use it to calculate DPS. Then also calculate DPS efficiency.
     */
     const bui_dmgDone_runAcc = a.laxFin(bui.LiveStats?.stats?.DamageDone?.valueThisGame)
     const bui_dmgDone_round = a.laxFin(bui.LiveStats?.stats?.DamageDone?.valueThisWave)
@@ -214,17 +252,13 @@ export function datAddRound({
     let bui_dmgOver_runAcc_fromOtherChi = 0
     let bui_dmgOver_round_fromOtherChi = 0
 
-    const buiWepTypes = new Set()
-    const buiDumBulTypes = new Set()
-    const buiWepDisabled = a.Emp()
-
     for (const [ind, wep] of a.entries(bui.Weapons)) {
       const key = a.reqValidStr(wep.EntityID)
-      buiWepTypes.add(key)
-      buiWepDisabled[key] = !a.reqBool(wep.Enabled)
+      round_bui.wepTypes.add(key)
+      if (wep.Enabled) round_bui.enabledWepTypes.add(key)
 
       const dumBulType = wep.DummyBullet?.EntityID
-      if (dumBulType) buiDumBulTypes.add(a.reqStr(dumBulType))
+      if (dumBulType) round_bui.dumBulTypes.add(a.reqStr(dumBulType))
 
       if (DATA_DEBUG) {
         const stats = bui.WeaponStats?.[ind]?.stats
@@ -240,7 +274,7 @@ export function datAddRound({
       a.optObj(src)
 
       if (!chi_type) continue
-      if (buiDumBulTypes.has(chi_type)) continue
+      if (round_bui.dumBulTypes.has(chi_type)) continue
 
       const stats = src?.stats
       if (!stats) continue
@@ -252,7 +286,7 @@ export function datAddRound({
       it would only have 1 field: its primary key. We simply reference this
       missing dimension by child type in child facts.
       */
-      const chiFact = {
+      const chiFact = baseFact && {
         ...baseFact,
         ent_type: FACT_ENT_TYPE_CHI,
         chi_type,
@@ -263,10 +297,10 @@ export function datAddRound({
 
         {
           const stat_val = a.reqFin(stats.DamageDone.valueThisGame)
-          if (buiWepTypes.has(chi_type)) bui_dmgDone_runAcc_fromWepChi += stat_val
+          if (round_bui.wepTypes.has(chi_type)) bui_dmgDone_runAcc_fromWepChi += stat_val
           else bui_dmgDone_runAcc_fromOtherChi += stat_val
 
-          if (statExists || !buiWepDisabled[chi_type]) {
+          if (chiFact && (statExists || round_bui.enabledWepTypes.has(chi_type))) {
             dat.facts.push({
               ...chiFact,
               stat_type: STAT_TYPE_DMG_DONE_ACC,
@@ -277,10 +311,10 @@ export function datAddRound({
 
         {
           const stat_val = a.reqFin(stats.DamageDone.valueThisWave)
-          if (buiWepTypes.has(chi_type)) bui_dmgDone_round_fromWepChi += stat_val
+          if (round_bui.wepTypes.has(chi_type)) bui_dmgDone_round_fromWepChi += stat_val
           else bui_dmgDone_round_fromOtherChi += stat_val
 
-          if (statExists || !buiWepDisabled[chi_type]) {
+          if (chiFact && (statExists || round_bui.enabledWepTypes.has(chi_type))) {
             dat.facts.push({
               ...chiFact,
               stat_type: STAT_TYPE_DMG_DONE,
@@ -295,10 +329,10 @@ export function datAddRound({
 
         {
           const stat_val = a.reqFin(stats.DamageOverkill.valueThisGame)
-          if (buiWepTypes.has(chi_type)) bui_dmgOver_runAcc_fromWepChi += stat_val
+          if (round_bui.wepTypes.has(chi_type)) bui_dmgOver_runAcc_fromWepChi += stat_val
           else bui_dmgOver_runAcc_fromOtherChi += stat_val
 
-          if (statExists || !buiWepDisabled[chi_type]) {
+          if (chiFact && (statExists || round_bui.enabledWepTypes.has(chi_type))) {
             dat.facts.push({
               ...chiFact,
               stat_type: STAT_TYPE_DMG_OVER_ACC,
@@ -309,10 +343,10 @@ export function datAddRound({
 
         {
           const stat_val = a.reqFin(stats.DamageOverkill.valueThisWave)
-          if (buiWepTypes.has(chi_type)) bui_dmgOver_round_fromWepChi += stat_val
+          if (round_bui.wepTypes.has(chi_type)) bui_dmgOver_round_fromWepChi += stat_val
           else bui_dmgOver_round_fromOtherChi += stat_val
 
-          if (statExists || !buiWepDisabled[chi_type]) {
+          if (chiFact && (statExists || round_bui.enabledWepTypes.has(chi_type))) {
             dat.facts.push({
               ...chiFact,
               stat_type: STAT_TYPE_DMG_OVER,
@@ -329,52 +363,53 @@ export function datAddRound({
     const bui_dmgOver_round_final = bui_dmgOver_round + bui_dmgOver_round_fromOtherChi
     const isNeutral = bui_kind === BUI_KIND_NEUTRAL
 
-    const buiFact = {
+    const buiFact = baseFact && {
       ...baseFact,
       ent_type: FACT_ENT_TYPE_BUI,
       chi_type: ``,
     }
 
+    const buiStats = round_bui.stats
+
+    function buiAdd(stat_type, stat_val) {
+      if (buiFact) dat.facts.push({...buiFact, stat_type, stat_val})
+      if (buiStats) buiStats[stat_type] = stat_val
+    }
+
     if (bui_dmgDone_runAcc_final || !isNeutral) {
-      dat.facts.push({
-        ...buiFact,
-        stat_type: STAT_TYPE_DMG_DONE_ACC,
-        stat_val: bui_dmgDone_runAcc_final,
-      })
-      dat.facts.push({
-        ...buiFact,
-        stat_type: STAT_TYPE_COST_EFF_ACC,
-        stat_val: bui_cost ? bui_dmgDone_runAcc_final / bui_cost : 0,
-      })
+      buiAdd(
+        STAT_TYPE_DMG_DONE_ACC,
+        bui_dmgDone_runAcc_final,
+      )
+      buiAdd(
+        STAT_TYPE_COST_EFF_ACC,
+        (bui_cost ? bui_dmgDone_runAcc_final / bui_cost : 0),
+      )
     }
 
     if (bui_dmgDone_round_final || !isNeutral) {
-      dat.facts.push({
-        ...buiFact,
-        stat_type: STAT_TYPE_DMG_DONE,
-        stat_val: bui_dmgDone_round_final,
-      })
-      dat.facts.push({
-        ...buiFact,
-        stat_type: STAT_TYPE_COST_EFF,
-        stat_val: bui_cost ? bui_dmgDone_round_final / bui_cost : 0,
-      })
+      buiAdd(
+        STAT_TYPE_DMG_DONE,
+        bui_dmgDone_round_final,
+      )
+      buiAdd(
+        STAT_TYPE_COST_EFF,
+        (bui_cost ? bui_dmgDone_round_final / bui_cost : 0),
+      )
     }
 
     if (bui_dmgOver_runAcc_final || !isNeutral) {
-      dat.facts.push({
-        ...buiFact,
-        stat_type: STAT_TYPE_DMG_OVER_ACC,
-        stat_val: bui_dmgOver_runAcc_final,
-      })
+      buiAdd(
+        STAT_TYPE_DMG_OVER_ACC,
+        bui_dmgOver_runAcc_final,
+      )
     }
 
     if (bui_dmgOver_round_final || !isNeutral) {
-      dat.facts.push({
-        ...buiFact,
-        stat_type: STAT_TYPE_DMG_OVER,
-        stat_val: bui_dmgOver_round_final,
-      })
+      buiAdd(
+        STAT_TYPE_DMG_OVER,
+        bui_dmgOver_round_final,
+      )
     }
 
     /*
@@ -397,6 +432,19 @@ export function datAddRound({
     console.debug(...src)
     DEBUG_LOGGED = true
   }
+}
+
+/*
+The pseudo-table `round_buis` is intended and supported only for single-round
+stats, mainly for `show_round`. It's not even viable for several rounds in a
+single run. This internal check should prevent accidental misuse.
+*/
+function datRoundBuiAddUniq(tar, val) {
+  a.reqDict(tar)
+  a.reqDict(val)
+  const key = a.reqValidStr(val.inst)
+  if (!a.hasOwn(tar, key)) return (tar[key] = val)
+  throw Error(`internal: redundant building instance ${key}`)
 }
 
 // Sums don't exactly match because of float imprecision.
@@ -563,19 +611,21 @@ export const SUPPORTED_TOTAL_KEYS = new Set([
 ])
 
 export const GLOSSARY = u.dict({
-  dmg_done: `damage done`,
-  dmg_done_acc: `damage done accumulated`,
+  dmg_done: `damage done in round`,
+  dmg_done_acc: `damage done in run`,
 
-  dmg_over: `damage overkill`,
-  dmg_over_acc: `damage overkill accumulated`,
+  dmg_over: `damage overkill in round`,
+  dmg_over_acc: `damage overkill in run`,
 
-  cost_eff: `cost efficiency (dmg/cost)`,
-  cost_eff_acc: `cost efficiency accumulated`,
+  cost_eff: `cost efficiency (dmg/cost) in round`,
+  cost_eff_acc: `cost efficiency in run`,
 
-  user_id: `globally unique user id`,
-  run_id: `globally unique run id`,
+  bui_cost: `building cost (base + upgrades)`,
+
+  user_id: `unique user id`,
+  run_id: `unique run id`,
   run_num: `run number (from 0); unique per user`,
-  round_id: `globally unique round id`,
+  round_id: `unique round id`,
   round_num: `round number (from 1); unique per run`,
   stat_type: `one of the damage or efficiency stats`,
 
@@ -588,7 +638,7 @@ export const GLOSSARY = u.dict({
   bui_inst: `building instance`,
   bui_type: `building type`,
   bui_type_upg: `building type with upgrade`,
-  chi_type: `building child type`,
+  chi_type: `building child entity type`,
 
   run_bui_id: `id of unique building in run`,
   run_round_bui_chi: `child of a building in one round`,
@@ -1033,7 +1083,7 @@ export function buiCost({release, bui_type: type, upgs, sell, hero}) {
     a.isFin(sell) &&
     // It's always 500 at the time of writing.
     // We're being fuzzy in case of future changes.
-    sell > 50
+    sell >= 100
   ) {
     return sell
   }
@@ -1088,6 +1138,60 @@ export function defaultTotalKeys(opt) {
   const chi = opt?.where?.ent_type?.includes(FACT_ENT_TYPE_CHI)
   if (chi) return SUPPORTED_TOTAL_KEYS_CHI
   return SUPPORTED_TOTAL_KEYS_BUI
+}
+
+/*
+Converts labels such as `CB01` to `Bunker`, `CB01_ABA` to `Bunker_ABA`, and
+other similar things. We could generate and store those names statically, but
+doing this dynamically seems more reliable, considering that new entities may
+be added later. Updating the table of codes is easier than updating the data.
+
+SYNC[coded_named].
+*/
+export function codedToNamed(key, val) {
+  a.reqValidStr(key)
+  if (!a.isStr(val)) return val
+
+  if (key === `bui_type`) {
+    return gc.CODES_TO_BUIS_SHORT[val] || val
+  }
+  if (key === `bui_type_upg`) {
+    [key, ...val] = u.splitKeys(val)
+    return u.joinKeys(gc.CODES_TO_BUIS_SHORT[key] || key, ...val)
+  }
+  if (key === `chi_type`) {
+    return gc.CODES_TO_CHIS_SHORT[val] || val
+  }
+  if (key === `hero`) {
+    return gc.CODES_TO_HEROS_SHORT[val] || val
+  }
+  return val
+}
+
+/*
+Inverse of `codedToNamed`. Should be used to convert user-readable filters such
+as `bui_type=Bunker` into coded ones that match the actual fact fields.
+
+SYNC[coded_named].
+*/
+export function namedToCoded(key, val) {
+  a.reqValidStr(key)
+  if (!a.isStr(val)) return val
+
+  if (key === `bui_type`) {
+    return gc.BUIS_TO_CODES_SHORT[val] || val
+  }
+  if (key === `bui_type_upg`) {
+    [key, ...val] = u.splitKeys(val)
+    return u.joinKeys(gc.BUIS_TO_CODES_SHORT[key] || key, ...val)
+  }
+  if (key === `chi_type`) {
+    return gc.CHIS_TO_CODES_SHORT[val] || val
+  }
+  if (key === `hero`) {
+    return gc.HEROS_TO_CODES_SHORT[val] || val
+  }
+  return val
 }
 
 export function roundMigrated({round, userId, runNum, runMs}) {

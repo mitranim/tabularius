@@ -1,6 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as o from '@mitranim/js/obs.mjs'
-import {E} from './util.mjs'
+import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
@@ -22,17 +22,17 @@ loadedAuthKeys()
 cmdAuth.cmd = `auth`
 cmdAuth.desc =`login to enable cloud backups, or logout`
 cmdAuth.help = function cmdAuthHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     u.callOpt(cmdAuth.desc),
     `enter a passphrase or password to authenticate`,
-    u.LogLines(
+    ui.LogLines(
       `easy and anonymous:`,
       `  * no signup`,
       `  * no email`,
       `  * no 3rd party services`,
       `  * no personal information requested`,
     ),
-    u.LogLines(
+    ui.LogLines(
       `usage:`,
       [`  `, os.BtnCmd(`auth`), `        -- make credentials`],
       [`  `, os.BtnCmd(`auth logout`), ` -- clear credentials`],
@@ -46,13 +46,13 @@ export async function cmdAuth({sig, args}) {
   if (u.hasHelpFlag(inps)) return os.cmdHelpDetailed(cmdAuth)
 
   if (inps.length > 1) {
-    u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
     return os.cmdHelpDetailed(cmdAuth)
   }
 
   const mode = inps[0]
   if (mode && mode !== `logout`) {
-    u.LOG.err(
+    ui.LOG.err(
       `unrecognized auth mode `, a.show(mode), ` in `,
       ui.BtnPromptReplace({val: args}),
     )
@@ -72,7 +72,7 @@ export async function authLogin(sig) {
   const wordlist = await initWordlistOpt()
   const suggs = u.randomSamples(wordlist, 3)
 
-  u.LOG.info(authInstructions(suggs))
+  ui.LOG.info(authInstructions(suggs))
   const pass = await readPassFromPrompt(sig)
   if (!pass) return `[auth] canceled`
 
@@ -99,12 +99,10 @@ export async function authLogin(sig) {
   SEC_KEY_BYTE_ARR = secretKey
   STATE.userId = pubKeyStr
 
-  u.storageSet(sessionStorage, STORAGE_KEY_PUB_KEY, pubKeyStr)
-  u.storageSet(sessionStorage, STORAGE_KEY_SEC_KEY, secKeyStr)
-  u.storageSet(localStorage, STORAGE_KEY_PUB_KEY, pubKeyStr)
-  u.storageSet(localStorage, STORAGE_KEY_SEC_KEY, secKeyStr)
+  u.storagesSet(STORAGE_KEY_PUB_KEY, pubKeyStr)
+  u.storagesSet(STORAGE_KEY_SEC_KEY, secKeyStr)
 
-  uploadOpt().catch(u.logErr)
+  uploadOpt().catch(ui.logErr)
   return AuthedAs(pubKeyStr)
 }
 
@@ -115,17 +113,15 @@ export function authLogout() {
   SEC_KEY_BYTE_ARR = undefined
   STATE.userId = undefined
 
-  u.storageSet(sessionStorage, STORAGE_KEY_PUB_KEY)
-  u.storageSet(localStorage, STORAGE_KEY_PUB_KEY)
-  u.storageSet(sessionStorage, STORAGE_KEY_SEC_KEY)
-  u.storageSet(localStorage, STORAGE_KEY_SEC_KEY)
+  u.storagesSet(STORAGE_KEY_PUB_KEY)
+  u.storagesSet(STORAGE_KEY_SEC_KEY)
 
   os.procKillOpt(`upload`)
   return `logged out successfully`
 }
 
 function authInstructions(suggs) {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     `type your passphrase or password or press Esc to cancel`,
     [
       E(`b`, {}, `note:`),
@@ -169,31 +165,31 @@ function readPassFromPrompt(sig) {
     if (!text) return
 
     if (text !== text.trim()) {
-      u.LOG.info(`passphrase or password must not have leading or trailing whitespace`)
+      ui.LOG.info(`passphrase or password must not have leading or trailing whitespace`)
       return
     }
 
     const LEN_MIN = 8
     if (u.strLenUni(text) < LEN_MIN) {
-      u.LOG.info(`passphrase or password must be at least `, LEN_MIN, ` characters long`)
+      ui.LOG.info(`passphrase or password must be at least `, LEN_MIN, ` characters long`)
       return
     }
 
     if (text.includes(`  `)) {
-      u.LOG.info(`passphrase or password contains two spaces in a row; assuming this was a typo`)
+      ui.LOG.info(`passphrase or password contains two spaces in a row; assuming this was a typo`)
       return
     }
 
     if (!count) {
       prev = text
       count++
-      u.LOG.info(`passphrase or password received; type it once more to confirm`)
+      ui.LOG.info(`passphrase or password received; type it once more to confirm`)
       input.value = ``
       return
     }
 
     if (text === prev) {
-      u.LOG.info(`success: passphrase or password matched previous input`)
+      ui.LOG.info(`success: passphrase or password matched previous input`)
       unlisten()
       input.disablePassMode()
       resolve(text)
@@ -202,7 +198,7 @@ function readPassFromPrompt(sig) {
 
     prev = ``
     count = 0
-    u.LOG.info(`mismatch with previous input; please type again`)
+    ui.LOG.info(`mismatch with previous input; please type again`)
     input.value = ``
   }
 
@@ -212,7 +208,7 @@ function readPassFromPrompt(sig) {
 export function reqUserId() {
   const id = STATE.userId
   if (id) return id
-  throw new u.ErrLog(
+  throw new ui.ErrLog(
     `auth required; run the `, os.BtnCmdWithHelp(`auth`), ` command`,
   )
 }
@@ -235,8 +231,8 @@ export function isAuthedOrLoadedAuthKeys() {
 
 export function loadedAuthKeys() {
   try {
-    const pubKeyStr = loadPubKey()
-    const secKeyStr = loadSecKey()
+    const pubKeyStr = u.storagesGet(STORAGE_KEY_PUB_KEY)
+    const secKeyStr = u.storagesGet(STORAGE_KEY_SEC_KEY)
     if (!(pubKeyStr && secKeyStr)) return false
 
     const publicKey = pubKeyDecode(pubKeyStr)
@@ -248,33 +244,19 @@ export function loadedAuthKeys() {
     return true
   }
   catch (err) {
-    u.LOG.err(`unable to load auth keys: `, err)
+    ui.LOG.err(`unable to load auth keys: `, err)
     return false
   }
 }
 
-function loadPubKey() {
-  return (
-    sessionStorage.getItem(STORAGE_KEY_PUB_KEY) ??
-    localStorage.getItem(STORAGE_KEY_PUB_KEY)
-  )
-}
-
-function loadSecKey() {
-  return (
-    sessionStorage.getItem(STORAGE_KEY_SEC_KEY) ??
-    localStorage.getItem(STORAGE_KEY_SEC_KEY)
-  )
-}
-
-export class AuthStatusMini extends u.ReacElem {
+export class AuthStatusMini extends ui.ReacElem {
   run() {
     const id = STATE.userId
     E(this, {}, id ? AuthedAs(id) : `not authed`)
   }
 }
 
-export class AuthStatus extends u.ReacElem {
+export class AuthStatus extends ui.ReacElem {
   run() {
     const id = STATE.userId
     E(this, {},
@@ -289,7 +271,7 @@ function AuthedAs(id) {
   return [
     `authed as `,
     E(`span`, {class: `break-all`}, a.reqValidStr(id)),
-    ` `, u.BtnClip(id),
+    ` `, ui.BtnClip(id),
   ]
 }
 
@@ -306,7 +288,7 @@ export async function initWordlist() {
   if (WORDLIST) return WORDLIST
 
   const text = new Text(`loading wordlist...`)
-  u.LOG.info(text)
+  ui.LOG.info(text)
 
   try {
     const src = await u.fetchText(new URL(`wordlist.txt`, import.meta.url))
@@ -319,7 +301,7 @@ export async function initWordlist() {
   }
 }
 
-function wordlistInitErr(err) {u.LOG.err(`unable to init wordlist: `, err)}
+function wordlistInitErr(err) {ui.LOG.err(`unable to init wordlist: `, err)}
 
 function isByteArrEq(one, two) {
   a.reqInst(one, Uint8Array)

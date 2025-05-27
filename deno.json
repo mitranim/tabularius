@@ -16,7 +16,8 @@
         "no-window",
         "no-window-prefix",
         "constructor-super",
-        "no-empty"
+        "no-empty",
+        "no-this-alias",
       ],
     },
   }

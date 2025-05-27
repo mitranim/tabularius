@@ -2,7 +2,8 @@ import * as a from '@mitranim/js/all.mjs'
 import * as o from '@mitranim/js/obs.mjs'
 import * as s from '../shared/schema.mjs'
 import * as fs from './fs.mjs'
-import {E} from './util.mjs'
+import {E} from './ui.mjs'
+import * as ui from './ui.mjs'
 import * as u from './util.mjs'
 
 const SCHEMA_PREV = 1
@@ -37,12 +38,12 @@ export async function migrateRuns() {
 
   const hist = await fs.historyDirOpt(sig)
   if (!hist) {
-    u.LOG.info(`[fs_mig] skipping migration: history dir handle not available`)
+    ui.LOG.info(`[fs_mig] skipping migration: history dir handle not available`)
     return state
   }
 
   if (!await fs.withPermission(sig, hist, {mode: `readwrite`})) {
-    u.LOG.info(`[fs_mig] skipping migration: insufficient permissions on history dir`)
+    ui.LOG.info(`[fs_mig] skipping migration: insufficient permissions on history dir`)
     return state
   }
   const runDirs = await fs.readRunsAsc(sig, hist)
@@ -65,7 +66,7 @@ export async function migrateRuns() {
         const round = await fs.readDecodeGameFile(sig, roundHandle)
 
         if (!isRoundOld(round)) {
-          u.LOG.verb(`[fs_mig] skipping migration: latest run and round up to date`)
+          ui.LOG.verb(`[fs_mig] skipping migration: latest run and round up to date`)
           state.runsChecked++
           state.roundsChecked++
           return state
@@ -84,7 +85,7 @@ export async function migrateRuns() {
     let runMs
 
     if (!logged) {
-      u.LOG.info(u.LogLines(
+      ui.LOG.info(ui.LogLines(
         `[fs_mig] updating the history dir to a newer schema; might take a minute because browser file system API is slow; current progress:`,
         new FsMigProg(state),
       ))
@@ -100,7 +101,7 @@ export async function migrateRuns() {
       state.roundsChecked++
 
       if (!isRoundOld(round)) {
-        u.LOG.verb(`[fs_mig] skipping up-to-date round: ${a.show(roundPath)}`)
+        ui.LOG.verb(`[fs_mig] skipping up-to-date round: ${a.show(roundPath)}`)
         continue
       }
 
@@ -108,14 +109,14 @@ export async function migrateRuns() {
       round.tabularius_run_ms = runMs
 
       await fs.writeEncodeGameFile(sig, roundHandle, round)
-      u.LOG.verb(`[fs_mig] migrated round: ${a.show(roundPath)}`)
+      ui.LOG.verb(`[fs_mig] migrated round: ${a.show(roundPath)}`)
 
       runRoundsMigrated++
       state.roundsMigrated++
     }
 
     if (!runRoundsChecked) {
-      u.LOG.verb(`[fs_mig] unexpected empty run dir: `, runDirName)
+      ui.LOG.verb(`[fs_mig] unexpected empty run dir: `, runDirName)
       continue
     }
 
@@ -125,7 +126,7 @@ export async function migrateRuns() {
     }
 
     if (!runMs) {
-      u.LOG.err(`[fs_mig] internal: missing runMs for run: ${a.show(runDirName)}`)
+      ui.LOG.err(`[fs_mig] internal: missing runMs for run: ${a.show(runDirName)}`)
       continue
     }
 
@@ -168,33 +169,33 @@ async function migrateRunDir({
     for (const file of handles) {
       state.status = `writing file ` + a.show(u.paths.join(dirHandleNext.name, file.name))
 
-      if (u.LOG_VERBOSE) console.time(`writing_file`)
+      if (u.VERBOSE.val) console.time(`writing_file`)
       await fs.copyFileTo(sig, file, dirHandleNext)
-      if (u.LOG_VERBOSE) console.timeEnd(`writing_file`)
+      if (u.VERBOSE.val) console.timeEnd(`writing_file`)
     }
 
-    u.LOG.verb(`[fs_mig] copied run dir ${a.show(dirNamePrev)} to ${a.show(dirPathNext)}`)
+    ui.LOG.verb(`[fs_mig] copied run dir ${a.show(dirNamePrev)} to ${a.show(dirPathNext)}`)
   }
   catch (err) {
     state.status = `error`
-    u.LOG.err(`[fs_mig] unable to migrate run dir ${a.show(dirNamePrev)}: ${err}`)
+    ui.LOG.err(`[fs_mig] unable to migrate run dir ${a.show(dirNamePrev)}: ${err}`)
 
     // Clean up new dir on error.
-    if (u.LOG_VERBOSE) console.time(`deleting_err`)
+    if (u.VERBOSE.val) console.time(`deleting_err`)
     await dirHandleParent.removeEntry(dirNameNext, {recursive: true})
-    if (u.LOG_VERBOSE) console.timeEnd(`deleting_err`)
+    if (u.VERBOSE.val) console.timeEnd(`deleting_err`)
 
     throw err
   }
 
   // Drop old dir on success.
-  if (u.LOG_VERBOSE) console.time(`deleting_old_dir`)
+  if (u.VERBOSE.val) console.time(`deleting_old_dir`)
   await dirHandleParent.removeEntry(dirNamePrev, {recursive: true})
-  if (u.LOG_VERBOSE) console.timeEnd(`deleting_old_dir`)
-  u.LOG.verb(`[fs_mig] removed run dir ${a.show(dirNamePrev)}`)
+  if (u.VERBOSE.val) console.timeEnd(`deleting_old_dir`)
+  ui.LOG.verb(`[fs_mig] removed run dir ${a.show(dirNamePrev)}`)
 }
 
-export class FsMigProg extends u.ReacElem {
+export class FsMigProg extends ui.ReacElem {
   constructor(state) {
     super()
     this.state = a.reqObj(state)

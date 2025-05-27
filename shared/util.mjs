@@ -37,6 +37,13 @@ export function laxArrOfValidStr(val) {return a.optArrOf(val, a.isValidStr) ?? [
 export function indent(src) {return a.optStr(src) ? `  ` + src : ``}
 export function indentNode(src) {return a.vac(src) && [`  `, src]}
 
+export function indentNodes(src, lvl) {
+  src = a.values(src)
+  const indent = `  `.repeat(a.reqNat(lvl))
+  if (!indent) return src
+  return a.map(src, val => [indent, val])
+}
+
 export function joinKeys(...src) {return a.joinOptLax(src, `_`)}
 export function joinLines(...src) {return a.joinLinesOptLax(src)}
 export function joinParagraphs(...src) {return a.joinOptLax(src, `\n\n`)}
@@ -76,17 +83,25 @@ export function toNatReq(src) {
 
 export function hasIntPrefix(val) {return a.isStr(val) && a.isSome(toNatOpt(val))}
 
-export function compareAsc(one, two) {return compareByIntPrefix(one, two, false)}
-export function compareDesc(one, two) {return compareByIntPrefix(one, two, true)}
+export function compareAsc(one, two) {
+  return compareNumerically(one, two, false)
+}
+
+export function compareDesc(one, two) {
+  return compareNumerically(one, two, true)
+}
 
 /*
-Similar to regular JS sorting, but prefers to sort by an integer prefix.
-Integers always come before other values. Falls back on regular JS sorting.
+Similar to regular JS sorting, but prefers to sort numerically. When inputs are
+numbers, they're used as-is. For strings, we attempt to parse an integer prefix
+when available. We don't attempt to parse floating point numbers from input
+strings because their dot-syntax is ambiguous with file extensions. Numbers
+always come before other values. Falls back on regular JS sorting.
 */
-export function compareByIntPrefix(prev, next, desc) {
+export function compareNumerically(prev, next, desc) {
   a.reqBool(desc)
-  const one = toNatOpt(prev)
-  const two = toNatOpt(next)
+  const one = toNatOpt(prev) ?? a.onlyFin(prev)
+  const two = toNatOpt(next) ?? a.onlyFin(next)
 
   if (a.isNil(one) && a.isNil(two)) {
     return (a.compare(prev, next) * (desc ? -1 : 1)) | 0

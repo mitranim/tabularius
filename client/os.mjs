@@ -1,6 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as o from '@mitranim/js/obs.mjs'
-import {E} from './util.mjs'
+import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as ui from './ui.mjs'
 
@@ -123,7 +123,7 @@ export async function runProc({fun, args, desc, obs, user, waitFor}) {
   }
 
   if (!a.isPromise(out)) {
-    if (waitFor) await waitFor.catch(u.logErr)
+    if (waitFor) await waitFor.catch(ui.logErr)
     logCmdDone(name, out, ui)
     return
   }
@@ -134,7 +134,7 @@ export async function runProc({fun, args, desc, obs, user, waitFor}) {
     if (obs) obs.proc = proc
     out = await out
     proc.val = out
-    if (waitFor) await waitFor.catch(u.logErr)
+    if (waitFor) await waitFor.catch(ui.logErr)
     logCmdDone(name, out, ui)
   }
   catch (err) {
@@ -166,23 +166,23 @@ export function logCmdDone(name, out, ui) {
   a.reqValidStr(name)
 
   if (!a.vac(out)) {
-    u.LOG.verb(`[${name}] done`)
+    ui.LOG.verb(`[${name}] done`)
     return
   }
 
   if (!a.isInst(out, Combo)) {
-    u.LOG.info(out)
+    ui.LOG.info(out)
     return
   }
 
   const {logMsgs, mediaItems} = out
-  for (const val of a.laxArr(logMsgs)) u.LOG.info(val)
+  for (const val of a.laxArr(logMsgs)) ui.LOG.info(val)
   for (const val of a.laxArr(mediaItems)) ui.MEDIA.add(val)
 }
 
 export function logCmdFail(name, err) {
   a.reqValidStr(name)
-  u.LOG.err(`[${name}] `, err)
+  ui.LOG.err(`[${name}] `, err)
 }
 
 export function procToStatus(src) {
@@ -196,14 +196,14 @@ export function procToStatus(src) {
 
 export function showProcs() {
   if (!a.len(PROCS)) return `no active processes`
-  return u.LogLines(
+  return ui.LogLines(
     `active processes (pid, name, status):`,
     ...a.map(PROCS, procToStatus).map(u.indentNode),
   )
 }
 
 // Also see `Kill`.
-export class Procs extends u.ReacElem {
+export class Procs extends ui.ReacElem {
   run() {
     PROCS[``] // Subscribe to updates.
     E(this, {}, showProcs())
@@ -213,9 +213,9 @@ export class Procs extends u.ReacElem {
 cmdKill.cmd = `kill`
 cmdKill.desc = `kill a process`
 cmdKill.help = function cmdKillHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     u.callOpt(cmdKill.desc),
-    u.LogLines(
+    ui.LogLines(
       `usage:`,
       [
         `  `,
@@ -237,21 +237,21 @@ export function cmdKill({args}) {
 
   if (all) {
     if (inps.size) {
-      u.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+      ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
       return cmdHelpDetailed(cmdKill)
     }
     return procKillAll()
   }
 
   if (!inps.size) {
-    u.LOG.err(`missing process id or name`)
+    ui.LOG.err(`missing process id or name`)
     return cmdHelpDetailed(cmdKill)
   }
 
   const {count, msgs} = procKill(...inps)
 
-  return u.LogLines(
-    a.vac(u.LOG_VERBOSE && count) && `sent kill signal to ${count} processes`,
+  return ui.LogLines(
+    a.vac(u.VERBOSE.val && count) && `sent kill signal to ${count} processes`,
     ...msgs,
   )
 }
@@ -300,11 +300,11 @@ export function procKillOpt(pat) {
 }
 
 // Also see `Procs`.
-export class Kill extends u.ReacElem {
+export class Kill extends ui.ReacElem {
   run() {
     PROCS[``] // Subscribe to updates.
     const active = a.map(PROCS, lineKillProc)
-    E(this, {}, u.LogLines(
+    E(this, {}, ui.LogLines(
       active.length ? `active processes:` : `no active processes`,
       ...active,
     ))
@@ -323,16 +323,16 @@ export function cmdHelp({args}) {
   if (u.hasHelpFlag(inps)) return cmdHelpDetailed(cmdHelp)
 
   if (inps.size) {
-    for (const cmd of inps) u.LOG.info(cmdHelpDetailed(reqCmdByName(cmd)))
+    for (const cmd of inps) ui.LOG.info(cmdHelpDetailed(reqCmdByName(cmd)))
     return
   }
 
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     `available commands:`,
     ...a.map(CMDS, cmdHelpShort),
     [
       `pro tip: run commands on page load via URL query; for example, try appending to the URL: `,
-      u.BtnUrlAppend(`?run=plot -c -p=dmg user_id=all run_id=latest`),
+      ui.BtnUrlAppend(`?run=plot -c -p=dmg user_id=all run_id=latest`),
     ],
   )
 }
@@ -375,8 +375,8 @@ export function BtnCmd(cmd, alias) {
     `button`,
     {
       type: `button`,
-      class: `px-1 inline whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 rounded border border-gray-300 dark:border-neutral-600 hover:bg-gray-300 dark:hover:bg-neutral-600`,
-      onclick() {runCmd(cmd).catch(u.logErr)},
+      class: `px-1 inline whitespace-nowrap rounded border border-gray-300 dark:border-neutral-600 bg-neutral-200 dark:bg-stone-700 hover:bg-gray-300 dark:hover:bg-stone-600`,
+      onclick() {runCmd(cmd).catch(ui.logErr)},
     },
     alias || cmd,
   )
@@ -389,8 +389,8 @@ export function BtnHelp(cmd, {class: cls} = {}) {
     `button`,
     {
       type: `button`,
-      class: a.spaced(cls, u.CLS_BTN_INLINE),
-      onclick() {runCmd(`help ${cmd}`).catch(u.logErr)},
+      class: a.spaced(cls, ui.CLS_BTN_INLINE),
+      onclick() {runCmd(`help ${cmd}`).catch(ui.logErr)},
     },
     `?`,
   )

@@ -3,7 +3,7 @@ import * as o from '@mitranim/js/obs.mjs'
 import Plot from 'uplot'
 import * as gc from '../shared/game_const.mjs'
 import * as s from '../shared/schema.mjs'
-import {E} from './util.mjs'
+import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as ui from './ui.mjs'
@@ -21,9 +21,12 @@ a.patch(window, tar)
 cmdPlot.cmd = `plot`
 cmdPlot.desc = `analyze data, visualizing with a plot 📈📉`
 
-// TODO: use `<details>` to collapse sections.
+/*
+TODO: use `<details>` to collapse sections.
+See `cmdEditHelp` for some examples.
+*/
 cmdPlot.help = function cmdPlotHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     u.callOpt(cmdPlot.desc),
     `build your query by clicking the buttons below!`,
 
@@ -35,14 +38,14 @@ cmdPlot.help = function cmdPlotHelp() {
       `; also see `, BtnAppend({val: `-f`, glos: `-f`}), ` for fetching specific files`,
     ],
 
-    u.LogLines(
+    ui.LogLines(
       [BtnAppendEq(`-p`), ` -- preset; supported values:`],
-      u.LogParagraphs(
+      ui.LogParagraphs(
         ...a.map(a.entries(PLOT_PRESETS), Help_preset).map(u.indentNode),
       ),
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppendEq(`-x`),
         ` -- X axis: progression; supported values:`,
@@ -50,7 +53,7 @@ cmdPlot.help = function cmdPlotHelp() {
       ...FlagAppendBtns(a.keys(s.ALLOWED_X_KEYS), `-x`).map(u.indentNode),
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppendEq(`-y`),
         ` -- Y axis: stat type; supported values:`,
@@ -58,7 +61,7 @@ cmdPlot.help = function cmdPlotHelp() {
       ...FlagAppendBtns(a.keys(s.ALLOWED_TOTAL_TYPE_FILTERS), `-y`).map(u.indentNode),
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppendEq(`-z`),
         ` -- Z axis: plot series; supported values:`,
@@ -66,7 +69,7 @@ cmdPlot.help = function cmdPlotHelp() {
       ...a.map(a.keys(s.ALLOWED_Z_KEYS), Help_Z).map(u.indentNode),
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppendEq(`-a`),
         ` -- aggregation mode; supported values:`,
@@ -74,7 +77,7 @@ cmdPlot.help = function cmdPlotHelp() {
       ...FlagAppendBtns(a.keys(s.AGGS), `-a`).map(u.indentNode),
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppend({val: `-t`, glos: `-t`}),
         ` -- log totals from the aggregated data; usage:`,
@@ -85,7 +88,7 @@ cmdPlot.help = function cmdPlotHelp() {
       [`  `, BtnAppendEq(`-t`, `false`), `                -- disable totals (override preset)`],
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [
         BtnAppendEq(`-f`),
         ` -- fetch a run file / rounds file from the given URL; overrides `,
@@ -95,12 +98,12 @@ cmdPlot.help = function cmdPlotHelp() {
       [`  `, BtnAppend({val: `-f=samples/example_runs.gd user_id=all run_id=all -p=dmg`})],
     ),
 
-    u.LogLines(
+    ui.LogLines(
       `supported filters:`,
       ...a.map(a.keys(s.ALLOWED_FILTER_KEYS), Help_filter).map(u.indentNode),
     ),
 
-    u.LogLines(
+    ui.LogLines(
       [`tip: repeat a filter to combine via logical "OR"; examples:`],
       [`  `, BtnAppend({val: `run_num=1 run_num=2`, glos: `run_num`}), `     -- first and second runs`],
       [`  `, BtnAppend({val: `round_num=1 round_num=2`, glos: `round_num`}), ` -- first and second rounds`],
@@ -111,7 +114,7 @@ cmdPlot.help = function cmdPlotHelp() {
     [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local files`],
     [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud files`],
 
-    u.LogLines(
+    ui.LogLines(
       `more examples:`,
       [`  `, BtnAppend({val: `-c -p=dmg user_id=all`}), ` -- building damages in latest run`],
       [`  `, BtnAppend({val: `-c -p=chi_dmg user_id=all`}), ` -- weapon damages in latest run`],
@@ -194,7 +197,11 @@ export async function cmdPlotFetch({sig, args, opt, user, example}) {
     const user_id = a.optStr(round.tabularius_user_id) || d.USER_ID
     const run_num = round.tabularius_run_num ?? 1
     const run_ms = round.tabularius_run_ms ?? Date.now()
-    s.datAddRound({dat, round, user_id, run_num, run_ms, composite: true})
+
+    s.datAddRound({
+      dat, round, user_id, run_num, run_ms, composite: true,
+      tables: d.DAT_QUERY_TABLES,
+    })
   }
 
   // SYNC[plot_user_current].
@@ -217,7 +224,7 @@ export async function cmdPlotCloud({sig, args, opt, user}) {
 
   if (opt.userCurrent && !au.STATE.userId) {
     // SYNC[plot_user_current_err_msg].
-    throw new u.ErrLog(
+    throw new ui.ErrLog(
       `filtering cloud data by current user requires authentication; run `,
       os.BtnCmdWithHelp(`auth`), ` or use `, BtnAppendEq(`user_id`, `all`, TOOLTIP_USER_ALL),
     )
@@ -242,7 +249,7 @@ function showPlot({opts, totals, args}) {
 function plotReqUserId() {
   const id = au.STATE.userId
   if (id) return id
-  throw new u.ErrLog(
+  throw new ui.ErrLog(
     `filtering plot data by `,
     BtnAppendEq(`user_id`, `current`, TOOLTIP_USER_CURRENT),
     ` requires `, os.BtnCmdWithHelp(`auth`),
@@ -266,7 +273,7 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
   ;[{X_vals, Z_vals, Z_X_Y}] = [s.plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, totalFun})]
 
   const Z_rows = Z_vals
-    .map(Z => codedToTitled(opt.Z, Z))
+    .map(Z => s.codedToNamed(opt.Z, Z))
     .map((val, ind) => serieWithTotal(val, ind, totalFun))
 
   // Hide the total serie by default.
@@ -300,7 +307,7 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
     plotOpt: opt,
     plotArgs: args,
     // Dumb special case but not worth generalizing.
-    plotTitlePre: a.vac(example) && u.Muted(EXAMPLE_TITLE_PRE),
+    plotTitlePre: a.vac(example) && ui.Muted(EXAMPLE_TITLE_PRE),
   }
 }
 
@@ -328,13 +335,13 @@ export function PlotTitle({elem, opt, args, pre, close}) {
   const btn = a.vac(args) && BtnReplace(args, args)
 
   if (btn) {
-    btn.className = a.spaced(btn.className, `w-full trunc`)
+    ui.addCls(btn, `w-full trunc`)
     btn.style.textAlign = `center` // Override class.
   }
 
   return E(
     elem,
-    {class: `flex justify-between gap-2 p-2`},
+    {class: a.spaced(`flex justify-between gap-2`, ui.CLS_MEDIA_PAD)},
     E(
       `div`,
       {
@@ -344,17 +351,17 @@ export function PlotTitle({elem, opt, args, pre, close}) {
         ),
       },
       E(
-        `span`,
+        `h2`,
         {class: `w-full trunc text-center`},
         pre,
         (
           Z === `stat_type`
           ? [
-            Glos(agg), u.Muted(` of `), Glos(Z), u.Muted(` per `), Glos(X),
+            Glos(agg), ui.Muted(` of `), Glos(Z), ui.Muted(` per `), Glos(X),
           ]
           : [
-            Glos(agg), u.Muted(` of `), Glos(Y),
-            u.Muted(` per `), Glos(Z), u.Muted(` per `), Glos(X),
+            Glos(agg), ui.Muted(` of `), Glos(Y),
+            ui.Muted(` per `), Glos(Z), ui.Muted(` per `), Glos(X),
           ]
         ),
       ),
@@ -379,9 +386,9 @@ export function decodePlotAggOpt(src) {
   const srcPairs = a.reqArr(u.cliDecode(src))
   const outPairs = a.reqArr(plotAggOptExpandPresets(srcPairs))
 
-  if (u.LOG_VERBOSE && srcPairs.length !== outPairs.length) {
+  if (u.VERBOSE.val && srcPairs.length !== outPairs.length) {
     const opts = a.map(outPairs, u.cliEncodePair).join(` `)
-    if (opts) u.LOG.verb(`[plot] expanded opts: `, BtnAppend({val: opts}))
+    if (opts) ui.LOG.verb(`[plot] expanded opts: `, BtnAppend({val: opts}))
   }
 
   for (let [key, val, pair] of outPairs) {
@@ -465,7 +472,7 @@ export function decodePlotAggOpt(src) {
         errs.push([`unrecognized flag `, BtnAppend({val: pair})])
       }
       else {
-        errs.push(u.LogLines(
+        errs.push(ui.LogLines(
           [`unrecognized filter `, BtnAppend({val: pair}), `, filters must be among:`],
           ...a.map(
             a.keys(s.ALLOWED_FILTER_KEYS),
@@ -535,7 +542,7 @@ export function decodePlotAggOpt(src) {
       continue
     }
 
-    val = titledToCoded(key, val)
+    val = s.namedToCoded(key, val)
 
     /*
     Inputs: `one=two one=three four=five`.
@@ -586,7 +593,7 @@ export function decodePlotAggOpt(src) {
   }
 
   if (errs.length) {
-    throw new u.ErrLog(...u.LogParagraphs(
+    throw new ui.ErrLog(...ui.LogParagraphs(
       [`errors in `, BtnReplace(src), `:`],
       ...errs,
     ))
@@ -692,15 +699,15 @@ export async function plotDefault() {
     if (await fs.hasRoundFile(sig)) return await plotDefaultLocal()
   }
   catch (err) {
-    if (u.LOG_VERBOSE) u.LOG.err(`error analyzing latest run: `, err)
-    u.LOG.verb(`unable to plot latest run, plotting example run`)
+    if (u.VERBOSE.val) ui.LOG.err(`error analyzing latest run: `, err)
+    ui.LOG.verb(`unable to plot latest run, plotting example run`)
   }
   return plotDefaultExample(sig)
 }
 
 export async function plotDefaultLocalOpt({sig = u.sig, quiet} = {}) {
   if (!ui.MEDIA.isDefault()) return
-  if (!await fs.hasRoundFile(sig).catch(u.logErr)) return
+  if (!await fs.hasRoundFile(sig).catch(ui.logErr)) return
   await plotDefaultLocal({quiet})
 }
 
@@ -740,10 +747,10 @@ Usage examples:
   E(document.body, {}, new p.Plotter(opts))
   ui.MEDIA.add(new p.Plotter(opts))
 */
-export class Plotter extends u.Elem {
+export class Plotter extends ui.Elem {
   constructor(opts) {
     super()
-    this.className = `flex col-sta-str`
+    E(this, {class: `flex col-sta-str`})
     this.setOpts(opts)
   }
 
@@ -763,7 +770,7 @@ export class Plotter extends u.Elem {
   connectedCallback() {
     this.disconnectedCallback()
 
-    u.darkModeMediaQuery.addEventListener(`change`, this)
+    ui.darkModeMediaQuery.addEventListener(`change`, this)
     this.resObs = new ResizeObserver(this.onResize.bind(this))
     this.resObs.observe(this)
 
@@ -774,7 +781,7 @@ export class Plotter extends u.Elem {
 
   disconnectedCallback() {
     this.resObs?.disconnect()
-    u.darkModeMediaQuery.removeEventListener(`change`, this)
+    ui.darkModeMediaQuery.removeEventListener(`change`, this)
     this.plotDeinit()
   }
 
@@ -856,14 +863,14 @@ export class Plotter extends u.Elem {
     const tbody = root.querySelector(`tbody`)
     if (!tbody) return
 
-    tbody.style.gridTemplateColumns = `repeat(auto-fit, minmax(${colMinLen}ch, 1fr))`
+    tbody.style.gridTemplateColumns = `repeat(auto-fit, minmax(min(100%, ${colMinLen}ch), 1fr))`
   }
 }
 
 function getLabel(val) {return a.onlyStr(val?.label)}
 function getLabelLen(val) {return getLabel(val)?.length}
 
-export class LivePlotter extends Plotter {
+export class LivePlotter extends d.MixDatSub(Plotter) {
   constructor(opts, fun) {
     super(opts || fun())
     this.fun = a.reqFun(fun)
@@ -871,11 +878,11 @@ export class LivePlotter extends Plotter {
 
   plotInit() {
     super.plotInit()
-    this.unsub = u.listenMessage(d.DAT, this.onDatMsg.bind(this))
+    this.datSubInit()
   }
 
   plotDeinit() {
-    this.unsub?.()
+    this.datSubDeinit()
     super.plotDeinit()
   }
 
@@ -885,15 +892,9 @@ export class LivePlotter extends Plotter {
     `plot.setData(opts.data)`
     `plot.setSeries(opts.series)`
   */
-  onDatMsg(src) {
-    if (!this.isConnected) {
-      console.error(`internal: ${a.show(this)} received a dat event when not connected to the DOM`)
-      return
-    }
-
+  onNewRound(src) {
     const opts = this.fun(src)
     if (!opts) return
-
     this.setOpts(opts)
     this.plotInit()
   }
@@ -969,7 +970,7 @@ export function axes(nameX, nameY) {
 }
 
 export function axisStroke() {
-  return u.darkModeMediaQuery.matches ? `white` : `black`
+  return ui.darkModeMediaQuery.matches ? `white` : `black`
 }
 
 export function serieWithTotal(label, ind, totalFun) {
@@ -1002,28 +1003,8 @@ export function serieFormatVal(plot, val, seriesInd, totalFun) {
 // Our default value formatter, which should be used for all plot values.
 export function formatVal(val) {
   if (!a.isNum(val)) return val
-  return formatNumCompact(val)
+  return ui.formatNumCompact(val)
 }
-
-/*
-We could also use `Intl.NumberFormat` with `notation: "compact"`.
-This `k`, `kk`, `kkk` notation is experimental.
-*/
-export function formatNumCompact(val) {
-  a.reqNum(val)
-  let scale = 0
-  const mul = 1000
-  while (a.isFin(val) && Math.abs(val) > mul) {
-    scale++
-    val /= mul
-  }
-  return numFormat.format(val) + `k`.repeat(scale)
-}
-
-export const numFormat = new Intl.NumberFormat(`en-US`, {
-  maximumFractionDigits: 1,
-  roundingMode: `halfExpand`,
-})
 
 let COLOR_INDEX = -1
 
@@ -1169,7 +1150,7 @@ export class TooltipPlugin extends a.Emp {
 
     const wid = plot.over.offsetWidth
     const hei = plot.over.offsetHeight
-    u.tooltipOrient({elem, posX, posY, wid, hei})
+    ui.tooltipOrient({elem, posX, posY, wid, hei})
     plot.over.appendChild(elem)
   }
 
@@ -1193,60 +1174,6 @@ export class TooltipPlugin extends a.Emp {
 
 export const LEGEND_LEN_MAX = 32
 
-/*
-Converts labels such as `CB01` to `Bunker`, `CB01_ABA` to `Bunker_ABA`, and
-other similar things. We could generate and store those names statically, but
-doing this dynamically seems more reliable, considering that new entities may
-be added later. Updating the table of codes is easier than updating the data.
-
-SYNC[plot_fields_coded_titled].
-*/
-export function codedToTitled(key, val) {
-  a.reqValidStr(key)
-  if (!a.isStr(val)) return val
-
-  if (key === `bui_type`) {
-    return gc.CODES_TO_BUIS_SHORT[val] || val
-  }
-  if (key === `bui_type_upg`) {
-    [key, ...val] = u.splitKeys(val)
-    return u.joinKeys(gc.CODES_TO_BUIS_SHORT[key] || key, ...val)
-  }
-  if (key === `chi_type`) {
-    return gc.CODES_TO_CHIS_SHORT[val] || val
-  }
-  if (key === `hero`) {
-    return gc.CODES_TO_HEROS_SHORT[val] || val
-  }
-  return val
-}
-
-/*
-Inverse of `codedToTitled`. Should be used to convert user-readable filters such
-as `bui_type=Bunker` into coded ones that match the actual fact fields.
-
-SYNC[plot_fields_coded_titled].
-*/
-export function titledToCoded(key, val) {
-  a.reqValidStr(key)
-  if (!a.isStr(val)) return val
-
-  if (key === `bui_type`) {
-    return gc.BUIS_TO_CODES_SHORT[val] || val
-  }
-  if (key === `bui_type_upg`) {
-    [key, ...val] = u.splitKeys(val)
-    return u.joinKeys(gc.BUIS_TO_CODES_SHORT[key] || key, ...val)
-  }
-  if (key === `chi_type`) {
-    return gc.CHIS_TO_CODES_SHORT[val] || val
-  }
-  if (key === `hero`) {
-    return gc.HEROS_TO_CODES_SHORT[val] || val
-  }
-  return val
-}
-
 function BtnReplace(val, alias) {
   return ui.BtnPromptReplace({
     val: u.preSpacedOpt(val, cmdPlot.cmd),
@@ -1257,14 +1184,14 @@ function BtnReplace(val, alias) {
 function BtnAppend({val, glos, alias}) {
   const elem = ui.BtnPrompt({cmd: cmdPlot.cmd, suf: val, chi: alias})
   if (!a.optStr(glos)) return elem
-  return withGlossary(elem, glos)
+  return withGlossary({elem, key: glos})
 }
 
 function BtnAppendEq(key, val, tooltip) {
   const elem = ui.BtnPrompt({cmd: cmdPlot.cmd, suf: u.cliEq(key, a.laxStr(val))})
-  if (!a.vac(tooltip)) return withGlossary(elem, key, val)
-  elem.classList.add(`cursor-help`)
-  return u.withTooltip({elem, chi: tooltip})
+  if (!a.vac(tooltip)) return withGlossary({elem, key, val})
+  ui.addCls(elem, `cursor-help`)
+  return ui.withTooltip({elem, chi: tooltip})
 }
 
 function BtnAppendTrunc({key, val, width}) {
@@ -1331,7 +1258,7 @@ function Help_filter(key) {
   }
 
   if (key === `bui_type`) {
-    return [btn, ` (short name, like `, BtnAppendEq(`bui_type`, `MedMort`), `)`]
+    return [btn, ` (short name, like `, BtnAppendEq(`bui_type`, `MedMor`), `)`]
   }
   if (key === `bui_type_upg`) {
     return [btn, ` (short name, like `, BtnAppendEq(`bui_type_upg`, `MedMort_ABA`), `)`]
@@ -1363,7 +1290,7 @@ function isPlotDataEmpty([X_vals, Z_vals, Z_X_Y]) {
 
 function msgPlotDataEmpty(args, opt) {
   a.reqStr(args)
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     [`no data found for `, BtnReplace(args)],
     a.vac(opt.userCurrent && (opt.cloud || opt.fetch)) && [
       `data was filtered by `, BtnAppendEq(`user_id`, `current`, TOOLTIP_USER_CURRENT),
@@ -1377,7 +1304,7 @@ function msgPlotDataEmpty(args, opt) {
 }
 
 function msgMissing(key) {
-  return new u.ErrLog(
+  return new ui.ErrLog(
     `missing `, BtnAppend({val: key, glos: key}), `, `,
     `consider using a preset such as `, BtnAppendEq(`-p`, `dmg`),
   )
@@ -1408,9 +1335,8 @@ export function apiPlotAgg(sig, body) {
 
 cmdPlotLink.cmd = `plot_link`
 cmdPlotLink.desc = `easily make a link for analyzing a local or cloud run`
-
 cmdPlotLink.help = function cmdPlotLinkHelp() {
-  return u.LogParagraphs(
+  return ui.LogParagraphs(
     u.callOpt(cmdPlotLink.desc),
     `usage:`,
     [
@@ -1454,7 +1380,7 @@ export async function cmdPlotLink({sig, args}) {
     }
 
     if (key) {
-      u.LOG.err(
+      ui.LOG.err(
         `unrecognized `, ui.BtnPrompt({cmd, suf: pair}),
         ` in `, ui.BtnPromptReplace({val: args})
       )
@@ -1466,7 +1392,7 @@ export async function cmdPlotLink({sig, args}) {
   }
 
   if (!cloud && userIds.length) {
-    throw new u.ErrLog(
+    throw new ui.ErrLog(
       `unexpected user id inputs ${a.show(userIds)} in local mode;`,
       ` did you mean `,
       ui.BtnPromptReplace({val: a.spaced(args, `-c`)}),
@@ -1482,14 +1408,14 @@ export async function cmdPlotLink({sig, args}) {
       url.searchParams.append(`run`, val)
     }
 
-    return u.LogParagraphs(
+    return ui.LogParagraphs(
       (await msgPlotLink(url)),
       [
         `note: this link can be shared, but other users will see`,
         ` their own local runs, not yours;`, ` use `, os.BtnCmd(`plot_link -c`),
         ` to create a shareable link`,
       ],
-      a.vac(!await fs.historyDirOpt(sig).catch(u.logErr)) && [
+      a.vac(!await fs.historyDirOpt(sig).catch(ui.logErr)) && [
         `warning: run history directory: access not granted; run `,
         os.BtnCmdWithHelp(`history`), ` to grant`,
       ],
@@ -1502,7 +1428,7 @@ export async function cmdPlotLink({sig, args}) {
     const current = userId === au.STATE.userId
     const run = await apiLatestRun(sig, userId)
     if (!run) {
-      u.LOG.info(`no runs found for user `, userId, a.vac(current) && ` (current)`)
+      ui.LOG.info(`no runs found for user `, userId, a.vac(current) && ` (current)`)
       continue
     }
 
@@ -1510,17 +1436,17 @@ export async function cmdPlotLink({sig, args}) {
     for (const val of PLOT_LINK_PRESETS) {
       url.searchParams.append(`run`, plotCmdCloud(val, runId))
     }
-    u.LOG.info(...await msgPlotLink(url))
+    ui.LOG.info(...await msgPlotLink(url))
   }
 }
 
 async function msgPlotLink(url) {
   const href = a.reqValidStr(a.render(url).replaceAll(`+`, `%20`))
-  const copied = await u.copyToClipboard(href).catch(u.logErr)
+  const copied = await u.copyToClipboard(href).catch(ui.logErr)
 
   return [
     (copied ? `copied plot link to clipboard: ` : `plot link: `),
-    E(`a`, {href, class: u.CLS_BTN_INLINE, ...ui.TARBLAN}, href, ` `, u.External()),
+    E(`a`, {href, class: ui.CLS_BTN_INLINE, ...ui.TARBLAN}, href, ` `, ui.External()),
   ]
 }
 
@@ -1555,7 +1481,7 @@ export function apiLatestRun(sig, user) {
   return u.fetchJson(url, opt)
 }
 
-export class PlotTotals extends u.ReacElem {
+export class PlotTotals extends ui.ReacElem {
   // May or may not be observable.
   src = undefined
 
@@ -1576,7 +1502,7 @@ export class PlotTotals extends u.ReacElem {
     E(
       this,
       {class: `inline-block w-full whitespace-pre`},
-      u.LogLines(
+      ui.LogLines(
         this.title ??= E(`span`, {class: `w-full trunc`},
           this.logPrefix,
           `totals for `, BtnReplace(args), `:`,
@@ -1601,17 +1527,16 @@ function PlotTotalEntry(counts, values, key) {
   const omitted = totalCount - sampleCount
 
   // For the rest of this function we assume `omitted >= 0`.
-  if (omitted < 0 && u.LOG_VERBOSE) {
-    u.LOG.verb(`[plot] unexpected state in plot totals: `, counts, values)
+  if (omitted < 0 && u.VERBOSE.val) {
+    ui.LOG.verb(`[plot] unexpected state in plot totals: `, counts, values)
   }
 
   if (!totalCount && !sampleCount) return undefined
 
-  const keyNode = u.Muted(key, `: `)
-
   if (totalCount === 1 && sampleCount === 1) {
     const sample = a.render(samples[0])
     if (!sample) return undefined
+    const keyNode = KeyPre(key)
 
     return Sample({
       key,
@@ -1621,40 +1546,41 @@ function PlotTotalEntry(counts, values, key) {
     })
   }
 
-  if (!sampleCount) return [keyNode, totalCount]
+  if (!sampleCount) return [KeyPre(key), totalCount]
 
   const INDENT2 = INDENT + INDENT
 
-  return u.LogDetails({
+  return ui.DetailsPre({
     lvl: 1,
-    summary: [
-      keyNode, totalCount,
-      // TODO: say "collapse" if already expanded.
-      u.Muted(
+    summary: key,
+    inf() {
+      return (
         totalCount === sampleCount
-        ? ` (expand)`
-        : ` (expand ` + sampleCount + `)`
-      ),
-    ],
-    chi: u.LogLines(
+        ? totalCount
+        : [totalCount, ` `, ui.Muted(`(show ` + sampleCount + `)`)]
+      )
+    },
+    chi: [
       ...a.map(samples, val => Sample({key, val, pre: INDENT2})),
-      a.vac(omitted) && u.Muted(
+      a.vac(omitted) && ui.Muted(
         INDENT2 + `... ` + omitted + ` omitted`,
       ),
-    ),
+    ],
   })
 }
 
+function KeyPre(key) {return ui.Muted(key, `: `)}
+
 function Sample({key, val, pre, preLen}) {
-  val = codedToTitled(key, val)
+  val = s.codedToNamed(key, val)
   const inf = ` `
   const chars = inf.length + (a.optNat(preLen) ?? a.laxStr(pre).length)
   const btn = BtnAppendTrunc({
     key,
     val,
-    width: `max-w-[calc(100%-${chars}ch-${u.ICON_BTN_SIZE})]`,
+    width: `max-w-[calc(100%-${chars}ch-${ui.ICON_BTN_SIZE})]`,
   })
-  const clip = u.BtnClip(val)
+  const clip = ui.BtnClip(val)
   return [pre, btn, inf, clip]
 }
 
@@ -1671,22 +1597,11 @@ export const PLOT_GLOSSARY = u.dict({
   ...a.map(PLOT_PRESETS, val => val.help),
 })
 
-// The underline offset prevents the underline from overlapping with `_`.
 function Glos(key) {
-  return withGlossary(
-    E(`span`, {class: `underline decoration-dotted underline-offset-4`}, key),
-    key,
-  )
+  const elem = ui.Span(key)
+  return withGlossary({elem, key, under: true})
 }
 
-function withGlossary(elem, key, val) {
-  a.reqElement(elem)
-  key = a.laxStr(key)
-  val = a.laxStr(val)
-
-  const chi = PLOT_GLOSSARY[val] || PLOT_GLOSSARY[key]
-  if (!chi) return elem
-
-  elem.classList.add(`cursor-help`)
-  return u.withTooltip({elem, chi})
+function withGlossary(opt) {
+  return ui.withGlossary({glos: PLOT_GLOSSARY, ...a.reqDict(opt)})
 }
