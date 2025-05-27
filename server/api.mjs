@@ -498,11 +498,12 @@ async function apiLsEntries(path) {
 
 function compareLsEntriesAsc(one, two) {return u.compareAsc(one.name, two.name)}
 
-function jsonEncode(src) {
-  // Workaround for default insanity of `JSON.stringify(undefined)` -> `undefined`.
-  if (a.isNil(src)) return `null`
-  return JSON.stringify(src, jsonReplacer)
-}
+/*
+Minor note: `JSON.stringify(undefined)` returns `undefined`, which results in an
+empty response body, which produces client errors when clients blindly try to
+decode that as JSON.
+*/
+function jsonEncode(src) {return JSON.stringify(src, jsonReplacer) ?? `null`}
 
 /*
 When sending the data back to clients, we treat SQL `int64` as JS `float64`

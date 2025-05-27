@@ -691,7 +691,7 @@ Where to show: probably on a combined stat screen (not a plot) which we're yet t
 
 ---
 
-Save editing features. Load a particular file (by default the progress file, but may select a backup). Show various editable stats. Edit, then store the file back.
+* [x] Save editing features. Load a particular file (by default the progress file, but may select a backup). Show various editable stats. Edit, then store the file back.
 
 ---
 
@@ -707,18 +707,58 @@ A way to "stick" a run id, round id, building id for subsequent commands. Persis
 
 ---
 
-A media UI for showing building, child, weapon stats in a nice format. Flattening the data and printing JSON is an okay start, but we can do better.
+<!-- A media UI for showing building, child, weapon stats in a nice format. Flattening the data and printing JSON is an okay start, but we can do better.
 
 Viable stats:
 - Damage this round.
 - Damage this run.
 - Various weapon stats (damage, RoF, AoE, and more).
 
-A way of viewing stats super zoomed-in, for a particular round > building > child / weapon.
+A way of viewing stats super zoomed-in, for a particular round > building > child / weapon. -->
+
+See `show_round` plans below.
 
 ---
 
-A media UI for showing a breakdown of the latest round and the run so far. (The stat screen that the players constantly ask for.)
+* [ ] Add a new command (tentative name `show_round`) for showing a breakdown of a round, with various damage / efficiency stats, _and_ with weapon details. This is a new media type.
+  * [ ] At the top: various run details: game version, run number, round number, commander, difficulty, frontier, HQ HP, etc.
+  * [ ] Below: collapsed, expandable groups of doctrines:
+    * - [ ] Regular doctrines.
+    * - [ ] Frontier curses.
+    * - [ ] Frontier dotations.
+    * - [ ] Frontier modifiers.
+  * [ ] Below: table with various stats.
+    - [ ] The table has two levels: top level for stats, and sub-level for weapon details.
+    - [ ] For each building:
+      - [ ] One row for its own stats.
+      - [ ] One row for each statful weapon, with stats for that weapon.
+        - Statful weapon is defined as either currently enabled, or having had dealt some damage at any point during the run.
+      - [ ] One row for each non-weapon, non-bullet child, with its stats.
+      - [ ] If has at least one statful weapon:
+        - [ ] Add a full-colspan row below, which contains a sub-table.
+        - [ ] One row per statful weapon.
+        - [ ] Each row describes various details of that weapon: damage, rof, reload, mag, range, targeting, detection, and other properties.
+    - [ ] By default, weapon and child rows are collapsed (hidden).
+      - [ ] Clicking a building row toggles the weapon and child rows.
+      - [ ] The row containing the weapon details sub-table is toggled by clicking another row, just above it.
+      - [ ] Persist the latest "show"/"hide" preference for the toggled row type to storage, respect it for new tables.
+    - [ ] Support sorting by any column.
+      - [ ] Clicking a `th` cycles between sort types: desc, asc, none.
+      - [ ] Persist the latest sorting preference to storage, respect it for new tables.
+    - [ ] Stat cells have multiple numbers, displayed in a 2x2 fashion:
+      - [ ] Top left: value this round.
+      - [ ] Top right: % of value this round among all entities of this kind (bui vs (wep|chi)).
+      - [ ] Bottom left: accumulated value this run.
+      - [ ] Bottom right: % of accumulated value this run.
+      - [ ] Dim all except one (value this round), which is "canonical" and used for sorting.
+    - [ ] Use overflow ellipsis (our `trunc` class) in all cells, except for the cells which contain sub-tables. Ensure it works properly.
+    - [ ] Use `@container` queries to hide less-important columns when the container is narrow.
+
+---
+
+See the `show_round` plans above.
+
+<!-- Consider a media UI for showing a breakdown of the latest round and the run so far. (The stat screen that the players constantly ask for.)
 
 Simple approach: a table from almost the same dataset we use for charts. Columns are rounds, rows are series, values are values. But, each cell has two values: per round, and per run accumulated so far (up to that round). There's a toggle for which value is prioritized (round or run_acc); the table is sorted by the priority value, and it's put on top in each cell. Maybe round and run_acc are differentiated by color, and there's a color legend nearby.
 
@@ -732,7 +772,7 @@ So in a general case, every cell is an entity with fields. Our data is N-dimensi
 
 Near the table, there could be a list of fields, one of them always selected, that's what shows up per cell.
 
-Maybe the weapon stats mentioned above also go here. Needs plenty of filters.
+Maybe the weapon stats mentioned above also go here. Needs plenty of filters. -->
 
 ---
 
@@ -1123,11 +1163,11 @@ Note: we're migrating to a new system where `run_id` and `round_id` are ephemera
 
 ---
 
-`plot`: truncate long series labels. Ideally, only the user id component is truncated with an ellipsis; other components of a label are kept.
+* [x] `plot`: truncate long series labels. Ideally, only the user id component is truncated with an ellipsis; other components of a label are kept.
 
 ---
 
-`plot`: consider _not_ sorting labels on cursor hover / series selection.
+* [x] `plot`: consider _not_ sorting labels on cursor hover / series selection.
 
 ---
 
@@ -1504,6 +1544,8 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
     * [ ] The rest of the behavior is unchanged, but flags which don't apply to the content of the source file raise warnings.
     * [ ] When neither is specified: automatically look for "known" files which match the provided edit flags.
     * [ ] Source and target may be provided repeatedly; they apply to all subsequent edit options; providing them again overrides them for the further options.
+  * [x] `-a`: also lock or unlock difficilties.
+  * [ ] Consider _not_ decreasing global max difficulty when `diff=` or `frontier=` is specified _and_ `hero=` is also specified.
   * [ ] Cheat options:
     * [ ] Editing any field anywhere:
       * Require a single specific source file.
@@ -1512,6 +1554,7 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
       * Split on dots, ignoring the leading dot. If leading dot with only one key, then it's at the top level.
       * Ensure that everything up to the last key exists in the data.
       * Set the value.
+    * [ ] Support appending to lists.
     * [ ] Currency editing:
       * [ ] `supply=`
       * [ ] `recon=`
@@ -1599,7 +1642,7 @@ Plot totals: add `round_num`.
 
 ---
 
-`game_const.mjs` / `plot` / `titledToCoded`: support matching full (or at least fuller) building names, not just our shortenings. Motive: using full names in plot URLs makes them less likely to break when we change short names in our table. Also, users could type them without having to remember our very specific short names.
+`game_const.mjs` / `plot` / `namedToCoded`: support matching full (or at least fuller) building names, not just our shortenings. Motive: using full names in plot URLs makes them less likely to break when we change short names in our table. Also, users could type them without having to remember our very specific short names.
 
 ---
 
@@ -1652,6 +1695,7 @@ Plot totals: add `round_num`.
   * [ ] Uptime as percentage of total in round.
   * [ ] DPS.
   * [ ] DPS as percentage of total in round.
+  * [ ] DPS efficiency.
   * [ ] Account for uptime in efficiency calculations, normalizing by max in round.
 
 * [ ] Uptime:
@@ -1714,7 +1758,7 @@ Or, even better, for lower uptime:
 
 ---
 
-Figure out why some `facts` don't have `run_ms`, prevent it from happening. Similar for other timestamps.
+* [ ] Figure out why some `facts` don't have `run_ms`, prevent it from happening. Similar for other timestamps.
 
 ---
 
@@ -1737,3 +1781,32 @@ Figure out why some `facts` don't have `run_ms`, prevent it from happening. Simi
     * [ ] Automatically check for updates and notify.
   * [ ] Store data exactly like on the cloud server. Consolidate the code and remove client-side data manipulation.
   * [ ] Instruct the user to place the executable into its own directory (suggest a path), where it will also store the accumulated data.
+
+---
+
+* [ ] Figure out how to shorten user ids.
+
+---
+
+* [ ] Persistent processes (`watch` and `upload`): instead of giving up after 3 errors, gradually increase the retry interval: 1 hour, then 1 day. Set the retry limit higher.
+
+---
+
+* [ ] Add a new command (tentative name `show_run`) which takes a run id (for cloud stuff) or a run num (for local stuff) and renders various default analyses (currently plots, but more in the future).
+  * [ ] Server: add an endpoint that takes a run id and returns the data needed for this command.
+  * [ ] Client: an analogous function.
+  * [ ] Both environments:
+    * [ ] Find the run directory.
+    * [ ] Iterate rounds, load them into a `dat`.
+    * [ ] Query multiple plot aggs for the default plot presets.
+    * [ ] Query a single plot total.
+    * [ ] Return the resulting plot aggs and total.
+    * [ ] Render multiple plots with one total.
+    * [ ] When using local data, the plots must be live. However, we'll need to change how we update them. The current approach in `cmdPlotLocal` would cause redundant re-aggregations of the total. The total needs to become live by itself, independent of the plots.
+    * [ ] After we implement `show_round`:
+      * [ ] Server endpoint: if the opt-in query parameter `?include_round` is true, include the latest round in this run into the response, as base64 of gzipped JSON.
+      * [ ] Client: use the latest round to render the equivalent of the output of `show_round` above the plots.
+* [ ] Replace `plot_link` with `run_link` which generates a link for the above.
+* [ ] On app startup:
+  * [ ] Auto-detect if the current URL is one of the old "plot link" style links, and interpret it as the new format, extracting the run id.
+  * [ ] Replace `plotDefaultLocal` with invoking `show_run` for the latest local run.

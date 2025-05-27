@@ -26,8 +26,10 @@ cmdEdit.help = function cmdEditHelp() {
     [
       BtnAppend(`-w`), ` -- write files; without this option, `,
       u.Bold(`no files will be written`),
-      `; by default, the command performs a safe "dry run", letting you `,
-      `preview the future changes`,
+      `; by default, the command performs a safe "dry run", letting you preview the future changes; with `,
+      BtnAppend(`-w`),
+      `, the command will backup the files before writing; backups are placed in the `,
+      os.BtnCmdWithHelp(`history`), ` directory`,
     ],
 
     [
@@ -37,13 +39,12 @@ cmdEdit.help = function cmdEditHelp() {
 
     [
       BtnAppend(`-a`),
-      ` -- select all entities; if specified, the command will attempt to unlock everything; if `,
+      ` -- select all entities; if specified, the command will attempt to unlock everything; if combined with `,
       BtnAppend(`-l`),
-      ` is also specified, the command will instead attempt to lock everything; has no effect on the options `,
-      BtnAppend(`diff=`),
-      ` and `,
-      BtnAppend(`frontier=`),
-      ` and may be combined with them`,
+      `, will instead attempt to lock everything; implies `,
+      BtnAppendEq(`diff`, gc.DIFF_MIN),
+      ` when locking and `, BtnAppendEq(`diff`, gc.DIFF_MAX),
+      ` when unlocking`,
     ],
 
     u.LogLines(
@@ -62,7 +63,7 @@ cmdEdit.help = function cmdEditHelp() {
     u.LogLines(
       [
         BtnAppend(`frontier=`),
-        ` -- maximum achieved frontier; known values: `,
+        ` -- maximum achieved Frontier; known values: `,
         ...u.LogWords(...a.map(gc.FRONTIERS, BtnAppendFrontierShort)),
       ],
 
@@ -96,7 +97,7 @@ cmdEdit.help = function cmdEditHelp() {
         BtnAppend(`doct=`), ` -- select which doctrines to lock or unlock`,
       ],
       [`  `, BtnAppend(`doct=all`), ` -- select all doctrines`],
-      SpecificOptions({key: `doct`, coll: gc.CODES_TO_DOCTS, type: `doctrines`}),
+      SpecificOptions({key: `doct`, coll: gc.CODES_TO_ALL_DOCTS, type: `doctrines`}),
     ),
 
     `tip: advanced building variants are hidden behind doctrines; in regular play, they're unlocked by finding an expertise doctrine for the corresponding regular building; here, they can be unlocked as doctrines`,
@@ -158,7 +159,10 @@ export function cmdEdit({sig, args}) {
 }
 
 export async function edit(sig, state) {
-  editDecodeCliArgs(state)
+  if (editDecodeCliArgs(state) === `help`) {
+    return os.cmdHelpDetailed(cmdEdit)
+  }
+
   reqNoErrs(state)
 
   if (!state.hasActions()) {
@@ -169,21 +173,23 @@ export async function edit(sig, state) {
     return
   }
 
-  await editDiff(sig, state)
   await editAll(sig, state)
+  await editDiff(sig, state)
   await editHeros(sig, state)
   await editBuis(sig, state)
   await editDocts(sig, state)
   await editCommit(sig, state)
 }
 
-function editDecodeCliArgs(state) {
+export function editDecodeCliArgs(state) {
   a.reqInst(state, EditState)
   const cmd = cmdEdit.cmd
   const args = a.reqValidStr(state.args)
   const {errs, msgs} = a.reqInst(state, EditState)
 
   for (const [key, val, pair] of u.cliDecode(u.stripPreSpaced(args, cmd))) {
+    if (u.isHelpFlag(key)) return `help`
+
     if (key === `-w`) {
       try {state.write = ui.cliBool(cmd, key, val)}
       catch (err) {errs.push(err)}
@@ -250,6 +256,7 @@ function editDecodeCliArgs(state) {
       editAddToColl({
         state, stateKey: `heros`, val, pair,
         codeToName: gc.CODES_TO_HEROS_SHORT,
+        nameToCode: gc.HEROS_TO_CODES_SHORT,
       })
       continue
     }
@@ -258,6 +265,7 @@ function editDecodeCliArgs(state) {
       editAddToColl({
         state, stateKey: `buis`, val, pair,
         codeToName: gc.CODES_TO_BUIS_SHORT,
+        nameToCode: gc.BUIS_TO_CODES_SHORT,
       })
       continue
     }
@@ -265,7 +273,8 @@ function editDecodeCliArgs(state) {
     if (key === `doct`) {
       editAddToColl({
         state, stateKey: `docts`, val, pair,
-        codeToName: gc.CODES_TO_DOCTS,
+        codeToName: gc.CODES_TO_ALL_DOCTS,
+        nameToCode: gc.ALL_DOCTS_TO_CODES,
       })
       continue
     }
@@ -285,19 +294,47 @@ function editDecodeCliArgs(state) {
   else if (!srcPath && tarPath) {
     state.srcPath = tarPath
   }
+
+  if (state.all && a.isNil(state.diff) && a.isNil(state.frontier)) {
+    state.diff = state.lock ? gc.DIFF_MIN : gc.DIFF_MAX
+  }
+  /*
+  Non-nil Frontier implies difficulty of at least `DIFF_MAX`.
+  Difficulty < `DIFF_MAX` implies Frontier 0.
+  Difficulty = `DIFF_MAX` does _not_ imply any specific Frontier.
+  This also means that if either is specified, then `diff` is
+  always there, while `frontier` may be missing.
+  */
+  else if (a.isSome(state.frontier)) {
+    if (a.isSome(state.diff) && state.diff !== gc.DIFF_MAX) {
+      state.changes.push([
+        Warn(), ` `,
+        BtnAppendEq(`frontier`, state.frontier),
+        ` overrides `,
+        BtnAppendEq(`diff`, state.diff),
+        ` and forces `,
+        BtnAppendEq(`diff`, gc.DIFF_MAX),
+      ])
+    }
+    state.diff = gc.DIFF_MAX
+  }
+  else if (a.isSome(state.diff) && state.diff < gc.DIFF_MAX) {
+    state.frontier = 0
+  }
 }
 
-function editAddToColl({state, stateKey, val, pair, codeToName}) {
+function editAddToColl({state, stateKey, val, pair, codeToName, nameToCode}) {
   a.reqInst(state, EditState)
   a.reqValidStr(stateKey)
   a.reqStr(val)
   a.reqStr(pair)
   a.reqDict(codeToName)
+  a.reqDict(nameToCode)
 
   const coll = state[stateKey] ??= new Set()
   if (val === `all`) return
 
-  const code = gc.NAMES_TO_CODES[val]
+  const code = nameToCode[val]
   if (code) {
     coll.add(code)
     return
@@ -310,7 +347,7 @@ function editAddToColl({state, stateKey, val, pair, codeToName}) {
 }
 
 export async function editDiff(sig, state) {
-  let {diff, frontier, msgs, changes} = a.reqInst(state, EditState)
+  const {diff, frontier, msgs, changes, nonChanges} = a.reqInst(state, EditState)
   if (a.isNil(diff) && a.isNil(frontier)) return
 
   const eqs = u.cliEqs([`diff`, diff], [`frontier`, frontier])
@@ -331,38 +368,6 @@ export async function editDiff(sig, state) {
     return
   }
 
-  /*
-  Non-nil Frontier implies difficulty of at least `DIFF_MAX`.
-  Difficulty < `DIFF_MAX` implies Frontier 0.
-  Difficulty = `DIFF_MAX` does _not_ imply any specific Frontier.
-  This also means that if either is specified, then `diff` is
-  always there, while `frontier` may be missing.
-  */
-  if (a.isSome(frontier)) {
-    if (a.isSome(diff) && diff !== gc.DIFF_MAX) {
-      changes([
-        Warn(), ` `,
-        BtnAppendEq(`frontier`, frontier),
-        ` overrides `,
-        BtnAppendEq(`diff`, diff),
-        ` and forces `,
-        BtnAppendEq(`diff`, gc.DIFF_MAX),
-      ])
-    }
-
-    diff = state.diff = gc.DIFF_MAX
-  }
-  else if (a.isSome(diff) && diff < gc.DIFF_MAX) {
-    if (endlessPrev) {
-      changes.push([
-        preOpt(Btn),
-        `target difficulty < ${gc.DIFF_MAX}; locking endless mode and Frontier`,
-      ])
-    }
-
-    frontier = state.frontier = 0
-  }
-
   const subChanges = []
   if (diffPrev !== diff) {
     subChanges.push(`changing difficulty from ${diffPrev} to ${diff}`)
@@ -378,9 +383,9 @@ export async function editDiff(sig, state) {
   }
 
   if (!subChanges.length) {
-    changes.push([
+    nonChanges.push([
       preOpt(Btn), `skipping this edit in `, a.show(file.path), `: `,
-      `maximum unlocked difficulty and endless / Frontier mode are unchanged`,
+      `maximum unlocked difficulty and access to endless / Frontier mode are unchanged`,
     ])
     return
   }
@@ -396,7 +401,7 @@ export async function editDiff(sig, state) {
 }
 
 export async function editAll(sig, state) {
-  const {all, msgs, changes} = a.reqInst(state, EditState)
+  const {all, msgs, nonChanges} = a.reqInst(state, EditState)
   if (!all) return
 
   function Btn() {return BtnAppend(`-a`)}
@@ -411,7 +416,7 @@ export async function editAll(sig, state) {
 
   const codes = a.keys(unlockables)
   if (!codes.length) {
-    changes.push([
+    nonChanges.push([
       preOpt(Btn), Warn(),
       ` skipping: no unlockables in `,
       a.show(unlockablesFile.path),
@@ -455,7 +460,7 @@ export async function editAll(sig, state) {
 }
 
 export async function editHeros(sig, state) {
-  const {lock, all, heros, msgs, changes} = a.reqInst(state, EditState)
+  const {lock, all, heros, msgs, nonChanges} = a.reqInst(state, EditState)
   if (!heros) return
 
   function Btn() {return BtnEdit(`hero`, heros)}
@@ -489,7 +494,7 @@ export async function editHeros(sig, state) {
     codes = a.filter(a.keys(unlockables), isHeroCode)
 
     if (!codes.length) {
-      changes.push(msgNoCodes(`commander`, unlockablesFile.path, Btn))
+      nonChanges.push(msgNoCodes(`commander`, unlockablesFile.path, Btn))
       return
     }
 
@@ -500,7 +505,9 @@ export async function editHeros(sig, state) {
     ))
   }
 
-  changes.push([
+  // TODO: partition by locked / unlocked, and place the msg in `changes` and
+  // `nonChanges` as appropriate. Do the same for buis and doctrines.
+  msgs.push([
     preOpt(Btn), msgAction(lock, !heros.size), ` commanders: `,
     ...u.LogWords(...a.map(codes, BtnAppendHeroShort)),
   ])
@@ -516,7 +523,7 @@ function editHeroDiff({state, code, file, scores}) {
   a.reqInst(file, EditFile)
   a.reqDict(scores)
 
-  const {diff, frontier, msgs, changes} = a.reqInst(state, EditState)
+  const {diff, frontier, msgs, changes, nonChanges} = a.reqInst(state, EditState)
   a.optNat(diff)
   a.optNat(frontier)
   if (a.isNil(diff) && a.isNil(frontier)) return
@@ -549,7 +556,7 @@ function editHeroDiff({state, code, file, scores}) {
 
   if (a.isNil(frontier)) {
     if (diffPrev === diff) {
-      changes.push([preOpt(Btn), `maximum achieved difficulty already `, diff])
+      nonChanges.push([preOpt(Btn), `maximum achieved difficulty already `, diff])
       return
     }
 
@@ -564,7 +571,7 @@ function editHeroDiff({state, code, file, scores}) {
   const frontierPrev = a.onlyFin(score.MaxExpertScore)
 
   if (diffPrev === diff && frontierPrev === frontier) {
-    changes.push([
+    nonChanges.push([
       preOpt(Btn), `maximum achieved difficulty already `, diff,
       ` and maximum achieved Frontier difficulty already `, frontier,
     ])
@@ -589,7 +596,7 @@ function editHeroConds({state, code, file, unlockables}) {
 }
 
 export async function editBuis(sig, state) {
-  const {lock, all, buis, msgs, changes} = a.reqInst(state, EditState)
+  const {lock, all, buis, msgs, nonChanges} = a.reqInst(state, EditState)
   if (all || !buis) return
   function Btn() {return BtnEdit(`bui`, buis)}
 
@@ -631,14 +638,14 @@ export async function editBuis(sig, state) {
     buiCodes = a.filter(keys, isBuiCode)
 
     if (!buiCodes.length) {
-      changes.push(msgNoCodes(`building`, settingsFile.path, Btn))
+      nonChanges.push(msgNoCodes(`building`, settingsFile.path, Btn))
       return
     }
 
     advUpgCodes = new Set(a.filter(keys, isAdvUpgCode))
   }
 
-  changes.push([
+  msgs.push([
     preOpt(Btn), msgAction(lock, !buis.size), ` buildings: `,
     ...u.LogWords(...a.map(buiCodes, BtnAppendBuiShort)),
   ])
@@ -714,7 +721,7 @@ export function editBuiConds({state, code, file, unlockables}) {
 }
 
 export async function editDocts(sig, state) {
-  const {lock, all, docts, msgs, changes} = a.reqInst(state, EditState)
+  const {lock, all, docts, msgs, nonChanges} = a.reqInst(state, EditState)
   if (all || !docts) return
 
   function Btn() {return BtnEdit(`doct`, docts)}
@@ -748,12 +755,12 @@ export async function editDocts(sig, state) {
     const keys = a.keys(unlockables)
     codes = a.filter(keys, isDoctCode)
     if (!codes.length) {
-      changes.push(msgNoCodes(`doctrine`, unlockablesFile.path, Btn))
+      nonChanges.push(msgNoCodes(`doctrine`, unlockablesFile.path, Btn))
       return
     }
   }
 
-  changes.push([
+  msgs.push([
     preOpt(Btn), msgAction(lock, !docts.size), ` doctrines: `,
     ...u.LogWords(...a.map(codes, BtnAppendDoctShort)),
   ])
@@ -793,14 +800,7 @@ export function editSeenDoctsAll({state, file, unlockables, seenDocts, codes}) {
   return editSeenAll({
     state, file, unlockables, seen: seenDocts,
     type: `doctrines`,
-    codes: exclude(
-      a.concat(
-        a.keys(gc.CODES_TO_DOCTS),
-        a.keys(gc.CODES_TO_CURSES),
-        a.keys(gc.CODES_TO_DOTATIONS),
-      ),
-      codes,
-    ),
+    codes: exclude(a.keys(gc.CODES_TO_ALL_DOCTS), codes),
     showShort: BtnAppendDoctShort, showLong: BtnAppendDoct,
   })
 }
@@ -830,7 +830,7 @@ export function editSeenAll({
   if (lock) {
     if (!seen.length) return
     changes.push([
-      `marking all previously-seen ${type} as "not seen": `,
+      `marking all previously-seen ${type} as not seen: `,
       ...u.LogWords(...a.map(seen, showShort)),
     ])
     seen.length = 0
@@ -850,17 +850,17 @@ function editSeen({state, code, file, seen, pre}) {
   a.reqInst(file, EditFile)
   a.reqArr(seen)
 
-  const {lock, changes} = a.reqInst(state, EditState)
+  const {lock, changes, nonChanges} = a.reqInst(state, EditState)
 
   if (lock) {
     const changed = arrRemoved(seen, code)
     if (changed) file.changed = true
 
     if (!changed) {
-      changes.push([preOpt(pre), `already considered "not seen"`])
+      nonChanges.push([preOpt(pre), `already not seen`])
       return
     }
-    changes.push([preOpt(pre), `marking as "not seen"`])
+    changes.push([preOpt(pre), `marking as not seen`])
     return
   }
 
@@ -868,26 +868,23 @@ function editSeen({state, code, file, seen, pre}) {
   if (changed) file.changed = true
 
   if (!changed) {
-    changes.push([preOpt(pre), `already considered "seen"`])
+    nonChanges.push([preOpt(pre), `already seen`])
     return
   }
-  changes.push([preOpt(pre), `marking as "seen"`])
+  changes.push([preOpt(pre), `marking as seen`])
 }
 
 export async function editCommit(sig, state) {
   reqNoErrs(state)
 
-  const {args, write, msgs, changes} = a.reqInst(state, EditState)
+  const {args, write, msgs, changes, nonChanges} = a.reqInst(state, EditState)
   const changedFiles = a.filter(state.editFiles, isChanged)
 
-  if (msgs.length || changes.length) {
+  if (msgs.length || changes.length || nonChanges.length) {
     msgs.unshift([
       (
-        changes.length
-        ? [
-          (write ? u.Bold(`changes`) : u.Bold(`planned changes`)),
-          ` and other notes in `,
-        ]
+        (changes.length || nonChanges.length)
+        ? [u.Bold(`planned actions`), ` in `]
         : `notes in `
       ),
       ui.BtnPromptReplace({val: args}), `:`,
@@ -895,11 +892,11 @@ export async function editCommit(sig, state) {
   }
 
   if (changes.length) {
-    msgs.push(u.LogDetails({
-      summary: `changes (${changes.length}): click to expand`,
-      summaryCls: `cursor-pointer underline decoration-dotted hover:decoration-solid`,
-      chi: u.LogLines(...changes).map(u.indentNode),
-    }))
+    msgs.push(Collapsed(changes, `changes`))
+  }
+
+  if (nonChanges.length) {
+    msgs.push(Collapsed(nonChanges, `non-changes`))
   }
 
   if (!changedFiles.length) {
@@ -957,11 +954,11 @@ export function editUnlockConds({state, code, unlockables, file, pre}) {
   a.reqInst(file, EditFile)
   a.reqDict(unlockables)
 
-  const {lock, msgs} = a.reqInst(state, EditState)
+  const {lock, msgs, nonChanges} = a.reqInst(state, EditState)
   const edit = lock ? `locking` : `unlocking`
 
   if (!a.hasOwn(unlockables, code)) {
-    msgs.push([
+    nonChanges.push([
       preOpt(pre),
       `skipping ${edit}: unable to locate in the unlockables in `,
       a.show(file.path),
@@ -1003,7 +1000,7 @@ export function editUnlockCond({state, code, unlockable, cond, file, pre}) {
   a.reqDict(unlockable)
   a.reqDict(cond)
 
-  const {lock, msgs, changes} = a.reqInst(state, EditState)
+  const {lock, msgs, changes, nonChanges} = a.reqInst(state, EditState)
   const {AlreadyDisplayed: dispPrev} = unlockable
   const {TargetValue: targ} = cond
 
@@ -1014,15 +1011,14 @@ export function editUnlockCond({state, code, unlockable, cond, file, pre}) {
   }
 
   const prog = a.onlyFin(cond.Progression) ?? 0
-  const disp = !lock
 
   if (lock) {
     if (!prog) {
-      changes.push([preOpt(pre), `already locked, progression at 0`])
+      nonChanges.push([preOpt(pre), `already locked, progression at 0`])
       return
     }
 
-    unlockable.AlreadyDisplayed = disp
+    unlockable.AlreadyDisplayed = false
     cond.Progression = 0
     file.changed = true
 
@@ -1037,14 +1033,17 @@ export function editUnlockCond({state, code, unlockable, cond, file, pre}) {
 
   if (prog >= targ) {
     if (!(prog >= (targ * 2))) {
-      if (disp !== dispPrev) {
-        changes.push([preOpt(pre), `already unlocked, but not previously displayed; setting to have been displayed`])
-        unlockable.AlreadyDisplayed = disp
+      if (!dispPrev) {
+        changes.push([
+          preOpt(pre),
+          `already unlocked, but not previously seen; marking as seen`,
+        ])
+        unlockable.AlreadyDisplayed = true
         file.changed = true
         return
       }
 
-      changes.push([preOpt(pre), `already unlocked`])
+      nonChanges.push([preOpt(pre), `already unlocked`])
       return
     }
 
@@ -1056,13 +1055,10 @@ export function editUnlockCond({state, code, unlockable, cond, file, pre}) {
     ])
   }
   else {
-    changes.push([
-      preOpt(pre),
-      `unlocking by setting progression to `, targ,
-    ])
+    changes.push([preOpt(pre), `unlocking by setting progression to `, targ])
   }
 
-  unlockable.AlreadyDisplayed = disp
+  unlockable.AlreadyDisplayed = true
   cond.Progression = targ
   file.changed = true
 }
@@ -1114,6 +1110,7 @@ export class EditState extends a.Emp {
   errs = []
   msgs = []
   changes = []
+  nonChanges = []
   resolvedPaths = a.Emp()
   editFiles = a.Emp() // Record<resolved_path: string, EditFile>
   saveDir = a.optInst(undefined, FileSystemDirectoryHandle)
@@ -1314,6 +1311,17 @@ function SpecificOptions({key, coll, type}) {
     lvl: 1,
     summary: u.Muted(`specific ${type}: click to expand`),
     chi: u.LogLines(...a.map(a.keys(coll), Btn)),
+  })
+}
+
+function Collapsed(src, type) {
+  a.reqArr(src)
+  a.reqValidStr(type)
+
+  return u.LogDetails({
+    summary: type + ` (${src.length}): click to expand`,
+    summaryCls: `cursor-pointer underline decoration-dotted hover:decoration-solid`,
+    chi: u.LogLines(...src).map(u.indentNode),
   })
 }
 

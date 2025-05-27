@@ -100,8 +100,8 @@ export async function authLogin(sig) {
   STATE.userId = pubKeyStr
 
   u.storageSet(sessionStorage, STORAGE_KEY_PUB_KEY, pubKeyStr)
-  u.storageSet(localStorage, STORAGE_KEY_PUB_KEY, pubKeyStr)
   u.storageSet(sessionStorage, STORAGE_KEY_SEC_KEY, secKeyStr)
+  u.storageSet(localStorage, STORAGE_KEY_PUB_KEY, pubKeyStr)
   u.storageSet(localStorage, STORAGE_KEY_SEC_KEY, secKeyStr)
 
   uploadOpt().catch(u.logErr)
@@ -337,8 +337,10 @@ function roundTripErrMsg(type) {
 export async function listDirsFiles(sig, path) {
   u.reqSig(sig)
   path = u.paths.cleanTop(a.laxStr(path))
+  const userId = reqUserId()
+
   try {
-    const entry = await apiLs(sig, u.paths.join(reqUserId(), path))
+    const entry = await apiLs(sig, u.paths.join(userId, path))
     if (!entry) return `cloud file or dir ${a.show(path)} not found`
     return fs.LsEntry({...entry, path, cloud: true})
   }

@@ -452,6 +452,25 @@ export const CODES_TO_DOCTS = dict({
 
 export const DOCTS_TO_CODES = invert(CODES_TO_DOCTS)
 
+export const CODES_TO_FRONTIER_MODS = dict({
+  FM01: `Volcanic_underground`,
+  FM02: `Jagged_terrain`,
+  FM03: `Cursed_world`,
+  FM04: `Foggy_world`,
+  FM05: `Rotten_atmosphere`,
+  FM06: `Massive_lifeforms`,
+  FM07: `Bryta_infestation`,
+  FM08: `Constant_blizzards`,
+  FM09: `Extended_supply_lines`,
+  FM10: `Low_tech_world`,
+  FM11: `Feral_world`,
+  FM12: `Teeming_invasion`,
+  FM13: `Hostile_locals`,
+  FM14: `Lurking_alpha_lecos`,
+})
+
+export const FRONTIER_MODS_TO_CODES = invert(CODES_TO_FRONTIER_MODS)
+
 export const CODES_TO_CURSES = dict({
   ND01: `Maintenance_debt`,
   ND02: `Oversleeping_sentries`,
@@ -505,7 +524,15 @@ export const CODES_TO_DOTATIONS = dict({
 
 export const DOTATIONS_TO_CODES = invert(CODES_TO_DOTATIONS)
 
-// TODO: add Scarlett, she probably has a special code like Laethissa.
+export const CODES_TO_ALL_DOCTS = dict({
+  ...CODES_TO_DOCTS,
+  ...CODES_TO_CURSES,
+  ...CODES_TO_DOTATIONS,
+  ...CODES_TO_FRONTIER_MODS,
+})
+
+export const ALL_DOCTS_TO_CODES = invert(CODES_TO_ALL_DOCTS)
+
 export const CODES_TO_CHIS_SHORT = dict({
   // Red commanders spawn as "children" of their HQ.
   ...CODES_TO_HEROS_SHORT,
@@ -515,15 +542,17 @@ export const CODES_TO_CHIS_SHORT = dict({
 
 export const CHIS_TO_CODES_SHORT = invert(CODES_TO_CHIS_SHORT)
 
+/*
+Unlike all other code-to-name collections, we intentionally do not create an
+inverse of this dictionary, because it would be a gotcha. We have some name
+collisions, which means this is not properly invertible. Mapping names to codes
+needs to be done with knowledge of entity type.
+*/
 export const CODES_TO_NAMES_SHORT = dict({
   ...CODES_TO_HEROS_SHORT,
   ...CODES_TO_BUIS_SHORT,
-  ...CODES_TO_DOCTS,
-  ...CODES_TO_CURSES,
-  ...CODES_TO_DOTATIONS,
+  ...CODES_TO_ALL_DOCTS,
 })
-
-export const NAMES_TO_CODES = invert(CODES_TO_NAMES_SHORT)
 
 export const WEPS = new Set([
   `AssaultTeam_Launcher`,
@@ -586,14 +615,16 @@ export const DIFF_MAX_ROUND_NUM = new Map()
   .set(0, 25)
   .set(1, 28)
   .set(2, 32)
+  .set(3, 35)
   .set(4, 35)
-  .set(5, 35)
 
 export const MAX_KNOWN_ROUND_NUM = 35
 
-export const DIFFS = new Set(a.range(1, 6))
+export const DIFFS = new Set(a.range(0, DIFF_MAX_ROUND_NUM.size + 1))
+export const DIFF_MIN = a.head(DIFFS)
 export const DIFF_MAX = a.last(DIFFS)
-export const FRONTIERS = new Set(a.range(1, 20))
+export const FRONTIERS = new Set(a.range(0, 20))
+export const FRONTIER_MIN = a.head(FRONTIERS)
 export const FRONTIER_MAX = a.last(FRONTIERS)
 
 function dict(val) {return a.assign(a.Emp(), val)}
@@ -618,7 +649,7 @@ export function advUpgCodeToBuiCode(key) {
 }
 
 export function codeToNameShort(key) {
-  a.reqStr(key)
+  if (!a.optStr(key)) return undefined
 
   const name = CODES_TO_NAMES_SHORT[key]
   if (name) return name
@@ -651,7 +682,7 @@ export function buiAdvUpgName(key) {
 function joinKeys(...src) {return a.joinOptLax(src, `_`)}
 
 export function findGameReleaseForMs(ms) {
-  a.reqFin(ms)
+  ms = a.laxFin(ms)
 
   let prev
   let next
