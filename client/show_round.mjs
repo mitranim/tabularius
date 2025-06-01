@@ -553,7 +553,7 @@ const WEP_COLS = [
   {...WEP_COL_BASE, key: `rel`,      type: TYPE_NUM},
   {...WEP_COL_BASE, key: `dmg`,      type: TYPE_NUM},
   {...WEP_COL_BASE, key: `targs`,    type: TYPE_NUM},
-  {...WEP_COL_BASE, key: `dmg_base`, type: TYPE_NUM_MOD, hide: true},
+  {...WEP_COL_BASE, key: `dmg_base`, type: TYPE_NUM, hide: true},
   {...WEP_COL_BASE, key: `dmg_perc`, type: TYPE_PERC_MOD, hide: true},
   {...WEP_COL_BASE, key: `air`,      type: TYPE_PERC_MOD},
   {...WEP_COL_BASE, key: `shield`,   type: TYPE_PERC_MOD},
