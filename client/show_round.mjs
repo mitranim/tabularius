@@ -611,7 +611,15 @@ class TableBody extends dr.MixReg(HTMLTableSectionElement) {
       for (const row of buiRows.slice(lenMax)) row.showObs = LONG
 
       tbodyRows.push(new BuiLongToggleRow({
-        lenBui, lenMax, obs: LONG, colspan: sumColspans(BUI_COLS).all,
+        lenBui, lenMax, obs: LONG,
+        class: CLS_HIDE_BELOW,
+        colspan: sumColspans(BUI_COLS).all,
+      }))
+
+      tbodyRows.push(new BuiLongToggleRow({
+        lenBui, lenMax, obs: LONG,
+        class: CLS_HIDE_ABOVE,
+        colspan: sumColspans(BUI_COLS).show,
       }))
     }
 
@@ -942,7 +950,7 @@ class BuiLongToggleRow extends od.MixReac(TableRow) {
   lenMax = undefined
   obs = undefined
 
-  constructor({lenBui, lenMax, obs, colspan}) {
+  constructor({lenBui, lenMax, obs, colspan, class: cls}) {
     super()
 
     this.lenBui = a.reqNat(lenBui)
@@ -951,7 +959,7 @@ class BuiLongToggleRow extends od.MixReac(TableRow) {
 
     E(
       this,
-      {class: a.spaced(`cursor-pointer`, ui.CLS_BUSY_BG, ui.CLS_TEXT_GRAY)},
+      {class: a.spaced(`cursor-pointer`, ui.CLS_BUSY_BG, ui.CLS_TEXT_GRAY, cls)},
       E(`td`, {colspan, class: `text-center pt-1`}),
     )
   }
