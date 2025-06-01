@@ -983,7 +983,7 @@ class BuiLongToggleRow extends od.MixReac(TableRow) {
     E(
       this,
       {class: a.spaced(`cursor-pointer`, ui.CLS_BUSY_BG, ui.CLS_TEXT_GRAY, cls)},
-      E(`td`, {colspan, class: `text-center pt-1`}),
+      E(`td`, {colspan, class: `text-center py-1`}),
     )
   }
 

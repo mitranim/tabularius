@@ -23,11 +23,6 @@ export const CLS_MEDIA_CHI = a.spaced(
 export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends ui.ReacElem {
   state = o.obs({count: 0})
 
-  constructor() {
-    super()
-    markElementMediaDefault(this)
-  }
-
   run() {
     const {count} = this.state
     const placeholder = `[Plot Placeholder]`
@@ -58,11 +53,6 @@ export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends ui.ReacElem {
 
 // A reactive element that shows running processes.
 export const PROCESS_LIST = new class ProcessList extends ui.ReacElem {
-  constructor() {
-    super()
-    markElementMediaDefault(this)
-  }
-
   run() {
     const vals = a.values(os.PROCS)
     const len = vals.length
@@ -157,8 +147,18 @@ export const MEDIA = new class MediaPanel extends ui.Elem {
     }
   }
 
-  isDefault() {return a.every(this.children, isElementMediaDefault)}
+  isDefault() {
+    return a.every(this.children, isElementMediaDefaultOrBase)
+  }
 }()
+
+function isElementMediaDefaultOrBase(val) {
+  return (
+    isElementMediaDefault(val) ||
+    val === PLOT_PLACEHOLDER ||
+    val === PROCESS_LIST
+  )
+}
 
 export function isElementMediaDefault(val) {
   return val?.dataset?.isDefault === `true`
