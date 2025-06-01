@@ -223,7 +223,7 @@ export const NUM_MODES = [NUM_MODE_BOTH, NUM_MODE_NUM, NUM_MODE_PERC]
 export const NUM_MODE = u.storageObs(`tabularius.show_round.num_mode`)
 export const WIDE = u.storageObsBool(`tabularius.show_round.wide`)
 export const LONG = u.storageObsBool(`tabularius.show_round.long`)
-export const LONG_ROW_BREAKPOINT = 16
+export const LONG_ROW_BREAKPOINT = 12
 
 class ShowRound extends d.MixDatSub(ui.ReacElem) {
   opt = undefined
@@ -601,37 +601,58 @@ class TableHead extends dr.MixReg(HTMLTableSectionElement) {
 
 class TableBody extends dr.MixReg(HTMLTableSectionElement) {
   static localName = `tbody`
+  buiLen = 0
 
   init(opt) {
-    const {tbodyRows, buiRows} = roundTableRows(opt)
-    const lenBui = buiRows.length
-    const lenMax = LONG_ROW_BREAKPOINT
-
-    if (lenBui > lenMax) {
-      for (const row of buiRows.slice(lenMax)) row.showObs = LONG
-
-      tbodyRows.push(new BuiLongToggleRow({
-        lenBui, lenMax, obs: LONG,
-        class: CLS_HIDE_BELOW,
-        colspan: sumColspans(BUI_COLS).all,
-      }))
-
-      tbodyRows.push(new BuiLongToggleRow({
-        lenBui, lenMax, obs: LONG,
-        class: CLS_HIDE_ABOVE,
-        colspan: sumColspans(BUI_COLS).show,
-      }))
-    }
-
-    for (const [ind, row] of a.entries(tbodyRows)) row.sortInd = ind
-    return E(this, {}, tbodyRows)
+    const rows = roundTableRows(opt)
+    this.setBuiInds(rows)
+    E(this, {}, rows)
+    this.addToggleRows()
+    this.setRowInds()
+    return this
   }
 
-  sort() {return E(this, {}, a.arr(this.children).sort(compareRowsDeep))}
+  sort() {
+    const rows = a.arr(this.children).sort(compareRowsDeep)
+    this.setBuiInds(rows)
+    E(this, {}, rows)
+  }
 
   toggleAssocRows(show) {
     a.optBool(show)
     for (const row of this.rows) row.toggleAssocRows?.(show)
+  }
+
+  setRowInds() {
+    for (const [ind, row] of a.entries(this.rows)) row.sortInd = ind
+  }
+
+  setBuiInds(rows) {
+    let ind = -1
+    for (const row of a.reqArr(rows)) {
+      if (!a.isInst(row, BuiRow)) continue
+      row.buiRowInd = ++ind
+    }
+    this.buiLen = ind + 1
+  }
+
+  addToggleRows() {
+    const lenBui = a.laxNat(this.buiLen)
+    const lenMax = LONG_ROW_BREAKPOINT
+
+    if (!(lenBui > lenMax)) return
+
+    this.appendChild(new BuiLongToggleRow({
+      lenBui, lenMax, obs: LONG,
+      class: CLS_HIDE_BELOW,
+      colspan: sumColspans(BUI_COLS).all,
+    }))
+
+    this.appendChild(new BuiLongToggleRow({
+      lenBui, lenMax, obs: LONG,
+      class: CLS_HIDE_ABOVE,
+      colspan: sumColspans(BUI_COLS).show,
+    }))
   }
 }
 
@@ -704,7 +725,6 @@ class TableRow extends dr.MixReg(HTMLTableRowElement) {
 class PseudoHeadRow extends TableRow {
   constructor({parent, sortObs, showObs, cols}) {
     super({parent, sortObs, showObs})
-    this.sortObs = a.reqInst(sortObs, SortObs)
 
     E(
       this,
@@ -890,6 +910,8 @@ function Tds(src, cols) {
 export const CHI_SHOW = u.storageObsBool(`tabularius.round_table.show_chi`)
 
 class BuiRow extends od.MixReac(TableRow) {
+  buiRowInd = undefined
+
   constructor() {super({sortObs: BUI_SORT})}
 
   connectedCallback() {
@@ -936,10 +958,11 @@ class BuiRow extends od.MixReac(TableRow) {
   }
 
   run() {
-    const obs = this.showObs
-    if (!obs) return
+    const ind = this.buiRowInd
+    if (u.DEV) a.reqNat(ind)
+    else if (!a.isNat(ind)) return
 
-    const show = obs.val
+    const show = a.optBool(LONG.val) || (ind <= LONG_ROW_BREAKPOINT)
     this.toggleAssocRows(show && CHI_SHOW.get())
     this.hidden = !show
   }
@@ -1014,7 +1037,7 @@ function roundTableRows({round, user_id, run_num, run_ms}) {
   }
 
   for (const row of buiRows) row.addPerc(total)
-  return {tbodyRows, buiRows}
+  return tbodyRows
 }
 
 function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, total}) {
@@ -1184,7 +1207,6 @@ export function compareRowsDeep(one, two) {
 
   const oneAncs = one.ancs()
   const twoAncs = two.ancs()
-
   const oneLen = oneAncs.length
   const twoLen = twoAncs.length
 
@@ -1219,11 +1241,7 @@ export function compareRowsDeep(one, two) {
 
 // TODO simplify, add explanatory comments.
 export function compareRows(one, two) {
-  if (one === two) {
-    if (!u.DEV) return 0
-    throw Error(`internal: pointless comparison of the same row`)
-  }
-
+  if (one === two) return 0
   const oneInd = a.reqFin(one.sortInd)
   const twoInd = a.reqFin(two.sortInd)
 
