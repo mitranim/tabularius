@@ -155,6 +155,5 @@ export function compareDirEntries(one, two, fun) {
 
 export function jsonLines(src) {
   src = a.laxArr(src)
-  return a.mapCompact(src, a.jsonEncode).join(`\n`)
-  // return JSON.stringify(a.reqArr(src)).slice(1, -1).replaceAll(`},{`, `}\n{`)
+  return a.mapCompact(src, JSON.stringify).join(`\n`)
 }

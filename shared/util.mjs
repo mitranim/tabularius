@@ -182,6 +182,51 @@ export function jsonDecodeOpt(src) {
   return isStrJsonLike(src) ? JSON.parse(src) : undefined
 }
 
+/*
+Should be used when there's a possibility of dictionary keys in JSON data
+conflicting with properties of `Object.prototype` (which shouldn't be possible
+in our particular app), or when logging and browsing data in devtools, because
+null-prototype objects look cleaner. Should be avoided in other cases due to
+performance overhead.
+*/
+export function jsonDecode(src) {
+  if (!a.optStr(src)) return undefined
+  return JSON.parse(src, jsonDecoder)
+}
+
+function jsonDecoder(_, src) {
+  if (a.isObj(src) && Object.getPrototypeOf(src) === Object.prototype) {
+    const out = a.Emp()
+    for (const key in src) out[key] = src[key]
+    return out
+  }
+  return src
+}
+
+/*
+Should be used when encoding a value that may or may not be `undefined`. The
+default behavior of `JSON.stringify` is to return an actual `undefined` value
+(a nil) when given `undefined` as an input, which causes problems when encoding
+responses for API clients. Should also be used when encoding data that may
+contain bigints. Should be avoided in other cases for performance resons.
+*/
+export function jsonEncode(src, fun, ind) {
+  a.optFun(fun)
+  a.optNum(ind)
+  if (a.isNil(src)) return `null`
+  return JSON.stringify(src, fun ?? jsonEncoder, ind)
+}
+
+/*
+When sending the data back to clients, we treat SQL `int64` as JS `float64`
+rather than `BigInt`, because: `BigInt` requires special client-side code for
+decoding from JSON; we do not care about minor imprecision in count aggregates;
+we will probably never have imprecision in count aggregates; we will never have
+imprecision in millisecond timestamps since they come from JS. We could define
+a DB value converter, but this is much terser and easier for now.
+*/
+function jsonEncoder(_, src) {return a.isBigInt(src) ? Number(src) : src}
+
 function isStrJsonLike(src) {
   src = a.trim(src)
   return (
@@ -227,6 +272,9 @@ export async function decodeGdStr(src) {
   This is expected to be the most common case for TD files.
   */
   try {
+    // Enable manually when browsing data in devtools.
+    // return jsonDecode(await str_to_unbase64_to_ungzip_to_str(src))
+
     return JSON.parse(await str_to_unbase64_to_ungzip_to_str(src))
   }
   catch (err) {

@@ -330,6 +330,17 @@ export function cmdHelp({args}) {
   return ui.LogParagraphs(
     `available commands:`,
     ...a.map(CMDS, cmdHelpShort),
+
+    `tip: command buttons and question marks are clickable!`,
+
+    ui.LogLines(
+      `hotkeys and special interactions:`,
+      [`  ctrl+k                 -- clear log (same as `, os.BtnCmd(`clear -l`), `)`],
+      // SYNC[prompt_focus_key].
+      [`  /                      -- focus prompt (forward slash key)`],
+      [`  ctrl+click drag handle -- reset UI split`],
+    ),
+
     [
       `pro tip: run commands on page load via URL query; for example, try appending to the URL: `,
       ui.BtnUrlAppend(`?run=plot -c -p=dmg user_id=all run_id=latest`),

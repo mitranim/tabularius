@@ -6,6 +6,7 @@ import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as ui from './ui.mjs'
 
+// SYNC[prompt_focus_key].
 export const PROMPT_FOCUS_KEY = `/`
 export const PROMPT_HIST_KEY = `tabularius.prompt_hist`
 export const PROMPT_HIST_MAX = 256

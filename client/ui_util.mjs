@@ -122,16 +122,8 @@ Usage:
 */
 export const darkModeMediaQuery = window.matchMedia(`(prefers-color-scheme: dark)`)
 
-class DateTimeFormat extends Intl.DateTimeFormat {
-  /*
-  Workaround for an issue in Chrome/V8. When formatting 24-hour time, instead of
-  rendering 00:XX, it renders 24:XX. Safari doesn't have this problem.
-  */
-  format(val) {return a.laxStr(super.format(val)).replace(/\b24:/, `00:`)}
-}
-
 // By luck, the Swedish locale mostly adheres to ISO 8601.
-export const dateFormat = new DateTimeFormat(`sv-SE`, {
+export const dateFormat = new Intl.DateTimeFormat(`sv-SE`, {
   hour12: false,
   timeZoneName: `short`,
   year: `numeric`,
@@ -141,7 +133,7 @@ export const dateFormat = new DateTimeFormat(`sv-SE`, {
   minute: `2-digit`,
 })
 
-export const timeFormat = new DateTimeFormat(`sv-SE`, {
+export const timeFormat = new Intl.DateTimeFormat(`sv-SE`, {
   hour12: false,
   hour: `2-digit`,
   minute: `2-digit`,

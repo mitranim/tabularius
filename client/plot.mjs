@@ -1401,7 +1401,7 @@ export async function cmdPlotLink({sig, args}) {
   }
 
   const url = urlClean()
-  url.searchParams.set(`log_width`, `25`)
+  url.searchParams.set(ui.QUERY_KEY_UI_SPLIT, `25`)
 
   if (!cloud) {
     for (const val of defaultLocalPlotCmds()) {

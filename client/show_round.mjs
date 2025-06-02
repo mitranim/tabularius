@@ -200,6 +200,7 @@ export async function showRoundFile({sig, file, round, args, live}) {
   const out = new ShowRound({
     round, user_id, run_id, run_num, run_ms, args, live,
   }).init()
+
   return new os.Combo({mediaItems: [out]})
 }
 
@@ -416,6 +417,7 @@ function TableHintsAndControls() {
     chi: [
       ...TableHints(),
       TableControlNumMode(),
+      TableControlShowChi(),
       TableControlWide(),
     ],
   })
@@ -450,7 +452,7 @@ function TableHintClick() {
   return [
     ui.Muted(`hint:`),
     ` ctrl+click a building row to toggle `,
-    ui.Bold(`all`), ` building children`,
+    ui.Bold(`all`), ` children`,
   ]
 }
 
@@ -485,22 +487,34 @@ function NumModeRadio(val) {
   )
 }
 
+function TableControlShowChi() {
+  return new TableControlCheckbox({
+    label: `show children`,
+    obs: CHI_SHOW,
+    tooltip: `ctrl+click any building row`,
+
+    /*
+    We do this manually because our children rows do NOT watch this observable.
+    That's because when clicking a bui row to toggle its children, we actually
+    want other bui rows to remain unchanged. For example, if you scroll down
+    and click a row in the middle, toggling ALL child rows would shift all rows
+    and you'd lose track of what you clicked. As a result, toggling all rows
+    needs to be done "manually".
+    */
+    onchange(val) {
+      const anc = a.ancestor(this, ShowRound)
+      const desc = a.descendant(anc, RoundTable)
+      desc?.toggleAssocRows(val)
+    },
+  })
+}
+
 function TableControlWide() {
-  return E(
-    `label`,
-    {class: `inline-flex row-sta-cen gap-2 cursor-pointer`},
-    ui.withTooltip({
-      elem: ui.Muted(`wide:`),
-      chi: `take the entire width of the media panel`,
-    }),
-    E(`input`, {
-      type: `checkbox`,
-      value: ``,
-      checked: !!WIDE.val,
-      class: `cursor-pointer`,
-      onchange() {WIDE.val = this.checked},
-    })
-  )
+  return new TableControlCheckbox({
+    label: `wide`,
+    obs: WIDE,
+    tooltip: `take the entire width of the media panel`,
+  })
 }
 
 class SortObs extends u.StorageObsJson {
@@ -614,6 +628,7 @@ class TableBody extends dr.MixReg(HTMLTableSectionElement) {
 
   sort() {
     const rows = a.arr(this.children).sort(compareRowsDeep)
+    for (const row of rows) row.sort?.()
     this.setBuiInds(rows)
     E(this, {}, rows)
   }
@@ -911,6 +926,7 @@ export const CHI_SHOW = u.storageObsBool(`tabularius.round_table.show_chi`)
 
 class BuiRow extends od.MixReac(TableRow) {
   buiRowInd = undefined
+  showAssoc = CHI_SHOW.val
 
   constructor() {super({sortObs: BUI_SORT})}
 
@@ -930,10 +946,13 @@ class BuiRow extends od.MixReac(TableRow) {
   rows are hidden, then if modified, this should show _all_ rows, but otherwise
   this should only show the assoc rows of the target. Inverse for a row whose
   assoc rows are visible.
+
+  For these reasons, our rows don't monitor a "show/hide" observable. We have to
+  toggle them "manually".
   */
   onClick(eve) {
     const show = !!this.firstChi()?.hidden
-    CHI_SHOW.set(show)
+    CHI_SHOW.val = show
 
     if (u.isEventModifiedPrimary(eve)) {
       a.ancestor(this, RoundTable).toggleAssocRows(show)
@@ -953,6 +972,11 @@ class BuiRow extends od.MixReac(TableRow) {
   }
 
   toggleAssocRows(show) {
+    this.showAssoc = a.optBool(show)
+    this.toggleAssocRowsInternal(show)
+  }
+
+  toggleAssocRowsInternal(show) {
     a.optBool(show)
     for (const val of this.iterChi()) val.hidden = !show
   }
@@ -963,7 +987,7 @@ class BuiRow extends od.MixReac(TableRow) {
     else if (!a.isNat(ind)) return
 
     const show = a.optBool(LONG.val) || (ind <= LONG_ROW_BREAKPOINT)
-    this.toggleAssocRows(show && CHI_SHOW.get())
+    this.toggleAssocRowsInternal(show && this.showAssoc)
     this.hidden = !show
   }
 }
@@ -1202,9 +1226,6 @@ export function compareRowsDeep(one, two) {
   reqRow(one)
   reqRow(two)
 
-  one.sort?.()
-  two.sort?.()
-
   const oneAncs = one.ancs()
   const twoAncs = two.ancs()
   const oneLen = oneAncs.length
@@ -1242,30 +1263,30 @@ export function compareRowsDeep(one, two) {
 // TODO simplify, add explanatory comments.
 export function compareRows(one, two) {
   if (one === two) return 0
-  const oneInd = a.reqFin(one.sortInd)
-  const twoInd = a.reqFin(two.sortInd)
 
+  const fallback = a.reqFin(one.sortInd) - a.reqFin(two.sortInd)
   const obs = one.sortObs
-  if (!obs || obs !== two.sortObs) return oneInd - twoInd
+  if (!obs || obs !== two.sortObs) return fallback
 
   const {key, desc} = obs.val
-  if (key && one.isSortable() && two.isSortable()) {
-    const oneCell = one.getCell(key)
-    const twoCell = two.getCell(key)
+  if (!key) return fallback
+  if (!one.isSortable()) return fallback
+  if (!two.isSortable()) return fallback
 
-    if (oneCell && twoCell) {
-      const oneVal = oneCell.val
-      const twoVal = twoCell.val
-      const out = (
-        desc
-        ? u.compareDesc(oneVal, twoVal)
-        : u.compareAsc(oneVal, twoVal)
-      )
-      if (out) return out
-    }
-  }
+  const oneCell = one.getCell(key)
+  if (!oneCell) return fallback
 
-  return oneInd - twoInd
+  const twoCell = two.getCell(key)
+  if (!twoCell) return fallback
+
+  const oneVal = oneCell.val
+  const twoVal = twoCell.val
+
+  return (
+    desc
+    ? u.compareDesc(oneVal, twoVal)
+    : u.compareAsc(oneVal, twoVal)
+  ) || fallback
 }
 
 function withGlossary(key, elem) {
@@ -1282,6 +1303,52 @@ function BtnAppend(suf, eph) {
 
 function BtnAppendEph(eph) {
   return ui.BtnPrompt({cmd: cmdShowRound.cmd, eph, full: true})
+}
+
+class TableControlCheckbox extends od.MixReac(dr.MixReg(HTMLLabelElement)) {
+  label = undefined
+  obs = undefined
+  tooltip = undefined
+  onchange = undefined
+
+  constructor({label, obs, tooltip, onchange}) {
+    super()
+    this.label = label
+    this.obs = a.reqObj(obs)
+    this.tooltip = tooltip
+    this.onchange = a.optFun(onchange)
+  }
+
+  run() {
+    const {label, obs, tooltip, onchange} = this
+
+    let span
+    if (tooltip) {
+      span = ui.Span(label)
+      ui.addCls(span, ui.CLS_HELP_UNDER)
+      ui.withTooltip({elem: span, chi: tooltip})
+      span = ui.Muted(span, `:`)
+    }
+    else {
+      span = ui.Muted(label, `:`)
+    }
+
+    E(
+      this,
+      {class: `inline-flex row-sta-cen gap-2 cursor-pointer`},
+      span,
+      E(`input`, {
+        type: `checkbox`,
+        value: ``,
+        checked: !!obs.val,
+        class: `cursor-pointer`,
+        onchange() {
+          obs.val = this.checked
+          if (onchange) onchange.call(this, obs.val)
+        },
+      })
+    )
+  }
 }
 
 // SYNC[wep_cols].

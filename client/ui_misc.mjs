@@ -236,7 +236,7 @@ export function Details({
   const sumClosed = E(
     `span`,
     {class: a.spaced(
-      summaryCls || ui.CLS_BUSY_UNDERLINE_OPT,
+      summaryCls || ui.CLS_BUSY_UNDER_OPT,
       a.vac(summaryOpen) && `summary-closed`,
     )},
     u.callOpt(summary),
@@ -246,7 +246,7 @@ export function Details({
 
   const sumOpen = a.vac(summaryOpen) && E(
     `span`,
-    {class: a.spaced(summaryCls || ui.CLS_BUSY_UNDERLINE_OPT, `summary-open`)},
+    {class: a.spaced(summaryCls || ui.CLS_BUSY_UNDER_OPT, `summary-open`)},
     u.callOpt(summaryOpen),
   )
 
@@ -283,7 +283,7 @@ export function DetailsPre({summary, inf, chi, chiLvl, count, ...opt}) {
     class: `whitespace-pre`,
     summary() {return sum(false)},
     summaryOpen() {return sum(true)},
-    summaryCls: ui.CLS_BUSY_UNDERLINE_OPT,
+    summaryCls: ui.CLS_BUSY_UNDER_OPT,
     chi: ui.LogLines(...u.indentNodes(chi, a.laxNat(chiLvl))),
     ...opt,
   })

@@ -63,7 +63,7 @@ export function liveSend(val) {
   return fetch(url, {
     method: a.POST,
     headers: [a.HEADER_JSON],
-    body: a.jsonEncode(val),
+    body: JSON.stringify(val),
   }).then(a.resOk).catch(console.error)
 }
 

@@ -56,7 +56,7 @@ let UPLOAD_TIMER_ID = 0
 export async function apiUploadRound(ctx, req) {
   const id = ++UPLOAD_TIMER_ID
   console.time(`[upload_${id}]`)
-  try {return new u.Res(jsonEncode(await uploadRound(ctx, req)))}
+  try {return new u.Res(u.jsonEncode(await uploadRound(ctx, req)))}
   finally {console.timeEnd(`[upload_${id}]`)}
 }
 
@@ -148,7 +148,7 @@ export async function uploadRound(ctx, req) {
 
 export async function apiPlotAgg(ctx, req) {
   const data = await plotAgg(ctx, req)
-  return new u.Res(jsonEncode(data))
+  return new u.Res(u.jsonEncode(data))
 }
 
 /*
@@ -465,7 +465,7 @@ export async function apiLs(ctx, path) {
   try {
     path = u.gameFilePathFakeToReal(path)
     path = io.paths.join(ctx.userRunsDir, path)
-    return new u.Res(jsonEncode(await apiLsEntry(path)))
+    return new u.Res(u.jsonEncode(await apiLsEntry(path)))
   }
   finally {console.timeEnd(`[ls_${id}]`)}
 }
@@ -498,26 +498,6 @@ async function apiLsEntries(path) {
 
 function compareLsEntriesAsc(one, two) {return u.compareAsc(one.name, two.name)}
 
-/*
-Minor note: `JSON.stringify(undefined)` returns `undefined`, which results in an
-empty response body, which produces client errors when clients blindly try to
-decode that as JSON.
-*/
-function jsonEncode(src) {return JSON.stringify(src, jsonReplacer) ?? `null`}
-
-/*
-When sending the data back to clients, we treat SQL `int64` as JS `float64`
-rather than `BigInt`, because: `BigInt` requires special client-side code for
-decoding from JSON; we do not care about minor imprecision in count aggregates;
-we will probably never have imprecision in count aggregates; we will never have
-imprecision in millisecond timestamps since they come from JS. We could define
-a DB value converter, but this is much terser and easier for now.
-*/
-function jsonReplacer(_, val) {
-  if (a.isBigInt(val)) return Number(val)
-  return val
-}
-
 async function apiLatestRun(ctx, userId) {
   a.optStr(userId)
   const conn = await ctx.conn()
@@ -542,5 +522,5 @@ async function apiLatestRun(ctx, userId) {
   const out = await conn.queryDoc(text, args)
   if (out) out.run_ms = Number(out.run_ms)
 
-  return new u.Res(jsonEncode(out))
+  return new u.Res(u.jsonEncode(out))
 }

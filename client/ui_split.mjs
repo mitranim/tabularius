@@ -10,8 +10,20 @@ export const SPLIT_OBS = u.storageObsFin(`tabularius.ui_split`)
 export const SPLIT_DEFAULT = 0.5
 export const SPLIT_MIN = 0
 export const SPLIT_MAX = 1
-export let SPLIT = SPLIT_OBS.val ?? SPLIT_DEFAULT
 
+// This key is used in existing URLs shared on Discord, no sense breaking it.
+export const QUERY_KEY_UI_SPLIT = `log_width`
+
+let SPLIT_URL = a.finOpt(u.QUERY.get(QUERY_KEY_UI_SPLIT))
+if (a.isFin(SPLIT_URL)) SPLIT_URL /= 100
+
+export let SPLIT = SPLIT_URL ?? SPLIT_OBS.val ?? SPLIT_DEFAULT
+
+/*
+Normally we size everything in `rem`. This one is sized in `px` because it has a
+tiny `::after` which needs to be sized as a few pixels. Using different units
+would produce mis-alignment for some font sizes.
+*/
 const DRAG_HANDLE_WID = `10px`
 
 export const DRAG_HANDLE = E(
@@ -49,9 +61,14 @@ function onpointerdown(eve) {
   // Prevent text selection during drag.
   a.eventKill(eve)
 
+  if (u.isEventModifiedPrimary(eve)) {
+    SPLIT = SPLIT_OBS.val = SPLIT_DEFAULT
+    updateSplitWidths()
+    return
+  }
+
   document.addEventListener(`pointermove`, onpointermove)
   document.addEventListener(`pointerup`, onpointerup)
-
   DRAG_INDICATOR.show()
 }
 
@@ -72,8 +89,12 @@ function onpointermove(eve) {
     ),
     SPLIT_MAX
   )
-  setSplitWidths(DRAG_HANDLE.previousElementSibling, DRAG_HANDLE.nextElementSibling)
+  updateSplitWidths()
   DRAG_INDICATOR.show()
+}
+
+function updateSplitWidths() {
+  setSplitWidths(DRAG_HANDLE.previousElementSibling, DRAG_HANDLE.nextElementSibling)
 }
 
 export function setSplitWidths(prev, next) {

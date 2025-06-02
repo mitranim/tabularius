@@ -368,10 +368,8 @@ The `display: inline` property seems optional but added just in case.
 */
 export const CLS_INLINE_ICON = `inline w-[${ICON_BTN_SIZE}] h-[${ICON_BTN_SIZE}] align-text-top`
 
-export const CLS_BUSY_UNDERLINE = `cursor-pointer underline decoration-dotted hover:decoration-solid`
-export const CLS_BUSY_UNDERLINE_OPT = `cursor-pointer hover:underline hover:decoration-dotted`
+export const CLS_UNDER_TWEAKS = `decoration-1 underline-offset-4`
+export const CLS_BUSY_UNDER = a.spaced(CLS_UNDER_TWEAKS, `cursor-pointer underline decoration-dotted hover:decoration-solid`)
+export const CLS_BUSY_UNDER_OPT = a.spaced(CLS_UNDER_TWEAKS, `cursor-pointer hover:underline hover:decoration-dotted`)
 export const CLS_BUSY_BG = `hover:bg-neutral-300 dark:hover:bg-neutral-700`
-
-export const CLS_HELP_UNDER = `cursor-help underline decoration-dotted underline-offset-4`
-// export const CLS_HELP_UNDER = a.spaced(`cursor-help border-b-2 border-dotted`, CLS_BORD_BRIGHT)
-// export const CLS_HELP_UNDER = `cursor-help border-b border-dotted border-current-color`
+export const CLS_HELP_UNDER = a.spaced(CLS_UNDER_TWEAKS, `cursor-help underline decoration-dotted`)
