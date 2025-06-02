@@ -642,7 +642,7 @@ per round in latest run
 average cost efficiency,
 per building type with upgrades,
 per round in latest run;
-formula: dmg_done / cost
+formula: avg(dmg_done / cost)
 `.trim(),
   },
   dmg_eff: {
@@ -651,7 +651,16 @@ formula: dmg_done / cost
 average damage efficiency,
 per building type with upgrades,
 per round in latest run;
-formula: dmg_done / (dmg_done + dmg_over)
+formula: avg(dmg_done / (dmg_done + dmg_over))
+`.trim(),
+  },
+  dps: {
+    args: `-x=round_num -y=${s.STAT_TYPE_DPS} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    help: `
+average DPS,
+per building type with upgrades,
+per round in latest run;
+formula: avg(dmg_done / time)
 `.trim(),
   },
   dmg_over: {
