@@ -34,7 +34,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
   constructor() {
     super()
     E(this, {
-      id: `prompt`, type: `text`, autofocus: true,
+      id: `prompt`, type: `text`, autofocus: true, autocomplete: `off`,
       class: a.spaced(CLS_PROMPT_INPUT, PROMPT_INPUT_CLS_REGULAR),
     })
   }
@@ -128,8 +128,9 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
   enablePassMode() {
     if (this.type === `password`) return
 
-    this.type = `password`
     this.value = ``
+    this.type = `password`
+    this.autocomplete = `on`
     ui.replaceCls(this, PROMPT_INPUT_CLS_REGULAR, PROMPT_INPUT_CLS_PASSWORD)
 
     if (document.activeElement === this) this.onFocus()
@@ -144,6 +145,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
 
     this.value = ``
     this.type = `text`
+    this.autocomplete = `off`
     ui.replaceCls(this, PROMPT_INPUT_CLS_PASSWORD, PROMPT_INPUT_CLS_REGULAR)
     this.onBlur()
 
@@ -200,11 +202,13 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
 
 export const PROMPT = E(
   `div`,
-  {class: a.spaced(
-    ui.CLS_BG_1,
-    ui.CLS_BORD,
-    `flex row-bet-str relative`,
-  )},
+  {
+    class: a.spaced(
+      ui.CLS_BG_1,
+      ui.CLS_BORD,
+      `flex row-bet-str relative`,
+    ),
+  },
   E(
     `span`,
     {class: a.spaced(
