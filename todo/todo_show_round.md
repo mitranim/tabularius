@@ -31,6 +31,7 @@ Also see `todo.md` in repo root.
   - [x] Group stats by building instance.
   - [ ] Make it possible to group stats by `bui_type`.
   - [ ] Make it possible to group stats by `bui_type_upg`.
+- [x] Add an option to always "zero last" in sorting, which would always put zero and nil at the end.
 
 - [ ] Each bui:
   - [x] One row: bui stats.
