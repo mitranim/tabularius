@@ -218,12 +218,15 @@ export function jsonEncode(src, fun, ind) {
 }
 
 /*
-When sending the data back to clients, we treat SQL `int64` as JS `float64`
-rather than `BigInt`, because: `BigInt` requires special client-side code for
-decoding from JSON; we do not care about minor imprecision in count aggregates;
-we will probably never have imprecision in count aggregates; we will never have
-imprecision in millisecond timestamps since they come from JS. We could define
-a DB value converter, but this is much terser and easier for now.
+In our API endpoints, When sending JSON back to clients, we treat SQL `int64` as
+JS `float64` rather than `BigInt`, because:
+
+- Decoding string-encoded `BigInt` requires client-side special cases.
+- We do not care about minor imprecision in count aggregates.
+- We will probably never have imprecision in count aggregates.
+- We will never have imprecision in millisecond timestamps.
+
+We could define a DB value converter, but this is much easier.
 */
 function jsonEncoder(_, src) {return a.isBigInt(src) ? Number(src) : src}
 

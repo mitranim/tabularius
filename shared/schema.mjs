@@ -15,31 +15,43 @@ We need the game version actually specified in the game files!
 export const GAME_SEMVER = Object.freeze(new u.Semver(1, 11))
 export const GAME_VER = GAME_SEMVER.toString()
 
-export const DATA_SCHEMA_VERSION = 6
+export const DATA_SCHEMA_VERSION = 7
 export const ROUND_FIELDS_SCHEMA_VERSION = 2
 export const DATA_DEBUG = false
 
 export const STAT_TYPE_DMG_DONE = `dmg_done`
-export const STAT_TYPE_DMG_OVER = `dmg_over`
-export const STAT_TYPE_COST_EFF = `cost_eff`
 export const STAT_TYPE_DMG_DONE_ACC = `dmg_done_acc`
+export const STAT_TYPE_DMG_OVER = `dmg_over`
 export const STAT_TYPE_DMG_OVER_ACC = `dmg_over_acc`
+export const STAT_TYPE_COST_EFF = `cost_eff`
 export const STAT_TYPE_COST_EFF_ACC = `cost_eff_acc`
+export const STAT_TYPE_TIME = `time`
+export const STAT_TYPE_TIME_ACC = `time_acc`
+export const STAT_TYPE_DMG_EFF = `dmg_eff`
+export const STAT_TYPE_DMG_EFF_ACC = `dmg_eff_acc`
+export const STAT_TYPE_DPS = `dps`
+export const STAT_TYPE_DPS_ACC = `dps_acc`
 
 export const STAT_TYPES = [
   STAT_TYPE_DMG_DONE,
-  STAT_TYPE_DMG_OVER,
-  STAT_TYPE_COST_EFF,
   STAT_TYPE_DMG_DONE_ACC,
+  STAT_TYPE_DMG_OVER,
   STAT_TYPE_DMG_OVER_ACC,
+  STAT_TYPE_COST_EFF,
   STAT_TYPE_COST_EFF_ACC,
+  STAT_TYPE_DMG_EFF,
+  STAT_TYPE_DMG_EFF_ACC,
+  STAT_TYPE_DPS,
+  STAT_TYPE_DPS_ACC,
 ]
 
-// TODO rename to `bui`.
-export const FACT_ENT_TYPE_BUI = `run_round_bui`
+export const STAT_TYPE_PERC = new Set([
+  STAT_TYPE_DMG_EFF,
+  STAT_TYPE_DMG_EFF_ACC,
+])
 
-// TODO rename to `chi`.
-export const FACT_ENT_TYPE_CHI = `run_round_bui_chi`
+export const FACT_ENT_TYPE_BUI = `bui`
+export const FACT_ENT_TYPE_CHI = `chi`
 
 export const BUI_KIND_NEUTRAL = `Neutral`
 
@@ -187,6 +199,7 @@ export function datAddRound({
     round_bui.wepTypes = new Set()
     round_bui.dumBulTypes = new Set()
     round_bui.enabledWepTypes = new Set()
+    round_bui.wepDumBulTypes = a.Emp()
     round_bui.stats = a.vac(tables.round_buis) && a.Emp()
     if (tables.round_buis) datRoundBuiAddUniq(dat.round_buis, round_bui)
 
@@ -206,7 +219,7 @@ export function datAddRound({
     if (baseFact && composite) baseFact.run_round_bui_id = run_round_bui_id
 
     /*
-    A building has `.LiveStats`, `.Weapons`, `.WeaponStats`, `.ChildLiveStats`.
+    A building has `.Weapons`, `.WeaponStats`, `.LiveStats`, `.ChildLiveStats`.
 
     Damage from the building's own HP, such as for HQ, Barricade, Plasma Fence,
     is only counted in `.LiveStats`.
@@ -232,39 +245,45 @@ export function datAddRound({
     TODO: use `timeSpentThisGame` and `timeSpentThisWave` to get uptime, and
     use it to calculate DPS. Then also calculate DPS efficiency.
     */
-    const bui_dmgDone_runAcc = a.laxFin(bui.LiveStats?.stats?.DamageDone?.valueThisGame)
+    const bui_dmgDone_run = a.laxFin(bui.LiveStats?.stats?.DamageDone?.valueThisGame)
     const bui_dmgDone_round = a.laxFin(bui.LiveStats?.stats?.DamageDone?.valueThisWave)
-    const bui_dmgOver_runAcc = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisGame)
+    const bui_dmgOver_run = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisGame)
     const bui_dmgOver_round = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisWave)
 
-    let bui_dmgDone_runAcc_fromWep = 0
+    let bui_dmgDone_run_fromWep = 0
     let bui_dmgDone_round_fromWep = 0
-    let bui_dmgOver_runAcc_fromWep = 0
+    let bui_dmgOver_run_fromWep = 0
     let bui_dmgOver_round_fromWep = 0
 
-    let bui_dmgDone_runAcc_fromWepChi = 0
+    let bui_dmgDone_run_fromWepChi = 0
     let bui_dmgDone_round_fromWepChi = 0
-    let bui_dmgOver_runAcc_fromWepChi = 0
+    let bui_dmgOver_run_fromWepChi = 0
     let bui_dmgOver_round_fromWepChi = 0
 
-    let bui_dmgDone_runAcc_fromOtherChi = 0
+    let bui_dmgDone_run_fromOtherChi = 0
     let bui_dmgDone_round_fromOtherChi = 0
-    let bui_dmgOver_runAcc_fromOtherChi = 0
+    let bui_dmgOver_run_fromOtherChi = 0
     let bui_dmgOver_round_fromOtherChi = 0
 
-    for (const [ind, wep] of a.entries(bui.Weapons)) {
-      const key = a.reqValidStr(wep.EntityID)
-      round_bui.wepTypes.add(key)
-      if (wep.Enabled) round_bui.enabledWepTypes.add(key)
+    let bui_time_run = 0
+    let bui_time_round = 0
 
-      const dumBulType = wep.DummyBullet?.EntityID
-      if (dumBulType) round_bui.dumBulTypes.add(a.reqStr(dumBulType))
+    for (const [ind, wep] of a.entries(bui.Weapons)) {
+      const wepType = a.reqValidStr(wep.EntityID)
+      round_bui.wepTypes.add(wepType)
+      if (wep.Enabled) round_bui.enabledWepTypes.add(wepType)
+
+      const dumBulType = a.optStr(wep.DummyBullet?.EntityID)
+      if (dumBulType) {
+        round_bui.dumBulTypes.add(a.reqStr(dumBulType))
+        round_bui.wepDumBulTypes[wepType] = dumBulType
+      }
 
       if (DATA_DEBUG) {
         const stats = bui.WeaponStats?.[ind]?.stats
-        bui_dmgDone_runAcc_fromWep += a.laxFin(stats?.DamageDone?.valueThisGame)
+        bui_dmgDone_run_fromWep += a.laxFin(stats?.DamageDone?.valueThisGame)
         bui_dmgDone_round_fromWep += a.laxFin(stats?.DamageDone?.valueThisWave)
-        bui_dmgOver_runAcc_fromWep += a.laxFin(stats?.DamageOverkill?.valueThisGame)
+        bui_dmgOver_run_fromWep += a.laxFin(stats?.DamageOverkill?.valueThisGame)
         bui_dmgOver_round_fromWep += a.laxFin(stats?.DamageOverkill?.valueThisWave)
       }
     }
@@ -279,12 +298,15 @@ export function datAddRound({
       const stats = src?.stats
       if (!stats) continue
 
+      const isWep = round_bui.wepTypes.has(chi_type)
+      const dumBulType = a.vac(isWep) && round_bui.wepDumBulTypes[chi_type]
+      const dumBulStats = a.vac(dumBulType) && bui.ChildLiveStats[dumBulType]?.stats
+
       /*
-      Child facts are associated with a hypothetical "building child type"
-      dimension. We might want to filter or group on specific child types.
-      However, for now, we're not creating a table `Dat..dimBuiChi` because
-      it would only have 1 field: its primary key. We simply reference this
-      missing dimension by child type in child facts.
+      Child facts are associated with a hypothetical "building child" table.
+      We're not bothering to create one because it would be unused, just like
+      most of the other tables here. We simply reference this missing table by
+      child type in facts.
       */
       const chiFact = baseFact && {
         ...baseFact,
@@ -292,76 +314,70 @@ export function datAddRound({
         chi_type,
       }
 
-      if (stats.DamageDone) {
-        const statExists = !!a.reqFin(stats.DamageDone.valueThisGame)
-
-        {
-          const stat_val = a.reqFin(stats.DamageDone.valueThisGame)
-          if (round_bui.wepTypes.has(chi_type)) bui_dmgDone_runAcc_fromWepChi += stat_val
-          else bui_dmgDone_runAcc_fromOtherChi += stat_val
-
-          if (chiFact && (statExists || round_bui.enabledWepTypes.has(chi_type))) {
-            dat.facts.push({
-              ...chiFact,
-              stat_type: STAT_TYPE_DMG_DONE_ACC,
-              stat_val,
-            })
-          }
-        }
-
-        {
-          const stat_val = a.reqFin(stats.DamageDone.valueThisWave)
-          if (round_bui.wepTypes.has(chi_type)) bui_dmgDone_round_fromWepChi += stat_val
-          else bui_dmgDone_round_fromOtherChi += stat_val
-
-          if (chiFact && (statExists || round_bui.enabledWepTypes.has(chi_type))) {
-            dat.facts.push({
-              ...chiFact,
-              stat_type: STAT_TYPE_DMG_DONE,
-              stat_val,
-            })
-          }
-        }
+      // Linter false positive.
+      // deno-lint-ignore no-inner-declarations
+      function chiAdd(stat_type, stat_val) {
+        a.reqValidStr(stat_type)
+        a.reqFin(stat_val)
+        if (!chiFact || !stat_val) return
+        dat.facts.push({...chiFact, stat_type, stat_val})
       }
 
-      if (stats.DamageOverkill) {
-        const statExists = !!a.reqFin(stats.DamageOverkill.valueThisGame)
+      const dmg_done_run = a.laxFin(stats.DamageDone?.valueThisGame)
+      const dmg_done_round = a.laxFin(stats.DamageDone?.valueThisWave)
+      const dmg_over_run = a.laxFin(stats.DamageOverkill?.valueThisGame)
+      const dmg_over_round = a.laxFin(stats.DamageOverkill?.valueThisWave)
+      const dmg_eff_run = dmgEff(dmg_done_run, dmg_over_run)
+      const dmg_eff_round = dmgEff(dmg_done_round, dmg_over_round)
+      const time_run = a.laxFin(dumBulStats?.DamageDone?.timeSpentThisGame)
+      const time_round = a.laxFin(dumBulStats?.DamageDone?.timeSpentThisWave)
 
+      if (isWep) {
+        if (dmg_done_run)   bui_dmgDone_run_fromWepChi   += dmg_done_run
+        if (dmg_done_round) bui_dmgDone_round_fromWepChi += dmg_done_round
+        if (dmg_over_run)   bui_dmgOver_run_fromWepChi   += dmg_over_run
+        if (dmg_over_round) bui_dmgOver_round_fromWepChi += dmg_over_round
+      }
+      else {
+        if (dmg_done_run)   bui_dmgDone_run_fromOtherChi   += dmg_done_run
+        if (dmg_done_round) bui_dmgDone_round_fromOtherChi += dmg_done_round
+        if (dmg_over_run)   bui_dmgOver_run_fromOtherChi   += dmg_over_run
+        if (dmg_over_round) bui_dmgOver_round_fromOtherChi += dmg_over_round
+      }
+
+      bui_time_run += time_run
+      bui_time_round += time_round
+
+      if (chiFact) {
         {
-          const stat_val = a.reqFin(stats.DamageOverkill.valueThisGame)
-          if (round_bui.wepTypes.has(chi_type)) bui_dmgOver_runAcc_fromWepChi += stat_val
-          else bui_dmgOver_runAcc_fromOtherChi += stat_val
-
-          if (chiFact && (statExists || round_bui.enabledWepTypes.has(chi_type))) {
-            dat.facts.push({
-              ...chiFact,
-              stat_type: STAT_TYPE_DMG_OVER_ACC,
-              stat_val,
-            })
-          }
+          const stat_val = dmg_done_run
+          const time = time_run
+          chiAdd(STAT_TYPE_DMG_DONE_ACC, stat_val)
+          chiAdd(STAT_TYPE_DPS_ACC, divFin(stat_val, time))
         }
 
         {
-          const stat_val = a.reqFin(stats.DamageOverkill.valueThisWave)
-          if (round_bui.wepTypes.has(chi_type)) bui_dmgOver_round_fromWepChi += stat_val
-          else bui_dmgOver_round_fromOtherChi += stat_val
-
-          if (chiFact && (statExists || round_bui.enabledWepTypes.has(chi_type))) {
-            dat.facts.push({
-              ...chiFact,
-              stat_type: STAT_TYPE_DMG_OVER,
-              stat_val,
-            })
-          }
+          const stat_val = dmg_done_round
+          const time = time_round
+          chiAdd(STAT_TYPE_DMG_DONE, stat_val)
+          chiAdd(STAT_TYPE_DPS, divFin(stat_val, time))
         }
+
+        chiAdd(STAT_TYPE_DMG_OVER_ACC, dmg_over_run)
+        chiAdd(STAT_TYPE_DMG_OVER, dmg_over_round)
+        chiAdd(STAT_TYPE_DMG_EFF_ACC, dmg_eff_run)
+        chiAdd(STAT_TYPE_DMG_EFF, dmg_eff_round)
+        chiAdd(STAT_TYPE_TIME_ACC, time_run)
+        chiAdd(STAT_TYPE_TIME, time_round)
       }
     }
 
-    const bui_dmgDone_runAcc_final = bui_dmgDone_runAcc + bui_dmgDone_runAcc_fromOtherChi
+    const bui_dmgDone_run_final = bui_dmgDone_run + bui_dmgDone_run_fromOtherChi
     const bui_dmgDone_round_final = bui_dmgDone_round + bui_dmgDone_round_fromOtherChi
-    const bui_dmgOver_runAcc_final = bui_dmgOver_runAcc + bui_dmgOver_runAcc_fromOtherChi
+    const bui_dmgOver_run_final = bui_dmgOver_run + bui_dmgOver_run_fromOtherChi
     const bui_dmgOver_round_final = bui_dmgOver_round + bui_dmgOver_round_fromOtherChi
-    const isNeutral = bui_kind === BUI_KIND_NEUTRAL
+    const bui_dmgEff_run = dmgEff(bui_dmgDone_run_final, bui_dmgOver_run_final)
+    const bui_dmgEff_round = dmgEff(bui_dmgDone_round_final, bui_dmgOver_round_final)
 
     const buiFact = baseFact && {
       ...baseFact,
@@ -371,46 +387,38 @@ export function datAddRound({
 
     const buiStats = round_bui.stats
 
+    // Linter false positive.
+    // deno-lint-ignore no-inner-declarations
     function buiAdd(stat_type, stat_val) {
+      a.reqValidStr(stat_type)
+      a.reqFin(stat_val)
+      if (!stat_val) return
       if (buiFact) dat.facts.push({...buiFact, stat_type, stat_val})
       if (buiStats) buiStats[stat_type] = stat_val
     }
 
-    if (bui_dmgDone_runAcc_final || !isNeutral) {
-      buiAdd(
-        STAT_TYPE_DMG_DONE_ACC,
-        bui_dmgDone_runAcc_final,
-      )
-      buiAdd(
-        STAT_TYPE_COST_EFF_ACC,
-        (bui_cost ? bui_dmgDone_runAcc_final / bui_cost : 0),
-      )
+    {
+      const stat_val = bui_dmgDone_run_final
+      const time = bui_time_run
+
+      buiAdd(STAT_TYPE_DMG_DONE_ACC, stat_val)
+      buiAdd(STAT_TYPE_COST_EFF_ACC, divFin(stat_val, bui_cost))
+      buiAdd(STAT_TYPE_DPS_ACC, divFin(stat_val, time))
     }
 
-    if (bui_dmgDone_round_final || !isNeutral) {
-      buiAdd(
-        STAT_TYPE_DMG_DONE,
-        bui_dmgDone_round_final,
-      )
-      buiAdd(
-        STAT_TYPE_COST_EFF,
-        (bui_cost ? bui_dmgDone_round_final / bui_cost : 0),
-      )
+    {
+      const stat_val = bui_dmgDone_round_final
+      const time = bui_time_run
+
+      buiAdd(STAT_TYPE_DMG_DONE, stat_val)
+      buiAdd(STAT_TYPE_COST_EFF, divFin(stat_val, bui_cost))
+      buiAdd(STAT_TYPE_DPS, divFin(stat_val, time))
     }
 
-    if (bui_dmgOver_runAcc_final || !isNeutral) {
-      buiAdd(
-        STAT_TYPE_DMG_OVER_ACC,
-        bui_dmgOver_runAcc_final,
-      )
-    }
-
-    if (bui_dmgOver_round_final || !isNeutral) {
-      buiAdd(
-        STAT_TYPE_DMG_OVER,
-        bui_dmgOver_round_final,
-      )
-    }
+    buiAdd(STAT_TYPE_DMG_OVER_ACC, bui_dmgOver_run_final)
+    buiAdd(STAT_TYPE_DMG_OVER, bui_dmgOver_round_final)
+    buiAdd(STAT_TYPE_DMG_EFF_ACC, bui_dmgEff_run)
+    buiAdd(STAT_TYPE_DMG_EFF, bui_dmgEff_round)
 
     /*
     Redundant data verification. Check if we correctly understand how weapon
@@ -418,7 +426,7 @@ export function datAddRound({
     exclude "dummy bullets".
     */
     if (DATA_DEBUG && !DEBUG_LOGGED) {
-      const pre = `round ${round_num}: building ${bui_inst_str} (${bui_type}): unexpected mismatch between building`
+      const pre = `run ${run_num} round ${round_num}: building ${bui_inst_str} (${bui_type}): unexpected mismatch between building`
       if (!isDamageSimilar(bui_dmgDone_round_fromWep, bui_dmgDone_round_fromWepChi)) {
         debugLog(`${pre} damage calculated from its weapon list vs from weapons in its child stats: ${bui_dmgDone_round_fromWep} vs ${bui_dmgDone_round_fromWepChi}`)
       }
@@ -450,6 +458,19 @@ function datRoundBuiAddUniq(tar, val) {
 // Sums don't exactly match because of float imprecision.
 // Below 100, we don't really care.
 function isDamageSimilar(one, two) {return (a.laxNum(one) - a.laxNum(two)) < 100}
+
+function divFin(num, div) {
+  num = a.laxFin(num)
+  div = a.laxFin(div)
+  return div && (num / div)
+}
+
+function dmgEff(dmg, over) {
+  dmg = a.laxFin(dmg)
+  over = a.laxFin(over)
+  const sum = dmg + over
+  return sum && (dmg / sum)
+}
 
 export function runIdToRunNameReq(src) {
   const out = runIdToRunNameOpt(src)
@@ -517,14 +538,7 @@ The "real" Y axis in our plots is always `.stat_val` of facts. Meanwhile, the
 The Y axis in our plots always corresponds to a number aggregated from the field
 `.stat_val` of facts.
 */
-export const ALLOWED_TOTAL_TYPE_FILTERS = new Set([
-  STAT_TYPE_DMG_DONE,
-  STAT_TYPE_DMG_OVER,
-  STAT_TYPE_COST_EFF,
-  STAT_TYPE_DMG_DONE_ACC,
-  STAT_TYPE_DMG_OVER_ACC,
-  STAT_TYPE_COST_EFF_ACC,
-])
+export const ALLOWED_STAT_TYPE_FILTERS = new Set(STAT_TYPES)
 
 /*
 The X axis in our plots needs to be bounded, a closed set of reasonable size.
@@ -611,14 +625,29 @@ export const SUPPORTED_TOTAL_KEYS = new Set([
 ])
 
 export const GLOSSARY = u.dict({
-  dmg_done: `damage done in round`,
-  dmg_done_acc: `damage done in run`,
+  [STAT_TYPE_DMG_DONE]: `damage done in round`,
+  [STAT_TYPE_DMG_DONE_ACC]: `damage done in run`,
 
-  dmg_over: `damage overkill in round`,
-  dmg_over_acc: `damage overkill in run`,
+  [STAT_TYPE_DMG_OVER]: `damage overkill in round`,
+  [STAT_TYPE_DMG_OVER_ACC]: `damage overkill in run`,
 
-  cost_eff: `cost efficiency (dmg/cost) in round`,
-  cost_eff_acc: `cost efficiency in run`,
+  [STAT_TYPE_COST_EFF]: `cost efficiency (dmg_done/cost) in round`,
+  [STAT_TYPE_COST_EFF_ACC]: `cost efficiency (dmg_done/cost) in run`,
+
+  [STAT_TYPE_TIME]: `time spent shooting in round`,
+  [STAT_TYPE_TIME_ACC]: `time spent shooting in run`,
+  [STAT_TYPE_DPS]: `DPS (dmg_done/time) in round`,
+  [STAT_TYPE_DPS_ACC]: `DPS (dmg_done/time) in run`,
+
+  [STAT_TYPE_DMG_EFF]: `
+damage vs overkill efficiency in round;
+formula: dmg_done / (dmg_done + dmg_over)
+`.trim(),
+
+  [STAT_TYPE_DMG_EFF_ACC]: `
+damage vs overkill efficiency in run;
+formula: dmg_done / (dmg_done + dmg_over)
+`.trim(),
 
   bui_cost: `building cost (base + upgrades)`,
 
@@ -627,7 +656,7 @@ export const GLOSSARY = u.dict({
   run_num: `run number (from 0); unique per user`,
   round_id: `unique round id`,
   round_num: `round number (from 1); unique per run`,
-  stat_type: `one of the damage or efficiency stats`,
+  stat_type: `one of our stats: damage, efficiency, etc.`,
 
   agg: `aggregation type`,
   avg: `average between stat data points`,
@@ -641,8 +670,8 @@ export const GLOSSARY = u.dict({
   chi_type: `building child entity type`,
 
   run_bui_id: `id of unique building in run`,
-  run_round_bui_chi: `child of a building in one round`,
-  run_round_bui: `a building in one round`,
+  chi: `child of a building in one round`,
+  bui: `a building in one round`,
   run_round_bui_id: `id of a building in one round`,
 
   game_ver: `game version (known: ${a.head(gc.GAME_RELEASES).ver} -- ${a.last(gc.GAME_RELEASES).ver})`,
@@ -716,18 +745,18 @@ export function validPlotAggOpt(src) {
 
   const Y = u.dictPop(inp, `Y`)
   const msgYInvalid = `opt "-y" must be a valid identifier unless "-z=stat_type", got ${a.show(Y)}`
-  const msgYUnknown = `opt "-y" must be one of: ${a.show(a.keys(ALLOWED_TOTAL_TYPE_FILTERS))} (unless "-z=stat_type"), got ${Y}`
+  const msgYUnknown = `opt "-y" must be one of: ${a.show(a.keys(ALLOWED_STAT_TYPE_FILTERS))} (unless "-z=stat_type"), got ${Y}`
   const msgYFlag = `-y=` + Y
 
   // SYNC[plot_group_stat_type_z_versus_y].
   if (Z === `stat_type`) {
     if (a.isNil(Y) || Y === ``) {}
     else if (!u.isIdent(Y)) errs.push(msgYInvalid)
-    else if (!ALLOWED_TOTAL_TYPE_FILTERS.has(Y)) errs.push(msgYUnknown)
+    else if (!ALLOWED_STAT_TYPE_FILTERS.has(Y)) errs.push(msgYUnknown)
   }
   else {
     if (!u.isIdent(Y)) errs.push(msgYInvalid)
-    else if (!ALLOWED_TOTAL_TYPE_FILTERS.has(Y)) errs.push(msgYUnknown)
+    else if (!ALLOWED_STAT_TYPE_FILTERS.has(Y)) errs.push(msgYUnknown)
     else {
       // Purely informational. The consumer code is not expected to use this.
       out.Y = Y

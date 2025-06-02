@@ -376,13 +376,13 @@ export const LOCAL_LOCKS = a.Emp()
 /*
 For locks within one browsing context. Unfortunately the Web Locks API does not
 provide this functionality. We have cases where locking across all tabs would
-be incorrect. One such example is loading data from local round files, when
+be suboptimal. One such example is loading data from local round files, when
 concurrently preparing multiple plots from local data. It needs locking to
 avoid redundantly adding the same round to the same dat object, but the locking
 needs to be scoped only to the current browsing context. Otherwise one tab
-would temporarily block others from loading plots. Now granted, it's almost
+would temporarily block others from loading plots. Admittedly, it's almost
 impossible to be concurrently loading local data across multiple tabs, at least
-in a useful way. But it would still be incorrect. This also has less overhead.
+in a useful way. But at the very least, this has less overhead.
 */
 export async function localLock(sig, name) {
   reqSig(sig)

@@ -101,7 +101,7 @@ await t.test(async function test_uploadRound() {
   const run_ms = Date.parse(round.LastUpdated)
   round.tabularius_run_ms = run_ms
 
-  await test(req(round, {headers: auth}), {factCount: 422})
+  await test(req(round, {headers: auth}), {factCount: 817})
   await test(req(round, {headers: auth}), {redundant: true})
 
   const runName = s.makeRunName(run_num, run_ms)

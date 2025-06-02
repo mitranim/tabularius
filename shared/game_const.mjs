@@ -742,6 +742,7 @@ export const BUI_COSTS_1_9 = dict({
   F3H07CB01: {base: 50, upg: [[50, 250], [200, 250], [800, 800]]},
   [BUI_CODE_EXP_CHAR_SYS]: {base: 50}, // Can also be 0. We special-case it in `buiCost`.
 
+  F3H10CB01: {base: 0},
   F3H10CB01A: {base: 200},
   F3H10SB01: {base: 350, upg: [[50, 50], [125, 125], [250, 250]]},
 

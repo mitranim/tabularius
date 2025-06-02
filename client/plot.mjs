@@ -58,7 +58,7 @@ cmdPlot.help = function cmdPlotHelp() {
         BtnAppendEq(`-y`),
         ` -- Y axis: stat type; supported values:`,
       ],
-      ...FlagAppendBtns(a.keys(s.ALLOWED_TOTAL_TYPE_FILTERS), `-y`).map(u.indentNode),
+      ...FlagAppendBtns(a.keys(s.ALLOWED_STAT_TYPE_FILTERS), `-y`).map(u.indentNode),
     ),
 
     ui.LogLines(
@@ -118,8 +118,9 @@ cmdPlot.help = function cmdPlotHelp() {
       `more examples:`,
       [`  `, BtnAppend({val: `-c -p=dmg user_id=all`}), ` -- building damages in latest run`],
       [`  `, BtnAppend({val: `-c -p=chi_dmg user_id=all`}), ` -- weapon damages in latest run`],
-      [`  `, BtnAppend({val: `-c -p=eff user_id=all run_id=all`}), ` -- building efficiency across all runs and all users`],
+      [`  `, BtnAppend({val: `-c -p=eff user_id=all run_id=all`}), ` -- building efficiency across all runs and users`],
       [`  `, BtnAppend({val: `-c -p=eff user_id=all run_id=all -z=bui_type`}), ` -- simplified building efficiency`],
+      [`  `, BtnAppend({val: `-c -p=dmg_eff user_id=all run_id=all`}), `  -- building damage efficiency across all runs and users`],
       [`  `, BtnAppend({val: `-c -p=dmg_runs user_id=all -z=user_id`}), ` -- user damage trajectory`],
       [`  `, BtnAppend({val: `-c -p=eff_runs user_id=all -z=user_id`}), ` -- user efficiency trajectory`],
     ),
@@ -272,15 +273,23 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
   const {agg, totalFun} = opt
   ;[{X_vals, Z_vals, Z_X_Y}] = [s.plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, totalFun})]
 
+  const format = a.vac(s.STAT_TYPE_PERC.has(opt.Y)) && formatPerc
+  const serieOpt = {total: totalFun, format}
+
   const Z_rows = Z_vals
     .map(Z => s.codedToNamed(opt.Z, Z))
-    .map((val, ind) => serieWithTotal(val, ind, totalFun))
+    .map((val, ind) => serie(val, ind, serieOpt))
 
   // Hide the total serie by default.
   // TODO: when updating a live plot, preserve series show/hide state.
   if (Z_rows[0]) Z_rows[0].show = false
 
-  const tooltipOpt = agg === `count` ? {preY: `count of `} : undefined
+  const tooltipOpt = {
+    formatY: format,
+    preY: a.vac(agg === `count`) && `count of `,
+  }
+
+  const tooltip = new TooltipPlugin(tooltipOpt)
 
   let title = plotTitleText(opt)
 
@@ -296,12 +305,12 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
     frequent reordering of series, as you hover the plot, makes it harder to
     find specific series you're looking for. So, give up on that idea.
     */
-    plugins: [new TooltipPlugin(tooltipOpt).opts()],
+    plugins: [tooltip.opts()],
 
     title,
     series: [{label: opt.X}, ...Z_rows],
     data: [X_vals, ...a.arr(Z_X_Y)],
-    axes: axes(opt.X, opt.Y),
+    axes: axes({nameX: opt.X, nameY: opt.Y, formatY: format}),
 
     // For our own usage.
     plotOpt: opt,
@@ -411,7 +420,7 @@ export function decodePlotAggOpt(src) {
     }
 
     if (key === `-y`) {
-      try {out.Y = ui.cliEnum(cmd, key, val, s.ALLOWED_TOTAL_TYPE_FILTERS)}
+      try {out.Y = ui.cliEnum(cmd, key, val, s.ALLOWED_STAT_TYPE_FILTERS)}
       catch (err) {errs.push(err)}
       continue
     }
@@ -606,45 +615,68 @@ export const PLOT_PRESETS = u.dict({
   dmg: {
     args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
     help: `
-damage per building type with upgrades
+summed damage,
+per building type with upgrades,
 per round in latest run
 `.trim(),
   },
   chi_dmg: {
     args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
     help: `
-damage per child type
+summed damage,
+per child type,
 per round in latest run
 `.trim(),
   },
   chi_dmg_over: {
     args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
     help: `
-damage overkill per child type
+summed damage overkill,
+per child type,
 per round in latest run
 `.trim(),
   },
   eff: {
     args: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
     help: `
-cost efficiency per building type with upgrades
-per round in latest run
+average cost efficiency,
+per building type with upgrades,
+per round in latest run;
+formula: dmg_done / cost
+`.trim(),
+  },
+  dmg_eff: {
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    help: `
+average damage efficiency,
+per building type with upgrades,
+per round in latest run;
+formula: dmg_done / (dmg_done + dmg_over)
 `.trim(),
   },
   dmg_over: {
     args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
     help: `
-damage overkill per building type with upgrades
+summed damage overkill,
+per building type with upgrades,
 per round in latest run
 `.trim(),
   },
   dmg_runs: {
     args: `-x=run_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
-    help: `damage per building type with upgrades per run`,
+    help: `
+summed damage,
+per building type with upgrades,
+per run
+`.trim(),
   },
   eff_runs: {
     args: `-x=run_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
-    help: `cost efficiency per building type with upgrades per run`,
+    help: `
+average cost efficiency,
+per building type with upgrades,
+per run
+`.trim(),
   },
   /*
   Summarizing efficiencies doesn't really work.
@@ -949,7 +981,7 @@ export const LINE_PLOT_OPTS = {
   },
 }
 
-export function axes(nameX, nameY) {
+export function axes({nameX, nameY, formatX, formatY} = {}) {
   return [
     // This one doesn't have a label, not even an empty string, because that
     // causes the plot library to waste space.
@@ -957,6 +989,7 @@ export function axes(nameX, nameY) {
       scale: `x`,
       stroke: axisStroke,
       secretName: nameX,
+      values: axisValuesFormat(formatX),
     },
     // This one does have an empty label to prevent the numbers from clipping
     // through the left side of the container.
@@ -965,45 +998,48 @@ export function axes(nameX, nameY) {
       label: ``,
       stroke: axisStroke,
       secretName: nameY,
+      values: axisValuesFormat(formatY),
     },
   ]
+}
+
+export function axisValuesFormat(fun) {
+  if (!a.optFun(fun)) return undefined
+  return function formatAxisValues(_plot, vals) {return a.map(vals, fun)}
 }
 
 export function axisStroke() {
   return ui.darkModeMediaQuery.matches ? `white` : `black`
 }
 
-export function serieWithTotal(label, ind, totalFun) {
-  a.reqFun(totalFun)
+export function serie(label, ind, opt) {
+  const total = a.reqFun(opt.total)
+  const format = a.optFun(opt.format) ?? formatVal
 
   return {
-    ...serie(label, ind),
-    value(plot, val, ind) {
-      return serieFormatVal(plot, val, ind, totalFun)
+    label,
+    stroke: nextFgColor(ind),
+    width: 2,
+    value(plot, val, indZ) {
+      const indX = plot.cursor.idx
+      if (!a.isInt(indX) && a.isInt(indZ)) {
+        val = u.foldSome(plot.data[indZ], 0, total)
+      }
+      return format(val)
     },
   }
 }
 
-export function serie(label, ind) {
-  return {label, stroke: nextFgColor(ind), width: 2, value: formatVal}
-}
-
-export function serieFormatVal(plot, val, seriesInd, totalFun) {
-  a.reqInt(seriesInd)
-  a.reqFun(totalFun)
-  const ind = plot.cursor.idx
-  return formatVal(a.laxFin(
-    a.isInt(ind) && ind >= 0
-    ? val
-    // SYNC[fold_not_nil].
-    : u.foldSome(plot.data[seriesInd], 0, totalFun)
-  ))
-}
-
-// Our default value formatter, which should be used for all plot values.
+// Our default formatter for plot values.
 export function formatVal(val) {
+  if (a.isNil(val)) return ``
   if (!a.isNum(val)) return val
   return ui.formatNumCompact(val)
+}
+
+export function formatPerc(val) {
+  if (a.isNil(val)) return ``
+  return ui.formatNumCompact(a.reqFin(val) * 100) + `%`
 }
 
 let COLOR_INDEX = -1
@@ -1133,8 +1169,11 @@ export class TooltipPlugin extends a.Emp {
       return
     }
 
-    const preX = a.laxStr(this.opt?.preX)
-    const preY = a.laxStr(this.opt?.preY)
+    const opt = this.opt
+    const formatX = opt?.formatX ?? formatVal
+    const formatY = opt?.formatY ?? formatVal
+    const preX = a.laxStr(opt?.preX)
+    const preY = a.laxStr(opt?.preY)
     const axisNameX = preX + (plot.axes?.[0]?.secretName || `X`)
     const axisNameY = preY + (plot.axes?.[1]?.secretName || `Y`)
     const nameSuf = `: `
@@ -1144,8 +1183,8 @@ export class TooltipPlugin extends a.Emp {
 
     elem.textContent = u.joinLines(
       label,
-      (axisNameX + nameSuf).padEnd(nameLen, ` `) + formatVal(valX),
-      (axisNameY + nameSuf).padEnd(nameLen, ` `) + formatVal(valY),
+      (axisNameX + nameSuf).padEnd(nameLen, ` `) + formatX(valX),
+      (axisNameY + nameSuf).padEnd(nameLen, ` `) + formatY(valY),
     )
 
     const wid = plot.over.offsetWidth
@@ -1261,7 +1300,7 @@ function Help_filter(key) {
     return [btn, ` (short name, like `, BtnAppendEq(`bui_type`, `MedMor`), `)`]
   }
   if (key === `bui_type_upg`) {
-    return [btn, ` (short name, like `, BtnAppendEq(`bui_type_upg`, `MedMort_ABA`), `)`]
+    return [btn, ` (short name, like `, BtnAppendEq(`bui_type_upg`, `MedMor_ABA`), `)`]
   }
   // SYNC[plot_group_ent_type_no_mixing].
   if (key === `ent_type`) {
