@@ -222,6 +222,7 @@ export const NUM_MODE_PERC = `perc`
 export const NUM_MODES = [NUM_MODE_BOTH, NUM_MODE_NUM, NUM_MODE_PERC]
 
 export const NUM_MODE = u.storageObs(`tabularius.show_round.num_mode`)
+export const MISSING_LAST = u.storageObsBool(`tabularius.show_round.missing_last`)
 export const WIDE = u.storageObsBool(`tabularius.show_round.wide`)
 export const LONG = u.storageObsBool(`tabularius.show_round.long`)
 export const LONG_ROW_BREAKPOINT = 12
@@ -418,6 +419,7 @@ function TableHintsAndControls() {
       ...TableHints(),
       TableControlNumMode(),
       TableControlShowChi(),
+      TableControlMissingLast(),
       TableControlWide(),
     ],
   })
@@ -501,10 +503,18 @@ function TableControlShowChi() {
     and you'd lose track of what you clicked. As a result, toggling all rows
     needs to be done "manually".
     */
-    onchange(val) {
-      const anc = a.ancestor(this, ShowRound)
-      const desc = a.descendant(anc, RoundTable)
-      desc?.toggleAssocRows(val)
+    onchange(val) {getRoundTable(this)?.toggleAssocRows(val)},
+  })
+}
+
+function TableControlMissingLast() {
+  return new TableControlCheckbox({
+    label: `missing last`,
+    obs: MISSING_LAST,
+    tooltip: `prefer to sort missing values to the bottom`,
+    onchange() {
+      const {key, desc} = BUI_SORT.val
+      if (key && !desc) getRoundTable(this)?.sort()
     },
   })
 }
@@ -529,7 +539,7 @@ const BUI_STAT_TYPES = [...s.STAT_TYPES, `bui_cost`]
 const BUI_COL_BASE = {sortObs: BUI_SORT}
 
 // SYNC[bui_cols].
-const BUI_COLS = [
+export const BUI_COLS = [
   {...BUI_COL_BASE, key: `bui_type_upg`,           type: TYPE_ANY, colspan: 3},
   {...BUI_COL_BASE, key: s.STAT_TYPE_DMG_DONE,     type: TYPE_NUM, colspan: 2},
   {...BUI_COL_BASE, key: s.STAT_TYPE_DMG_OVER,     type: TYPE_NUM, colspan: 2},
@@ -545,7 +555,7 @@ export const CHI_SORT = new SortObs(`tabularius.round_table.sort_chi`)
 const CHI_COL_BASE = {sortObs: CHI_SORT}
 
 // SYNC[chi_cols].
-const CHI_COLS = [
+export const CHI_COLS = [
   {...CHI_COL_BASE, key: `chi_type`,               type: TYPE_ANY, colspan: 3, pre: subRowPrefix},
   {...CHI_COL_BASE, key: s.STAT_TYPE_DMG_DONE,     type: TYPE_NUM, colspan: 2},
   {...CHI_COL_BASE, key: s.STAT_TYPE_DMG_DONE_ACC, type: TYPE_NUM, colspan: 2},
@@ -559,7 +569,7 @@ export const WEP_SORT = new SortObs(`tabularius.round_table.sort_wep`)
 const WEP_COL_BASE = {sortObs: WEP_SORT}
 
 // SYNC[wep_cols].
-const WEP_COLS = [
+export const WEP_COLS = [
   {...WEP_COL_BASE, key: `wep_type`, type: TYPE_ANY, colspan: 3, pre: subRowPrefix},
   {...WEP_COL_BASE, key: `range`,    type: TYPE_ANY, hide: true},
   {...WEP_COL_BASE, key: `mag`,      type: TYPE_NUM},
@@ -967,7 +977,7 @@ class BuiRow extends od.MixReac(TableRow) {
   addPerc(total) {
     a.reqDict(total)
     for (const type of BUI_STAT_TYPES) {
-      this.getCell(type).addPerc(total[type])
+      this.getCell(type)?.addPerc(total[type])
     }
   }
 
@@ -1282,6 +1292,11 @@ export function compareRows(one, two) {
   const oneVal = oneCell.val
   const twoVal = twoCell.val
 
+  if (MISSING_LAST.val) {
+    if (!oneVal && twoVal) return 1
+    if (oneVal && !twoVal) return -1
+  }
+
   return (
     desc
     ? u.compareDesc(oneVal, twoVal)
@@ -1536,3 +1551,7 @@ function abbrs(src) {return a.spaced(...a.map(src, abbr))}
 function abbr(src) {return Words.from(src).abbr()}
 class Words extends a.Words {abbr() {return this.mapMut(first).join(``)}}
 function first(src) {return src[0]}
+
+function getRoundTable(tar) {
+  return a.descendant(a.ancestor(tar, ShowRound), RoundTable)
+}
