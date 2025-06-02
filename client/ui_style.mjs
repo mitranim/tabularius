@@ -1,6 +1,7 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as tw from '@twind/core'
 import tt from '@twind/preset-tailwind'
+import tp from '@twind/preset-autoprefix'
 import * as ttc from '@twind/preset-tailwind/colors.js'
 import * as u from './util.mjs'
 
@@ -258,7 +259,7 @@ details:not([open]) > summary .summary-open {display: none}
 document.head.appendChild(STYLE)
 
 export const TWIND = tw.twind({
-  presets: [tt()],
+  presets: [tp(), tt()],
   hash: false,
   theme: {
     extend: {
