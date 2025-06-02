@@ -17,7 +17,7 @@ tar.ui = ui
 a.patch(window, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 109
+const VERSION = 110
 let INITED
 
 /*
@@ -89,7 +89,7 @@ for focusing the browser URL.
 We also support Shift+Ctrl+K for clearing both the log and the media.
 */
 function onKeydownClear(eve) {
-  if (eve.key !== `k`) return
+  if (eve.key !== `k` && eve.key !== `K`) return
   if (eve.altKey) return
   if (!eve.ctrlKey && !eve.metaKey) return
 
