@@ -336,6 +336,7 @@ export function cmdHelp({args}) {
     ui.LogLines(
       `hotkeys and special interactions:`,
       [`  ctrl+k                 -- clear log (same as `, os.BtnCmd(`clear -l`), `)`],
+      [`  shift+ctrl+k           -- clear log and media (same as `, os.BtnCmd(`clear`), `)`],
       // SYNC[prompt_focus_key].
       [`  /                      -- focus prompt (forward slash key)`],
       [`  ctrl+click drag handle -- reset UI split`],

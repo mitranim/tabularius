@@ -44,7 +44,8 @@ export function init() {
 
   document.getElementById(`loading_style`)?.remove()
   document.getElementById(`loading_msg`)?.remove()
-  document.addEventListener(`keydown`, ui.onKeydownForPrompt)
+  document.addEventListener(`keydown`, onKeydownClear)
+  document.addEventListener(`keydown`, ui.onKeydownFocusPrompt)
   INITED = true
 }
 
@@ -78,6 +79,23 @@ export function cmdClear({args}) {
 
   if (log || !media) ui.LOG.clear()
   if (media || !log) ui.MEDIA.clear()
+}
+
+/*
+Shortcut for clearing the log. Mimics the MacOS convention (Cmd+K). On other
+systems, Ctrl+L would be more correct, but it would conflict with the hotkey
+for focusing the browser URL.
+
+We also support Shift+Ctrl+K for clearing both the log and the media.
+*/
+function onKeydownClear(eve) {
+  if (eve.key !== `k`) return
+  if (eve.altKey) return
+  if (!eve.ctrlKey && !eve.metaKey) return
+
+  a.eventKill()
+  ui.LOG.clear()
+  if (eve.shiftKey) ui.MEDIA.clear()
 }
 
 const TITLEBAR_PAD = `p-2`

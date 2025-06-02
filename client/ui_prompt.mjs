@@ -285,20 +285,8 @@ export function BtnPromptReplace({val, chi}) {
   })
 }
 
-export function onKeydownForPrompt(eve) {
-  /*
-  Shortcut for clearing the log. Mimics the MacOS convention (Cmd+K). On other
-  systems, Ctrl+L would be more correct, but it would conflict with the hotkey
-  for focusing the browser URL.
-  */
-  if (u.isEventModifiedPrimary(eve) && eve.key === `k`) {
-    a.eventKill(eve)
-    ui.LOG.clear()
-    PROMPT_INPUT.focus()
-    return
-  }
-
-  // Shortcut for focusing the prompt input.
+// Shortcut for focusing the prompt input.
+export function onKeydownFocusPrompt(eve) {
   if (
     eve.key === PROMPT_FOCUS_KEY &&
     !a.findAncestor(eve.target, ui.isElemInput)

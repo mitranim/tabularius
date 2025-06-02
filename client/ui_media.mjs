@@ -133,10 +133,7 @@ export const MEDIA = new class MediaPanel extends ui.Elem {
     ui.toggleCls(tar, ok, CLS_MEDIA_ITEM_WIDE)
   }
 
-  clear() {
-    E(this, {}, undefined)
-    this.updatePlaceholder()
-  }
+  clear() {E(this, {}, PLOT_PLACEHOLDER, PROCESS_LIST)}
 
   updatePlaceholder() {
     if (this.children.length <= 1) {
