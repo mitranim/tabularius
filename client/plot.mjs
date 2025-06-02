@@ -273,7 +273,7 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
   const {agg, totalFun} = opt
   ;[{X_vals, Z_vals, Z_X_Y}] = [s.plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, totalFun})]
 
-  const format = a.vac(s.STAT_TYPE_PERC.has(opt.Y)) && formatPerc
+  const format = a.vac(s.STAT_TYPE_PERC.has(opt.Y) && agg !== `count`) && formatPerc
   const serieOpt = {total: totalFun, format}
 
   const Z_rows = Z_vals
