@@ -1173,7 +1173,7 @@ function chiStatData({type, stats}) {
 
   // SYNC[chi_cols].
   const out = a.Emp()
-  out.chi_type = type
+  out.chi_type = s.codedToNamed(`chi_type`, type)
   out.dmg_done = stats?.DamageDone?.valueThisWave
   out.dmg_done_acc = stats?.DamageDone?.valueThisGame
   out.dmg_over = stats?.DamageOverkill?.valueThisWave
