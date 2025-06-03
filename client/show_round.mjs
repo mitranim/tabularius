@@ -1094,8 +1094,9 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, total}) {
     wepDatas.push(wepDetailData(wep))
   }
 
-  for (const type of a.keys(bui.ChildLiveStats)) {
+  for (const [type, val] of a.entries(bui.ChildLiveStats)) {
     if (wepTypes.has(type) || dumBulTypes.has(type)) continue
+    const stats = val?.stats
     chiDatas.push(chiStatData({type, stats}))
   }
 
