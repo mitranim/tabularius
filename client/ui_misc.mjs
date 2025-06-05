@@ -273,7 +273,7 @@ export function DetailsPre({summary, inf, chi, chiLvl, count, ...opt}) {
   count = a.optBool(count) ?? true
 
   if (!chi?.length) return undefined
-  if (chi.length === 1) return summary + `: ` + chi[0]
+  if (chi.length === 1) return [summary, `: `, chi[0]]
   if (count) inf ??= chi.length
 
   function sum(open) {

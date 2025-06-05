@@ -17,7 +17,7 @@ tar.ui = ui
 a.patch(globalThis, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 115
+const VERSION = 116
 let INITED
 
 /*
