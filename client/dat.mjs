@@ -9,9 +9,9 @@ import * as u from './util.mjs'
 import * as fs from './fs.mjs'
 
 import * as self from './dat.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.d = self
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 export const DAT = new EventTarget()
 
@@ -161,13 +161,14 @@ export function MixDatSub(cls) {return MixDatSubCache.goc(cls)}
 class MixDatSubCache extends a.StaticCache {
   static make(cls) {
     return class MixDatSub extends cls {
-      datUnsub = undefined
+      datSub = new u.Listener(this)
+
+      onDatEvent(eve) {
+        if (this.isConnected) this.onDatMsg(u.eventData(eve))
+        else this.datSubDeinit()
+      }
 
       onDatMsg(src) {
-        if (!this.isConnected) {
-          this.datSubDeinit()
-          return
-        }
         if (src?.type !== `new_round`) return
         this.onNewRound(src)
       }
@@ -175,11 +176,10 @@ class MixDatSubCache extends a.StaticCache {
       onNewRound() {}
 
       datSubInit() {
-        this.datSubDeinit()
-        this.datUnsub = u.listenMessage(DAT, this.onDatMsg.bind(this))
+        this.datSub.init(DAT, u.DEFAULT_EVENT_TYPE, this.onDatEvent)
       }
 
-      datSubDeinit() {this.datUnsub = this.datUnsub?.()}
+      datSubDeinit() {this.datSub.deinit()}
     }
   }
 }

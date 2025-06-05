@@ -5,7 +5,7 @@ import tp from '@twind/preset-autoprefix'
 import * as ttc from '@twind/preset-tailwind/colors.js'
 import * as u from './util.mjs'
 
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.lib ??= a.Emp()
 tar.lib.tw = tw
 tar.lib.tt = tt
@@ -73,10 +73,15 @@ STYLE.textContent = `
 details[open] > summary .summary-closed {display: none}
 details:not([open]) > summary .summary-open {display: none}
 
+`+/*
+Caution: in Safari (tested in version 18.3), for this particular grid,
+`auto-fit` doesn't seem to work; children have no width. Only `auto-fill`
+seems to work. This problem doesn't seem to occur in other grids.
+*/`
 .grid-auto {
   display: grid;
   padding: var(--grid-pad);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, ${GRID_AND_FLEX_CALC}), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, ${GRID_AND_FLEX_CALC}), 1fr));
   > * {min-width: 0}
 
   `+/*

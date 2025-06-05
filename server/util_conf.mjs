@@ -1,3 +1,5 @@
+/* global Deno */
+
 import * as a from '@mitranim/js/all.mjs'
 
 export const DEV = a.boolOpt(getEnv(`DEV`, `false`))

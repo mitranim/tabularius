@@ -4,6 +4,8 @@ client-specific files, and broadcasts notifications about file changes.
 The main server uses this to broadcast a signal about its own restart.
 */
 
+/* global Deno */
+
 import * as a from '@mitranim/js/all.mjs'
 import * as hd from '@mitranim/js/http_deno.mjs'
 import * as ld from '@mitranim/js/live_deno.mjs'

@@ -1,5 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import {E} from './ui_util.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
@@ -21,7 +21,7 @@ export const CLS_MEDIA_CHI = a.spaced(
 )
 
 export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends ui.ReacElem {
-  state = o.obs({count: 0})
+  state = ob.obs({count: 0})
 
   run() {
     const {count} = this.state

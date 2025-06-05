@@ -1,5 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import * as s from '../shared/schema.mjs'
 import {E} from './ui.mjs'
 import * as u from './util.mjs'
@@ -9,9 +9,9 @@ import * as ui from './ui.mjs'
 import * as au from './auth.mjs'
 
 import * as self from './upload.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.up = self
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 export const UPLOAD_LOCK_NAME = `tabularius.upload`
 export const UPLOAD_RETRY_INTERVAL_MS = a.minToMs(1)
@@ -163,7 +163,7 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
     sig, handle: hist, path: relPath, magic: true,
   })
   const absPath = u.paths.join(rootPath, resolvedPath)
-  const state = a.vac(!quiet) && o.obs({
+  const state = a.vac(!quiet) && ob.obs({
     done: false,
     status: ``,
     runsChecked: 0,
@@ -193,7 +193,7 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
   if (!persistent) {
     try {return await cmdUploadStep(inp)}
     catch (err) {
-      if (canceledOpt(err)) return
+      if (canceledOpt(err)) return undefined
       throw err
     }
   }
@@ -203,14 +203,14 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
   for (;;) {
     if (sig.aborted) {
       if (state) state.status = `canceled`
-      return
+      return undefined
     }
 
     try {
       return await cmdUploadStep(inp)
     }
     catch (err) {
-      if (canceledOpt(err)) return
+      if (canceledOpt(err)) return undefined
 
       errs++
 
@@ -223,7 +223,7 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
       ui.LOG.err(`[upload] unexpected error (${errs} in a row), retrying after ${sleep}ms: `, err)
 
       state.status = `waiting before retrying`
-      if (!await a.after(sleep, sig)) return
+      if (!await a.after(sleep, sig)) return undefined
     }
   }
 }
@@ -245,7 +245,7 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
     const runHandles = await fs.readRunsAsc(sig, hist)
     if (lazy && await isRunUploaded({sig, dir: a.last(runHandles), state})) {
       uploadDone({state, lazy: true})
-      return
+      return undefined
     }
 
     if (state) state.status = `uploading all runs`
@@ -253,7 +253,7 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
       await uploadRun({sig, dir, userId, state, force})
     }
     uploadDone({state})
-    return
+    return undefined
   }
 
   const dir = await fs.getDirectoryHandle(sig, hist, segs.shift())
@@ -261,12 +261,12 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
   if (!segs.length) {
     if (lazy && await isRunUploaded({sig, dir, state})) {
       uploadDone({state, lazy: true})
-      return
+      return undefined
     }
 
     await uploadRun({sig, dir, userId, state, force})
     uploadDone({state})
-    return
+    return undefined
   }
 
   if (segs.length !== 1) {
@@ -277,6 +277,7 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
   const file = await fs.getFileHandle(sig, dir, segs.shift())
   await uploadRound({sig, file, runName: dir.name, userId, state, force})
   uploadDone({state})
+  return undefined
 }
 
 export async function uploadRun({sig, dir, userId, state, force}) {

@@ -166,7 +166,7 @@ For creating and manipulating the DOM, use the tools provided by `@mitranim/js`.
 
 ```js
 import * as p from '@mitranim/js/prax.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import * as od from '@mitranim/js/obs_dom.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
 
@@ -182,12 +182,12 @@ const elem = E(`div`, {class: `container`},
 
 // Use observables for mutable state. Observables monitor access to object
 // properties, and notify subscribers on changes in object properties.
-const obs = o.obs({count: 0})
+const obs = ob.obs({count: 0})
 
 function inc() {obs.count++}
 
 // Reactive custom elements automatically subscribe to observables.
-class Counter extends od.MixReac(dr.MixReg(HTMLElement)) {
+class Counter extends od.MixReacElem(dr.MixReg(HTMLElement)) {
   run() {
     E(this, {},
       E(`button`, {type: `button`, onclick: inc}, obs.count)

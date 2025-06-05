@@ -10,10 +10,10 @@ import * as fs from './fs.mjs'
 import * as ui from './ui.mjs'
 import * as e from './edit.mjs'
 
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.lib ??= a.Emp()
 tar.lib.t = t
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 /*
 TODO: properly automate this test.

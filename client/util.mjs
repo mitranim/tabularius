@@ -1,18 +1,18 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import * as pt from '@mitranim/js/path.mjs'
 export * from '../shared/util.mjs'
 
 import * as u from './util.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.u = u
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
-export const URL_CLEAN = new URL(window.location)
+export const URL_CLEAN = new URL(globalThis.location)
 URL_CLEAN.search = ``
 URL_CLEAN.hash = ``
 
-export const QUERY = urlQuery(window.location.search)
+export const QUERY = urlQuery(globalThis.location.search)
 export const DEV = a.boolOpt(QUERY.get(`dev`))
 export const API_LOCAL = a.boolOpt(QUERY.get(`local`))
 export const API_URL = API_LOCAL ? `/api/` : `https://tabularius.mitranim.com/api/`
@@ -69,46 +69,65 @@ export function storageSet(store, key, val) {
   }
 }
 
+export const STORAGE_OBS_KEYS = new Set()
+
 export function storageObs(...src) {return new StorageObs(...src)}
 
-// An observable with storage persistence. Reads and writes as needed.
-export class StorageObs extends a.Emp {
+/*
+An observable with storage persistence. Reads and writes as needed.
+WAY too much code. TODO simplify.
+*/
+export class StorageObs extends ob.ObsRef {
   constructor(key) {
     super()
     this.key = a.reqValidStr(key)
+    if (STORAGE_OBS_KEYS.has(key)) {
+      console.error(`redundant ${new.target.name} with key ${a.show(key)}`)
+    }
+    STORAGE_OBS_KEYS.add(key)
   }
 
-  #val = undefined
-  #obs = new o.ImpObs()
-  #synced = false
-
+  /*
+  Getters and setters are observable, for consistency with our convention for
+  plain-object observables where we store the value in `.val`.
+  */
   get val() {return this.#get(true)}
   set val(val) {this.#set(val, true)}
 
+  /*
+  Getter and setter methods are non-observable. Callers can choose to update the
+  value without triggering.
+  */
   get() {return this.#get(false)}
   set(val) {this.#set(val, false)}
 
-  #get(sub) {
-    if (this.setSync(true)) this.#val = this.read()
-    if (sub) o.dyn.sub(this.#obs)
-    return this.#val
+  #get(mon) {
+    a.optBool(mon)
+    if (this.#setSync(true)) this.$ = this.read()
+    if (mon) {
+      this.bro ??= new this.Broad()
+      this.bro.monitor()
+    }
+    return this.$
   }
 
   #set(val, trig) {
-    if (a.is(val, this.#val)) return
+    a.optBool(trig)
+    if (a.is(val, this.$)) return
     this.write(val)
-    this.setSync(true)
-    this.#val = val
-    if (trig) this.#obs.trig()
+    this.#setSync(true)
+    this.$ = val
+    if (trig) this.bro?.trigger()
   }
 
-  read() {return this.decode(storagesGet(this.key))}
-  write(val) {storagesSet(this.key, this.encode(val))}
+  #synced = false
+  #setSync(val) {return this.#synced !== (this.#synced = a.reqBool(val))}
 
   decode(val) {return val}
   encode(val) {return val}
 
-  setSync(val) {return this.#synced !== (this.#synced = a.reqBool(val))}
+  read() {return this.decode(storagesGet(this.key))}
+  write(val) {storagesSet(this.key, this.encode(val))}
 }
 
 export function storageObsBool(...src) {return new StorageObsBool(...src)}
@@ -403,6 +422,11 @@ export async function localLock(sig, name) {
   }
 }
 
+export const REG_DEINIT = new FinalizationRegistry(function finalizeDeinit(val) {
+  if (a.isFun(val)) val()
+  else val.deinit()
+})
+
 /*
 We have several event targets (`BROAD` and `DAT`). `BroadcastChannel`
 prioritizes `message` events; they're dispatched when using `.postMessage`.
@@ -459,11 +483,20 @@ export function listenData(tar, type, fun, opt) {
   return listenEvent(tar, type, onEvent, opt)
 }
 
+export function eventData(src) {
+  a.reqInst(src, Event)
+  return (
+    src.data || // `MessageEvent`
+    src.detail  // `CustomEvent`
+  )
+}
+
 /*
 A safer wrapper for `.addEventListener`/`.removeEventListener` that returns a
 cleanup function. Prevents common misuse of `.removeEventListener` where the
 calling code accidentally passes a different reference than the one which was
-passed to `.addEventListener`.
+passed to `.addEventListener`. In addition, this only keeps a weak reference
+to the target.
 */
 export function listenEvent(tar, type, han, opt) {
   a.reqStr(type)
@@ -475,20 +508,41 @@ export function dispatch(tar, type, data) {
   tar.dispatchEvent(new CustomEvent(a.reqStr(type), {detail: data}))
 }
 
-function eventData(src) {
-  a.reqInst(src, Event)
-  return (
-    src.data || // `MessageEvent`
-    src.detail  // `CustomEvent`
-  )
+export class Listener extends WeakRef {
+  tar = undefined
+  args = undefined
+
+  constructor(ref) {
+    super(ref)
+    REG_DEINIT.register(ref, this)
+  }
+
+  init(tar, type, fun, opt) {
+    a.reqObj(tar)
+    a.reqStr(type)
+    a.reqFun(fun)
+
+    const onEvent = (eve) => {
+      const ref = this.deref()
+      if (ref) fun.call(ref, eve)
+      else this.deinit()
+    }
+
+    this.deinit()
+    this.tar = tar
+    this.args = [type, onEvent, opt]
+    tar.addEventListener(...this.args)
+  }
+
+  deinit() {
+    const {tar, args} = this
+    if (tar && args) tar.removeEventListener(...args)
+    this.tar = this.args = undefined
+  }
 }
 
 // Minor extensions and workarounds for library functionality.
 export const paths = new class PathsPosix extends pt.PathsPosix {
-  // Workaround for a minor bug in the original method, which always expects
-  // at least one input.
-  join(...src) {return src.length ? super.join(...src) : ``}
-
   cleanTop(src) {return a.stripPre(super.clean(src), this.dirSep)}
 
   splitTop(src) {return a.split(this.cleanTop(src), this.dirSep)}

@@ -114,8 +114,13 @@ duck.attach.dev:
 duck.attach.prod:
 	duckdb -cmd "attach 'https://tabularius.mitranim.com/api/db' as db; use db;"
 
-lint:
-	deno lint --compact
+lint: lint.deno lint.eslint
+
+lint.deno:
+	deno lint
+
+lint.eslint:
+	$(DENO_RUN) npm:eslint@8.47.0 --config .eslintrc --ignore-path .gitignore --ext mjs .
 
 docker.build.dev:
 	$(DOCKER_BUILD) -t=$(DOCKER_TAG_LATEST_DEV) -f=dockerfile_dev

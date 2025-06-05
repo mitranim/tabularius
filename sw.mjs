@@ -1,3 +1,6 @@
+/* eslint-disable no-restricted-globals */
+/* global self, caches */
+
 /*
 Caches semantically-versioned assets from CDNs. Useful for offline development.
 Normally, browsers do cache external assets, but unload them periodically, like

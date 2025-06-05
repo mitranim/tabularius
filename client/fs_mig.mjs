@@ -1,5 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import * as s from '../shared/schema.mjs'
 import * as fs from './fs.mjs'
 import {E} from './ui.mjs'
@@ -19,7 +19,7 @@ TODO: use a cross-tab mutex.
 SYNC[fs_mig].
 */
 export async function migrateRuns() {
-  const state = o.obs({
+  const state = ob.obs({
     status: `migrating`,
     runsChecked: 0,
     runsMigrated: 0,

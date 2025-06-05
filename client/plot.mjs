@@ -1,5 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import Plot from 'uplot'
 import * as gc from '../shared/game_const.mjs'
 import * as s from '../shared/schema.mjs'
@@ -12,11 +12,11 @@ import * as d from './dat.mjs'
 import * as au from './auth.mjs'
 
 import * as self from './plot.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.p = self
 tar.gc = gc
 tar.s = s
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 cmdPlot.cmd = `plot`
 cmdPlot.desc = `analyze data, visualizing with a plot 📈📉`
@@ -165,7 +165,7 @@ export async function cmdPlotLocal({sig, args, opt}) {
   const agg = makeAgg()
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
-  const obs = agg.totals && o.obs({args, totals: agg.totals})
+  const obs = agg.totals && ob.obs({args, totals: agg.totals})
   const opts = plotOptsWith({...agg, opt, args})
 
   function makeAgg() {
@@ -817,7 +817,7 @@ export class Plotter extends ui.Elem {
 
     // Need to wait a tick for the element's geometry to be determined.
     const init = () => {if (this.isConnected) this.plotInit()}
-    window.requestAnimationFrame(init)
+    globalThis.requestAnimationFrame(init)
   }
 
   disconnectedCallback() {
@@ -1486,6 +1486,7 @@ export async function cmdPlotLink({sig, args}) {
     }
     ui.LOG.info(...await msgPlotLink(url))
   }
+  return undefined
 }
 
 async function msgPlotLink(url) {
@@ -1517,7 +1518,7 @@ function defaultLocalPlotCmds(opt) {
 }
 
 function urlClean() {
-  const url = new URL(window.location)
+  const url = new URL(globalThis.location)
   url.hash = ``
   url.search = ``
   return url

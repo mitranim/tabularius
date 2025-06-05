@@ -1,19 +1,19 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as p from '@mitranim/js/prax.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import * as od from '@mitranim/js/obs_dom.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
 import * as u from './util.mjs'
 import * as ui from './ui.mjs'
 
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.lib ??= a.Emp()
 tar.lib.a = a
 tar.lib.p = p
-tar.lib.o = o
+tar.lib.ob = ob
 tar.lib.od = od
 tar.lib.dr = dr
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 /*
 Needed for `dr.MixReg`, which enables automatic registration of any custom
@@ -26,51 +26,32 @@ export class Ren extends p.Ren {
     if (a.isNil(val)) return tar.removeAttribute(`class`)
     return super.mutCls(tar, ui.TWIND(a.reqStr(val)), key)
   }
-
-  mutStyleProp(tar, key, val) {
-    val = this.renderOpt(val, key)
-    if (key.startsWith(`--`)) {
-      if (a.isNil(val)) {
-        tar.removeProperty(key)
-        return
-      }
-      tar.setProperty(key, val)
-      return
-    }
-    super.mutStyleProp(tar, key, val)
-  }
-
-  /*
-  Minor workaround for a bug in the library code, where `.toNode` is supported,
-  but currently bugged. We need this for `ErrLog`.
-  */
-  appendChi(tar, src) {
-    if (a.hasMeth(src, `toNode`)) src = src.toNode()
-    return super.appendChi(tar, src)
-  }
 }
 
 // Main renderer.
 export const REN = new Ren()
-
-// For the HTML namespace.
-export const E = REN.E.bind(REN)
-
-// For the SVG namespace.
-export const S = REN.elemSvg.bind(REN)
+export const {E, S} = REN
 
 // Base class for UI components with custom behaviors.
 export class Elem extends dr.MixReg(HTMLElement) {}
 
 /*
-Base class for reactive, stateful UI components. The mixin `od.MixReac` causes
-the element to automatically monitor observables and re-render on changes:
+Base class for reactive, stateful UI components. The mixin `od.MixReacElem`
+causes the element to automatically monitor observables and update on changes:
 
 - On `.connectedCallback`, `.run` is invoked.
 - Observables synchronously accessed during `.run` are automatically monitored.
 - When monitored observables change, `.run` is invoked.
 */
-export class ReacElem extends od.MixReac(Elem) {}
+export class ReacElem extends od.MixReacElem(Elem) {}
+
+/*
+Similar to `ReacElem`, but with support for multiple different callbacks,
+which are expected to monitor multiple different observables. Subclasses
+should define a property or getter `.runs` which must be an iterable with
+multiple functions, usually methods from the prototype of the same class.
+*/
+export class ReacsElem extends od.MixReacsElem(Elem) {}
 
 export const TARBLAN = Object.freeze({
   target: `_blank`,
@@ -120,7 +101,7 @@ Usage:
   ui.darkModeMediaQuery.addEventListener(`change`, someListener)
   function someListener(eve) {console.log(eve.matches)}
 */
-export const darkModeMediaQuery = window.matchMedia(`(prefers-color-scheme: dark)`)
+export const darkModeMediaQuery = globalThis.matchMedia(`(prefers-color-scheme: dark)`)
 
 // By luck, the Swedish locale mostly adheres to ISO 8601.
 export const dateFormat = new Intl.DateTimeFormat(`sv-SE`, {

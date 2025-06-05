@@ -1,3 +1,5 @@
+/* global Deno */
+
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'

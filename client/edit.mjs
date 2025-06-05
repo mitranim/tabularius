@@ -170,7 +170,7 @@ export async function edit(sig, state) {
       `no edit actions specified, nothing to be done`,
       os.cmdHelpDetailed(cmdEdit),
     ))
-    return
+    return undefined
   }
 
   await editAll(sig, state)
@@ -179,6 +179,7 @@ export async function edit(sig, state) {
   await editBuis(sig, state)
   await editDocts(sig, state)
   await editCommit(sig, state)
+  return undefined
 }
 
 export function editDecodeCliArgs(state) {
@@ -321,6 +322,7 @@ export function editDecodeCliArgs(state) {
   else if (a.isSome(state.diff) && state.diff < gc.DIFF_MAX) {
     state.frontier = 0
   }
+  return undefined
 }
 
 function editAddToColl({state, stateKey, val, pair, codeToName, nameToCode}) {

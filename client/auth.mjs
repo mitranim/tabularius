@@ -1,5 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
@@ -7,11 +7,11 @@ import * as fs from './fs.mjs'
 import * as ui from './ui.mjs'
 
 import * as self from './auth.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.au = self
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
-export const STATE = o.obs({userId: undefined})
+export const STATE = ob.obs({userId: undefined})
 let PUB_KEY_BYTE_ARR = undefined
 let SEC_KEY_BYTE_ARR = undefined
 const STORAGE_KEY_PUB_KEY = `tabularius.pub_key`

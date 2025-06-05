@@ -14,8 +14,13 @@ export function reqAuthReq(req) {
 
 export function reqAuthOpt(req) {
   a.reqInst(req, Request)
-  try {return auth(reqBearer(req))}
-  catch (err) {console.error(`ignoring auth token decoding error:`, err)}
+  try {
+    return auth(reqBearer(req))
+  }
+  catch (err) {
+    console.error(`ignoring auth token decoding error:`, err)
+    return undefined
+  }
 }
 
 export function auth(src, now) {

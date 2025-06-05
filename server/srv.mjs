@@ -1,3 +1,5 @@
+/* global Deno */
+
 import * as a from '@mitranim/js/all.mjs'
 import * as hd from '@mitranim/js/http_deno.mjs'
 import * as u from './util.mjs'

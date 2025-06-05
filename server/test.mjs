@@ -1,3 +1,5 @@
+/* global Deno */
+
 Error.stackTraceLimit = Infinity
 
 // import * as t from '@mitranim/js/test.mjs'

@@ -12,12 +12,12 @@ export * from './ui_split.mjs'
 export * from './ui_prompt.mjs'
 
 import * as ui from './ui.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.ui = ui
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 114
+const VERSION = 115
 let INITED
 
 /*
@@ -79,6 +79,7 @@ export function cmdClear({args}) {
 
   if (log || !media) ui.LOG.clear()
   if (media || !log) ui.MEDIA.clear()
+  return undefined
 }
 
 /*

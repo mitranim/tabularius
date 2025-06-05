@@ -1,5 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import * as s from '../shared/schema.mjs'
 import {E} from './ui.mjs'
 import * as u from './util.mjs'
@@ -8,9 +8,9 @@ import * as os from './os.mjs'
 import * as ui from './ui.mjs'
 
 import * as self from './fs.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.fs = self
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 /*
 The File System API throws non-descriptive instances of `DOMException`, without
@@ -35,7 +35,7 @@ export class FileConf extends a.Emp {
     this.validate = a.optFun(src.validate)
     this.handle = undefined
     this.perm = undefined
-    return o.obs(this)
+    return ob.obs(this)
   }
 
   clear() {
@@ -756,6 +756,8 @@ export async function cmdShow({sig, args}) {
       ui.LOG.err(`[show] unable to show ${a.show(path)}: `, err)
     }
   }
+
+  return undefined
 }
 
 export async function showPath({sig, path, opt}) {
@@ -1446,13 +1448,13 @@ export async function getDirectoryHandle(sig, dir, name, opt) {
 }
 
 export function reqFsFilePick() {
-  const fun = window.showOpenFilePicker
+  const fun = globalThis.showOpenFilePicker
   if (a.isFun(fun)) return fun
   throw errFsApi()
 }
 
 export function reqFsDirPick() {
-  const fun = window.showDirectoryPicker
+  const fun = globalThis.showDirectoryPicker
   if (a.isFun(fun)) return fun
   throw errFsApi()
 }

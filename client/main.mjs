@@ -12,9 +12,9 @@ import * as sr from './show_round.mjs'
 import * as se from './setup.mjs'
 
 import * as self from './main.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.m = self
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 /*
 CLI commands may be defined in arbitrary modules. They should all be registered
@@ -191,7 +191,6 @@ async function main() {
   if (loadedHist) await fs.migOpt().catch(ui.logErr)
 
   let imported = 0
-  let ran = 0
   let ranPlots = 0
   let lastProcPromise
 
@@ -199,14 +198,14 @@ async function main() {
     // Can plug-in arbitrary modules via URL query param.
     if (key === `import`) {
       if (!val) continue
-      const url = new URL(val, window.location.href)
+      const url = new URL(val, globalThis.location.href)
       if (
-        url.origin === window.location.origin ||
+        url.origin === globalThis.location.origin ||
         url.hostname === `localhost` ||
         url.hostname === `127.0.0.1` ||
         url.hostname === `0.0.0.0`
       ) {
-        await import(new URL(val, window.location.href)).catch(ui.logErr)
+        await import(new URL(val, globalThis.location.href)).catch(ui.logErr)
         imported++
       }
       else {
@@ -218,7 +217,6 @@ async function main() {
     // Can run arbitrary commands on startup via URL query param.
     if (key === `run`) {
       if (!val) continue
-      ran++
       lastProcPromise = os.runCmd(val, {waitFor: lastProcPromise}).catch(ui.logErr)
       if (val.startsWith(`plot `)) ranPlots++
     }

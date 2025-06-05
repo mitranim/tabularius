@@ -1,13 +1,13 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as ui from './ui.mjs'
 
 import * as self from './os.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.os = self
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 /*
 Centralized registry of CLI-style commands for our "terminal". Each is
@@ -59,7 +59,7 @@ export class Proc extends a.Emp {
     this.endAt = undefined             // Assigned by `runProc`.
     this.val = undefined               // Eventual promise value, if any.
     this.err = undefined               // Eventual promise error, if any.
-    return o.obs(this)                 // For reactive UI updates.
+    return ob.obs(this)                // For reactive UI updates.
   }
 
   // Cmd funs should use this to support cancelation.
@@ -73,7 +73,7 @@ export class Proc extends a.Emp {
 Centralized registry of all currently running processes. Keys must be proc ids,
 values must be procs.
 */
-export const PROCS = o.obs(a.Emp())
+export const PROCS = ob.obs(a.Emp())
 
 // Suboptimal but doesn't matter.
 export function procByName(name) {
@@ -324,7 +324,7 @@ export function cmdHelp({args}) {
 
   if (inps.size) {
     for (const cmd of inps) ui.LOG.info(cmdHelpDetailed(reqCmdByName(cmd)))
-    return
+    return undefined
   }
 
   return ui.LogParagraphs(
@@ -335,8 +335,8 @@ export function cmdHelp({args}) {
 
     ui.LogLines(
       `hotkeys and special interactions:`,
-      [`  ctrl+k                 -- clear log (same as `, os.BtnCmd(`clear -l`), `)`],
-      [`  shift+ctrl+k           -- clear log and media (same as `, os.BtnCmd(`clear`), `)`],
+      [`  ctrl+k                 -- clear log (same as `, BtnCmd(`clear -l`), `)`],
+      [`  shift+ctrl+k           -- clear log and media (same as `, BtnCmd(`clear`), `)`],
       // SYNC[prompt_focus_key].
       [`  /                      -- focus prompt (forward slash key)`],
       [`  ctrl+click drag handle -- reset UI split`],

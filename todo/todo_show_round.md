@@ -32,6 +32,7 @@ Also see `todo.md` in repo root.
   - [ ] Make it possible to group stats by `bui_type`.
   - [ ] Make it possible to group stats by `bui_type_upg`.
 - [x] Add an option to always "zero last" in sorting, which would always put zero and nil at the end.
+- [x] Calculate totals and percentages for child stats.
 
 - [ ] Each bui:
   - [x] One row: bui stats.
@@ -93,6 +94,8 @@ Also see `todo.md` in repo root.
   as a gradient between worst and best, by comparing the "canonical" values
   which are also used for sorting.
 - [ ] Table headers: `sticky` with proper `top` and a background. Tricky because of sub-tables. Probably need to enforce a fixed header height, and provide it as an offset when stacking.
+- [x] Actually show the damage of non-weapon children, such as Grenadier variants and Anysia.
+- [ ] Show which neutrals are active and not.
 
 - [x] Each cell: store the corresponding header key on creation.
 - [x] Each cell: store the sortable value on creation.

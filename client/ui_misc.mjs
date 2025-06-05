@@ -4,7 +4,7 @@ import {E, S} from './ui.mjs'
 import * as ui from './ui.mjs'
 
 export function BtnUrlAppend(val) {
-  const href = window.location.href + a.reqValidStr(val)
+  const href = globalThis.location.href + a.reqValidStr(val)
   return FakeBtnInline({href, chi: val})
 }
 
@@ -169,8 +169,8 @@ function tooltipReinitFor(elem, chi, eve) {
     elem: TOOLTIP,
     posX: eve.clientX,
     posY: eve.clientY,
-    wid: window.innerWidth,
-    hei: window.innerHeight,
+    wid: globalThis.innerWidth,
+    hei: globalThis.innerHeight,
     off: `0.5rem`,
   })
 
@@ -225,7 +225,7 @@ export function External() {
 }
 
 export function Details({
-  chi, lvl, open, class: cls, tooltip,
+  elem, chi, lvl, open, openObs, class: cls, tooltip,
   summary, summaryOpen, summaryCls,
 }) {
   a.optArr(chi)
@@ -252,12 +252,19 @@ export function Details({
 
   if (sumOpen && tooltip) ui.withTooltip({elem: sumOpen, chi: `click to close`})
 
-  return E(
-    `details`,
-    {class: a.spaced(`inline-block w-full`, cls), open},
+  let ontoggle
+  if (a.optObj(openObs)) {
+    open ??= a.laxBool(openObs.val)
+    ontoggle = () => {openObs.val = a.laxBool(elem.open)}
+  }
+
+  elem = E(
+    elem || `details`,
+    {class: a.spaced(`inline-block w-full`, cls), open, ontoggle},
     E(`summary`, {class: `w-full trunc`}, `  `.repeat(lvl), sumOpen, sumClosed),
     ...chi,
   )
+  return elem
 }
 
 export function DetailsPre({summary, inf, chi, chiLvl, count, ...opt}) {

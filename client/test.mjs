@@ -9,10 +9,10 @@ import * as u from './util.mjs'
 import * as ui from './ui.mjs'
 import * as p from './plot.mjs'
 
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.lib ??= a.Emp()
 tar.lib.t = t
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 /*
 Tests for small utility functions should be placed here.

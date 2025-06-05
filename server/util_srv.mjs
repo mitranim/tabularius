@@ -54,7 +54,7 @@ Development tool. Tells each connected "live client" to reload the page.
 Requires `make live`.
 */
 export function liveSend(val) {
-  if (!uc.LIVE_PORT) return
+  if (!uc.LIVE_PORT) return undefined
 
   const url = new URL(`http://localhost`)
   url.port = uc.LIVE_PORT

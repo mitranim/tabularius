@@ -41,7 +41,7 @@ In the terminal, processes can be viewed with `ps` and killed with `kill` (via `
 
 ## File system
 
-FS access is done via `window.showOpenFilePicker` and `window.showDirectoryPicker`.
+FS access is done via `globalThis.showOpenFilePicker` and `globalThis.showDirectoryPicker`.
 
 We store obtained file handles in IndexedDB for later access.
 

@@ -1,6 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
-import * as o from '@mitranim/js/obs.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import {E} from './ui_util.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
@@ -29,6 +29,8 @@ const CLS_PROMPT_INPUT = a.spaced(
 )
 
 export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputElement) {
+  listener = new u.Listener(this)
+
   unlistenGlobal = undefined
 
   constructor() {
@@ -46,7 +48,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     this.onkeydown = this.onKeydown
   }
 
-  disconnectedCallback() {this.clearGlobalListener()}
+  disconnectedCallback() {this.listener.deinit()}
 
   onFocus() {
     if (this.type === `password`) {
@@ -68,7 +70,8 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
 
   onKeydown(eve) {
     if (eve.key === `Escape`) {
-      this.clearGlobalListener()
+      this.listener.deinit()
+
       if (this.type === `password`) {
         a.eventKill(eve)
         this.disablePassMode()
@@ -100,8 +103,6 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     }
   }
 
-  handleEvent(eve) {if (eve.type === `keydown`) this.onKeydown(eve)}
-
   onSubmit() {
     if (this.type === `password`) return this.submitPass()
     return this.submitCmd()
@@ -119,7 +120,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     const src = this.value.trim()
     if (!src) return
 
-    const obs = o.obs({proc: undefined})
+    const obs = ob.obs({proc: undefined})
     ui.LOG.inp(new SubmittedCmd(src, obs))
     this.histPush(src)
     os.runCmd(src, {obs, user: true}).catch(ui.logErr)
@@ -136,8 +137,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     if (document.activeElement === this) this.onFocus()
     else this.focus()
 
-    this.clearGlobalListener()
-    this.unlistenGlobal = u.listenEvent(document, `keydown`, this)
+    this.listener.init(document, `keydown`, this.onKeydown)
   }
 
   disablePassMode() {
@@ -149,7 +149,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     ui.replaceCls(this, PROMPT_INPUT_CLS_PASSWORD, PROMPT_INPUT_CLS_REGULAR)
     this.onBlur()
 
-    this.clearGlobalListener()
+    this.listener.deinit()
     u.dispatch(this, `disable_pass_mode`)
   }
 
@@ -196,8 +196,6 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     else this.value = a.spaced(a.trim(pre), a.trim(suf))
     this.focus()
   }
-
-  clearGlobalListener() {this.unlistenGlobal = this.unlistenGlobal?.()}
 }()
 
 export const PROMPT = E(

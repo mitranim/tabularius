@@ -11,9 +11,9 @@ import * as fs from './fs.mjs'
 import * as ui from './ui.mjs'
 
 import * as self from './show_round.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.sr = self
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 cmdShowRound.cmd = `show_round`
 cmdShowRound.desc = `detailed breakdown of one round`
@@ -225,9 +225,11 @@ export const NUM_MODE = u.storageObs(`tabularius.show_round.num_mode`)
 export const MISSING_LAST = u.storageObsBool(`tabularius.show_round.missing_last`)
 export const WIDE = u.storageObsBool(`tabularius.show_round.wide`)
 export const LONG = u.storageObsBool(`tabularius.show_round.long`)
+export const SETTINGS_OPEN = u.storageObsBool(`tabularius.show_round.settings_open`)
 export const LONG_ROW_BREAKPOINT = 12
 
-class ShowRound extends d.MixDatSub(ui.ReacElem) {
+class ShowRound extends d.MixDatSub(ui.ReacsElem) {
+  static runs = [this.prototype.onWide]
   opt = undefined
 
   constructor(opt) {
@@ -236,24 +238,23 @@ class ShowRound extends d.MixDatSub(ui.ReacElem) {
 
     E(
       this,
-      {class: `@container flex col-sta-str max-w-none text-sm gap-2`},
+      {class: `@container flex col-sta-str max-w-none min-h-8 text-sm gap-2`},
       new RoundHead(),
-      TableHintsAndControls(),
+      new ShowRoundSettingsAndHints(),
       new RoundTable(),
     )
   }
-
-  // Invoked by `MEDIA`.
-  addCloseBtn(btn) {a.descendant(this, RoundHead).addCloseBtn(btn)}
-
-  // Invoked on observable changes.
-  run() {ui.MEDIA.toggleWide(this, WIDE.val)}
 
   init() {
     a.descendant(this, RoundHead).init(this.opt)
     a.descendant(this, RoundTable).init(this.opt)
     return this
   }
+
+  // Invoked by `MEDIA`.
+  addCloseBtn(btn) {a.descendant(this, RoundHead).addCloseBtn(btn)}
+
+  onWide() {ui.MEDIA.toggleWide(this, WIDE.val)}
 
   onNewRound(src) {
     const {round, run_num, run_ms} = src
@@ -409,20 +410,25 @@ function Pair(key, val) {
   )
 }
 
-function TableHintsAndControls() {
-  return ui.DetailsPre({
-    summary: `settings and hints`,
-    class: a.spaced(ui.CLS_MEDIA_PAD_X, `whitespace-pre-wrap`),
-    count: false,
-    chiLvl: 1,
-    chi: [
-      ...TableHints(),
-      TableControlNumMode(),
-      TableControlShowChi(),
-      TableControlMissingLast(),
-      TableControlWide(),
-    ],
-  })
+class ShowRoundSettingsAndHints extends od.MixReacElem(dr.MixReg(HTMLDetailsElement)) {
+  run() {
+    ui.DetailsPre({
+      elem: this,
+      summary: `settings and hints`,
+      openObs: SETTINGS_OPEN,
+      class: a.spaced(ui.CLS_MEDIA_PAD_X, `whitespace-pre-wrap`),
+      count: false,
+      chiLvl: 1,
+      chi: [
+        ...TableHints(),
+        TableControlNumMode(),
+        TableControlShowChi(),
+        TableControlMissingLast(),
+        TableControlWide(),
+        TableControlLong(),
+      ],
+    })
+  }
 }
 
 function TableHints() {
@@ -527,6 +533,14 @@ function TableControlWide() {
   })
 }
 
+function TableControlLong() {
+  return new TableControlCheckbox({
+    label: `long`,
+    obs: LONG,
+    tooltip: `show every building`,
+  })
+}
+
 class SortObs extends u.StorageObsJson {
   decode(src) {return a.laxDict(a.onlyDict(super.decode(src)))}
 }
@@ -534,39 +548,44 @@ class SortObs extends u.StorageObsJson {
 export const BUI_SORT = new SortObs(`tabularius.round_table.sort_bui`)
 
 // SYNC[bui_stat_types].
-const BUI_STAT_TYPES = [...s.STAT_TYPES, `bui_cost`]
+export const BUI_STAT_TYPES = [...s.STAT_TYPES, `bui_cost`]
 
-const BUI_COL_BASE = {sortObs: BUI_SORT}
+export const BUI_COL_BASE = {sortObs: BUI_SORT}
 
 // SYNC[bui_cols].
 export const BUI_COLS = [
   {...BUI_COL_BASE, key: `bui_type_upg`,           type: TYPE_ANY, colspan: 3},
   {...BUI_COL_BASE, key: s.STAT_TYPE_DMG_DONE,     type: TYPE_NUM, colspan: 2},
   {...BUI_COL_BASE, key: s.STAT_TYPE_DMG_OVER,     type: TYPE_NUM, colspan: 2},
-  {...BUI_COL_BASE, key: s.STAT_TYPE_COST_EFF,     type: TYPE_NUM, colspan: 2},
-  {...BUI_COL_BASE, key: `bui_cost`,               type: TYPE_NUM, colspan: 2},
   {...BUI_COL_BASE, key: s.STAT_TYPE_DMG_DONE_ACC, type: TYPE_NUM, colspan: 2, hide: true},
   {...BUI_COL_BASE, key: s.STAT_TYPE_DMG_OVER_ACC, type: TYPE_NUM, colspan: 2, hide: true},
+  {...BUI_COL_BASE, key: s.STAT_TYPE_COST_EFF,     type: TYPE_NUM, colspan: 2},
   {...BUI_COL_BASE, key: s.STAT_TYPE_COST_EFF_ACC, type: TYPE_NUM, colspan: 2, hide: true},
+  {...BUI_COL_BASE, key: `bui_cost`,               type: TYPE_NUM, colspan: 2},
 ]
 
 export const CHI_SORT = new SortObs(`tabularius.round_table.sort_chi`)
 
-const CHI_COL_BASE = {sortObs: CHI_SORT}
+// SYNC[chi_stat_types].
+export const CHI_STAT_TYPES = [
+  s.STAT_TYPE_DMG_DONE,
+  s.STAT_TYPE_DMG_OVER,
+  s.STAT_TYPE_DMG_DONE_ACC,
+  s.STAT_TYPE_DMG_OVER_ACC,
+]
+
+export const CHI_COL_BASE = {sortObs: CHI_SORT}
 
 // SYNC[chi_cols].
 export const CHI_COLS = [
-  {...CHI_COL_BASE, key: `chi_type`,               type: TYPE_ANY, colspan: 3, pre: subRowPrefix},
-  {...CHI_COL_BASE, key: s.STAT_TYPE_DMG_DONE,     type: TYPE_NUM, colspan: 2},
-  {...CHI_COL_BASE, key: s.STAT_TYPE_DMG_DONE_ACC, type: TYPE_NUM, colspan: 2},
-  {...CHI_COL_BASE, key: s.STAT_TYPE_DMG_OVER,     type: TYPE_NUM, colspan: 2},
-  {...CHI_COL_BASE, key: s.STAT_TYPE_DMG_OVER_ACC, type: TYPE_NUM, colspan: 2},
-  {...CHI_COL_BASE, key: `enabled`,                type: TYPE_BOOL, colspan: 6, hide: true},
+  {...CHI_COL_BASE, key: `chi_type`, type: TYPE_ANY, colspan: 3, pre: subRowPrefix},
+  ...a.map(CHI_STAT_TYPES, key => ({...CHI_COL_BASE, key, type: TYPE_NUM, colspan: 2})),
+  {...CHI_COL_BASE, key: `enabled`, type: TYPE_BOOL, colspan: 6, hide: true},
 ]
 
 export const WEP_SORT = new SortObs(`tabularius.round_table.sort_wep`)
 
-const WEP_COL_BASE = {sortObs: WEP_SORT}
+export const WEP_COL_BASE = {sortObs: WEP_SORT}
 
 // SYNC[wep_cols].
 export const WEP_COLS = [
@@ -819,8 +838,10 @@ class TableHeadCell extends dr.MixReg(HTMLTableCellElement) {
   }
 }
 
-class TableCell extends od.MixReac(dr.MixReg(HTMLTableCellElement)) {
+class TableCell extends od.MixReacsElem(dr.MixReg(HTMLTableCellElement)) {
   static localName = `td`
+  static runs = [this.prototype.onNumMode]
+
   type = a.optStr()
   key = a.optValidStr()
   pre = undefined
@@ -899,7 +920,7 @@ class TableCell extends od.MixReac(dr.MixReg(HTMLTableCellElement)) {
     )
   }
 
-  run() {
+  onNumMode() {
     const {type} = this
     if (type !== TYPE_NUM) return this.drawVal()
 
@@ -934,7 +955,8 @@ function Tds(src, cols) {
 
 export const CHI_SHOW = u.storageObsBool(`tabularius.round_table.show_chi`)
 
-class BuiRow extends od.MixReac(TableRow) {
+class BuiRow extends od.MixReacsElem(TableRow) {
+  static runs = [this.prototype.onLong]
   buiRowInd = undefined
   showAssoc = CHI_SHOW.val
 
@@ -991,7 +1013,7 @@ class BuiRow extends od.MixReac(TableRow) {
     for (const val of this.iterChi()) val.hidden = !show
   }
 
-  run() {
+  onLong() {
     const ind = this.buiRowInd
     if (u.DEV) a.reqNat(ind)
     else if (!a.isNat(ind)) return
@@ -1002,7 +1024,16 @@ class BuiRow extends od.MixReac(TableRow) {
   }
 }
 
-class BuiLongToggleRow extends od.MixReac(TableRow) {
+class ChiRow extends TableRow {
+  addPerc(total) {
+    a.reqDict(total)
+    for (const type of CHI_STAT_TYPES) {
+      this.getCell(type)?.addPerc(total[type])
+    }
+  }
+}
+
+class BuiLongToggleRow extends od.MixReacElem(TableRow) {
   lenBui = undefined
   lenMax = undefined
   obs = undefined
@@ -1040,13 +1071,14 @@ class BuiLongToggleRow extends od.MixReac(TableRow) {
   onClick() {this.obs.val = !this.obs.val}
 }
 
-function PseudoTableRows({parent, cols, datas, sortObs, showObs}) {
+function PseudoTableRows({Row, parent, cols, datas, sortObs, showObs, ...opt}) {
+  Row = a.optCls(Row) ?? TableRow
   const head = new PseudoHeadRow({parent, cols, sortObs, showObs})
 
   return [
     head,
     ...a.map(datas, src => E(
-      new TableRow({parent: head, sortObs, showObs}),
+      new Row({parent: head, sortObs, showObs, ...opt}),
       {class: `tr-sub`},
       Tds(src, cols),
     )),
@@ -1061,43 +1093,44 @@ function roundTableRows({round, user_id, run_num, run_ms}) {
     tables: {round_buis: true},
   })
 
-  const total = a.Emp()
+  const buiTotal = a.Emp()
   const tbodyRows = []
   const buiRows = []
 
   for (const [bui_inst, bui] of a.entries(round.Buildings)) {
     const round_bui = a.reqDict(dat.round_buis[bui_inst])
-    addRoundTableRows({tbodyRows, buiRows, bui, round_bui, total})
+    addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal})
   }
 
-  for (const row of buiRows) row.addPerc(total)
+  for (const row of buiRows) row.addPerc(buiTotal)
   return tbodyRows
 }
 
-function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, total}) {
+function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
   a.reqArr(tbodyRows)
   a.reqArr(buiRows)
 
-  const buiData = buiStatData({round_bui, total})
+  const buiData = buiStatData({round_bui, buiTotal})
   const buiRow = E(new BuiRow(), {}, Tds(buiData, BUI_COLS))
   tbodyRows.push(buiRow)
   buiRows.push(buiRow)
 
-  const {wepTypes, dumBulTypes, stats} = a.reqDict(round_bui)
+  const {wepTypes, dumBulTypes} = a.reqDict(round_bui)
+  const chiTotal = a.Emp()
   const chiDatas = []
   const wepDatas = []
 
   for (const [ind, wep] of a.entries(bui.Weapons)) {
     const stats = bui.WeaponStats[ind]?.stats
     if (!shouldShowWep(wep, stats)) continue
-    chiDatas.push(wepStatData({wep, stats}))
+    chiDatas.push(wepStatData({wep, stats, chiTotal}))
     wepDatas.push(wepDetailData(wep))
   }
 
   for (const [type, val] of a.entries(bui.ChildLiveStats)) {
     if (wepTypes.has(type) || dumBulTypes.has(type)) continue
     const stats = val?.stats
-    chiDatas.push(chiStatData({type, stats}))
+    chiDatas.push(chiStatData({type, stats, chiTotal}))
   }
 
   const showObs = CHI_SHOW
@@ -1112,9 +1145,11 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, total}) {
       head.setSuf([`: `, ui.Muted(chiDatas[0][key])])
     }
     else {
-      tbodyRows.push(...PseudoTableRows({
-        parent: buiRow, cols, datas: chiDatas, sortObs, showObs,
-      }))
+      const [pseudoHead, ...rows] = PseudoTableRows({
+        Row: ChiRow, parent: buiRow, cols, datas: chiDatas, sortObs, showObs,
+      })
+      for (const row of rows) row.addPerc(chiTotal)
+      tbodyRows.push(pseudoHead, ...rows)
       head.setSuf([`: `, ui.Muted(chiDatas.length)])
     }
   }
@@ -1128,9 +1163,9 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, total}) {
   }
 }
 
-function buiStatData({round_bui, total}) {
+function buiStatData({round_bui, buiTotal}) {
   a.reqDict(round_bui)
-  a.reqDict(total)
+  a.reqDict(buiTotal)
 
   const bui_type_upg = a.reqValidStr(round_bui.bui_type_upg)
   const stats = a.optDict(round_bui.stats)
@@ -1144,12 +1179,12 @@ function buiStatData({round_bui, total}) {
     a.reqValidStr(type)
     const val = a.laxFin(stats?.[type])
     out[type] = val
-    addTotal(total, type, val)
+    addTotal(buiTotal, type, val)
   }
 
   const cost = a.laxFin(round_bui.cost)
   out.bui_cost = cost
-  addTotal(total, `bui_cost`, cost)
+  addTotal(buiTotal, `bui_cost`, cost)
   return out
 }
 
@@ -1159,25 +1194,33 @@ function addTotal(tar, key, val) {
   if (a.isFin(val)) tar[key] = a.laxFin(tar[key]) + val
 }
 
-function wepStatData({wep, stats}) {
+function wepStatData({wep, stats, chiTotal}) {
   a.reqDict(wep)
   // SYNC[chi_cols].
-  const out = chiStatData({type: wep.EntityID, stats})
+  const out = chiStatData({type: wep.EntityID, stats, chiTotal})
   out.enabled = wep.Enabled
   return out
 }
 
-function chiStatData({type, stats}) {
+// SYNC[chi_cols].
+// SYNC[chi_stat_types].
+function chiStatData({type, stats, chiTotal}) {
   a.reqStr(type)
   a.optDict(stats)
 
-  // SYNC[chi_cols].
+  function add(key, val) {
+    out[key] = val
+    addTotal(chiTotal, key, val)
+  }
+
   const out = a.Emp()
   out.chi_type = s.codedToNamed(`chi_type`, type)
-  out.dmg_done = stats?.DamageDone?.valueThisWave
-  out.dmg_done_acc = stats?.DamageDone?.valueThisGame
-  out.dmg_over = stats?.DamageOverkill?.valueThisWave
-  out.dmg_over_acc = stats?.DamageOverkill?.valueThisGame
+
+  add(`dmg_done`, stats?.DamageDone?.valueThisWave)
+  add(`dmg_done_acc`, stats?.DamageDone?.valueThisGame)
+  add(`dmg_over`, stats?.DamageOverkill?.valueThisWave)
+  add(`dmg_over_acc`, stats?.DamageOverkill?.valueThisGame)
+
   out.enabled = undefined
   return out
 }
@@ -1321,7 +1364,7 @@ function BtnAppendEph(eph) {
   return ui.BtnPrompt({cmd: cmdShowRound.cmd, eph, full: true})
 }
 
-class TableControlCheckbox extends od.MixReac(dr.MixReg(HTMLLabelElement)) {
+class TableControlCheckbox extends od.MixReacElem(dr.MixReg(HTMLLabelElement)) {
   label = undefined
   obs = undefined
   tooltip = undefined

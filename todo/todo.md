@@ -57,8 +57,8 @@ We'll use the OpenAI API directly from the client. If we need a default API key 
 
 ---
 
-* [ ] Setup `eslint`.
-* [ ] Disable gotcha environment globals, ensure sensible globals.
+* [x] Setup `eslint`.
+* [x] Disable gotcha environment globals, ensure sensible globals.
 * [ ] Use relevant auto-formatting features.
 
 ---

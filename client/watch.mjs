@@ -8,9 +8,9 @@ import * as au from './auth.mjs'
 import * as p from './plot.mjs'
 
 import * as self from './watch.mjs'
-const tar = window.tabularius ??= a.Emp()
+const tar = globalThis.tabularius ??= a.Emp()
 tar.w = self
-a.patch(window, tar)
+a.patch(globalThis, tar)
 
 export async function watchStartOpt() {
   if (!await shouldStartWatch()) return

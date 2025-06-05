@@ -41,6 +41,7 @@ export async function cmdSaves({sig, args}) {
     else await savesRevoke(sig)
   }
   finally {updateSetupFlowMsg(true)}
+  return undefined
 }
 
 export async function savesGrant({sig, args}) {
@@ -86,6 +87,7 @@ export async function cmdHistory({sig, args}) {
     else await historyRevoke(sig)
   }
   finally {updateSetupFlowMsg(true)}
+  return undefined
 }
 
 export async function historyGrant({sig, args}) {

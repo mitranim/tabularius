@@ -250,14 +250,14 @@ export function datAddRound({
     const bui_dmgOver_run = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisGame)
     const bui_dmgOver_round = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisWave)
 
-    let bui_dmgDone_run_fromWep = 0
+    // let bui_dmgDone_run_fromWep = 0
     let bui_dmgDone_round_fromWep = 0
-    let bui_dmgOver_run_fromWep = 0
+    // let bui_dmgOver_run_fromWep = 0
     let bui_dmgOver_round_fromWep = 0
 
-    let bui_dmgDone_run_fromWepChi = 0
+    // let bui_dmgDone_run_fromWepChi = 0
     let bui_dmgDone_round_fromWepChi = 0
-    let bui_dmgOver_run_fromWepChi = 0
+    // let bui_dmgOver_run_fromWepChi = 0
     let bui_dmgOver_round_fromWepChi = 0
 
     let bui_dmgDone_run_fromOtherChi = 0
@@ -281,9 +281,9 @@ export function datAddRound({
 
       if (DATA_DEBUG) {
         const stats = bui.WeaponStats?.[ind]?.stats
-        bui_dmgDone_run_fromWep += a.laxFin(stats?.DamageDone?.valueThisGame)
+        // bui_dmgDone_run_fromWep += a.laxFin(stats?.DamageDone?.valueThisGame)
         bui_dmgDone_round_fromWep += a.laxFin(stats?.DamageDone?.valueThisWave)
-        bui_dmgOver_run_fromWep += a.laxFin(stats?.DamageOverkill?.valueThisGame)
+        // bui_dmgOver_run_fromWep += a.laxFin(stats?.DamageOverkill?.valueThisGame)
         bui_dmgOver_round_fromWep += a.laxFin(stats?.DamageOverkill?.valueThisWave)
       }
     }
@@ -316,7 +316,7 @@ export function datAddRound({
 
       // Linter false positive.
       // deno-lint-ignore no-inner-declarations
-      function chiAdd(stat_type, stat_val) {
+      function chiAdd(stat_type, stat_val) { // eslint-disable-line no-inner-declarations
         a.reqValidStr(stat_type)
         a.reqFin(stat_val)
         if (!chiFact || !stat_val) return
@@ -333,9 +333,9 @@ export function datAddRound({
       const time_round = a.laxFin(dumBulStats?.DamageDone?.timeSpentThisWave)
 
       if (isWep) {
-        if (dmg_done_run)   bui_dmgDone_run_fromWepChi   += dmg_done_run
+        // if (dmg_done_run)   bui_dmgDone_run_fromWepChi   += dmg_done_run
         if (dmg_done_round) bui_dmgDone_round_fromWepChi += dmg_done_round
-        if (dmg_over_run)   bui_dmgOver_run_fromWepChi   += dmg_over_run
+        // if (dmg_over_run)   bui_dmgOver_run_fromWepChi   += dmg_over_run
         if (dmg_over_round) bui_dmgOver_round_fromWepChi += dmg_over_round
       }
       else {
@@ -387,9 +387,8 @@ export function datAddRound({
 
     const buiStats = round_bui.stats
 
-    // Linter false positive.
     // deno-lint-ignore no-inner-declarations
-    function buiAdd(stat_type, stat_val) {
+    function buiAdd(stat_type, stat_val) { // eslint-disable-line no-inner-declarations
       a.reqValidStr(stat_type)
       a.reqFin(stat_val)
       if (!stat_val) return
@@ -408,7 +407,7 @@ export function datAddRound({
 
     {
       const stat_val = bui_dmgDone_round_final
-      const time = bui_time_run
+      const time = bui_time_round
 
       buiAdd(STAT_TYPE_DMG_DONE, stat_val)
       buiAdd(STAT_TYPE_COST_EFF, divFin(stat_val, bui_cost))
@@ -1232,6 +1231,10 @@ export function roundMigrated({round, userId, runNum, runMs}) {
   let out = false
   if (changed(round, `tabularius_fields_schema_version`, ROUND_FIELDS_SCHEMA_VERSION)) out = true
 
+  /*
+  TODO avoid setting this field, remove it from existing data, and modify other
+  code to ignore it. We should derive game versions from timestamps only.
+  */
   if (
     !a.isValidStr(round.tabularius_game_ver) &&
     changed(round, `tabularius_game_ver`, GAME_VER)
