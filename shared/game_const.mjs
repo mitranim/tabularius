@@ -807,7 +807,19 @@ export const BUI_COSTS_1_11 = dict({
   CB16: {base: 270, upg: [[120, 450], [120, 350], [85, 600]]},
 })
 
+export const BUI_COSTS_1_20 = dict({
+  ...BUI_COSTS_1_11,
+
+  //    {base: 1500, upg: [[400, 1250], [350, 2000], [250, 400]]},
+  F201: {base: 1500, upg: [[400, 1250], [200, 2000], [250, 400]]},
+
+  //         {base: 50, upg: [[50, 80], [100, 100], [250, 250]]},
+  F2H10CB01: {base: 50, upg: [[50, 80], [100, 100], [150, 250]]},
+})
+
 export const GAME_RELEASES = [
   {ver: `1.9.0`, ms: a.reqFin(Date.parse(`2025-05-15T16:00:00Z`)), costs: BUI_COSTS_1_9},
   {ver: `1.11.0`, ms: a.reqFin(Date.parse(`2025-05-22T18:40:00Z`)), costs: BUI_COSTS_1_11},
+  {ver: `1.14.0`, ms: a.reqFin(Date.parse(`2025-05-29T17:15:00Z`)), costs: BUI_COSTS_1_11},
+  {ver: `1.20.0`, ms: a.reqFin(Date.parse(`2025-06-05T18:50:00Z`)), costs: BUI_COSTS_1_20},
 ]
