@@ -1,7 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as p from '@mitranim/js/prax.mjs'
 import * as ob from '@mitranim/js/obs.mjs'
-import * as od from '@mitranim/js/obs_dom.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
 import * as u from './util.mjs'
 import * as ui from './ui.mjs'
@@ -11,7 +10,6 @@ tar.lib ??= a.Emp()
 tar.lib.a = a
 tar.lib.p = p
 tar.lib.ob = ob
-tar.lib.od = od
 tar.lib.dr = dr
 a.patch(globalThis, tar)
 
@@ -34,25 +32,6 @@ export const {E, S} = REN
 
 // Base class for UI components with custom behaviors.
 export class Elem extends dr.MixReg(HTMLElement) {}
-
-/*
-Base class for reactive, stateful UI components. The mixin `od.MixReacElem`
-causes the element to automatically monitor observables and update on changes:
-
-- On `.connectedCallback`, `.run` is invoked.
-- Observables synchronously accessed during `.run` are automatically monitored.
-- When monitored observables change, `.run` is invoked.
-*/
-export class ReacElem extends od.MixReacElem(Elem) {}
-
-/*
-Similar to `ReacElem`, but with support for multiple different callbacks,
-which are expected to monitor multiple different observables. Subclasses
-should define a property or getter `.runs`, either instance or static,
-which must be an iterable with multiple functions, usually methods from
-the prototype of the same class.
-*/
-export class ReacsElem extends od.MixReacsElem(Elem) {}
 
 export const TARBLAN = Object.freeze({
   target: `_blank`,

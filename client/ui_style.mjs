@@ -289,7 +289,7 @@ export const TWIND = tw.twind({
 
   rules: [
     /*
-    Caller MUST also set width.
+    Callers MUST also set width.
 
     Uses `over-clip` rather than `overflow-hidden` because the latter
     creates a new formatting context, requiring additional `align-top` or
@@ -302,8 +302,9 @@ export const TWIND = tw.twind({
     For elements with their own `display` property, such as table cells.
     Caller must ensure that `display` is not `inline`.
     */
-    [`trunc-base`, `min-w-0 whitespace-pre overflow-x-clip text-ellipsis`],
+    [`trunc-base`, `text-clip text-ellipsis`],
 
+    [`text-clip`, `min-w-0 whitespace-pre overflow-x-clip`],
     [`row-cen-cen`, `flex-row justify-center items-center`],
     [`row-bet-cen`, `flex-row justify-between items-center`],
     [`row-bet-str`, `flex-row justify-between items-stretch`],

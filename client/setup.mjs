@@ -1,4 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
@@ -185,9 +186,11 @@ export function updateSetupFlowMsg(opt) {
   SETUP_FLOW_PREV_MSG = ui.LOG.info(new SetupFlow())
 }
 
-class SetupFlow extends ui.ReacElem {
+class SetupFlow extends ui.Elem {
+  constructor() {ob.reac(super(), this.init)}
+
   // SYNC[setup_state].
-  run() {
+  init() {
     const save = !!fs.SAVE_DIR_CONF.handle
     const hist = !!fs.HISTORY_DIR_CONF.handle
     const auth = !!au.STATE.userId

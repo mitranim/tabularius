@@ -361,11 +361,15 @@ export async function fileConfDeinit(sig, conf) {
   return `${desc}: access revoked`
 }
 
-export class FileConfStatus extends ui.ReacElem {
-  constructor(conf) {super().conf = a.reqInst(conf, FileConf)}
+export class FileConfStatus extends ui.Elem {
+  constructor(conf) {
+    super()
+    this.conf = a.reqInst(conf, FileConf)
+    ob.reac(this, this.init)
+  }
 
   // SYNC[file_conf_status].
-  run() {
+  init() {
     const {handle, perm, desc} = this.conf
     if (!handle) return E(this, {}, msgNotInited(this.conf))
     if (perm !== `granted`) return E(this, {}, msgNotGranted(this.conf))
@@ -1066,13 +1070,18 @@ export function isHandleGameFile(handle) {
 export async function readDecodeGameFile(sig, file) {
   a.reqInst(file, FileSystemFileHandle)
 
-  if (file.name.endsWith(`.json.gz`)) {
-    const src = await readFileByteArr(sig, file)
-    return JSON.parse(await u.byteArr_to_ungzip_to_str(src))
-  }
+  try {
+    if (file.name.endsWith(`.json.gz`)) {
+      const src = await readFileByteArr(sig, file)
+      return JSON.parse(await u.byteArr_to_ungzip_to_str(src))
+    }
 
-  const src = await readFileText(sig, file)
-  return u.decodeGdStr(src)
+    const src = await readFileText(sig, file)
+    return await u.decodeGdStr(src)
+  }
+  catch (err) {
+    throw new u.ErrDecoding(`unable to decode file ${a.show(file.name)}: ${err}`, {cause: err})
+  }
 }
 
 export async function writeEncodeGameFile(sig, tar, src) {

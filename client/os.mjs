@@ -203,8 +203,9 @@ export function showProcs() {
 }
 
 // Also see `Kill`.
-export class Procs extends ui.ReacElem {
-  run() {E(this, {}, showProcs())}
+export class Procs extends ui.Elem {
+  constructor() {ob.reac(super(), this.init)}
+  init() {E(this, {}, showProcs())}
 }
 
 cmdKill.cmd = `kill`
@@ -297,8 +298,10 @@ export function procKillOpt(pat) {
 }
 
 // Also see `Procs`.
-export class Kill extends ui.ReacElem {
-  run() {
+export class Kill extends ui.Elem {
+  constructor() {ob.reac(super(), this.init)}
+
+  init() {
     const active = a.map(PROCS, lineKillProc)
     E(this, {}, ui.LogLines(
       active.length ? `active processes:` : `no active processes`,

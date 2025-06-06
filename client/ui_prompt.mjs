@@ -33,17 +33,16 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
 
   constructor() {
     super()
+
     E(this, {
       id: `prompt`, type: `text`, autofocus: true, autocomplete: `off`,
       class: a.spaced(CLS_PROMPT_INPUT, PROMPT_INPUT_CLS_REGULAR),
     })
-  }
 
-  connectedCallback() {
-    this.onBlur()
     this.onfocus = this.onFocus
     this.onblur = this.onBlur
     this.onkeydown = this.onKeydown
+    this.onBlur()
   }
 
   disconnectedCallback() {this.listener.deinit()}
@@ -53,7 +52,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
       this.placeholder = `type a passphrase/password or press Esc to cancel`
     }
     else {
-      this.placeholder = `type a command (try "help" or "help <cmd>", ↑↓ for history)`
+      this.placeholder = `type a command (try "help" or "help <some_cmd>", ↑↓ for history)`
     }
   }
 
@@ -62,7 +61,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
       this.placeholder = `type a passphrase/password or press Esc to cancel; press ${a.show(PROMPT_FOCUS_KEY)} to focus`
     }
     else {
-      this.placeholder = `type a command (try "help" or "help <cmd>"; press ${a.show(PROMPT_FOCUS_KEY)} to focus)`
+      this.placeholder = `type a command (try "help" or "help <some_cmd>"; press ${a.show(PROMPT_FOCUS_KEY)} to focus)`
     }
   }
 
@@ -216,14 +215,15 @@ export const PROMPT = E(
   PROMPT_INPUT,
 )
 
-class SubmittedCmd extends ui.ReacElem {
+class SubmittedCmd extends ui.Elem {
   constructor(src, obs) {
     super()
     this.src = a.reqValidStr(src)
     this.obs = a.reqObj(obs)
+    ob.reac(this, this.init)
   }
 
-  run() {
+  init() {
     const {src, obs: {proc}} = this
     E(this, {},
       src,

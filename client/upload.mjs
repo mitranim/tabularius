@@ -431,14 +431,15 @@ function uploadDone({state, lazy}) {
   state.status = `done` + (a.optBool(lazy) ? ` (lazy mode)` : ``)
 }
 
-export class FileUploadProgress extends ui.ReacElem {
+export class FileUploadProgress extends ui.Elem {
   constructor(path, state) {
     super()
     this.path = a.reqStr(path)
     this.state = a.reqObj(state)
+    ob.reac(this, this.init)
   }
 
-  run() {
+  init() {
     const {path} = this
     const {done, status, roundsChecked, roundsUploaded} = this.state
 

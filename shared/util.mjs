@@ -178,8 +178,14 @@ export function arrOfUniqValidStr(src) {
   return a.arr(out)
 }
 
-export function jsonDecodeOpt(src) {
-  return isStrJsonLike(src) ? JSON.parse(src) : undefined
+export function jsonDecodeOpt(src, fun) {
+  return isStrJsonLike(src) ? JSON.parse(src, fun) : undefined
+}
+
+export function jsonDecode(src, fun = jsonDecoder) {
+  a.optFun(fun)
+  if (!a.optStr(src)) return undefined
+  return JSON.parse(src, fun)
 }
 
 /*
@@ -189,12 +195,7 @@ in our particular app), or when logging and browsing data in devtools, because
 null-prototype objects look cleaner. Should be avoided in other cases due to
 performance overhead.
 */
-export function jsonDecode(src) {
-  if (!a.optStr(src)) return undefined
-  return JSON.parse(src, jsonDecoder)
-}
-
-function jsonDecoder(_, src) {
+export function jsonDecoder(_, src) {
   if (a.isObj(src) && Object.getPrototypeOf(src) === Object.prototype) {
     const out = a.Emp()
     for (const key in src) out[key] = src[key]
@@ -262,27 +263,18 @@ export async function decodeGdStr(src) {
   extension. Not expected to throw unless JSON is corrupted, in which case
   manual user intervention may be needed.
   */
-  try {
-    const out = jsonDecodeOpt(src)
-    if (a.isSome(out)) return out
-  }
-  catch (err) {
-    throw new ErrDecoding(`unexpected JSON decoding error: ${err}`, {cause: err})
-  }
+  const out = jsonDecodeOpt(src)
+  if (a.isSome(out)) return out
 
   /*
   As fallback, try un-base64 -> un-gzip -> un-JSON.
   This is expected to be the most common case for TD files.
   */
-  try {
-    // Enable manually when browsing data in devtools.
-    // return jsonDecode(await str_to_unbase64_to_ungzip_to_str(src))
 
-    return JSON.parse(await str_to_unbase64_to_ungzip_to_str(src))
-  }
-  catch (err) {
-    throw new ErrDecoding(`all decoding methods failed: ${err}`, {cause: err})
-  }
+  // Enable manually when browsing data in devtools.
+  // return jsonDecode(await str_to_unbase64_to_ungzip_to_str(src))
+
+  return JSON.parse(await str_to_unbase64_to_ungzip_to_str(src))
 }
 
 export function data_to_json_to_gzip_to_base64Str(src) {

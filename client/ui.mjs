@@ -17,15 +17,15 @@ tar.ui = ui
 a.patch(globalThis, tar)
 
 // Increment by 1 when publishing an update.
-const VERSION = 118
+const VERSION = 119
 let INITED
 
 /*
 Should be called exactly once.
 
 Any further UI updates must be done either via observables and reactive elements
-such as subclasses of `ReacElem`, or semi-manually via `E` which can mutate its
-receiver, or by lower-level manipulation in very simple cases.
+via `ui.reac`, or or semi-manually via `E`, or by lower-level manipulation in
+very simple cases.
 */
 export function init() {
   if (INITED) return
@@ -116,7 +116,7 @@ export const NAV = E(
     class: a.spaced(
       ui.CLS_BG_1,
       ui.CLS_BORD,
-      `flex justify-between items-center gap-2 border-b`,
+      `flex justify-between items-center gap-2 px-2 border-b`,
     ),
   },
 

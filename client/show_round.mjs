@@ -1,6 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
+import * as ob from '@mitranim/js/obs.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
-import * as od from '@mitranim/js/obs_dom.mjs'
 import * as gc from '../shared/game_const.mjs'
 import * as s from '../shared/schema.mjs'
 import {E} from './ui.mjs'
@@ -227,8 +227,7 @@ export const LONG = u.storageObsBool(`tabularius.show_round.long`)
 export const SETTINGS_OPEN = u.storageObsBool(`tabularius.show_round.settings_open`)
 export const LONG_ROW_BREAKPOINT = 12
 
-class ShowRound extends d.MixDatSub(ui.ReacsElem) {
-  static runs = [this.prototype.onWide]
+class ShowRound extends d.MixDatSub(ui.Elem) {
   opt = undefined
 
   constructor(opt) {
@@ -238,18 +237,20 @@ class ShowRound extends d.MixDatSub(ui.ReacsElem) {
     E(
       this,
       {class: `@container flex col-sta-str max-w-none min-h-8 text-sm gap-2`},
-      new RoundHead(opt),
-      new ShowRoundSettingsAndHints(),
-      new RoundTable(opt),
     )
+    ob.reac(this, this.onWide)
+    this.init()
   }
 
   init() {
-    a.descendant(this, RoundHead).init(this.opt)
-    a.descendant(this, RoundTable).init(this.opt)
-    return this
+    return E(this, {},
+      new RoundHead(this.opt),
+      new TableSettingsAndHints(),
+      new RoundTable(this.opt),
+    )
   }
 
+  // Invoked by `MixDatSub`.
   onNewRound(src) {
     const {round, run_num, run_ms} = src
     this.opt.round = round
@@ -262,22 +263,13 @@ class ShowRound extends d.MixDatSub(ui.ReacsElem) {
   addCloseBtn(btn) {a.descendant(this, RoundHead).addCloseBtn(btn)}
 
   onWide() {ui.MEDIA.toggleWide(this, WIDE.val)}
-
-  connectedCallback() {
-    super.connectedCallback()
-    if (this.opt.live) this.datSubInit()
-  }
-
-  disconnectedCallback() {
-    this.datSubDeinit()
-    super.disconnectedCallback()
-  }
+  connectedCallback() {if (this.opt.live) this.datSubInit()}
+  disconnectedCallback() {this.datSubDeinit()}
 }
 
 class RoundHead extends ui.Elem {
-  constructor(opt) {super().init(opt)}
-
-  init({round, user_id, run_id, run_num, args}) {
+  constructor({round, user_id, run_id, run_num, args}) {
+    super()
     a.reqDict(round)
 
     const round_ms = a.onlyFin(Date.parse(round.LastUpdated))
@@ -406,15 +398,13 @@ function Pair(key, val) {
   )
 }
 
-class ShowRoundSettingsAndHints extends od.MixReacsElem(dr.MixReg(HTMLDetailsElement)) {
-  static runs = [this.prototype.onOpen]
-
+class TableSettingsAndHints extends dr.MixReg(HTMLDetailsElement) {
   constructor() {
     super()
+
     ui.DetailsPre({
       elem: this,
       summary: `settings and hints`,
-      open: SETTINGS_OPEN.val,
       class: a.spaced(ui.CLS_MEDIA_PAD_X, `whitespace-pre-wrap`),
       count: false,
       chiLvl: 1,
@@ -427,11 +417,9 @@ class ShowRoundSettingsAndHints extends od.MixReacsElem(dr.MixReg(HTMLDetailsEle
         TableControlLong(),
       ],
     })
-  }
 
-  connectedCallback() {
     this.ontoggle = this.onToggle
-    super.connectedCallback()
+    ob.reac(this, this.onOpen)
   }
 
   onToggle() {SETTINGS_OPEN.val = this.open}
@@ -482,8 +470,8 @@ function TableControlNumMode() {
 function TableControlShowChi() {
   return new ObsCheckbox({
     label: `show children`,
-    obs: CHI_SHOW,
-    tooltip: `ctrl+click any building row`,
+    obs: SHOW_CHI,
+    tooltip: `same as ctrl+click on any building row`,
   })
 }
 
@@ -513,9 +501,13 @@ function TableControlLong() {
 
 class SortObs extends u.StorageObsJson {
   decode(src) {return a.laxDict(a.onlyDict(super.decode(src)))}
+  isEnabled() {return !!this.get()?.key}
 }
 
 export const BUI_SORT = new SortObs(`tabularius.round_table.sort_bui`)
+export const CHI_SORT = new SortObs(`tabularius.round_table.sort_chi`)
+export const WEP_SORT = new SortObs(`tabularius.round_table.sort_wep`)
+export const SORTS = [BUI_SORT, CHI_SORT, WEP_SORT]
 
 // SYNC[bui_stat_types].
 export const BUI_STAT_TYPES = [...s.STAT_TYPES, `bui_cost`]
@@ -534,8 +526,6 @@ export const BUI_COLS = [
   {...BUI_COL_BASE, key: `bui_cost`,               type: TYPE_NUM, colspan: 2},
 ]
 
-export const CHI_SORT = new SortObs(`tabularius.round_table.sort_chi`)
-
 // SYNC[chi_stat_types].
 export const CHI_STAT_TYPES = [
   s.STAT_TYPE_DMG_DONE,
@@ -552,8 +542,6 @@ export const CHI_COLS = [
   ...a.map(CHI_STAT_TYPES, key => ({...CHI_COL_BASE, key, type: TYPE_NUM, colspan: 2})),
   {...CHI_COL_BASE, key: `enabled`, type: TYPE_BOOL, colspan: 6, hide: true},
 ]
-
-export const WEP_SORT = new SortObs(`tabularius.round_table.sort_wep`)
 
 export const WEP_COL_BASE = {sortObs: WEP_SORT}
 
@@ -577,31 +565,13 @@ export const WEP_COLS = [
 
 validateColAlignment()
 
-class RoundTable extends od.MixReacsElem(dr.MixReg(HTMLTableElement)) {
-  static runs = [this.prototype.onBuiSort]
-
+class RoundTable extends dr.MixReg(HTMLTableElement) {
   constructor(opt) {
     super()
     E(this, {class: `w-full table media-pad`},
-      new TableHead(),
-      new TableBody(),
+      new TableHead(opt),
+      new TableBody(opt),
     )
-    this.init(opt)
-  }
-
-  init(opt) {
-    for (const val of this.tBodies) val.init(opt)
-    return this
-  }
-
-  onBuiSort() {
-    a.nop(BUI_SORT.val)
-    this.sort()
-  }
-
-  sort() {
-    this.tHead.sort()
-    for (const body of this.tBodies) body.sort()
   }
 }
 
@@ -612,60 +582,56 @@ class TableHead extends dr.MixReg(HTMLTableSectionElement) {
     super()
     E(this, {}, a.map(BUI_COLS, Th))
   }
-
-  sort() {for (const cell of this.children) cell.sort()}
 }
 
-class TableBody extends od.MixReacsElem(dr.MixReg(HTMLTableSectionElement)) {
+class TableBody extends dr.MixReg(HTMLTableSectionElement) {
   static localName = `tbody`
-  static runs = [this.prototype.onMissingLast]
+  sorted = false
 
-  init(opt) {
-    const rows = roundTableRows(opt)
-    const buiLen = this.setBuiInds(rows)
-    E(this, {}, rows, buiLongToggleRows(buiLen))
-    this.setRowInds()
+  constructor(opt) {
+    super()
+    const {tbodyRows} = roundTableRows(opt)
+    E(this, {}, tbodyRows)
+    ob.reac(this, this.onSort)
+    for (const row of this.rows) row.init()
+  }
+
+  onSort() {
+    a.each(SORTS, monitor)
+    const initial = !this.sorted
+    if (a.some(SORTS, isEnabled) || !initial) this.sort()
+    this.sorted = true
   }
 
   sort() {
     const rows = a.arr(this.children).sort(compareRowsDeep)
-    for (const row of rows) row.sort?.()
-    this.setBuiInds(rows)
+    setBuiInds(rows)
     E(this, {}, rows)
-  }
-
-  setRowInds() {
-    for (const [ind, row] of a.entries(this.rows)) row.sortInd = ind
-  }
-
-  setBuiInds(rows) {
-    let ind = -1
-    for (const row of a.reqArr(rows)) {
-      if (!a.isInst(row, BuiRow)) continue
-      row.buiRowInd = ++ind
-    }
-    return ind + 1
-  }
-
-  missingLast = MISSING_LAST.val
-
-  onMissingLast() {
-    if (this.missingLast === (this.missingLast = MISSING_LAST.val)) return
-    const {key, desc} = BUI_SORT.val
-    if (key && !desc) this.sort()
   }
 }
 
 class TableRow extends dr.MixReg(HTMLTableRowElement) {
   parent = undefined
-  sortInd = a.optNat()
+  sortInd = undefined
   sortObs = undefined
+  showRow = undefined
+  cellDict = undefined
 
-  constructor({parent, sortObs} = {}) {
+  constructor({parent, sortInd, sortObs, showRow} = {}) {
     super()
     this.parent = a.optNode(parent)
+    this.sortInd = a.reqNat(sortInd)
     this.sortObs = a.optInst(sortObs, SortObs)
+    this.showRow = a.optObj(showRow)
   }
+
+  // Should be called by `tbody` after sorting.
+  init() {
+    const {showRow} = this
+    if (showRow) ob.reac(this, this.onShow)
+  }
+
+  onShow() {this.hidden = !a.optBool(this.showRow.val)}
 
   isSortable() {return true}
 
@@ -673,8 +639,6 @@ class TableRow extends dr.MixReg(HTMLTableRowElement) {
     a.reqValidStr(key)
     return this.getCellIndex()[key]
   }
-
-  cellDict = undefined
 
   getCellIndex() {
     if (this.cellDict) return this.cellDict
@@ -686,33 +650,13 @@ class TableRow extends dr.MixReg(HTMLTableRowElement) {
     return this.cellDict = out
   }
 
-  hasAnc(val) {
-    if (!a.isSome(val)) return false
-    let tar = this
-    while (a.isSome(tar = tar.parent)) if (tar === val) return true
-    return false
-  }
+  ancs = undefined
 
-  hasChi() {return !!this.nextElementSibling?.hasAnc(this)}
-
-  firstChi() {
-    const out = this.nextElementSibling
-    if (out?.hasAnc(this)) return out
-    return undefined
-  }
-
-  *iterChi() {
-    let val = this
-    while ((val = val.nextElementSibling) && val.hasAnc(this)) yield val
-  }
-
-  #ancs = undefined
-
-  ancs() {
-    let out = this.#ancs
+  ancestors() {
+    let out = this.ancs
     if (out) return out
 
-    out = this.#ancs = []
+    out = this.ancs = []
     let val = this
     while (a.isSome(val = val.parent)) out.push(val)
     return out.reverse()
@@ -720,12 +664,10 @@ class TableRow extends dr.MixReg(HTMLTableRowElement) {
 }
 
 class PseudoHeadRow extends TableRow {
-  constructor({parent, sortObs, cols}) {
-    super({parent, sortObs})
+  constructor({cols, ...opt}) {
+    super(opt)
     E(this, {class: `tr-sub`}, a.map(cols, Th))
   }
-
-  sort() {for (const cell of this.children) cell.sort()}
   isSortable() {return false}
 }
 
@@ -763,9 +705,9 @@ class TableHeadCell extends dr.MixReg(HTMLTableCellElement) {
         under: true,
       }),
     )
+    this.onclick = this.onClick
+    ob.reac(this, this.onSort)
   }
-
-  connectedCallback() {this.onclick = this.onClick}
 
   onClick() {this.sortNext()}
 
@@ -774,15 +716,14 @@ class TableHeadCell extends dr.MixReg(HTMLTableCellElement) {
     sortObs.val = cycleSort(key, sortObs.val)
   }
 
-  sort() {
+  onSort() {
     const {key, desc} = this.sortObs.val
     E(this, {'aria-sort': ariaSort(a.vac(key === this.key) && desc)})
   }
 }
 
-class TableCell extends od.MixReacsElem(dr.MixReg(HTMLTableCellElement)) {
+class TableCell extends dr.MixReg(HTMLTableCellElement) {
   static localName = `td`
-  static runs = [this.prototype.onNumMode]
 
   type = a.optStr()
   key = a.optValidStr()
@@ -809,6 +750,7 @@ class TableCell extends od.MixReacsElem(dr.MixReg(HTMLTableCellElement)) {
         a.vac(a.optBool(hide) && CLS_HIDE_BELOW),
       ),
     })
+    this.drawVal()
   }
 
   setPre(val) {this.pre = val}
@@ -820,9 +762,9 @@ class TableCell extends od.MixReacsElem(dr.MixReg(HTMLTableCellElement)) {
   }
 
   addPerc(val) {
-    if (!a.isFin(this.val) || !a.onlyFin(val)) return this
+    if (!a.isFin(this.val) || !a.onlyFin(val)) return
     this.perc = a.onlyFin(this.val / val)
-    return this
+    ob.reac(this, this.onNumMode)
   }
 
   // TODO: more colors for different types.
@@ -890,26 +832,63 @@ function Tds(src, cols) {
     }
 
     const val = src[key]
-    out.push(new TableCell({...col, val}).drawVal())
+    out.push(new TableCell({...col, val}))
   }
   return out
 }
 
-export const CHI_SHOW = u.storageObsBool(`tabularius.round_table.show_chi`)
+export const SHOW_CHI = u.storageObsBool(`tabularius.round_table.show_chi`)
 
-class BuiRow extends od.MixReacsElem(TableRow) {
-  static runs = [this.prototype.onLong, this.prototype.onChiShow]
-  buiRowInd = undefined
-  showAssoc = CHI_SHOW.val
+class BuiRow extends TableRow {
+  buiInd = ob.obsRef()
+  showRow = ob.obsRef(true)
+  showChi = ob.obsRef(SHOW_CHI.val)
 
-  constructor() {super({sortObs: BUI_SORT})}
+  constructor({buiData, buiInd, hasAssoc, ...opt}) {
+    super({sortObs: BUI_SORT, ...opt})
 
-  connectedCallback() {
-    super.connectedCallback()
-    if (!this.hasChi()) return
-    ui.addCls(this, `cursor-pointer`)
-    ui.addCls(this, ui.CLS_BUSY_BG)
-    this.onclick = this.onClick
+    this.setBuiInd(buiInd)
+    this.append(...Tds(buiData, BUI_COLS))
+
+    if (a.reqBool(hasAssoc)) {
+      this.onclick = this.onClick
+      ui.addCls(this, `cursor-pointer`)
+      ui.addCls(this, ui.CLS_BUSY_BG)
+    }
+  }
+
+  // Should be called by `tbody` after sorting.
+  init() {ob.reac(this, this.onLongInd, this.onShow)}
+
+  setBuiInd(val) {this.buiInd.val = a.reqNat(val)}
+
+  addPerc(total) {
+    a.reqDict(total)
+    for (const type of BUI_STAT_TYPES) {
+      this.getCell(type)?.addPerc(total[type])
+    }
+  }
+
+  onLongInd() {
+    // console.log(`onLongInd`)
+
+    const long = a.laxBool(LONG.val)
+    const ind = this.buiInd.val
+
+    if (u.DEV) a.reqNat(ind)
+    else if (!a.isNat(ind)) return
+
+    this.showRow.val = long || (ind <= LONG_ROW_BREAKPOINT)
+  }
+
+  onShow() {
+    // console.log(`onShow`)
+
+    const showBui = this.showRow.val
+    const showChi = SHOW_CHI.val
+
+    this.hidden = !showBui
+    this.showChi.val = a.laxBool(showChi && showBui)
   }
 
   /*
@@ -925,38 +904,9 @@ class BuiRow extends od.MixReacsElem(TableRow) {
   target. Inverse for a row whose assoc rows are visible.
   */
   onClick(eve) {
-    const show = !!this.firstChi()?.hidden
-    if (u.isEventModifiedPrimary(eve)) CHI_SHOW.val = show
-    else this.toggleAssocRows(show)
-  }
-
-  onChiShow() {this.toggleAssocRows(CHI_SHOW.val)}
-
-  addPerc(total) {
-    a.reqDict(total)
-    for (const type of BUI_STAT_TYPES) {
-      this.getCell(type)?.addPerc(total[type])
-    }
-  }
-
-  toggleAssocRows(show) {
-    this.showAssoc = a.optBool(show)
-    this.toggleAssocRowsInternal(show)
-  }
-
-  toggleAssocRowsInternal(show) {
-    a.optBool(show)
-    for (const val of this.iterChi()) val.hidden = !show
-  }
-
-  onLong() {
-    const ind = this.buiRowInd
-    if (u.DEV) a.reqNat(ind)
-    else if (!a.isNat(ind)) return
-
-    const show = a.optBool(LONG.val) || (ind <= LONG_ROW_BREAKPOINT)
-    this.toggleAssocRowsInternal(show && this.showAssoc)
-    this.hidden = !show
+    const show = !this.showChi.val
+    this.showChi.val = show
+    if (u.isEventModifiedPrimary(eve)) SHOW_CHI.val = show
   }
 }
 
@@ -969,17 +919,15 @@ class ChiRow extends TableRow {
   }
 }
 
-class BuiLongToggleRow extends od.MixReacsElem(TableRow) {
-  static runs = [this.prototype.onLong]
-
+class BuiLongToggleRow extends TableRow {
   lenBui = undefined
   lenMax = undefined
 
   get obs() {return LONG}
   get cols() {return BUI_COLS}
 
-  constructor({lenBui, lenMax, class: cls, colspan}) {
-    super()
+  constructor({lenBui, lenMax, class: cls, colspan, ...opt}) {
+    super(opt)
     this.lenBui = a.reqNat(lenBui)
     this.lenMax = a.reqNat(lenMax)
 
@@ -988,12 +936,8 @@ class BuiLongToggleRow extends od.MixReacsElem(TableRow) {
       {class: a.spaced(`cursor-pointer`, ui.CLS_BUSY_BG, ui.CLS_TEXT_GRAY, cls)},
       E(`td`, {class: `text-center py-1`, colspan}),
     )
-    this.onLong()
-  }
-
-  connectedCallback() {
     this.onclick = this.onClick
-    super.connectedCallback()
+    ob.reac(this, this.onLong)
   }
 
   onLong() {
@@ -1010,35 +954,28 @@ class BuiLongToggleRow extends od.MixReacsElem(TableRow) {
   onClick() {this.obs.val = !this.obs.val}
 }
 
-function PseudoTableRows({Row, parent, cols, datas, sortObs, ...opt}) {
-  Row = a.optCls(Row) ?? TableRow
-  const head = new PseudoHeadRow({parent, cols, sortObs})
+function addPseudoTableRows({
+  tbodyRows, Row, parent, cols, datas, total, ...opt
+}) {
+  a.reqArr(tbodyRows)
 
-  return [
-    head,
-    ...a.map(datas, src => E(
-      new Row({parent: head, sortObs, ...opt}),
+  Row = a.optCls(Row) ?? TableRow
+
+  const head = new PseudoHeadRow({
+    parent, cols, sortInd: tbodyRows.length, ...opt
+  })
+
+  tbodyRows.push(head)
+
+  for (const src of datas) {
+    const row = E(
+      new Row({parent: head, sortInd: tbodyRows.length, ...opt}),
       {class: `tr-sub`},
       Tds(src, cols),
-    )),
-  ]
-}
-
-function buiLongToggleRows(lenBui) {
-  lenBui = a.laxNat(lenBui)
-  const lenMax = LONG_ROW_BREAKPOINT
-  if (!(lenBui > lenMax)) return undefined
-
-  return [
-    new BuiLongToggleRow({
-      lenBui, lenMax, class: CLS_HIDE_BELOW,
-      colspan: sumColspans(BUI_COLS).all,
-    }),
-    new BuiLongToggleRow({
-      lenBui, lenMax, class: CLS_HIDE_ABOVE,
-      colspan: sumColspans(BUI_COLS).show,
-    }),
-  ]
+    )
+    if (total) row.addPerc(total)
+    tbodyRows.push(row)
+  }
 }
 
 function roundTableRows({round, user_id, run_num, run_ms}) {
@@ -1058,18 +995,16 @@ function roundTableRows({round, user_id, run_num, run_ms}) {
     addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal})
   }
 
+  addBuiToggleRows({tbodyRows, buiRows})
+
   for (const row of buiRows) row.addPerc(buiTotal)
-  return tbodyRows
+
+  return {tbodyRows, buiRows}
 }
 
 function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
   a.reqArr(tbodyRows)
   a.reqArr(buiRows)
-
-  const buiData = buiStatData({round_bui, buiTotal})
-  const buiRow = E(new BuiRow(), {}, Tds(buiData, BUI_COLS))
-  tbodyRows.push(buiRow)
-  buiRows.push(buiRow)
 
   const {wepTypes, dumBulTypes} = a.reqDict(round_bui)
   const chiTotal = a.Emp()
@@ -1079,6 +1014,7 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
   for (const [ind, wep] of a.entries(bui.Weapons)) {
     const stats = bui.WeaponStats[ind]?.stats
     if (!shouldShowWep(wep, stats)) continue
+
     chiDatas.push(wepStatData({wep, stats, chiTotal}))
     wepDatas.push(wepDetailData(wep))
   }
@@ -1089,21 +1025,31 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
     chiDatas.push(chiStatData({type, stats, chiTotal}))
   }
 
+  // SYNC[bui_has_assoc].
+  const hasAssoc = (chiDatas.length > 1) || !!wepDatas.length
+  const buiData = buiStatData({round_bui, buiTotal})
+  const buiRow = new BuiRow({
+    buiData, buiInd: buiRows.length, sortInd: tbodyRows.length, hasAssoc,
+  })
+
+  tbodyRows.push(buiRow)
+  buiRows.push(buiRow)
+
   if (chiDatas.length) {
     const head = buiRow.cells[0]
     const cols = CHI_COLS
     const sortObs = CHI_SORT
 
+    // SYNC[bui_has_assoc].
     if (chiDatas.length === 1) {
       const key = a.reqValidStr(a.head(cols).key)
       head.setSuf([`: `, ui.Muted(chiDatas[0][key])])
     }
     else {
-      const [pseudoHead, ...rows] = PseudoTableRows({
-        Row: ChiRow, parent: buiRow, cols, datas: chiDatas, sortObs,
+      addPseudoTableRows({
+        tbodyRows, Row: ChiRow, parent: buiRow, cols, datas: chiDatas,
+        sortObs, showRow: buiRow.showChi, total: chiTotal,
       })
-      for (const row of rows) row.addPerc(chiTotal)
-      tbodyRows.push(pseudoHead, ...rows)
       head.setSuf([`: `, ui.Muted(chiDatas.length)])
     }
   }
@@ -1111,10 +1057,32 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
   if (wepDatas.length) {
     const cols = WEP_COLS
     const sortObs = WEP_SORT
-    tbodyRows.push(...PseudoTableRows({
-      parent: buiRow, cols, datas: wepDatas, sortObs,
-    }))
+
+    addPseudoTableRows({
+      tbodyRows, parent: buiRow, cols, datas: wepDatas,
+      sortObs, showRow: buiRow.showChi,
+    })
   }
+}
+
+function addBuiToggleRows({tbodyRows, buiRows}) {
+  a.reqArr(tbodyRows)
+  a.reqArr(buiRows)
+
+  const lenBui = buiRows.length
+  const lenMax = LONG_ROW_BREAKPOINT
+  if (lenBui <= lenMax) return
+
+  tbodyRows.push(
+    new BuiLongToggleRow({
+      lenBui, lenMax, class: CLS_HIDE_BELOW, sortInd: tbodyRows.length,
+      colspan: sumColspans(BUI_COLS).all,
+    }),
+    new BuiLongToggleRow({
+      lenBui, lenMax, class: CLS_HIDE_ABOVE, sortInd: tbodyRows.length,
+      colspan: sumColspans(BUI_COLS).show,
+    }),
+  )
 }
 
 function buiStatData({round_bui, buiTotal}) {
@@ -1234,8 +1202,8 @@ export function compareRowsDeep(one, two) {
   reqRow(one)
   reqRow(two)
 
-  const oneAncs = one.ancs()
-  const twoAncs = two.ancs()
+  const oneAncs = one.ancestors()
+  const twoAncs = two.ancestors()
   const oneLen = oneAncs.length
   const twoLen = twoAncs.length
 
@@ -1271,6 +1239,8 @@ export function compareRowsDeep(one, two) {
 // TODO simplify, add explanatory comments.
 export function compareRows(one, two) {
   if (one === two) return 0
+  if (a.isNil(two.sortInd)) return -1
+  if (a.isNil(one.sortInd)) return 1
 
   const fallback = a.reqFin(one.sortInd) - a.reqFin(two.sortInd)
   const obs = one.sortObs
@@ -1318,7 +1288,7 @@ function BtnAppendEph(eph) {
   return ui.BtnPrompt({cmd: cmdShowRound.cmd, eph, full: true})
 }
 
-class ObsCheckbox extends od.MixReacElem(dr.MixReg(HTMLLabelElement)) {
+class ObsCheckbox extends dr.MixReg(HTMLLabelElement) {
   obs = undefined
 
   constructor({label, obs, tooltip, onchange}) {
@@ -1326,6 +1296,7 @@ class ObsCheckbox extends od.MixReacElem(dr.MixReg(HTMLLabelElement)) {
     this.obs = a.reqObj(obs)
 
     let span
+
     if (tooltip) {
       span = ui.Span(label)
       ui.addCls(span, ui.CLS_HELP_UNDER)
@@ -1343,23 +1314,23 @@ class ObsCheckbox extends od.MixReacElem(dr.MixReg(HTMLLabelElement)) {
       E(`input`, {
         type: `checkbox`,
         value: ``,
-        checked: !!obs.val,
         class: `cursor-pointer`,
         onchange() {
           obs.val = this.checked
           onchange?.call(this, obs.val)
         },
-      })
+      }),
     )
+    ob.reac(this, this.onObs)
   }
 
-  run() {
+  onObs() {
     const {obs} = this
     a.descendant(this, HTMLInputElement).checked = obs.val
   }
 }
 
-class ObsRadio extends od.MixReacElem(dr.MixReg(HTMLFieldSetElement)) {
+class ObsRadio extends dr.MixReg(HTMLFieldSetElement) {
   obs = undefined
 
   constructor({label, obs, vals}) {
@@ -1374,9 +1345,10 @@ class ObsRadio extends od.MixReacElem(dr.MixReg(HTMLFieldSetElement)) {
       E(`span`, {class: a.spaced(ui.CLS_TEXT_GRAY, `trunc`)}, label, `:`),
       a.map(vals, val => ObsRadioInput({val, obs, name})),
     )
+    ob.reac(this, this.onObs)
   }
 
-  run() {
+  onObs() {
     const val = this.obs.val
     for (const elem of this.elements) elem.checked = elem.value === val
   }
@@ -1573,13 +1545,16 @@ function validateColAlignment() {
   const bui = sumColspans(BUI_COLS)
   const chi = sumColspans(CHI_COLS)
   const wep = sumColspans(WEP_COLS)
+
   if (bui.all === chi.all && chi.all === wep.all) return
+
   ui.logErr(`colspan mismatch: bui = ${a.show(bui)}, chi = ${a.show(chi)}, wep = ${a.show(wep)}`)
 }
 
 function sumColspans(cols) {
   let show = 0
   let hide = 0
+
   for (const col of cols) {
     const val = a.optNat(col.colspan) ?? 1
     if (a.optBool(col.hide)) hide += val
@@ -1588,11 +1563,21 @@ function sumColspans(cols) {
   return {all: show + hide, show, hide}
 }
 
+class Words extends a.Words {abbr() {return this.mapMut(first).join(``)}}
 function abbrs(src) {return a.spaced(...a.map(src, abbr))}
 function abbr(src) {return Words.from(src).abbr()}
-class Words extends a.Words {abbr() {return this.mapMut(first).join(``)}}
 function first(src) {return src[0]}
+function isEnabled(val) {return val.isEnabled()}
+function monitor(val) {a.nop(a.reqObj(val).val)}
 
-function getRoundTable(tar) {
-  return a.descendant(a.ancestor(tar, ShowRound), RoundTable)
+function setBuiInds(rows) {
+  a.reqArr(rows)
+
+  let buiCount = 0
+
+  for (const row of rows) {
+    if (!a.isInst(row, BuiRow)) continue
+    row.setBuiInd(buiCount++)
+  }
+  return buiCount
 }

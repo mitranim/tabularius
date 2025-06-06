@@ -1530,19 +1530,20 @@ export function apiLatestRun(sig, user) {
   return u.fetchJson(url, opt)
 }
 
-export class PlotTotals extends ui.ReacElem {
+export class PlotTotals extends ui.Elem {
   // May or may not be observable.
   src = undefined
 
   constructor(src) {
     super()
     this.src = a.reqObj(src)
+    ob.reac(this, this.init)
   }
 
   logPrefix = undefined
   title = undefined
 
-  run() {
+  init() {
     const args = a.reqStr(this.src.args)
     const totals = a.reqDict(this.src.totals)
     const counts = a.reqDict(totals.counts)

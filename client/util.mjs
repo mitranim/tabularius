@@ -73,11 +73,11 @@ export const STORAGE_OBS_KEYS = new Set()
 
 export function storageObs(...src) {return new StorageObs(...src)}
 
-/*
-An observable with storage persistence. Reads and writes as needed.
-WAY too much code. TODO simplify.
-*/
+// An observable with storage persistence. Reads and writes lazily as needed.
 export class StorageObs extends ob.ObsRef {
+  inited = false
+  key = undefined
+
   constructor(key) {
     super()
     this.key = a.reqValidStr(key)
@@ -87,38 +87,20 @@ export class StorageObs extends ob.ObsRef {
     STORAGE_OBS_KEYS.add(key)
   }
 
-  /*
-  Getters and setters are observable, for consistency with our convention for
-  plain-object observables where we store the value in `.val`.
-  */
-  get val() {return this.#get(true)}
-  set val(val) {this.#set(val, true)}
-
-  /*
-  Getter and setter methods are non-observable. Callers can choose to update the
-  value without triggering.
-  */
-  get() {return this.#get(false)}
-  set(val) {this.#set(val, false)}
-
-  #get(mon) {
-    a.optBool(mon)
-    if (this.#setSync(true)) this.$ = this.read()
-    if (mon) this.monitor()
+  get() {
+    if (!this.inited) {
+      this.inited = true
+      this.$ = this.read()
+    }
     return this.$
   }
 
-  #set(val, trig) {
-    a.optBool(trig)
+  set(val) {
     if (a.is(val, this.$)) return
-    this.write(val)
-    this.#setSync(true)
+    this.inited = true
     this.$ = val
-    if (trig) this.trigger()
+    this.write(val)
   }
-
-  #synced = false
-  #setSync(val) {return this.#synced !== (this.#synced = a.reqBool(val))}
 
   decode(val) {return val}
   encode(val) {return val}
@@ -130,7 +112,7 @@ export class StorageObs extends ob.ObsRef {
 export function storageObsBool(...src) {return new StorageObsBool(...src)}
 
 export class StorageObsBool extends StorageObs {
-  decode(src) {return a.boolOpt(src)}
+  decode(src) {return a.laxBool(a.boolOpt(src))}
   encode(src) {return a.renderOpt(src)}
 }
 
@@ -144,7 +126,7 @@ export class StorageObsFin extends StorageObs {
 export function storageObsJson(...src) {return new StorageObsJson(...src)}
 
 export class StorageObsJson extends StorageObs {
-  decode(src) {return u.jsonDecodeOpt(src)}
+  decode(src) {return u.jsonDecodeOpt(src, u.jsonDecoder)}
   encode(src) {return JSON.stringify(src)}
 }
 

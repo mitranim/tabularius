@@ -5,6 +5,7 @@ import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as ui from './ui.mjs'
 
+// TODO reduce space-wasting.
 // SYNC[media_pad].
 export const MEDIA_PAD = `1rem`
 export const CLS_MEDIA_PAD = `p-[${MEDIA_PAD}]`
@@ -20,10 +21,12 @@ export const CLS_MEDIA_CHI = a.spaced(
   `border rounded overflow-x-clip`,
 )
 
-export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends ui.ReacElem {
+export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends ui.Elem {
+  constructor() {ob.reac(super(), this.init)}
+
   state = ob.obs({count: 0})
 
-  run() {
+  init() {
     const {count} = this.state
     const placeholder = `[Plot Placeholder]`
 
@@ -52,16 +55,12 @@ export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends ui.ReacElem {
 }()
 
 // A reactive element that shows running processes.
-export const PROCESS_LIST = new class ProcessList extends ui.ReacElem {
-  run() {
+export const PROCESS_LIST = new class ProcessList extends ui.Elem {
+  connectedCallback() {ob.reac(this, this.init)}
+
+  init() {
     const vals = a.values(os.PROCS)
     const len = vals.length
-
-    /*
-    Ensure we're monitoring the observable; `a.values` doesn't do that
-    when the dict is empty.
-    */
-    os.PROCS[``]
 
     E(
       this,

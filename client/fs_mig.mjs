@@ -195,13 +195,14 @@ async function migrateRunDir({
   ui.LOG.verb(`[fs_mig] removed run dir ${a.show(dirNamePrev)}`)
 }
 
-export class FsMigProg extends ui.ReacElem {
+export class FsMigProg extends ui.Elem {
   constructor(state) {
     super()
     this.state = a.reqObj(state)
+    ob.reac(this, this.init)
   }
 
-  run() {
+  init() {
     const {status, runsChecked, runsMigrated, roundsChecked, roundsMigrated} = this.state
 
     E(this, {}, u.joinLines(

@@ -167,7 +167,6 @@ For creating and manipulating the DOM, use the tools provided by `@mitranim/js`.
 ```js
 import * as p from '@mitranim/js/prax.mjs'
 import * as ob from '@mitranim/js/obs.mjs'
-import * as od from '@mitranim/js/obs_dom.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
 
 // Create renderer.
@@ -187,13 +186,16 @@ const obs = ob.obs({count: 0})
 function inc() {obs.count++}
 
 // Reactive custom elements automatically subscribe to observables.
-class Counter extends od.MixReacElem(dr.MixReg(HTMLElement)) {
-  run() {
-    E(this, {},
-      E(`button`, {type: `button`, onclick: inc}, obs.count)
-    )
+class Counter extends dr.MixReg(HTMLButtonElement) {
+  constructor() {
+    super()
+    this.onclick = inc
+    ob.reac(this, this.init)
   }
+
+  init() {this.textContent = obs.count}
 }
+
 elem.append(new Counter())
 ```
 

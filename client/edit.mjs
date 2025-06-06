@@ -919,15 +919,20 @@ export async function editCommit(sig, state) {
     ))
 
     if (write) {
-      msgs.push([BtnAppend(`-w`), ` specified; attempting to backup and write files`])
+      msgs.push([
+        BtnAppend(`-w`),
+        ` specified; attempting to backup and write files`,
+      ])
     }
     else {
-      msgs.push([
-        `no `, BtnAppend(`-w`),
-        ` specified; showing a `, ui.Bold(`preview`),
-        ` of the planned changes, `,
-        ui.Bold(`without writing any files`),
-      ])
+      msgs.push(ui.LogParagraphs(
+        [
+          `showing a `, ui.Bold(`preview`), ` of the planned changes, `,
+          ui.Bold(`without writing any files`),
+          `; add `, BtnAppend(`-w`), ` to commit the changes:`,
+        ],
+        [`  `, ui.BtnPromptReplace({val: a.spaced(args, `-w`)})],
+      ))
     }
   }
 
@@ -1195,9 +1200,28 @@ export async function loadSaveFileAndValidate({sig, state, name, pre, entries}) 
   return out
 }
 
+/*
+TODO: detect if the file consists entirely of null bytes and print a more
+specific error message. Happens sometimes.
+*/
 export async function loadData(sig, file) {
   a.reqInst(file, EditFile)
-  return file.data ??= await fs.readDecodeGameFile(sig, file.handle)
+  if (a.isSome(file.data)) return file.data
+
+  try {
+    return file.data = await fs.readDecodeGameFile(sig, file.handle)
+  }
+  catch (err) {
+    ui.LOG.info(ui.LogParagraphs(
+      [`the content of `, a.show(file.path), ` could not be decoded`],
+      `one of the possible reasons: save file corruption, which may occur when the OS is unexpectedly shut down while the game is running, for example due to power cuts`,
+      [
+        ui.Bold(`recommendation:`),
+        ` run the game and let it update the files by saving your progress, by reaching round 2 in any run; then close the game and rerun your edit`,
+      ],
+    ))
+    throw err
+  }
 }
 
 export async function loadSaveDir(sig, state) {

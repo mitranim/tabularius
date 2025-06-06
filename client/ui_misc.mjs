@@ -266,7 +266,7 @@ export function DetailsPre({summary, inf, chi, chiLvl, count, ...opt}) {
   count = a.optBool(count) ?? true
 
   if (!chi?.length) return undefined
-  if (chi.length === 1) return [summary, `: `, chi[0]]
+  if (chi.length === 1) return [ui.Muted(summary, `: `), chi[0]]
   if (count) inf ??= chi.length
 
   function sum(open) {
@@ -274,7 +274,8 @@ export function DetailsPre({summary, inf, chi, chiLvl, count, ...opt}) {
 
     return [
       ui.Muted(summary, `: `),
-      infix, a.vac(infix) && ` `,
+      infix,
+      a.vac(infix) && ` `,
       ui.Muted(open ? `↓` : `→`),
     ]
   }

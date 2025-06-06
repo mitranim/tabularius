@@ -249,15 +249,19 @@ export function loadedAuthKeys() {
   }
 }
 
-export class AuthStatusMini extends ui.ReacElem {
-  run() {
+export class AuthStatusMini extends ui.Elem {
+  constructor() {ob.reac(super(), this.init)}
+
+  init() {
     const id = STATE.userId
     E(this, {}, id ? AuthedAs(id) : `not authed`)
   }
 }
 
-export class AuthStatus extends ui.ReacElem {
-  run() {
+export class AuthStatus extends ui.Elem {
+  constructor() {ob.reac(super(), this.init)}
+
+  init() {
     const id = STATE.userId
     E(this, {},
       id
