@@ -101,7 +101,8 @@ export function setSplitWidths(prev, next) {
   const perc = fmtPercNum(SPLIT)
   prev = a.reqElement(prev).style
   next = a.reqElement(next).style
-  prev.width = `calc(${perc} - ${DRAG_HANDLE_WID})`
+  prev.width = `calc(${perc} - ${DRAG_HANDLE_WID} / 2)`
+  prev.maxWidth = `calc(100% - ${DRAG_HANDLE_WID})`
   prev.flex = `0 0 auto`
   next.flex = `1 1 0`
 }
