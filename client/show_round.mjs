@@ -235,7 +235,7 @@ class ShowRound extends d.MixDatSub(ui.ReacsElem) {
     super()
     this.opt = a.reqDict(opt)
 
-    return E(
+    E(
       this,
       {class: `@container flex col-sta-str max-w-none min-h-8 text-sm gap-2`},
       new RoundHead(opt),
@@ -244,10 +244,11 @@ class ShowRound extends d.MixDatSub(ui.ReacsElem) {
     )
   }
 
-  // Invoked by `MEDIA`.
-  addCloseBtn(btn) {a.descendant(this, RoundHead).addCloseBtn(btn)}
-
-  onWide() {ui.MEDIA.toggleWide(this, WIDE.val)}
+  init() {
+    a.descendant(this, RoundHead).init(this.opt)
+    a.descendant(this, RoundTable).init(this.opt)
+    return this
+  }
 
   onNewRound(src) {
     const {round, run_num, run_ms} = src
@@ -256,6 +257,11 @@ class ShowRound extends d.MixDatSub(ui.ReacsElem) {
     this.opt.run_ms = run_ms
     this.init()
   }
+
+  // Invoked by `MEDIA`.
+  addCloseBtn(btn) {a.descendant(this, RoundHead).addCloseBtn(btn)}
+
+  onWide() {ui.MEDIA.toggleWide(this, WIDE.val)}
 
   connectedCallback() {
     super.connectedCallback()
@@ -269,8 +275,9 @@ class ShowRound extends d.MixDatSub(ui.ReacsElem) {
 }
 
 class RoundHead extends ui.Elem {
-  constructor({round, user_id, run_id, run_num, args}) {
-    super()
+  constructor(opt) {super().init(opt)}
+
+  init({round, user_id, run_id, run_num, args}) {
     a.reqDict(round)
 
     const round_ms = a.onlyFin(Date.parse(round.LastUpdated))
@@ -577,8 +584,14 @@ class RoundTable extends od.MixReacsElem(dr.MixReg(HTMLTableElement)) {
     super()
     E(this, {class: `w-full table media-pad`},
       new TableHead(),
-      new TableBody(opt),
+      new TableBody(),
     )
+    this.init(opt)
+  }
+
+  init(opt) {
+    for (const val of this.tBodies) val.init(opt)
+    return this
   }
 
   onBuiSort() {
@@ -607,8 +620,7 @@ class TableBody extends od.MixReacsElem(dr.MixReg(HTMLTableSectionElement)) {
   static localName = `tbody`
   static runs = [this.prototype.onMissingLast]
 
-  constructor(opt) {
-    super()
+  init(opt) {
     const rows = roundTableRows(opt)
     const buiLen = this.setBuiInds(rows)
     E(this, {}, rows, buiLongToggleRows(buiLen))
