@@ -225,7 +225,7 @@ export function External() {
 }
 
 export function Details({
-  elem, chi, lvl, open, openObs, class: cls, tooltip,
+  elem, chi, lvl, open, class: cls, tooltip,
   summary, summaryOpen, summaryCls,
 }) {
   a.optArr(chi)
@@ -252,19 +252,12 @@ export function Details({
 
   if (sumOpen && tooltip) ui.withTooltip({elem: sumOpen, chi: `click to close`})
 
-  let ontoggle
-  if (a.optObj(openObs)) {
-    open ??= a.laxBool(openObs.val)
-    ontoggle = () => {openObs.val = a.laxBool(elem.open)}
-  }
-
-  elem = E(
+  return E(
     elem || `details`,
-    {class: a.spaced(`inline-block w-full`, cls), open, ontoggle},
+    {class: a.spaced(`inline-block w-full`, cls), open},
     E(`summary`, {class: `w-full trunc`}, `  `.repeat(lvl), sumOpen, sumClosed),
     ...chi,
   )
-  return elem
 }
 
 export function DetailsPre({summary, inf, chi, chiLvl, count, ...opt}) {

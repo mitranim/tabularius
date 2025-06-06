@@ -61,13 +61,6 @@ export function auth(src, now) {
     throw Error(`auth token: timestamp too far in the future`)
   }
 
-  /*
-  TODO consider requiring fresh timestamp. This should prevent replay attacks,
-  because the timestamp is part of the signed data.
-
-    if (Math.abs(Date.now() - ts) > 5 * 60_000) throw
-  */
-
   const pub = su.hexStr_to_byteArr(pubHex)
   if (pub.length !== 32) {
     throw SyntaxError(`auth token: malformed pub key ${a.show(pubHex)}, expected a 64-char hex string`)

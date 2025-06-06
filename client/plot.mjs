@@ -811,7 +811,7 @@ export class Plotter extends ui.Elem {
   connectedCallback() {
     this.disconnectedCallback()
 
-    ui.darkModeMediaQuery.addEventListener(`change`, this)
+    ui.MEDIA_QUERY_DARK.addEventListener(`change`, this)
     this.resObs = new ResizeObserver(this.onResize.bind(this))
     this.resObs.observe(this)
 
@@ -822,7 +822,7 @@ export class Plotter extends ui.Elem {
 
   disconnectedCallback() {
     this.resObs?.disconnect()
-    ui.darkModeMediaQuery.removeEventListener(`change`, this)
+    ui.MEDIA_QUERY_DARK.removeEventListener(`change`, this)
     this.plotDeinit()
   }
 
@@ -1018,7 +1018,7 @@ export function axisValuesFormat(fun) {
 }
 
 export function axisStroke() {
-  return ui.darkModeMediaQuery.matches ? `white` : `black`
+  return ui.MEDIA_QUERY_DARK.matches ? `white` : `black`
 }
 
 export function serie(label, ind, opt) {

@@ -31,8 +31,6 @@ const CLS_PROMPT_INPUT = a.spaced(
 export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputElement) {
   listener = new u.Listener(this)
 
-  unlistenGlobal = undefined
-
   constructor() {
     super()
     E(this, {

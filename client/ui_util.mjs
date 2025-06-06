@@ -48,8 +48,9 @@ export class ReacElem extends od.MixReacElem(Elem) {}
 /*
 Similar to `ReacElem`, but with support for multiple different callbacks,
 which are expected to monitor multiple different observables. Subclasses
-should define a property or getter `.runs` which must be an iterable with
-multiple functions, usually methods from the prototype of the same class.
+should define a property or getter `.runs`, either instance or static,
+which must be an iterable with multiple functions, usually methods from
+the prototype of the same class.
 */
 export class ReacsElem extends od.MixReacsElem(Elem) {}
 
@@ -97,11 +98,11 @@ export function isElemInput(val) {
 /*
 Usage:
 
-  ui.darkModeMediaQuery.matches
-  ui.darkModeMediaQuery.addEventListener(`change`, someListener)
+  ui.MEDIA_QUERY_DARK.matches
+  ui.MEDIA_QUERY_DARK.addEventListener(`change`, someListener)
   function someListener(eve) {console.log(eve.matches)}
 */
-export const darkModeMediaQuery = globalThis.matchMedia(`(prefers-color-scheme: dark)`)
+export const MEDIA_QUERY_DARK = globalThis.matchMedia(`(prefers-color-scheme: dark)`)
 
 // By luck, the Swedish locale mostly adheres to ISO 8601.
 export const dateFormat = new Intl.DateTimeFormat(`sv-SE`, {

@@ -104,10 +104,7 @@ export class StorageObs extends ob.ObsRef {
   #get(mon) {
     a.optBool(mon)
     if (this.#setSync(true)) this.$ = this.read()
-    if (mon) {
-      this.bro ??= new this.Broad()
-      this.bro.monitor()
-    }
+    if (mon) this.monitor()
     return this.$
   }
 
@@ -117,7 +114,7 @@ export class StorageObs extends ob.ObsRef {
     this.write(val)
     this.#setSync(true)
     this.$ = val
-    if (trig) this.bro?.trigger()
+    if (trig) this.trigger()
   }
 
   #synced = false

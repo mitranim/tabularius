@@ -199,8 +199,7 @@ export async function showRoundFile({sig, file, round, args, live}) {
   const run_id = s.makeRunId(user_id, run_num, run_ms)
   const out = new ShowRound({
     round, user_id, run_id, run_num, run_ms, args, live,
-  }).init()
-
+  })
   return new os.Combo({mediaItems: [out]})
 }
 
@@ -236,19 +235,13 @@ class ShowRound extends d.MixDatSub(ui.ReacsElem) {
     super()
     this.opt = a.reqDict(opt)
 
-    E(
+    return E(
       this,
       {class: `@container flex col-sta-str max-w-none min-h-8 text-sm gap-2`},
-      new RoundHead(),
+      new RoundHead(opt),
       new ShowRoundSettingsAndHints(),
-      new RoundTable(),
+      new RoundTable(opt),
     )
-  }
-
-  init() {
-    a.descendant(this, RoundHead).init(this.opt)
-    a.descendant(this, RoundTable).init(this.opt)
-    return this
   }
 
   // Invoked by `MEDIA`.
@@ -276,24 +269,8 @@ class ShowRound extends d.MixDatSub(ui.ReacsElem) {
 }
 
 class RoundHead extends ui.Elem {
-  constructor() {
-    E(
-      super(),
-      {class: a.spaced(
-        `w-full flex col-sta-str gap-2`,
-        ui.CLS_MEDIA_PAD_X,
-        ui.CLS_MEDIA_PAD_T,
-      )},
-    )
-  }
-
-  closeBtn = undefined
-  addCloseBtn(btn) {
-    this.closeBtn = btn
-    this.header?.appendChild(btn)
-  }
-
-  init({round, user_id, run_id, run_num, args}) {
+  constructor({round, user_id, run_id, run_num, args}) {
+    super()
     a.reqDict(round)
 
     const round_ms = a.onlyFin(Date.parse(round.LastUpdated))
@@ -321,7 +298,13 @@ class RoundHead extends ui.Elem {
     const cmd = cmdShowRound.cmd
     args = u.stripPreSpaced(args, cmd)
 
-    return E(this, {},
+    E(
+      this,
+      {class: a.spaced(
+        `w-full flex col-sta-str gap-2`,
+        ui.CLS_MEDIA_PAD_X,
+        ui.CLS_MEDIA_PAD_T,
+      )},
       this.header = E(
         `div`,
         {class: `flex row-bet-cen gap-2`},
@@ -377,6 +360,12 @@ class RoundHead extends ui.Elem {
       ),
     )
   }
+
+  closeBtn = undefined
+  addCloseBtn(btn) {
+    this.closeBtn = btn
+    this.header?.appendChild(btn)
+  }
 }
 
 function DetailsGrid(...src) {
@@ -410,12 +399,15 @@ function Pair(key, val) {
   )
 }
 
-class ShowRoundSettingsAndHints extends od.MixReacElem(dr.MixReg(HTMLDetailsElement)) {
-  run() {
+class ShowRoundSettingsAndHints extends od.MixReacsElem(dr.MixReg(HTMLDetailsElement)) {
+  static runs = [this.prototype.onOpen]
+
+  constructor() {
+    super()
     ui.DetailsPre({
       elem: this,
       summary: `settings and hints`,
-      openObs: SETTINGS_OPEN,
+      open: SETTINGS_OPEN.val,
       class: a.spaced(ui.CLS_MEDIA_PAD_X, `whitespace-pre-wrap`),
       count: false,
       chiLvl: 1,
@@ -429,6 +421,14 @@ class ShowRoundSettingsAndHints extends od.MixReacElem(dr.MixReg(HTMLDetailsElem
       ],
     })
   }
+
+  connectedCallback() {
+    this.ontoggle = this.onToggle
+    super.connectedCallback()
+  }
+
+  onToggle() {SETTINGS_OPEN.val = this.open}
+  onOpen() {this.open = SETTINGS_OPEN.val}
 }
 
 function TableHints() {
@@ -465,68 +465,31 @@ function TableHintClick() {
 }
 
 function TableControlNumMode() {
-  return E(
-    `fieldset`,
-    {class: `inline-flex row-sta-cen gap-2`, onchange: onNumModeChange},
-    E(`span`, {class: a.spaced(ui.CLS_TEXT_GRAY, `trunc`)}, `numbers:`),
-    a.map(NUM_MODES, NumModeRadio),
-  )
-}
-
-function onNumModeChange(eve) {NUM_MODE.val = eve.target.value}
-
-function NumModeRadio(val) {
-  a.reqStr(val)
-
-  return E(
-    `label`,
-    {class: `flex row-sta-cen gap-1 cursor-pointer`},
-    E(
-      `input`,
-      {
-        type: `radio`,
-        name: `numPref`,
-        class: `cursor-pointer`,
-        value: val,
-        checked: a.laxStr(NUM_MODE.val) === val,
-      },
-    ),
-    E(`span`, {class: `flex row-cen-cen trunc-base`}, val || `both`),
-  )
+  return new ObsRadio({
+    label: `numbers`,
+    obs: NUM_MODE,
+    vals: NUM_MODES,
+  })
 }
 
 function TableControlShowChi() {
-  return new TableControlCheckbox({
+  return new ObsCheckbox({
     label: `show children`,
     obs: CHI_SHOW,
     tooltip: `ctrl+click any building row`,
-
-    /*
-    We do this manually because our children rows do NOT watch this observable.
-    That's because when clicking a bui row to toggle its children, we actually
-    want other bui rows to remain unchanged. For example, if you scroll down
-    and click a row in the middle, toggling ALL child rows would shift all rows
-    and you'd lose track of what you clicked. As a result, toggling all rows
-    needs to be done "manually".
-    */
-    onchange(val) {getRoundTable(this)?.toggleAssocRows(val)},
   })
 }
 
 function TableControlMissingLast() {
-  return new TableControlCheckbox({
+  return new ObsCheckbox({
     label: `missing last`,
     obs: MISSING_LAST,
     tooltip: `prefer to sort missing values to the bottom`,
-    onchange() {
-      const {key, desc} = BUI_SORT.val
-      if (key && !desc) getRoundTable(this)?.sort()
-    },
   })
 }
 
 function TableControlWide() {
-  return new TableControlCheckbox({
+  return new ObsCheckbox({
     label: `wide`,
     obs: WIDE,
     tooltip: `take the entire width of the media panel`,
@@ -534,7 +497,7 @@ function TableControlWide() {
 }
 
 function TableControlLong() {
-  return new TableControlCheckbox({
+  return new ObsCheckbox({
     label: `long`,
     obs: LONG,
     tooltip: `show every building`,
@@ -607,22 +570,20 @@ export const WEP_COLS = [
 
 validateColAlignment()
 
-class RoundTable extends dr.MixReg(HTMLTableElement) {
-  constructor() {
-    E(super(), {class: `w-full table media-pad`})
-  }
+class RoundTable extends od.MixReacsElem(dr.MixReg(HTMLTableElement)) {
+  static runs = [this.prototype.onBuiSort]
 
-  init(opt) {
-    E(this, {},
+  constructor(opt) {
+    super()
+    E(this, {class: `w-full table media-pad`},
       new TableHead(),
-      new TableBody().init(opt),
+      new TableBody(opt),
     )
-    this.sort()
-    return this
   }
 
-  toggleAssocRows(show) {
-    for (const body of this.tBodies) body.toggleAssocRows(show)
+  onBuiSort() {
+    a.nop(BUI_SORT.val)
+    this.sort()
   }
 
   sort() {
@@ -642,17 +603,16 @@ class TableHead extends dr.MixReg(HTMLTableSectionElement) {
   sort() {for (const cell of this.children) cell.sort()}
 }
 
-class TableBody extends dr.MixReg(HTMLTableSectionElement) {
+class TableBody extends od.MixReacsElem(dr.MixReg(HTMLTableSectionElement)) {
   static localName = `tbody`
-  buiLen = 0
+  static runs = [this.prototype.onMissingLast]
 
-  init(opt) {
+  constructor(opt) {
+    super()
     const rows = roundTableRows(opt)
-    this.setBuiInds(rows)
-    E(this, {}, rows)
-    this.addToggleRows()
+    const buiLen = this.setBuiInds(rows)
+    E(this, {}, rows, buiLongToggleRows(buiLen))
     this.setRowInds()
-    return this
   }
 
   sort() {
@@ -660,11 +620,6 @@ class TableBody extends dr.MixReg(HTMLTableSectionElement) {
     for (const row of rows) row.sort?.()
     this.setBuiInds(rows)
     E(this, {}, rows)
-  }
-
-  toggleAssocRows(show) {
-    a.optBool(show)
-    for (const row of this.rows) row.toggleAssocRows?.(show)
   }
 
   setRowInds() {
@@ -677,26 +632,15 @@ class TableBody extends dr.MixReg(HTMLTableSectionElement) {
       if (!a.isInst(row, BuiRow)) continue
       row.buiRowInd = ++ind
     }
-    this.buiLen = ind + 1
+    return ind + 1
   }
 
-  addToggleRows() {
-    const lenBui = a.laxNat(this.buiLen)
-    const lenMax = LONG_ROW_BREAKPOINT
+  missingLast = MISSING_LAST.val
 
-    if (!(lenBui > lenMax)) return
-
-    this.appendChild(new BuiLongToggleRow({
-      lenBui, lenMax, obs: LONG,
-      class: CLS_HIDE_BELOW,
-      colspan: sumColspans(BUI_COLS).all,
-    }))
-
-    this.appendChild(new BuiLongToggleRow({
-      lenBui, lenMax, obs: LONG,
-      class: CLS_HIDE_ABOVE,
-      colspan: sumColspans(BUI_COLS).show,
-    }))
+  onMissingLast() {
+    if (this.missingLast === (this.missingLast = MISSING_LAST.val)) return
+    const {key, desc} = BUI_SORT.val
+    if (key && !desc) this.sort()
   }
 }
 
@@ -704,14 +648,11 @@ class TableRow extends dr.MixReg(HTMLTableRowElement) {
   parent = undefined
   sortInd = a.optNat()
   sortObs = undefined
-  showObs = undefined
 
-  constructor({parent, sortObs, showObs} = {}) {
+  constructor({parent, sortObs} = {}) {
     super()
     this.parent = a.optNode(parent)
     this.sortObs = a.optInst(sortObs, SortObs)
-    this.showObs = a.optInst(showObs, u.StorageObsBool)
-    if (showObs) this.hidden = !showObs.val
   }
 
   isSortable() {return true}
@@ -767,14 +708,9 @@ class TableRow extends dr.MixReg(HTMLTableRowElement) {
 }
 
 class PseudoHeadRow extends TableRow {
-  constructor({parent, sortObs, showObs, cols}) {
-    super({parent, sortObs, showObs})
-
-    E(
-      this,
-      {class: `tr-sub`, hidden: showObs && !showObs.val},
-      a.map(cols, Th),
-    )
+  constructor({parent, sortObs, cols}) {
+    super({parent, sortObs})
+    E(this, {class: `tr-sub`}, a.map(cols, Th))
   }
 
   sort() {for (const cell of this.children) cell.sort()}
@@ -824,12 +760,6 @@ class TableHeadCell extends dr.MixReg(HTMLTableCellElement) {
   sortNext() {
     const {key, sortObs} = this
     sortObs.val = cycleSort(key, sortObs.val)
-
-    const anc = a.ancestor(this, RoundTable)
-    if (!anc) return
-
-    anc.sort(sortObs)
-    this.sort()
   }
 
   sort() {
@@ -956,7 +886,7 @@ function Tds(src, cols) {
 export const CHI_SHOW = u.storageObsBool(`tabularius.round_table.show_chi`)
 
 class BuiRow extends od.MixReacsElem(TableRow) {
-  static runs = [this.prototype.onLong]
+  static runs = [this.prototype.onLong, this.prototype.onChiShow]
   buiRowInd = undefined
   showAssoc = CHI_SHOW.val
 
@@ -971,30 +901,24 @@ class BuiRow extends od.MixReacsElem(TableRow) {
   }
 
   /*
-  This method is a bit tricky. This collapses / uncollapses associated rows,
-  either only for the current row, or for all `BuiRow`s. When you click a row,
-  or Ctrl+click / Cmd+click one, the result should be based entirely on the
-  state of that row, not on any hidden state. If you click a row whose assoc
-  rows are hidden, then if modified, this should show _all_ rows, but otherwise
-  this should only show the assoc rows of the target. Inverse for a row whose
-  assoc rows are visible.
+  When clicking a bui row to toggle its children, we actually want other bui
+  rows to remain unchanged. For example, if you scroll down and click a row in
+  the middle, toggling ALL child rows would shift all rows and you'd lose track
+  of what you clicked.
 
-  For these reasons, our rows don't monitor a "show/hide" observable. We have to
-  toggle them "manually".
+  When you click a row, or Ctrl+click / Cmd+click one, the result should be
+  based entirely on the state of that row, not on any hidden state. If you
+  click a row whose assoc rows are hidden, then if modified, this should
+  show _all_ rows, but otherwise this should only show the assoc rows of the
+  target. Inverse for a row whose assoc rows are visible.
   */
   onClick(eve) {
     const show = !!this.firstChi()?.hidden
-    CHI_SHOW.val = show
-
-    if (u.isEventModifiedPrimary(eve)) {
-      a.ancestor(this, RoundTable).toggleAssocRows(show)
-      return
-    }
-
-    this.toggleAssocRows(show)
+    if (u.isEventModifiedPrimary(eve)) CHI_SHOW.val = show
+    else this.toggleAssocRows(show)
   }
 
-  sortables = undefined
+  onChiShow() {this.toggleAssocRows(CHI_SHOW.val)}
 
   addPerc(total) {
     a.reqDict(total)
@@ -1033,26 +957,34 @@ class ChiRow extends TableRow {
   }
 }
 
-class BuiLongToggleRow extends od.MixReacElem(TableRow) {
+class BuiLongToggleRow extends od.MixReacsElem(TableRow) {
+  static runs = [this.prototype.onLong]
+
   lenBui = undefined
   lenMax = undefined
-  obs = undefined
 
-  constructor({lenBui, lenMax, obs, colspan, class: cls}) {
+  get obs() {return LONG}
+  get cols() {return BUI_COLS}
+
+  constructor({lenBui, lenMax, class: cls, colspan}) {
     super()
-
     this.lenBui = a.reqNat(lenBui)
     this.lenMax = a.reqNat(lenMax)
-    this.obs = a.reqObj(obs)
 
     E(
       this,
       {class: a.spaced(`cursor-pointer`, ui.CLS_BUSY_BG, ui.CLS_TEXT_GRAY, cls)},
-      E(`td`, {colspan, class: `text-center py-1`}),
+      E(`td`, {class: `text-center py-1`, colspan}),
     )
+    this.onLong()
   }
 
-  run() {
+  connectedCallback() {
+    this.onclick = this.onClick
+    super.connectedCallback()
+  }
+
+  onLong() {
     const {lenBui, lenMax, obs} = this
     const show = a.optBool(obs.val)
 
@@ -1063,25 +995,37 @@ class BuiLongToggleRow extends od.MixReacElem(TableRow) {
     )
   }
 
-  connectedCallback() {
-    super.connectedCallback()
-    this.onclick = this.onClick
-  }
-
   onClick() {this.obs.val = !this.obs.val}
 }
 
-function PseudoTableRows({Row, parent, cols, datas, sortObs, showObs, ...opt}) {
+function PseudoTableRows({Row, parent, cols, datas, sortObs, ...opt}) {
   Row = a.optCls(Row) ?? TableRow
-  const head = new PseudoHeadRow({parent, cols, sortObs, showObs})
+  const head = new PseudoHeadRow({parent, cols, sortObs})
 
   return [
     head,
     ...a.map(datas, src => E(
-      new Row({parent: head, sortObs, showObs, ...opt}),
+      new Row({parent: head, sortObs, ...opt}),
       {class: `tr-sub`},
       Tds(src, cols),
     )),
+  ]
+}
+
+function buiLongToggleRows(lenBui) {
+  lenBui = a.laxNat(lenBui)
+  const lenMax = LONG_ROW_BREAKPOINT
+  if (!(lenBui > lenMax)) return undefined
+
+  return [
+    new BuiLongToggleRow({
+      lenBui, lenMax, class: CLS_HIDE_BELOW,
+      colspan: sumColspans(BUI_COLS).all,
+    }),
+    new BuiLongToggleRow({
+      lenBui, lenMax, class: CLS_HIDE_ABOVE,
+      colspan: sumColspans(BUI_COLS).show,
+    }),
   ]
 }
 
@@ -1133,8 +1077,6 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
     chiDatas.push(chiStatData({type, stats, chiTotal}))
   }
 
-  const showObs = CHI_SHOW
-
   if (chiDatas.length) {
     const head = buiRow.cells[0]
     const cols = CHI_COLS
@@ -1146,7 +1088,7 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
     }
     else {
       const [pseudoHead, ...rows] = PseudoTableRows({
-        Row: ChiRow, parent: buiRow, cols, datas: chiDatas, sortObs, showObs,
+        Row: ChiRow, parent: buiRow, cols, datas: chiDatas, sortObs,
       })
       for (const row of rows) row.addPerc(chiTotal)
       tbodyRows.push(pseudoHead, ...rows)
@@ -1158,7 +1100,7 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
     const cols = WEP_COLS
     const sortObs = WEP_SORT
     tbodyRows.push(...PseudoTableRows({
-      parent: buiRow, cols, datas: wepDatas, sortObs, showObs,
+      parent: buiRow, cols, datas: wepDatas, sortObs,
     }))
   }
 }
@@ -1364,22 +1306,12 @@ function BtnAppendEph(eph) {
   return ui.BtnPrompt({cmd: cmdShowRound.cmd, eph, full: true})
 }
 
-class TableControlCheckbox extends od.MixReacElem(dr.MixReg(HTMLLabelElement)) {
-  label = undefined
+class ObsCheckbox extends od.MixReacElem(dr.MixReg(HTMLLabelElement)) {
   obs = undefined
-  tooltip = undefined
-  onchange = undefined
 
   constructor({label, obs, tooltip, onchange}) {
     super()
-    this.label = label
     this.obs = a.reqObj(obs)
-    this.tooltip = tooltip
-    this.onchange = a.optFun(onchange)
-  }
-
-  run() {
-    const {label, obs, tooltip, onchange} = this
 
     let span
     if (tooltip) {
@@ -1403,11 +1335,64 @@ class TableControlCheckbox extends od.MixReacElem(dr.MixReg(HTMLLabelElement)) {
         class: `cursor-pointer`,
         onchange() {
           obs.val = this.checked
-          if (onchange) onchange.call(this, obs.val)
+          onchange?.call(this, obs.val)
         },
       })
     )
   }
+
+  run() {
+    const {obs} = this
+    a.descendant(this, HTMLInputElement).checked = obs.val
+  }
+}
+
+class ObsRadio extends od.MixReacElem(dr.MixReg(HTMLFieldSetElement)) {
+  obs = undefined
+
+  constructor({label, obs, vals}) {
+    super()
+    a.reqSome(label)
+    this.obs = a.reqObj(obs)
+    const name = a.uuid()
+
+    E(
+      this,
+      {class: `inline-flex row-sta-cen gap-2`, onchange: onNumModeChange},
+      E(`span`, {class: a.spaced(ui.CLS_TEXT_GRAY, `trunc`)}, label, `:`),
+      a.map(vals, val => ObsRadioInput({val, obs, name})),
+    )
+  }
+
+  run() {
+    const val = this.obs.val
+    for (const elem of this.elements) elem.checked = elem.value === val
+  }
+}
+
+function onNumModeChange(eve) {NUM_MODE.val = eve.target.value}
+
+function ObsRadioInput({val, obs, name}) {
+  a.reqStr(val)
+  a.reqObj(obs)
+  a.optStr(name)
+
+  return E(
+    `label`,
+    {class: `flex row-sta-cen gap-1 cursor-pointer`},
+    E(
+      `input`,
+      {
+        type: `radio`,
+        class: `cursor-pointer`,
+        name,
+        value: val,
+        checked: a.laxStr(obs.val) === val,
+        onchange() {obs.val = this.value},
+      },
+    ),
+    E(`span`, {class: `flex row-cen-cen trunc-base`}, val || `all`),
+  )
 }
 
 // SYNC[wep_cols].

@@ -692,3 +692,7 @@ Also see `./todo_show_round.md`.
 * [ ] On app startup:
   * [ ] Auto-detect if the current URL is one of the old "plot link" style links, and interpret it as the new format, extracting the run id.
   * [ ] Replace `plotDefaultLocal` with invoking `show_run` for the latest local run.
+
+---
+
+Consider if the Web Authentication API and/or Web Credentials API could be relevant for us.
