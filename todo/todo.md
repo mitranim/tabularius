@@ -614,7 +614,7 @@ Or, even better, for lower uptime:
 * [ ] Update notifications:
   * [ ] Move the UI version into a JSON file.
   * [ ] Once a day, download that file and see if the version is increased.
-  * [ ] In the titlebar: the version indicator changes its appearance and suggests reloading to update.
+  * [ ] In the navbar: the version indicator changes its appearance and suggests reloading to update.
 
 ---
 

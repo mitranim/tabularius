@@ -37,7 +37,7 @@ export function init() {
       ui.CLS_BG_ROOT,
       `flex flex-col h-screen overflow-clip)`,
     )},
-    TITLEBAR,
+    NAV,
     ui.MIDDLE,
     ui.PROMPT,
   )
@@ -99,10 +99,10 @@ function onKeydownClear(eve) {
   if (eve.shiftKey) ui.MEDIA.clear()
 }
 
-const TITLEBAR_PAD = `p-2`
-const TITLEBAR_ICON_SIZE = `w-6 h-6`
-const TITLEBAR_LINK_CLS = a.spaced(`flex row-cen-cen`, TITLEBAR_PAD)
-const TITLEBAR_ICON_CLS = a.spaced(TITLEBAR_ICON_SIZE, `hover:scale-[1.2]`)
+const NAV_PAD = `p-2`
+const NAV_ICON_SIZE = `w-6 h-6`
+const NAV_LINK_CLS = a.spaced(`flex row-cen-cen`, NAV_PAD)
+const NAV_ICON_CLS = a.spaced(NAV_ICON_SIZE, `hover:scale-[1.2]`)
 
 const GITHUB_LINK = `https://github.com/mitranim/tabularius`
 const STEAM_LINK = `https://store.steampowered.com/app/3226530`
@@ -110,9 +110,8 @@ const STEAM_LINK = `https://store.steampowered.com/app/3226530`
 // SYNC[discord_link].
 const DISCORD_LINK = `https://discord.gg/upPxCEVxgD`
 
-export const TITLEBAR = E(
-  `div`,
-
+export const NAV = E(
+  `nav`,
   {
     class: a.spaced(
       ui.CLS_BG_1,
@@ -124,7 +123,7 @@ export const TITLEBAR = E(
   // Left side with title.
   E(
     `h1`,
-    {class: a.spaced(`flex-1 trunc`, TITLEBAR_PAD)},
+    {class: a.spaced(`flex-1 trunc`, NAV_PAD)},
     E(`a`, {href: u.URL_CLEAN, class: ui.CLS_BTN_INLINE}, `Tabularius`),
     ` — book-keeper for `,
     E(`a`, {href: STEAM_LINK, ...ui.TARBLAN, class: ui.CLS_BTN_INLINE},
@@ -134,15 +133,15 @@ export const TITLEBAR = E(
 
   // Right side with links.
   E(`div`, {class: `flex items-center`},
-    E(`span`, {class: a.spaced(TITLEBAR_LINK_CLS, ui.CLS_TEXT_GRAY)}, `v` + VERSION),
-    E(`a`, {href: GITHUB_LINK, ...ui.TARBLAN, class: TITLEBAR_LINK_CLS},
-      ui.Svg(`github`, {class: a.spaced(TITLEBAR_ICON_CLS, `text-[#1f2328] dark:text-[#f0f6fc]`)}),
+    E(`span`, {class: a.spaced(NAV_LINK_CLS, ui.CLS_TEXT_GRAY)}, `v` + VERSION),
+    E(`a`, {href: GITHUB_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS},
+      ui.Svg(`github`, {class: a.spaced(NAV_ICON_CLS, `text-[#1f2328] dark:text-[#f0f6fc]`)}),
     ),
-    E(`a`, {href: STEAM_LINK, ...ui.TARBLAN, class: TITLEBAR_LINK_CLS},
-      ui.Svg(`steam`, {class: TITLEBAR_ICON_CLS}),
+    E(`a`, {href: STEAM_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS},
+      ui.Svg(`steam`, {class: NAV_ICON_CLS}),
     ),
-    E(`a`, {href: DISCORD_LINK, ...ui.TARBLAN, class: TITLEBAR_LINK_CLS},
-      ui.Svg(`discord`, {class: TITLEBAR_ICON_CLS}),
+    E(`a`, {href: DISCORD_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS},
+      ui.Svg(`discord`, {class: NAV_ICON_CLS}),
     ),
   ),
 )

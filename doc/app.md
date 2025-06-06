@@ -18,7 +18,7 @@ In development, the SPA is hosted by a local server running in Deno. In producti
 The app looks like a terminal emulator. It does not interact with the OS shell; the set of commands is unique to our web app.
 
 Four main UI elements:
-* Titlebar (top)
+* Nav (top)
 * Log (left)
 * Media (right)
 * Prompt (bottom)
