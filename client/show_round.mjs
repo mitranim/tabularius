@@ -906,7 +906,14 @@ class BuiRow extends TableRow {
   onClick(eve) {
     const show = !this.showChi.val
     this.showChi.val = show
-    if (u.isEventModifiedPrimary(eve)) SHOW_CHI.val = show
+
+    if (!u.isEventModifiedPrimary(eve)) return
+
+    SHOW_CHI.val = show
+
+    // Rerun all subscribers even if the value didn't change.
+    // This causes all manually opened bui rows to close when `!show`.
+    SHOW_CHI.trigger()
   }
 }
 
