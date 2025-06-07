@@ -870,8 +870,6 @@ class BuiRow extends TableRow {
   }
 
   onLongInd() {
-    // console.log(`onLongInd`)
-
     const long = a.laxBool(LONG.val)
     const ind = this.buiInd.val
 
@@ -882,8 +880,6 @@ class BuiRow extends TableRow {
   }
 
   onShow() {
-    // console.log(`onShow`)
-
     const showBui = this.showRow.val
     const showChi = SHOW_CHI.val
 
@@ -1297,6 +1293,7 @@ function BtnAppendEph(eph) {
 
 class ObsCheckbox extends dr.MixReg(HTMLLabelElement) {
   obs = undefined
+  input = undefined
 
   constructor({label, obs, tooltip, onchange}) {
     super()
@@ -1318,7 +1315,7 @@ class ObsCheckbox extends dr.MixReg(HTMLLabelElement) {
       this,
       {class: `inline-flex row-sta-cen gap-2 cursor-pointer`},
       span,
-      E(`input`, {
+      this.input = E(`input`, {
         type: `checkbox`,
         value: ``,
         class: `cursor-pointer`,
@@ -1331,10 +1328,7 @@ class ObsCheckbox extends dr.MixReg(HTMLLabelElement) {
     ob.reac(this, this.onObs)
   }
 
-  onObs() {
-    const {obs} = this
-    a.descendant(this, HTMLInputElement).checked = obs.val
-  }
+  onObs() {this.input.checked = a.laxBool(this.obs.val)}
 }
 
 class ObsRadio extends dr.MixReg(HTMLFieldSetElement) {

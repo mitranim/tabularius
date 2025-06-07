@@ -24,7 +24,7 @@ let INITED
 Should be called exactly once.
 
 Any further UI updates must be done either via observables and reactive elements
-via `ui.reac`, or or semi-manually via `E`, or by lower-level manipulation in
+via `ob.reac`, or or semi-manually via `E`, or by lower-level manipulation in
 very simple cases.
 */
 export function init() {

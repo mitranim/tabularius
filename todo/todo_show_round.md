@@ -1,6 +1,6 @@
 Also see `todo.md` in repo root.
 
-- [ ] Local sources.
+- [x] Local sources.
   - [x] If no path provided:
     - [x] If have access to `saves`:
       - [x] Inspect `Progress.gd`. If `.RoundIndex > 0`, use it.
@@ -11,7 +11,6 @@ Also see `todo.md` in repo root.
         encouraging to grant access to `saves` and/or `history`.
   - [x] If path is provided:
     - [x] If file, verify that it's a round file, and use.
-    <!-- - [ ] If directory, look for `Progress.gd`, then look for latest round file. If nothing found, look for latest run directory, then for latest round file there. Then if nothing found, print an error. -->
 - [ ] Cloud sources.
   - [ ] Requires backend support for downloading round files as-is.
     - [ ] Add an endpoint for downloading one specific round file, by the
@@ -64,12 +63,6 @@ Also see `todo.md` in repo root.
     - `.Damage`: separate + `reify`.
   - [x] Stats: from corresponding `.WeaponStats` of bui.
   - [ ] Consider estimating DPS. Calculate approximate min and max, display as range.
-<!-- - [ ] Stat cells might have 4 numbers per cell:
-  - [ ] Stat value.
-    - [ ] This one is "canonical" and used for sorting and heatmaps.
-  - [ ] Stat value as percentage.
-  - [ ] Stat value accumulated.
-  - [ ] Stat value accumulated as percentage. -->
 - [x] Chi cols:
   - Type, indented.
   - Various stats from bui `.ChildLiveStats`.
@@ -84,7 +77,7 @@ Also see `todo.md` in repo root.
   - [x] Clicking a column cycles through: desc, asc, none.
   - [x] Persist the sort preference.
   - [x] Sorting uses `compareAsc` and `compareDesc`, which support numbers.
-- [ ] By default, only show a certain number of buildings, with a final row
+- [x] By default, only show a certain number of buildings, with a final row
   showing how many are hidden and expand / collapse on click. Persist the
   expand / collapse preference for this.
 - [x] An option to take up an entire grid row in the media.
@@ -108,11 +101,9 @@ Also see `todo.md` in repo root.
 `BuiRow`:
 - [x] Proper styling.
 - [x] On click:
-  <!-- - [ ] Collapse all other bui rows. -->
   - [x] Toggle sub-rows of this bui row.
   - [x] Persist preference which specific bui row was expanded, by bui id.
 
 `wepDetailRow`:
 - [x] Proper styling.
 - [x] Proper `trunc` in all cells.
-<!-- - [ ] Center the checkticks. -->
