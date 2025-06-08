@@ -10,7 +10,7 @@ import * as api from './api.mjs'
 const DIR_ABS = a.vac(u.DEV) && hd.dirAbs()
 
 const DIRS = hd.Dirs.of(
-  hd.dirRel(`.`, /^client[/]|^shared[/]|^samples[/]|^index[.]html$|^sw[.]mjs$/),
+  new u.DirRel(`.`, /^client[/]|^shared[/]|^samples[/]|^index[.]html$|^sw[.]mjs$/),
 )
 
 if (import.meta.main) await main()
@@ -66,7 +66,7 @@ async function respond(ctx, req) {
 
   return await (
     (rou.preflight() && new u.Res()) ||
-    (rou.get(`/robots.txt`) && new Response(ROBOTS_TXT)) ||
+    (rou.get(`/robots.txt`) && new u.Res(ROBOTS_TXT)) ||
     (rou.pre(`/api`) && api.apiRes(ctx, rou)) ||
     (
       a.vac(DIR_ABS) &&

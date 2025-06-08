@@ -32,8 +32,9 @@ Also see `todo.md` in repo root.
   - [ ] Make it possible to group stats by `bui_type_upg`.
 - [x] Add an option to always "zero last" in sorting, which would always put zero and nil at the end.
 - [x] Calculate totals and percentages for child stats.
+- [ ] Show blueprints, as collapsable similar to doctrines.
 
-- [ ] Each bui:
+- [x] Each bui:
   - [x] One row: bui stats.
   - [x] Indicate how many [weps + chis] the bui has.
   - [x] If have at least 2 [weps + chis]: a row with sub-table for their stats.
@@ -51,6 +52,7 @@ Also see `todo.md` in repo root.
       - [x] Wep or chi: indented.
       - [x] Bui: include count of weps and chis; if only one, inline its type.
       - [x] Use `trunc`.
+
 - [ ] Wep cols:
   - [x] Type, indented.
   - [x] If `.IsAntiAircraft`: see below.
@@ -62,7 +64,13 @@ Also see `todo.md` in repo root.
     - `.SizeValue`: separate + `reify`.
     - `.Damage`: separate + `reify`.
   - [x] Stats: from corresponding `.WeaponStats` of bui.
-  - [ ] Consider estimating DPS. Calculate approximate min and max, display as range.
+  - [ ] Calculate final damage values for different target types.
+  - [ ] Consider estimating DPS. Calculate approximate min and max, display as range. Calculate for different target types, too.
+  - [ ] Add percentages:
+    - [ ] For each computed value: instead of raw and percentage being separate, put calculated final value and percentage in one cell, subject to the global toggle. The percentage is shown as a modifier, slightly green / red depending on sign. Just like the game does it.
+    - [ ] Column for `dmg_air`.
+    - [ ] Column for `dmg_shield`.
+
 - [x] Chi cols:
   - Type, indented.
   - Various stats from bui `.ChildLiveStats`.

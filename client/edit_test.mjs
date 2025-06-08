@@ -10,10 +10,10 @@ import * as fs from './fs.mjs'
 import * as ui from './ui.mjs'
 import * as e from './edit.mjs'
 
-const tar = globalThis.tabularius ??= a.Emp()
-tar.lib ??= a.Emp()
-tar.lib.t = t
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.lib ??= a.Emp()
+namespace.lib.t = t
+a.patch(globalThis, namespace)
 
 /*
 TODO: properly automate this test.

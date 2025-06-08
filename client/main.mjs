@@ -2,6 +2,7 @@ import * as a from '@mitranim/js/all.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
+import * as ls from './ls.mjs'
 import * as w from './watch.mjs'
 import * as ui from './ui.mjs'
 import * as au from './auth.mjs'
@@ -12,9 +13,9 @@ import * as sr from './show_round.mjs'
 import * as se from './setup.mjs'
 
 import * as self from './main.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.m = self
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.m = self
+a.patch(globalThis, namespace)
 
 /*
 CLI commands may be defined in arbitrary modules. They should all be registered
@@ -30,12 +31,7 @@ os.addCmd(p.cmdPlotLink)
 os.addCmd(sr.cmdShowRound)
 os.addCmd(e.cmdEdit)
 os.addCmd(fs.cmdRollback)
-
-cmdLs.cmd = `ls`
-cmdLs.desc = cmdLsDesc
-cmdLs.help = cmdLsHelp
-os.addCmd(cmdLs)
-
+os.addCmd(ls.cmdLs)
 os.addCmd(fs.cmdShow)
 os.addCmd(w.cmdWatch)
 os.addCmd(up.cmdUpload)
@@ -53,107 +49,11 @@ export function cmdStatus({args}) {
   if (u.hasHelpFlag(u.splitCliArgs(args))) return os.cmdHelpDetailed(cmdStatus)
 
   return ui.LogParagraphs(
-    new fs.FileConfStatus(fs.SAVE_DIR_CONF),
-    new fs.FileConfStatus(fs.HISTORY_DIR_CONF),
-    [`auth: `, new au.AuthStatus()],
-    new os.Procs(),
+    a.bind(fs.fileConfStatusMsg, fs.SAVE_DIR_CONF),
+    a.bind(fs.fileConfStatusMsg, fs.HISTORY_DIR_CONF),
+    [`auth: `, au.authStatusMsg],
+    os.showProcs,
   )
-}
-
-function cmdLsDesc() {
-  return `list local dirs / files, or cloud runs / rounds`
-}
-
-function cmdLsHelp() {
-  return ui.LogParagraphs(
-    cmdLs.desc(),
-    ui.LogLines(
-      `supported sources:`,
-      [
-        `  local -- default -- requires `,
-        os.BtnCmdWithHelp(`saves`),
-        ` and `,
-        os.BtnCmdWithHelp(`history`),
-      ],
-      [
-        `  cloud -- `, ui.BtnPrompt({cmd: `ls`, suf: `-c`}),
-        `      -- requires `, os.BtnCmdWithHelp(`auth`),
-      ],
-    ),
-    ui.LogLines(
-      `local usage:`,
-      [`  `, os.BtnCmd(`ls /`)],
-      [`  `, os.BtnCmd(`ls -s`), ` -- additional stats`],
-      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, eph: `<some_dir>`})],
-      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, eph: `<some_dir>/<some_file>`})],
-    ),
-    ui.LogLines(
-      `cloud usage:`,
-      [`  `, os.BtnCmd(`ls -c`)],
-      [`  `, ui.BtnPrompt({full: true, cmd: `ls`, suf: `-c `, eph: `<some_run_id>`})],
-    ),
-    ui.LogLines(
-      `tip: filter plots by run numbers from directory names; this works for both local and cloud plots:`,
-      [`  `, ui.BtnPrompt({
-        full: true,
-        cmd: `plot`,
-        suf: `user_id=current run_id=all run_num=`,
-        eph: `<dir_name>`,
-      })],
-      [`  `, ui.BtnPrompt({
-        full: true,
-        cmd: `plot`,
-        suf: `user_id=current run_id=all run_num=`,
-        eph: `<dir_0> run_num=<dir_1>`,
-      })],
-    ),
-  )
-}
-
-export function cmdLs({sig, args}) {
-  const cmd = cmdLs.cmd
-  const pairs = a.tail(u.cliDecode(args))
-  if (!pairs.length) return os.cmdHelpDetailed(cmdLs)
-
-  const paths = []
-  let cloud
-  let stat
-
-  for (const [key, val, pair] of pairs) {
-    if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdLs)
-
-    if (key === `-c`) {
-      cloud = ui.cliBool(cmd, key, val)
-      continue
-    }
-
-    if (key === `-s`) {
-      stat = ui.cliBool(cmd, key, val)
-      continue
-    }
-
-    if (key) {
-      ui.LOG.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
-      return os.cmdHelpDetailed(cmdLs)
-    }
-    paths.push(val)
-  }
-
-  if (paths.length > 1) {
-    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
-    return os.cmdHelpDetailed(cmdLs)
-  }
-  const path = paths[0]
-
-  if (cloud) {
-    if (stat) {
-      ui.LOG.err(`ignoring `, ui.BtnPrompt({cmd, suf: `-s`}), ` in cloud mode in `, ui.BtnPromptReplace({val: args}))
-    }
-    // TODO use user id as directory name.
-    return au.listDirsFiles(sig, path)
-  }
-
-  return fs.listDirsFiles({sig, path, stat})
 }
 
 async function main() {
@@ -231,6 +131,8 @@ async function main() {
   w.watchStartOpt().catch(ui.logErr)
   up.uploadStartOpt().catch(ui.logErr)
 
+  if (lastProcPromise) await lastProcPromise
+
   /*
   For fresh visitors, we want to render some default chart, as a sample. For
   active users with existing runs, we probably want to render analysis of the
@@ -238,8 +140,6 @@ async function main() {
   the URL query has modified the media already, we should avoid touching it.
   TODO: make this togglable.
   */
-  if (lastProcPromise) await lastProcPromise
-
   if (!ranPlots && ui.MEDIA.isDefault()) {
     await os.runProc({
       fun: p.plotDefault,

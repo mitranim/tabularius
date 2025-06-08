@@ -9,9 +9,9 @@ import * as u from './util.mjs'
 import * as fs from './fs.mjs'
 
 import * as self from './dat.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.d = self
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.d = self
+a.patch(globalThis, namespace)
 
 export const DAT = new EventTarget()
 
@@ -27,7 +27,7 @@ export const DAT_QUERY_TABLES = Object.freeze(u.dict({
 }))
 
 export function datQueryFacts(dat, opt) {
-  a.reqStruct(dat)
+  a.reqRec(dat)
   return u.filterWhere(dat.facts, datQueryWhere(dat, opt))
 }
 
@@ -40,8 +40,8 @@ us to compare plot aggregation between client and server code.
 But the performance is still wasted. TODO avoid.
 */
 export function datQueryWhere(dat, opt) {
-  a.reqStruct(dat)
-  opt = a.laxStruct(opt)
+  a.reqRec(dat)
+  opt = a.laxRec(opt)
   const where = u.dict(opt.where)
 
   // SYNC[plot_user_current].
@@ -89,8 +89,8 @@ function validRunId(run) {
 }
 
 export async function datLoad({sig, dat, opt, tables}) {
-  a.reqStruct(dat)
-  opt = a.laxStruct(opt)
+  a.reqRec(dat)
+  opt = a.laxRec(opt)
 
   const where = a.laxDict(opt.where)
   const hist = await fs.historyDirReq(sig)
@@ -122,7 +122,7 @@ export async function datLoad({sig, dat, opt, tables}) {
 }
 
 export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms, tables}) {
-  a.reqStruct(dat)
+  a.reqRec(dat)
   a.reqInst(file, FileSystemFileHandle)
   const round_id = s.makeRoundId(USER_ID, run_num, run_ms, u.toNatOpt(file.name))
   const unlock = await u.localLock(sig, round_id)
@@ -156,11 +156,11 @@ function datOnBroadcast(src) {
 Mixin for various "live" media that want to receive notifications
 about new local data.
 */
-export function MixDatSub(cls) {return MixDatSubCache.goc(cls)}
+export function MixDatSub(cls) {return MixinDatSub.get(cls)}
 
-class MixDatSubCache extends a.StaticCache {
+class MixinDatSub extends a.Mixin {
   static make(cls) {
-    return class MixDatSub extends cls {
+    return class DatSub extends cls {
       datSub = new u.Listener(this)
 
       onDatEvent(eve) {

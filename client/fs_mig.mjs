@@ -1,8 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import * as s from '../shared/schema.mjs'
 import * as fs from './fs.mjs'
-import {E} from './ui.mjs'
 import * as ui from './ui.mjs'
 import * as u from './util.mjs'
 
@@ -19,7 +17,7 @@ TODO: use a cross-tab mutex.
 SYNC[fs_mig].
 */
 export async function migrateRuns() {
-  const state = ob.obs({
+  const state = a.obs({
     status: `migrating`,
     runsChecked: 0,
     runsMigrated: 0,
@@ -87,7 +85,7 @@ export async function migrateRuns() {
     if (!logged) {
       ui.LOG.info(ui.LogLines(
         `[fs_mig] updating the history dir to a newer schema; might take a minute because browser file system API is slow; current progress:`,
-        new FsMigProg(state),
+        a.bind(fsMigMsg, state),
       ))
       logged = true
     }
@@ -195,24 +193,14 @@ async function migrateRunDir({
   ui.LOG.verb(`[fs_mig] removed run dir ${a.show(dirNamePrev)}`)
 }
 
-export class FsMigProg extends ui.Elem {
-  constructor(state) {
-    super()
-    this.state = a.reqObj(state)
-    ob.reac(this, this.init)
-  }
-
-  init() {
-    const {status, runsChecked, runsMigrated, roundsChecked, roundsMigrated} = this.state
-
-    E(this, {}, u.joinLines(
-      `  status: ${status}`,
-      `  runs checked: ${runsChecked}`,
-      `  runs migrated: ${runsMigrated}`,
-      `  rounds checked: ${roundsChecked}`,
-      `  rounds migrated: ${roundsMigrated}`,
-    ))
-  }
+function fsMigMsg({status, runsChecked, runsMigrated, roundsChecked, roundsMigrated}) {
+  return u.joinLines(
+    `  status: ${status}`,
+    `  runs checked: ${runsChecked}`,
+    `  runs migrated: ${runsMigrated}`,
+    `  rounds checked: ${roundsChecked}`,
+    `  rounds migrated: ${roundsMigrated}`,
+  )
 }
 
 function isRunOld(runName) {
@@ -228,7 +216,7 @@ function isRunNew(runName) {
 }
 
 function isRoundOld(round) {
-  a.reqObj(round)
+  a.reqRec(round)
   return (
     !round.tabularius_fields_schema_version ||
     round.tabularius_fields_schema_version === SCHEMA_PREV
@@ -236,7 +224,7 @@ function isRoundOld(round) {
 }
 
 function isRoundNew(round) {
-  a.reqObj(round)
+  a.reqRec(round)
   return round.tabularius_fields_schema_version === SCHEMA_NEXT
 }
 

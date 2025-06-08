@@ -1,11 +1,10 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import {E} from './ui_util.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as ui from './ui.mjs'
 
-// TODO reduce space-wasting.
+// TODO waste less space.
 // SYNC[media_pad].
 export const MEDIA_PAD = `1rem`
 export const CLS_MEDIA_PAD = `p-[${MEDIA_PAD}]`
@@ -22,16 +21,15 @@ export const CLS_MEDIA_CHI = a.spaced(
 )
 
 export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends ui.Elem {
-  constructor() {ob.reac(super(), this.init)}
+  state = a.obs({count: 0})
 
-  state = ob.obs({count: 0})
+  constructor() {
+    super()
 
-  init() {
-    const {count} = this.state
+    const obs = this.state
     const placeholder = `[Plot Placeholder]`
 
-    E(
-      this,
+    E(this,
       {class: a.spaced(
         CLS_MEDIA_CHI,
         CLS_MEDIA_ITEM_WIDE,
@@ -39,43 +37,51 @@ export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends ui.Elem {
         `flex flex-col gap-3`,
       )},
       E(`div`, {class: `text-center`},
-        count ? `Plots loading...` : placeholder,
+        () => obs.count ? `Plots loading...` : placeholder,
       ),
       E(
         `div`,
         {class: `h-64 flex row-cen-cen border border-gray-400 dark:border-neutral-600 rounded bg-white dark:bg-neutral-800`},
         E(
           `div`,
-          {class: a.spaced(ui.CLS_TEXT_GRAY, `w-full text-center`)},
-          count ? [`Loading `, count, ` plots...`] : placeholder,
+          {class: a.spaced(ui.CLS_TEXT_MUTED, `w-full text-center`)},
+          () => (
+            obs.count ? [`Loading `, obs.count, ` plots...`] : placeholder
+          ),
         )
       )
     )
   }
 }()
 
-// A reactive element that shows running processes.
 export const PROCESS_LIST = new class ProcessList extends ui.Elem {
-  connectedCallback() {ob.reac(this, this.init)}
-
-  init() {
-    const vals = a.values(os.PROCS)
-    const len = vals.length
-
+  /*
+  Delay until connected, as opposed to rendering synchronously at module init,
+  because we have an import cycle between modules, and `os.PROCS` is not yet
+  available at construction time.
+  */
+  connectedCallback() {
     E(
       this,
-      {class: a.spaced(CLS_MEDIA_CHI, CLS_MEDIA_ITEM_WIDE, CLS_MEDIA_PAD, `flex flex-col gap-2`)},
-      (
-        len
-        ? [
-          E(`div`, {}, `active processes (${len}):`),
-          a.map(vals, Process),
-        ]
-        : E(`div`, {class: `text-gray-500 dark:text-neutral-500`}, `no active processes`)
-      )
+      {class: a.spaced(
+        `flex flex-col gap-2`, CLS_MEDIA_CHI, CLS_MEDIA_ITEM_WIDE, CLS_MEDIA_PAD,
+      )},
+      ActiveProcs,
     )
   }
 }()
+
+function ActiveProcs() {
+  const vals = a.values(os.PROCS)
+  const len = vals.length
+
+  if (!len) return ui.Muted(`no active processes`)
+
+  return [
+    E(`div`, {}, `active processes (${len}):`),
+    a.map(vals, Process),
+  ]
+}
 
 export const MEDIA = new class MediaPanel extends ui.Elem {
   constructor() {
@@ -98,7 +104,7 @@ export const MEDIA = new class MediaPanel extends ui.Elem {
 
   add(val) {
     a.reqElement(val)
-    ui.addCls(val, CLS_MEDIA_CHI)
+    ui.clsAdd(val, CLS_MEDIA_CHI)
 
     const onclick = () => {this.delete(val)}
     const btn = BtnKill({onclick})
@@ -107,8 +113,8 @@ export const MEDIA = new class MediaPanel extends ui.Elem {
       val.addCloseBtn(btn)
     }
     else {
-      ui.addCls(val, `relative`)
-      ui.addCls(btn, `absolute top-2 right-2`)
+      ui.clsAdd(val, `relative`)
+      ui.clsAdd(btn, `absolute top-2 right-2`)
       val.appendChild(btn)
     }
 
@@ -129,10 +135,10 @@ export const MEDIA = new class MediaPanel extends ui.Elem {
   toggleWide(tar, ok) {
     a.reqElement(tar)
     a.optBool(ok)
-    ui.toggleCls(tar, ok, CLS_MEDIA_ITEM_WIDE)
+    ui.clsToggle(tar, ok, CLS_MEDIA_ITEM_WIDE)
   }
 
-  clear() {E(this, {}, PLOT_PLACEHOLDER, PROCESS_LIST)}
+  clear() {E(this, undefined, PLOT_PLACEHOLDER, PROCESS_LIST)}
 
   updatePlaceholder() {
     if (this.children.length <= 1) {
@@ -168,7 +174,7 @@ export function markElementMediaDefault(val) {
 
 function Process(src) {
   a.reqInst(src, os.Proc)
-  const cls = a.spaced(ui.CLS_TEXT_GRAY, `trunc text-sm`)
+  const cls = a.spaced(ui.CLS_TEXT_MUTED, `trunc text-sm`)
 
   return E(`div`, {class: `flex row-bet-cen gap-2`},
     E(`pre`, {class: `flex-1 basis-auto trunc font-medium flex-1`},
@@ -177,7 +183,7 @@ function Process(src) {
         elem: E(`span`, {class: `cursor-help`}, src.id),
       }),
       ui.Muted(`: `),
-      ui.BtnPromptReplace({val: src.args}),
+      ui.BtnPromptReplace(src.args),
     ),
     // TODO: place description on its own line (under).
     a.vac(src.desc && undefined) && E(
@@ -203,7 +209,7 @@ export function BtnKill({class: cls, ...attrs}) {
   return E(`button`, {
     type: `button`,
     class: a.spaced(
-      `w-6 h-6 text-center align-middle leading-none bg-red-500 text-white rounded hover:bg-red-600`,
+      `w-6 h-6 shrink-0 text-center align-middle leading-none bg-red-500 text-white rounded hover:bg-red-600`,
       cls,
     ),
     ...attrs

@@ -889,7 +889,7 @@ export async function editCommit(sig, state) {
         ? [ui.Bold(`planned actions`), ` in `]
         : `notes in `
       ),
-      ui.BtnPromptReplace({val: args}), `:`,
+      ui.BtnPromptReplace(args), `:`,
     ])
   }
 
@@ -931,7 +931,7 @@ export async function editCommit(sig, state) {
           ui.Bold(`without writing any files`),
           `; add `, BtnAppend(`-w`), ` to commit the changes:`,
         ],
-        [`  `, ui.BtnPromptReplace({val: a.spaced(args, `-w`)})],
+        [`  `, ui.BtnPromptReplace(a.spaced(args, `-w`))],
       ))
     }
   }
@@ -1344,7 +1344,7 @@ function reqNoErrs(state) {
   const {errs, args} = a.reqInst(state, EditState)
   if (!errs.length) return
   throw new ui.ErrLog(...ui.LogParagraphs(
-    [`errors in `, ui.BtnPromptReplace({val: args}), `:`],
+    [`errors in `, ui.BtnPromptReplace(args), `:`],
     ...errs,
   ))
 }

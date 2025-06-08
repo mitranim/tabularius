@@ -55,7 +55,7 @@ export class DuckConn extends dn.DuckDBConnection {
 
   async queryScalars(...src) {
     const read = await this.runAndReadAll(...src)
-    const cols = a.reqArr(read.getColumnsJS())
+    const cols = a.reqArr(read.convertColumns(dbValToJsVal))
     if (!cols.length) return []
     if (cols.length !== 1) {
       throw Error(`expected exactly 1 column, got ${cols.length}`)
@@ -66,29 +66,48 @@ export class DuckConn extends dn.DuckDBConnection {
   async queryRow(...src) {
     const read = await this.runAndRead(...src)
     await read.readUntil(1)
-    return a.head(read.getRowsJS())
+    return a.head(read.convertRows(dbValToJsVal))
   }
 
   async queryRows(...src) {
     const read = await this.runAndReadAll(...src)
-    return read.getRowsJS()
+    return read.convertRows(dbValToJsVal)
   }
 
   async queryCols(...src) {
     const read = await this.runAndReadAll(...src)
-    return read.getColumnsJS()
+    return read.convertColumns(dbValToJsVal)
   }
 
   async queryDoc(...src) {
     const read = await this.runAndRead(...src)
     await read.readUntil(1)
-    return a.head(read.getRowObjectsJS())
+    return a.head(read.convertRowObjects(dbValToJsVal))
   }
 
   async queryDocs(...src) {
     const read = await this.runAndReadAll(...src)
-    return read.getRowObjectsJS()
+    return read.convertRowObjects(dbValToJsVal)
   }
+}
+
+/*
+The maintainers of `@duckdb/node-api`, in their desire for the oh-so-valuable
+correctness of integers in the range between `Number.MAX_SAFE_INTEGER`, which
+is approximately nine quadrillions, and maximum `int64`, which is approximately
+nine quintillions (only 1000 times larger), have made the API very error-prone
+and annoying whenever the SQL "bigint" (int64) is involved, by transcoding it
+to JS `BigInt` which is not automatically serializable to JSON. On top of that,
+they failed to provide a simple toggle to disable this inconvenience, although
+our solution is admittedly fairly terse.
+
+Reminder: SQL "bigint" is not an actual bigint. It is `int64`, which is limited
+to around nine quadrillions in the positive and negative range.
+*/
+export function dbValToJsVal(src, type) {
+  if (a.isNil(src)) return undefined
+  if (a.isBigInt(src)) return a.reqFin(Number(src))
+  return dn.JsonDuckDBValueConverter(src, type, dbValToJsVal)
 }
 
 export function isValidColVal(val) {return a.isKey(val)}
@@ -99,7 +118,7 @@ export function reqValidColVal(val) {
 }
 
 export function pickCols(src, keys) {
-  a.reqObj(src)
+  a.reqRec(src)
   const out = []
   for (const key of a.reqArr(keys)) {
     const val = src[a.reqStr(key)]

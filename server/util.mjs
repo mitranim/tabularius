@@ -4,6 +4,7 @@ import * as a from '@mitranim/js/all.mjs'
 import * as pt from '@mitranim/js/path.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
 import * as su from '../shared/util.mjs'
+import * as us from './util_srv.mjs'
 export * from '../shared/util.mjs'
 export * from './util_conf.mjs'
 export * from './util_auth.mjs'
@@ -45,6 +46,25 @@ export function pathToName(src) {
 }
 
 /*
+Most HTTP clients and many HTTP-related libraries auto-collapse `..` in request
+paths, but it's perfectly possible to send such a path in HTTP and to receive
+one in Deno. Tested with:
+
+  curl --path-as-is http://localhost:9834/api/ls/../../../..
+
+Without rejecting paths with `..`, it's easy to accidentally serve files from
+outside the allowed directories. We could try to be more constructive and
+allow "valid" forms of collapse, but most clients do that by default anyway.
+*/
+export function reqValidRelFilePath(src) {
+  src = a.laxStr(src)
+  if (pt.posix.isAbs(src) || src.includes(`..`)) {
+    throw new us.ErrHttp(`invalid path ${a.show(src)}`, {status: 400})
+  }
+  return src
+}
+
+/*
 On the client, we preserve `.gd` files as-is; underneath they're actually
 `.json.gz.base64`, although sometimes they can be simply `.json` underneath.
 On the server, we simplify them into `.json.gz` for efficiency, saving about
@@ -76,7 +96,7 @@ export async function readDecodeGameFile(path, name) {
 
   if (name.endsWith(GAME_FILE_EXT_REAL)) {
     validGameFileGzName(name)
-    return JSON.parse(await su.byteArr_to_ungzip_to_str(await Deno.readFile(path)))
+    return a.jsonDecode(await su.byteArr_to_ungzip_to_str(await Deno.readFile(path)))
   }
 
   return su.decodeGdStr(await Deno.readTextFile(path))
@@ -84,7 +104,7 @@ export async function readDecodeGameFile(path, name) {
 
 export async function writeEncodeGameFile(path, src) {
   validGameFileGzName(pathToName(path))
-  await Deno.writeFile(path, await su.data_to_json_to_gzipByteArr(src))
+  await io.writeFile(path, await su.data_to_json_to_gzipByteArr(src))
 }
 
 function validGameFileGzName(name) {
@@ -157,5 +177,5 @@ export function compareDirEntries(one, two, fun) {
 
 export function jsonLines(src) {
   src = a.laxArr(src)
-  return a.mapCompact(src, JSON.stringify).join(`\n`)
+  return a.mapCompact(src, a.jsonEncode).join(`\n`)
 }

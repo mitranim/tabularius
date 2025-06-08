@@ -1,5 +1,4 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import Plot from 'uplot'
 import * as gc from '../shared/game_const.mjs'
 import * as s from '../shared/schema.mjs'
@@ -12,11 +11,11 @@ import * as d from './dat.mjs'
 import * as au from './auth.mjs'
 
 import * as self from './plot.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.p = self
-tar.gc = gc
-tar.s = s
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.p = self
+namespace.gc = gc
+namespace.s = s
+a.patch(globalThis, namespace)
 
 cmdPlot.cmd = `plot`
 cmdPlot.desc = `analyze data, visualizing with a plot 📈📉`
@@ -39,7 +38,7 @@ cmdPlot.help = function cmdPlotHelp() {
     ],
 
     ui.LogLines(
-      [BtnAppendEq(`-p`), ` -- preset; supported values:`],
+      [BtnAppendEq({key: `-p`}), ` -- preset; supported values:`],
       ui.LogParagraphs(
         ...a.map(a.entries(PLOT_PRESETS), Help_preset).map(u.indentNode),
       ),
@@ -47,7 +46,7 @@ cmdPlot.help = function cmdPlotHelp() {
 
     ui.LogLines(
       [
-        BtnAppendEq(`-x`),
+        BtnAppendEq({key: `-x`}),
         ` -- X axis: progression; supported values:`,
       ],
       ...FlagAppendBtns(a.keys(s.ALLOWED_X_KEYS), `-x`).map(u.indentNode),
@@ -55,7 +54,7 @@ cmdPlot.help = function cmdPlotHelp() {
 
     ui.LogLines(
       [
-        BtnAppendEq(`-y`),
+        BtnAppendEq({key: `-y`}),
         ` -- Y axis: stat type; supported values:`,
       ],
       ...FlagAppendBtns(a.keys(s.ALLOWED_STAT_TYPE_FILTERS), `-y`).map(u.indentNode),
@@ -63,7 +62,7 @@ cmdPlot.help = function cmdPlotHelp() {
 
     ui.LogLines(
       [
-        BtnAppendEq(`-z`),
+        BtnAppendEq({key: `-z`}),
         ` -- Z axis: plot series; supported values:`,
       ],
       ...a.map(a.keys(s.ALLOWED_Z_KEYS), Help_Z).map(u.indentNode),
@@ -71,7 +70,7 @@ cmdPlot.help = function cmdPlotHelp() {
 
     ui.LogLines(
       [
-        BtnAppendEq(`-a`),
+        BtnAppendEq({key: `-a`}),
         ` -- aggregation mode; supported values:`,
       ],
       ...FlagAppendBtns(a.keys(s.AGGS), `-a`).map(u.indentNode),
@@ -85,17 +84,21 @@ cmdPlot.help = function cmdPlotHelp() {
       [`  -t`, `                      -- all additional totals`],
       [`  -t <stat>`, `               -- one specific stat`],
       [`  -t <stat> -t <stat> ...`, ` -- several specific totals`],
-      [`  `, BtnAppendEq(`-t`, `false`), `                -- disable totals (override preset)`],
+      [
+        `  `,
+        BtnAppendEq({key: `-t`, val: `false`}),
+        `                -- disable totals (override preset)`,
+      ],
     ),
 
     ui.LogLines(
       [
-        BtnAppendEq(`-f`),
+        BtnAppendEq({key: `-f`}),
         ` -- fetch a run file / rounds file from the given URL; overrides `,
         BtnAppend({val: `-c`, glos: `-c`}), `; examples:`
       ],
-      [`  `, BtnAppend({val: `-f=samples/example_run.gd user_id=all run_id=all -p=dmg`})],
-      [`  `, BtnAppend({val: `-f=samples/example_runs.gd user_id=all run_id=all -p=dmg`})],
+      [`  `, BtnAppend({val: `-f=samples/example_run.gd run_id=all -p=dmg`})],
+      [`  `, BtnAppend({val: `-f=samples/example_runs.gd run_id=all -p=dmg`})],
     ),
 
     ui.LogLines(
@@ -116,13 +119,13 @@ cmdPlot.help = function cmdPlotHelp() {
 
     ui.LogLines(
       `more examples:`,
-      [`  `, BtnAppend({val: `-c -p=dmg user_id=all`}), ` -- building damages in latest run`],
-      [`  `, BtnAppend({val: `-c -p=chi_dmg user_id=all`}), ` -- weapon damages in latest run`],
-      [`  `, BtnAppend({val: `-c -p=eff user_id=all run_id=all`}), ` -- building efficiency across all runs and users`],
-      [`  `, BtnAppend({val: `-c -p=eff user_id=all run_id=all -z=bui_type`}), ` -- simplified building efficiency`],
-      [`  `, BtnAppend({val: `-c -p=dmg_eff user_id=all run_id=all`}), `  -- building damage efficiency across all runs and users`],
-      [`  `, BtnAppend({val: `-c -p=dmg_runs user_id=all -z=user_id`}), ` -- user damage trajectory`],
-      [`  `, BtnAppend({val: `-c -p=eff_runs user_id=all -z=user_id`}), ` -- user efficiency trajectory`],
+      [`  `, BtnAppend({val: `-c -p=dmg`}), ` -- building damages in latest run`],
+      [`  `, BtnAppend({val: `-c -p=chi_dmg`}), ` -- weapon damages in latest run`],
+      [`  `, BtnAppend({val: `-c -p=eff run_id=all`}), ` -- building efficiency across all runs and users`],
+      [`  `, BtnAppend({val: `-c -p=eff run_id=all -z=bui_type`}), ` -- simplified building efficiency`],
+      [`  `, BtnAppend({val: `-c -p=dmg_eff run_id=all`}), `  -- building damage efficiency across all runs and users`],
+      [`  `, BtnAppend({val: `-c -p=dmg_runs -z=user_id`}), ` -- user damage trajectory`],
+      [`  `, BtnAppend({val: `-c -p=eff_runs -z=user_id`}), ` -- user efficiency trajectory`],
     ),
   )
 }
@@ -165,7 +168,7 @@ export async function cmdPlotLocal({sig, args, opt}) {
   const agg = makeAgg()
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
-  const obs = agg.totals && ob.obs({args, totals: agg.totals})
+  const obs = agg.totals && a.obs({args, totals: agg.totals})
   const opts = plotOptsWith({...agg, opt, args})
 
   function makeAgg() {
@@ -212,7 +215,7 @@ export async function cmdPlotFetch({sig, args, opt, user, example}) {
   }
 
   const facts = d.datQueryFacts(dat, opt)
-  const agg = u.consistentNil_undefined(s.plotAggFromFacts({facts, opt}))
+  const agg = u.normNil(s.plotAggFromFacts({facts, opt}))
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
   const opts = plotOptsWith({...agg, opt, args, example})
@@ -227,11 +230,13 @@ export async function cmdPlotCloud({sig, args, opt, user}) {
     // SYNC[plot_user_current_err_msg].
     throw new ui.ErrLog(
       `filtering cloud data by current user requires authentication; run `,
-      os.BtnCmdWithHelp(`auth`), ` or use `, BtnAppendEq(`user_id`, `all`, TOOLTIP_USER_ALL),
+      os.BtnCmdWithHelp(`auth`),
+      ` or use `,
+      BtnAppendEq({key: `user_id`, val: `all`}),
     )
   }
 
-  const agg = u.consistentNil_undefined(await apiPlotAgg(sig, opt))
+  const agg = u.normNil(await apiPlotAgg(sig, opt))
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
 
   return showPlot({opts: plotOptsWith({...agg, opt, args}), totals: agg.totals, args, user})
@@ -250,11 +255,13 @@ function showPlot({opts, totals, args}) {
 function plotReqUserId() {
   const id = au.STATE.userId
   if (id) return id
+
   throw new ui.ErrLog(
     `filtering plot data by `,
-    BtnAppendEq(`user_id`, `current`, TOOLTIP_USER_CURRENT),
+    BtnAppendEq({key: `user_id`, val: `current`, tooltip: TOOLTIP_USER_CURRENT}),
     ` requires `, os.BtnCmdWithHelp(`auth`),
-    `; alternatively, use `, BtnAppendEq(`user_id`, `all`, TOOLTIP_USER_ALL),
+    `; alternatively, use `,
+    BtnAppendEq({key: `user_id`, val: `all`}),
   )
 }
 
@@ -344,7 +351,7 @@ export function PlotTitle({elem, opt, args, pre, close}) {
   const btn = a.vac(args) && BtnReplace(args, args)
 
   if (btn) {
-    ui.addCls(btn, `w-full trunc`)
+    ui.clsAdd(btn, `w-full trunc`)
     btn.style.textAlign = `center` // Override class.
   }
 
@@ -454,7 +461,7 @@ export function decodePlotAggOpt(src) {
       if (val) out.fetch = val
       else {
         errs.push([
-          BtnAppendEq(`-f`),
+          BtnAppendEq({key: `-f`}),
           ` must be a non-empty path or URL pointing to a ".gd" or ".json" file which must contain a sequence of rounds to be aggregated and analyzed`,
         ])
       }
@@ -483,10 +490,7 @@ export function decodePlotAggOpt(src) {
       else {
         errs.push(ui.LogLines(
           [`unrecognized filter `, BtnAppend({val: pair}), `, filters must be among:`],
-          ...a.map(
-            a.keys(s.ALLOWED_FILTER_KEYS),
-            BtnAppendEq,
-          ).map(u.indentNode),
+          ...a.map(a.keys(s.ALLOWED_FILTER_KEYS), key => BtnAppendEq({key})).map(u.indentNode),
         ))
       }
       continue
@@ -530,7 +534,11 @@ export function decodePlotAggOpt(src) {
       out.runLatest ??= false
       const int = u.toNatOpt(val)
       if (a.isNil(int)) {
-        errs.push([BtnAppendEq(key, val), ` must begin with a positive integer, got `, a.show(val)])
+        errs.push([
+          BtnAppendEq({key, val}),
+          ` must begin with a positive integer, got `,
+          a.show(val),
+        ])
         continue
       }
       u.dictPush(out.where, key, int)
@@ -544,7 +552,11 @@ export function decodePlotAggOpt(src) {
     ) {
       const int = u.toNatOpt(val)
       if (a.isNil(int)) {
-        errs.push([BtnAppendEq(key, val), ` must begin with a positive integer, got `, a.show(val)])
+        errs.push([
+          BtnAppendEq({key, val}),
+          ` must begin with a positive integer, got `,
+          a.show(val),
+        ])
         continue
       }
       u.dictPush(out.where, key, int)
@@ -578,9 +590,9 @@ export function decodePlotAggOpt(src) {
   // SYNC[plot_agg_z_chi_type].
   if (out.Z === `chi_type` && !a.includes(out.where.ent_type, s.FACT_ENT_TYPE_CHI)) {
     errs.push([
-      BtnAppendEq(`-z`, `chi_type`),
+      BtnAppendEq({key: `-z`, val: `chi_type`}),
       ` requires `,
-      BtnAppendEq(`ent_type`, s.FACT_ENT_TYPE_CHI),
+      BtnAppendEq({key: `ent_type`, val: s.FACT_ENT_TYPE_CHI}),
       a.vac(out.where.ent_type) && [
         `, got `,
         FlagAppendBtns(out.where.ent_type, `ent_type`),
@@ -595,8 +607,8 @@ export function decodePlotAggOpt(src) {
   ) {
     const got = FlagAppendBtns(out.where.ent_type, `ent_type`)
     errs.push([
-      BtnAppendEq(`-y`, out.Y), ` requires `,
-      BtnAppendEq(`ent_type`, s.FACT_ENT_TYPE_BUI),
+      BtnAppendEq({key: `-y`, val: out.Y}), ` requires `,
+      BtnAppendEq({key: `ent_type`, val: s.FACT_ENT_TYPE_BUI}),
       a.vac(got) && `, got `, got,
     ])
   }
@@ -610,10 +622,11 @@ export function decodePlotAggOpt(src) {
   return out
 }
 
+
 export const PLOT_PRESETS = u.dict({
   // SYNC[plot_agg_opt_dmg].
   dmg: {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=latest`,
     help: `
 summed damage,
 per building type with upgrades,
@@ -621,7 +634,7 @@ per round in latest run
 `.trim(),
   },
   chi_dmg: {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_DONE} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} run_id=latest`,
     help: `
 summed damage,
 per child type,
@@ -629,7 +642,7 @@ per round in latest run
 `.trim(),
   },
   chi_dmg_over: {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=chi_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_CHI} run_id=latest`,
     help: `
 summed damage overkill,
 per child type,
@@ -637,7 +650,7 @@ per round in latest run
 `.trim(),
   },
   eff: {
-    args: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=latest`,
     help: `
 average cost efficiency,
 per building type with upgrades,
@@ -646,7 +659,7 @@ formula: avg(dmg_done / cost)
 `.trim(),
   },
   dmg_eff: {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=latest`,
     help: `
 average damage efficiency,
 per building type with upgrades,
@@ -655,7 +668,7 @@ formula: avg(dmg_done / (dmg_done + dmg_over))
 `.trim(),
   },
   dps: {
-    args: `-x=round_num -y=${s.STAT_TYPE_DPS} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_DPS} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=latest`,
     help: `
 average DPS,
 per building type with upgrades,
@@ -664,7 +677,7 @@ formula: avg(dmg_done / time)
 `.trim(),
   },
   dmg_over: {
-    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+    args: `-x=round_num -y=${s.STAT_TYPE_DMG_OVER} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=latest`,
     help: `
 summed damage overkill,
 per building type with upgrades,
@@ -672,7 +685,7 @@ per round in latest run
 `.trim(),
   },
   dmg_runs: {
-    args: `-x=run_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+    args: `-x=run_num -y=${s.STAT_TYPE_DMG_DONE} -z=bui_type_upg -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=all`,
     help: `
 summed damage,
 per building type with upgrades,
@@ -680,7 +693,7 @@ per run
 `.trim(),
   },
   eff_runs: {
-    args: `-x=run_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+    args: `-x=run_num -y=${s.STAT_TYPE_COST_EFF} -z=bui_type_upg -a=avg -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=all`,
     help: `
 average cost efficiency,
 per building type with upgrades,
@@ -692,11 +705,11 @@ per run
   This needs a finer approach.
 
     round_stats: {
-      args: `-x=round_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=latest`,
+      args: `-x=round_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=latest`,
       help: ``,
     },
     run_stats: {
-      args: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} user_id=current run_id=all`,
+      args: `-x=run_num -z=stat_type -a=sum -t ent_type=${s.FACT_ENT_TYPE_BUI} run_id=all`,
       help: ``,
     },
     run_stats_all: {
@@ -763,7 +776,7 @@ export async function plotDefaultLocal(opt) {
 }
 
 export async function plotDefaultExample(sig) {
-  const args = `plot -f=samples/example_run.gd -p=dmg -t=false user_id=all run_id=all`
+  const args = `plot -f=samples/example_run.gd -p=dmg -t=false run_id=all`
   const out = await cmdPlotFetch({sig, args, opt: decodePlotAggOpt(args), example: true})
   a.reqInst(out, os.Combo)
   for (const val of out.mediaItems) ui.markElementMediaDefault(val)
@@ -861,10 +874,10 @@ export class Plotter extends ui.Elem {
 
   handleEvent(eve) {if (eve.type === `change` && eve.media) this.plotInit()}
 
-  closeBtn = undefined
+  closeBtn = a.obsRef()
 
   // Invoked by `MEDIA`.
-  addCloseBtn(btn) {this.closeBtn = a.reqElement(btn)}
+  addCloseBtn(btn) {this.closeBtn.val = btn}
 
   updatePlotDom() {
     const root = this.plot?.root
@@ -1133,21 +1146,46 @@ export class TooltipPlugin extends a.Emp {
   // Additional options if any.
   opt = undefined
 
+  /*
+  Caching plot overlay dimensions avoids forcing a layout calculation when
+  redrawing the tooltip. Saves like a millisecond of performance per draw on
+  the author's system, which was most of the cost of the redraw. Could be more
+  in other scenarios.
+  */
+  plotOver = undefined
+  overWid = undefined
+  overHei = undefined
+  resObs = new ResizeObserver(this.onResize.bind(this))
+
   constructor(opt) {
     super()
-    this.opt = a.optObj(opt)
+    this.opt = a.optRec(opt)
   }
 
   opts() {
     return {
       hooks: {
-        // Called when a cursor hovers a particular series.
+        init: this.onInit.bind(this),
+
+        // Called when the cursor enters or leaves a Z series.
         setSeries: this.setSeries.bind(this),
-        // Called on any cursor movement.
-        setCursor: this.draw.bind(this),
+
+        // Called when the cursor enters or leaves the vertical area of an X point.
+        setLegend: this.setLegend.bind(this),
+
+        destroy: this.onDeinit.bind(this),
       }
     }
   }
+
+  onResize() {
+    const {plotOver} = this
+    this.overWid = plotOver.offsetWidth
+    this.overHei = plotOver.offsetHeight
+  }
+
+  onInit(plot) {this.resObs.observe(this.plotOver = plot.over)}
+  onDeinit() {this.resObs.unobserve(this.plotOver)}
 
   /*
   Known gotcha / limitation: when multiple series _overlap_ on a data point,
@@ -1158,6 +1196,8 @@ export class TooltipPlugin extends a.Emp {
     this.indS = ind
     this.draw(plot)
   }
+
+  setLegend(plot) {this.draw(plot)}
 
   draw(plot) {
     const {indS} = this
@@ -1196,16 +1236,21 @@ export class TooltipPlugin extends a.Emp {
       (axisNameY + nameSuf).padEnd(nameLen, ` `) + formatY(valY),
     )
 
-    const wid = plot.over.offsetWidth
-    const hei = plot.over.offsetHeight
+    const wid = this.overWid ??= plot.over.offsetWidth
+    const hei = this.overHei ??= plot.over.offsetHeight
     ui.tooltipOrient({elem, posX, posY, wid, hei})
     plot.over.appendChild(elem)
   }
 
   makeTooltip() {
-    // Inline styles bypass `all: unset` we accidentally apply to this in `index.html`.
-    // TODO un-apply `all: unset` and convert to Tailwind classes.
-    // Also TODO lighter background in dark mode.
+    /*
+    These inline styles bypass `all: unset` we accidentally apply to all plot
+    elements in `ui_style.mjs`.
+
+    TODO un-apply `all: unset` and convert to Tailwind classes.
+
+    TODO: lighter background in dark mode.
+    */
     return E(`div`, {
       style: {
         padding: `0.3rem`,
@@ -1222,10 +1267,11 @@ export class TooltipPlugin extends a.Emp {
 
 export const LEGEND_LEN_MAX = 32
 
-function BtnReplace(val, alias) {
-  return ui.BtnPromptReplace({
-    val: u.preSpacedOpt(val, cmdPlot.cmd),
-    chi: alias,
+function BtnReplace(args, alias) {
+  const cmd = cmdPlot.cmd
+
+  return ui.BtnPrompt({
+    cmd, suf: u.stripPreSpaced(args, cmd), chi: alias, full: true,
   })
 }
 
@@ -1235,10 +1281,18 @@ function BtnAppend({val, glos, alias}) {
   return withGlossary({elem, key: glos})
 }
 
-function BtnAppendEq(key, val, tooltip) {
-  const elem = ui.BtnPrompt({cmd: cmdPlot.cmd, suf: u.cliEq(key, a.laxStr(val))})
+function BtnAppendEq({key, val, eph, tooltip}) {
+  a.reqValidStr(key)
+  a.optStr(val)
+  a.optBool(eph)
+
+  const elem = ui.BtnPrompt({
+    cmd: cmdPlot.cmd,
+    suf: u.cliEq(key, a.vac(!eph) && a.laxStr(val)),
+    eph: a.vac(eph) && a.reqValidStr(val),
+  })
+
   if (!a.vac(tooltip)) return withGlossary({elem, key, val})
-  ui.addCls(elem, `cursor-help`)
   return ui.withTooltip({elem, chi: tooltip})
 }
 
@@ -1254,19 +1308,28 @@ function BtnAppendTrunc({key, val, width}) {
 }
 
 function FlagAppendBtns(src, flag) {
-  return a.map(src, key => BtnAppendEq(flag, key))
+  return a.map(src, key => BtnAppendEq({key: flag, val: key}))
 }
 
 function Help_preset([key, {args, help}]) {
-  return [BtnAppendEq(`-p`, key, help), ` -- `, BtnAppend({val: args})]
+  return [
+    BtnAppendEq({key: `-p`, val: key, tooltip: help}),
+    ` -- `, BtnAppend({val: args}),
+  ]
 }
 
 function Help_Z(key) {
   a.reqValidStr(key)
-  const btn = BtnAppendEq(`-z`, key)
+  const btn = BtnAppendEq({key: `-z`, val: key})
+
   if (key === `round_num`) {
-    return [btn, ` (recommended: also `, BtnAppendEq(`-x`, `run_num`), `)`]
+    return [
+      btn, ` (recommended: also `,
+      BtnAppendEq({key: `-x`, val: `run_num`}),
+      `)`,
+    ]
   }
+
   if (key === `stat_type`) {
     // SYNC[plot_group_stat_type_z_versus_y].
     return [btn, ` (disables `, BtnAppend({val: `-y`, glos: `-y`}), `)`]
@@ -1275,21 +1338,20 @@ function Help_Z(key) {
 }
 
 const TOOLTIP_USER_CURRENT = `uses current user id; requires auth`
-const TOOLTIP_USER_ALL = `disables preset user_id=current`
 const TOOLTIP_RUN_LATEST = `uses latest run according to user filter`
 const TOOLTIP_RUN_ALL = `disables preset run_id=latest`
 
 function Help_filter(key) {
   a.reqValidStr(key)
-  const btn = BtnAppendEq(key)
+  const btn = BtnAppendEq({key})
 
   if (key === `user_id`) {
     return [
       btn,
       ` (special: `,
-      BtnAppendEq(`user_id`, `current`, TOOLTIP_USER_CURRENT),
+      BtnAppendEq({key: `user_id`, val: `current`, tooltip: TOOLTIP_USER_CURRENT}),
       ` `,
-      BtnAppendEq(`user_id`, `all`, TOOLTIP_USER_ALL),
+      BtnAppendEq({key: `user_id`, val: `all`}),
       `)`,
     ]
   }
@@ -1298,25 +1360,48 @@ function Help_filter(key) {
     return [
       btn,
       ` (special: `,
-      BtnAppendEq(`run_id`, `latest`, TOOLTIP_RUN_LATEST),
+      BtnAppendEq({key: `run_id`, val: `latest`, tooltip: TOOLTIP_RUN_LATEST}),
       ` `,
-      BtnAppendEq(`run_id`, `all`, TOOLTIP_RUN_ALL),
+      BtnAppendEq({key: `run_id`, val: `all`, tooltip: TOOLTIP_RUN_ALL}),
       `)`,
     ]
   }
 
   if (key === `bui_type`) {
-    return [btn, ` (short name, like `, BtnAppendEq(`bui_type`, `MedMor`), `)`]
+    return [
+      btn,
+      ` (short name, like `,
+      BtnAppendEq({key: `bui_type`, val: `MedMort`, eph: true}),
+      `)`,
+    ]
   }
+
   if (key === `bui_type_upg`) {
-    return [btn, ` (short name, like `, BtnAppendEq(`bui_type_upg`, `MedMor_ABA`), `)`]
+    return [
+      btn,
+      ` (short name, like `,
+      BtnAppendEq({key: `bui_type_upg`, val: `MedMort_ABA`, eph: true}),
+      `)`,
+    ]
   }
+
   // SYNC[plot_group_ent_type_no_mixing].
   if (key === `ent_type`) {
-    return [btn, ` (exactly one is required unless `, BtnAppendEq(`-z`, `ent_type`), `)`]
+    return [
+      btn,
+      ` (exactly one is required unless `,
+      BtnAppendEq({key: `-z`, val: `ent_type`}),
+      `)`,
+    ]
   }
+
   if (key === `hero`) {
-    return [btn, ` (short name, like `, BtnAppendEq(`hero`, `Anysia`), `)`]
+    return [
+      btn,
+      ` (short name, like `,
+      BtnAppendEq({key: `hero`, val: `Anysia`, eph: true}),
+      `)`,
+    ]
   }
   return btn
 }
@@ -1341,12 +1426,16 @@ function msgPlotDataEmpty(args, opt) {
   return ui.LogParagraphs(
     [`no data found for `, BtnReplace(args)],
     a.vac(opt.userCurrent && (opt.cloud || opt.fetch)) && [
-      `data was filtered by `, BtnAppendEq(`user_id`, `current`, TOOLTIP_USER_CURRENT),
-      `, consider `, BtnAppendEq(`user_id`, `all`, TOOLTIP_USER_ALL),
+      `data was filtered by `,
+      BtnAppendEq({key: `user_id`, val: `current`, tooltip: TOOLTIP_USER_CURRENT}),
+      `, consider `,
+      BtnAppendEq({key: `user_id`, val: `all`}),
     ],
     a.vac(opt.runLatest) && [
-      `data was filtered by `, BtnAppendEq(`run_id`, `latest`, TOOLTIP_RUN_LATEST),
-      `, consider `, BtnAppendEq(`run_id`, `all`, TOOLTIP_RUN_ALL),
+      `data was filtered by `,
+      BtnAppendEq({key: `run_id`, val: `latest`, tooltip: TOOLTIP_RUN_LATEST}),
+      `, consider `,
+      BtnAppendEq({key: `run_id`, val: `all`, tooltip: TOOLTIP_RUN_ALL}),
     ],
   )
 }
@@ -1354,7 +1443,8 @@ function msgPlotDataEmpty(args, opt) {
 function msgMissing(key) {
   return new ui.ErrLog(
     `missing `, BtnAppend({val: key, glos: key}), `, `,
-    `consider using a preset such as `, BtnAppendEq(`-p`, `dmg`),
+    `consider using a preset such as `,
+    BtnAppendEq({key: `-p`, val: `dmg`}),
   )
 }
 
@@ -1376,7 +1466,7 @@ export function apiPlotAgg(sig, body) {
     signal: u.reqSig(sig),
     method: a.POST,
     headers: a.concat(PLOT_AGG_HEADERS, au.authHeadersOpt()),
-    body: JSON.stringify(body),
+    body: a.jsonEncode(body),
   }
   return u.fetchJson(url, opt)
 }
@@ -1430,7 +1520,7 @@ export async function cmdPlotLink({sig, args}) {
     if (key) {
       ui.LOG.err(
         `unrecognized `, ui.BtnPrompt({cmd, suf: pair}),
-        ` in `, ui.BtnPromptReplace({val: args})
+        ` in `, ui.BtnPromptReplace(args)
       )
       return os.cmdHelpDetailed(cmdPlotLink)
     }
@@ -1443,7 +1533,7 @@ export async function cmdPlotLink({sig, args}) {
     throw new ui.ErrLog(
       `unexpected user id inputs ${a.show(userIds)} in local mode;`,
       ` did you mean `,
-      ui.BtnPromptReplace({val: a.spaced(args, `-c`)}),
+      ui.BtnPromptReplace(a.spaced(args, `-c`)),
       `?`,
     )
   }
@@ -1510,7 +1600,7 @@ function plotCmdLocal(preset, opt) {
 function plotCmdCloud(preset, runId) {
   a.reqValidStr(runId)
   ui.cliEnum(cmdPlot.cmd, `-p`, preset, PLOT_PRESETS)
-  return `plot -p=${preset} -c run_id=${runId} user_id=all`
+  return `plot -p=${preset} -c run_id=${runId}`
 }
 
 function defaultLocalPlotCmds(opt) {
@@ -1536,18 +1626,9 @@ export class PlotTotals extends ui.Elem {
 
   constructor(src) {
     super()
-    this.src = a.reqObj(src)
-    ob.reac(this, this.init)
-  }
-
-  logPrefix = undefined
-  title = undefined
-
-  init() {
-    const args = a.reqStr(this.src.args)
-    const totals = a.reqDict(this.src.totals)
-    const counts = a.reqDict(totals.counts)
-    const values = a.reqDict(totals.values)
+    this.src = a.reqRec(src)
+    const cmd = cmdPlot.cmd
+    const args = a.reqStr(src.args)
 
     E(
       this,
@@ -1555,17 +1636,33 @@ export class PlotTotals extends ui.Elem {
       ui.LogLines(
         this.title ??= E(`span`, {class: `w-full trunc`},
           this.logPrefix,
-          `totals for `, BtnReplace(args), `:`,
+          `totals for `,
+          ui.BtnPrompt({
+            cmd, suf: u.stripPreSpaced(args, cmd), full: false, replace: true,
+          }),
+          `:`,
         ),
-        ...a.map(a.keys(counts), a.bind(PlotTotalEntry, counts, values)),
+        a.bind(PlotTotalBody, this.src),
       ),
     )
   }
+
+  logPrefix = undefined
+  title = undefined
 
   addLogPrefix(val) {
     this.logPrefix = val
     this.title?.prepend(val)
   }
+}
+
+function PlotTotalBody({totals}) {
+  a.reqDict(totals)
+  const counts = a.reqDict(totals.counts)
+  const values = a.reqDict(totals.values)
+  return ui.LogLines(
+    ...a.map(a.keys(counts), a.bind(PlotTotalEntry, counts, values))
+  )
 }
 
 const INDENT = `  `

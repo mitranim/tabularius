@@ -144,12 +144,12 @@ function isRunNew(runName) {
 }
 
 function isRoundOld(round) {
-  a.reqObj(round)
+  a.reqRec(round)
   return round.tabularius_fields_schema_version === SCHEMA_PREV
 }
 
 function isRoundNew(round) {
-  a.reqObj(round)
+  a.reqRec(round)
   return round.tabularius_fields_schema_version === SCHEMA_NEXT
 }
 

@@ -71,6 +71,9 @@ export const CODES_TO_HEROS = dict({
 export const HEROS_TO_CODES = invert(CODES_TO_HEROS)
 
 export const CODES_TO_BUIS_SHORT = dict({
+  HQ01: `BlueHQ`,
+  HQ02: `RedHQ`,
+  HQ03: `GreenHQ`,
   CB01: `Bunker`,
   CB01R: `Bunker+`,
   CB02: `Bastion`,
@@ -96,8 +99,8 @@ export const CODES_TO_BUIS_SHORT = dict({
   CB17R: `Puma+`,
   CB18: `Claymore`,
   CB18R: `Claymore+`,
-  CB19: `LigMor`,
-  CB20: `MedMor`,
+  CB19: `LigMort`,
+  CB20: `MedMort`,
   CB21: `Salamand`,
   F101: `ImpBar`,
   F101R: `ImpBar+`,
@@ -121,9 +124,14 @@ export const CODES_TO_BUIS_SHORT = dict({
   F3H10CB01: `Scarlett`,
   F3H10CB01A: `ScarTig`,
   F3H10SB01: `CampAlph`,
-  HQ01: `BlueHQ`,
-  HQ02: `RedHQ`,
-  HQ03: `GreenHQ`,
+  SB01: `AmmoDep`,
+  SB02: `DivRel`,
+  SB02A: `AntRel`,
+  SB04: `ZonCom`,
+  SB06: `Platform`,
+  SB07: `MisCon`,
+  SB07A: `CtrlExt`,
+  SB08: `DemoChar`,
   NB01: `SupplPoint`,
   NB02: `AmmoStore`,
   NB03: `TechAmpl`,
@@ -143,14 +151,6 @@ export const CODES_TO_BUIS_SHORT = dict({
   NB17: `ClassSite`,
   NB18: `MonoDiss`,
   NB19: `DeciAmpl`,
-  SB01: `AmmoDep`,
-  SB02: `DivRel`,
-  SB02A: `AntRel`,
-  SB04: `ZonCom`,
-  SB06: `Platform`,
-  SB07: `MisCon`,
-  SB07A: `CtrlExt`,
-  SB08: `DemoChar`,
 })
 
 export const BUIS_TO_CODES_SHORT = invert(CODES_TO_BUIS_SHORT)
@@ -777,13 +777,13 @@ export const BUI_COSTS_1_9 = dict({
   SB07A: {base: 250},
 })
 
-BUI_COSTS_1_9.CB01R = a.reqObj(BUI_COSTS_1_9.CB01)
-BUI_COSTS_1_9.CB03R = a.reqObj(BUI_COSTS_1_9.CB03)
-BUI_COSTS_1_9.CB07R = a.reqObj(BUI_COSTS_1_9.CB07)
-BUI_COSTS_1_9.CB15R = a.reqObj(BUI_COSTS_1_9.CB15)
-BUI_COSTS_1_9.CB17R = a.reqObj(BUI_COSTS_1_9.CB17)
-BUI_COSTS_1_9.CB18R = a.reqObj(BUI_COSTS_1_9.CB18)
-BUI_COSTS_1_9.F101R = a.reqObj(BUI_COSTS_1_9.F101)
+BUI_COSTS_1_9.CB01R = a.reqRec(BUI_COSTS_1_9.CB01)
+BUI_COSTS_1_9.CB03R = a.reqRec(BUI_COSTS_1_9.CB03)
+BUI_COSTS_1_9.CB07R = a.reqRec(BUI_COSTS_1_9.CB07)
+BUI_COSTS_1_9.CB15R = a.reqRec(BUI_COSTS_1_9.CB15)
+BUI_COSTS_1_9.CB17R = a.reqRec(BUI_COSTS_1_9.CB17)
+BUI_COSTS_1_9.CB18R = a.reqRec(BUI_COSTS_1_9.CB18)
+BUI_COSTS_1_9.F101R = a.reqRec(BUI_COSTS_1_9.F101)
 
 export const BUI_COSTS_1_11 = dict({
   ...BUI_COSTS_1_9,
@@ -817,9 +817,12 @@ export const BUI_COSTS_1_20 = dict({
   F2H10CB01: {base: 50, upg: [[50, 80], [100, 100], [150, 250]]},
 })
 
+// https://steamdb.info/app/3226530/patchnotes/
 export const GAME_RELEASES = [
   {ver: `1.9.0`, ms: a.reqFin(Date.parse(`2025-05-15T16:00:00Z`)), costs: BUI_COSTS_1_9},
   {ver: `1.11.0`, ms: a.reqFin(Date.parse(`2025-05-22T18:40:00Z`)), costs: BUI_COSTS_1_11},
   {ver: `1.14.0`, ms: a.reqFin(Date.parse(`2025-05-29T17:15:00Z`)), costs: BUI_COSTS_1_11},
   {ver: `1.20.0`, ms: a.reqFin(Date.parse(`2025-06-05T18:50:00Z`)), costs: BUI_COSTS_1_20},
+  {ver: `1.27.0`, ms: a.reqFin(Date.parse(`2025-06-16T17:00:00Z`)), costs: BUI_COSTS_1_20},
+  {ver: `1.28.0`, ms: a.reqFin(Date.parse(`2025-06-16T21:00:00Z`)), costs: BUI_COSTS_1_20},
 ]

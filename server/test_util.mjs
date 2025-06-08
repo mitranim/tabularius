@@ -1,9 +1,22 @@
 /* global Deno */
 
 import * as a from '@mitranim/js/all.mjs'
+import * as t from '@mitranim/js/test.mjs'
+import * as cl from '@mitranim/js/cli.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
+import * as hd from '@mitranim/js/http_deno.mjs'
 import * as u from '../shared/util.mjs'
+import * as us from './util_srv.mjs'
 import * as ud from './util_db.mjs'
+
+export const FLAG = cl.Flag.os()
+export const RUN = FLAG.get(`--run`)
+
+t.conf.setTestFilter(RUN)
+t.conf.setBenchFilter(RUN)
+
+// Indicates benchmark accuracy. Should be single digit nanoseconds, ideally 0.
+t.bench(function bench_baseline() {})
 
 export const TEST_SEED = new Uint8Array([
   247, 218, 206,  30, 143, 246,  12,
@@ -23,18 +36,20 @@ export const TEST_TMP_DIR = `.test_tmp`
 
 // SYNC[ctx_iface].
 export class TestCtx extends a.Emp {
+  static {a.memGet(this)}
+
   get dbFile() {return `:memory:`}
   get dataDir() {return this.tmpDir}
 
-  #tmp
   get tmpDir() {
-    return this.#tmp ??= (
+    return (
       Deno.mkdirSync(TEST_TMP_DIR, {recursive: true}),
       Deno.makeTempDirSync({dir: TEST_TMP_DIR, prefix: `test_data_`})
     )
   }
 
   get userRunsDir() {return io.paths.join(this.dataDir, `user_runs`)}
+  get httpDirUserRuns() {return hd.dirRel(this.userRunsDir)}
 
   #db
   async db() {return this.#db ??= (await ud.DuckDb.create(this.dbFile))}
@@ -43,11 +58,35 @@ export class TestCtx extends a.Emp {
   async conn() {return this.#conn ??= (await (await this.db()).connect())}
   async connect() {return (await this.db()).connect()}
 
+  apiPath(...src) {return a.urlJoin(`http://localhost/api`, ...src)}
+
   deinit() {
     this.#conn?.closeSync()
 
-    // Actually calling this in tests crashes the process with a segmentation
-    // fault. So we don't bother.
+    /*
+    Actually calling this in tests crashes the process with a segmentation
+    fault. So we don't bother calling `ctx.deinit` in tests.
+    */
     this.#db?.closeSync()
   }
+}
+
+export async function testFailInsecurePaths(fun) {
+  async function fail(path) {
+    const err = await t.throws(
+      async () => await fun(path),
+      us.ErrHttp,
+      `invalid path ${a.show(path)}`,
+    )
+    t.is(err.status, 400)
+  }
+
+  await fail(`/`)
+  await fail(`/one`)
+  await fail(`/..`)
+  await fail(`/../`)
+  await fail(`../..`)
+  await fail(`../../`)
+  await fail(`../../../readme.md`)
+  await fail(`../../../private.key`)
 }

@@ -1,17 +1,13 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as p from '@mitranim/js/prax.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
 import * as u from './util.mjs'
 import * as ui from './ui.mjs'
 
-const tar = globalThis.tabularius ??= a.Emp()
-tar.lib ??= a.Emp()
-tar.lib.a = a
-tar.lib.p = p
-tar.lib.ob = ob
-tar.lib.dr = dr
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.lib ??= a.Emp()
+namespace.lib.a = a
+namespace.lib.dr = dr
+a.patch(globalThis, namespace)
 
 /*
 Needed for `dr.MixReg`, which enables automatic registration of any custom
@@ -19,10 +15,20 @@ elements that we define.
 */
 dr.Reg.main.setDefiner(customElements)
 
-export class Ren extends p.Ren {
+export class Ren extends a.Ren {
+  /*
+  Hook Twind into our rendering system. It generates Tailwind-compliant styles
+  as needed. To make this actually work, we must always set element classes by
+  calling `E(tar, {class})` or `REN.mutCls`, and avoid directly mutating
+  `.classList` and `.className`.
+
+  Previously, we used Twind's `install` feature, which hooked itself into the
+  DOM and didn't require this. Eventually we ran into a case where its "magic"
+  became a horrible performance bottleneck. This approach avoids the issue.
+  */
   mutCls(tar, val, key) {
-    if (a.isNil(val)) return tar.removeAttribute(`class`)
-    return super.mutCls(tar, ui.TWIND(a.reqStr(val)), key)
+    if (!a.optStr(val)) return tar.removeAttribute(`class`)
+    return super.mutCls(tar, ui.TWIND(val), key)
   }
 }
 
@@ -38,31 +44,28 @@ export const TARBLAN = Object.freeze({
   rel: `noopener noreferrer`,
 })
 
-export function delCls(tar, src) {
+export function clsDel(tar, src) {
   tar.classList.remove(...splitClasses(src))
   return tar
 }
 
-export function addCls(tar, src) {
-  return E(a.reqElement(tar), {class: a.spaced(tar.className, src)})
+export function clsAdd(tar, src) {
+  REN.mutCls(tar, a.spaced(tar.className, src))
+  return tar
 }
 
-export function replaceCls(tar, prev, next) {
-  delCls(tar, prev)
-  return addCls(tar, next)
+export function clsReplace(tar, prev, next) {
+  clsDel(tar, prev)
+  return clsAdd(tar, next)
 }
 
-export function toggleCls(tar, ok, cls) {
-  if (a.optBool(ok)) return addCls(tar, cls)
-  return delCls(tar, cls)
+export function clsToggle(tar, ok, cls) {
+  if (a.optBool(ok)) return clsAdd(tar, cls)
+  return clsDel(tar, cls)
 }
 
 function splitClasses(src) {return a.split(src, /\s+/)}
 
-/*
-Purpose: return true if the current element has its own handling of arbitrary
-text input or arbitrary keystrokes.
-*/
 export function isElemInput(val) {
   return a.isElement(val) && (
     a.isInst(val, HTMLInputElement) ||
@@ -165,4 +168,11 @@ export function cliNat(cmd, key, val) {
     ` requires a positive integer, got `,
     ui.BtnPrompt({cmd, suf: pre, eph: val}),
   )
+}
+
+export function msgUnrecInput(pair, args) {
+  return [
+    `unrecognized input `, a.show(pair),
+    ` in `, ui.BtnPromptReplace(args),
+  ]
 }

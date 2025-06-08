@@ -1,9 +1,18 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as pt from '@mitranim/js/path.mjs'
+import * as hd from '@mitranim/js/http_deno.mjs'
 import * as ld from '@mitranim/js/live_deno.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
 import * as su from '../shared/util.mjs'
 import * as uc from './util_conf.mjs'
+
+export class ErrHttp extends su.Err {
+  constructor(msg, opt) {
+    a.reqRec(opt)
+    super(msg, opt)
+    this.status = a.reqIntPos(opt.status)
+  }
+}
 
 export class Res extends Response {
   constructor(...src) {
@@ -23,30 +32,33 @@ export class Res extends Response {
   }
 }
 
-export class ErrHttp extends su.Err {
-  constructor(msg, opt) {
-    a.reqObj(opt)
-    super(msg, opt)
-    this.status = a.reqIntPos(opt.status)
-  }
+export class HttpFileStream extends hd.HttpFileStream {
+  get Res() {return Res}
 }
 
-export async function reqBodyJson(req) {return JSON.parse(await reqBodyText(req))}
+export class HttpFileInfo extends hd.HttpFileInfo {
+  get HttpFileStream() {return HttpFileStream}
+}
+
+export class DirRel extends hd.DirRel {
+  get FileInfo() {return HttpFileInfo}
+}
+
+export async function reqResBodyJson(src) {
+  return a.jsonDecode(await reqResBodyText(src))
+}
 
 /*
 According to our testing and multiple bots, Deno's HTTP server stack does not
 automatically decompress / inflate gzipped bodies. Our client uploads rounds
 in gzipped format for efficiency, and we have to decompress them manually.
 */
-export function reqBodyText(req) {
-  a.reqInst(req, Request)
-  if (req.headers.get(`content-encoding`)?.toLowerCase() === `gzip`) {
-    return new Response(
-      req.body.pipeThrough(new DecompressionStream(`gzip`)),
-      {signal: req.signal},
-    ).text()
-  }
-  return req.text()
+export function reqResBodyText(src) {
+  if (!su.headHasGzip(src.headers)) return src.text()
+  return new Response(
+    src.body.pipeThrough(new DecompressionStream(`gzip`)),
+    {signal: src.signal},
+  ).text()
 }
 
 /*
@@ -63,7 +75,7 @@ export function liveSend(val) {
   return fetch(url, {
     method: a.POST,
     headers: [a.HEADER_JSON],
-    body: JSON.stringify(val),
+    body: a.jsonEncode(val),
   }).then(a.resOk).catch(console.error)
 }
 

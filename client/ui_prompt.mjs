@@ -1,6 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import {E} from './ui_util.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
@@ -117,8 +116,9 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     const src = this.value.trim()
     if (!src) return
 
-    const obs = ob.obs({proc: undefined})
-    ui.LOG.inp(new SubmittedCmd(src, obs))
+    const obs = a.obs({proc: undefined})
+    ui.LOG.inp(a.bind(SubmittedCmd, src, obs))
+
     this.histPush(src)
     os.runCmd(src, {obs, user: true}).catch(ui.logErr)
   }
@@ -129,7 +129,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     this.value = ``
     this.type = `password`
     this.autocomplete = `on`
-    ui.replaceCls(this, PROMPT_INPUT_CLS_REGULAR, PROMPT_INPUT_CLS_PASSWORD)
+    ui.clsReplace(this, PROMPT_INPUT_CLS_REGULAR, PROMPT_INPUT_CLS_PASSWORD)
 
     if (document.activeElement === this) this.onFocus()
     else this.focus()
@@ -143,7 +143,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     this.value = ``
     this.type = `text`
     this.autocomplete = `off`
-    ui.replaceCls(this, PROMPT_INPUT_CLS_PASSWORD, PROMPT_INPUT_CLS_REGULAR)
+    ui.clsReplace(this, PROMPT_INPUT_CLS_PASSWORD, PROMPT_INPUT_CLS_REGULAR)
     this.onBlur()
 
     this.listener.deinit()
@@ -185,14 +185,6 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     this.value = ``
     u.storageSet(sessionStorage, PROMPT_HIST_KEY)
   }
-
-  addSpaced(pre, suf) {
-    a.reqValidStr(pre)
-    a.optStr(suf)
-    if (this.value) this.value = a.spaced(a.trim(this.value), a.trim(suf))
-    else this.value = a.spaced(a.trim(pre), a.trim(suf))
-    this.focus()
-  }
 }()
 
 export const PROMPT = E(
@@ -215,69 +207,60 @@ export const PROMPT = E(
   PROMPT_INPUT,
 )
 
-class SubmittedCmd extends ui.Elem {
-  constructor(src, obs) {
-    super()
-    this.src = a.reqValidStr(src)
-    this.obs = a.reqObj(obs)
-    ob.reac(this, this.init)
-  }
+function SubmittedCmd(src, obs) {
+  a.reqValidStr(src)
+  const proc = a.optInst(obs.proc, os.Proc)
+  if (!proc) return src
 
-  init() {
-    const {src, obs: {proc}} = this
-    E(this, {},
-      src,
-      a.vac(proc) && [
-        ` `,
-        ui.Muted(
-          `(`, a.vac(proc.desc) || `running`, `; `, os.BtnCmd(`kill ${proc.id}`), `)`
-        ),
-      ],
-    )
-  }
+  return [
+    src,
+    ` `,
+    ui.Muted(
+      `(`, a.vac(proc.desc) || `running`, `; `, os.BtnCmd(`kill ${proc.id}`), `)`,
+    ),
+  ]
 }
 
-export function BtnPrompt({full, cmd, suf, chi, eph, ...opt}) {
-  a.optBool(full)
+export function BtnPrompt({cmd, suf, eph, chi, full, replace, ...opt}) {
   a.reqValidStr(cmd)
   a.optStr(suf)
   a.optStr(eph)
+  a.optBool(full)
+  a.optBool(replace)
 
-  chi ??= [
-    a.vac(full) && cmd,
-    a.vac(full && cmd && (suf || eph)) && ` `,
-    suf,
-    a.vac(eph) && ui.Muted(eph),
-  ]
-  return BtnPromptAppend({pre: cmd, suf, chi, ...opt})
-}
+  if (full) replace ??= true
 
-export function BtnPromptAppend({pre, suf, chi, ...opt}) {
-  a.reqValidStr(pre)
-  a.optStr(suf)
+  const ephSpace = (full && !suf && eph) ? ` ` : ``
+  const args = a.spaced(cmd, suf) + ephSpace
 
   return ui.FakeBtnInline({
     ...opt,
     onclick(eve) {
       a.eventKill(eve)
-      PROMPT_INPUT.addSpaced(pre, suf)
+      PROMPT_INPUT.value = replace ? args : a.spaced(
+        a.trim(PROMPT_INPUT.value) || cmd,
+        suf,
+      )
+      PROMPT_INPUT.focus()
     },
-    href: `?run=` + a.spaced(pre, suf),
-    chi: chi ?? suf,
+    href: `?run=` + args,
+    chi: chi ?? [
+      a.vac(full) && cmd,
+      a.vac(full && suf) && ` `,
+      suf,
+      ephSpace,
+      a.vac(eph) && ui.Muted(eph),
+    ],
   })
 }
 
-export function BtnPromptReplace({val, chi}) {
-  a.reqValidStr(val)
+export function BtnPromptReplace(args) {
+  const [cmd, ...rest] = u.splitCliArgs(args)
 
-  return ui.FakeBtnInline({
-    onclick(eve) {
-      a.eventKill(eve)
-      PROMPT_INPUT.value = val
-      PROMPT_INPUT.focus()
-    },
-    href: `?run=` + val,
-    chi: chi ?? val,
+  return BtnPrompt({
+    cmd,
+    suf: a.vac(rest) && a.spaced(...rest),
+    full: true,
   })
 }
 

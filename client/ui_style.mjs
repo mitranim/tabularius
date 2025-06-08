@@ -5,11 +5,11 @@ import tp from '@twind/preset-autoprefix'
 import * as ttc from '@twind/preset-tailwind/colors.js'
 import * as u from './util.mjs'
 
-const tar = globalThis.tabularius ??= a.Emp()
-tar.lib ??= a.Emp()
-tar.lib.tw = tw
-tar.lib.tt = tt
-tar.lib.ttc = ttc
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.lib ??= a.Emp()
+namespace.lib.tw = tw
+namespace.lib.tt = tt
+namespace.lib.ttc = ttc
 
 /*
 Add missing colors. Reference: https://tailwindcss.com/docs/colors
@@ -70,9 +70,6 @@ STYLE.textContent = `
   @media (prefers-color-scheme: dark) {--border-color: ${a.reqValidStr(ttc.neutral[700])}}
 }
 
-details[open] > summary .summary-closed {display: none}
-details:not([open]) > summary .summary-open {display: none}
-
 `+/*
 Caution: in Safari (tested in version 18.3), for this particular grid,
 `auto-fit` doesn't seem to work; children have no width. Only `auto-fill`
@@ -100,26 +97,14 @@ seems to work. This problem doesn't seem to occur in other grids.
   }
 }
 
+`+/* SYNC[media_pad]. */`
 .table {
-  table-layout: fixed;
-  border-collapse: collapse;
-
-  th {font-weight: unset}
-  th[aria-sort=ascending]::before {content: '△ '}
-  th[aria-sort=descending]::before {content: '▼ '}
-
-  --table-border: 1px dashed var(--border-color);
-  tr:not(.tr-sub) {border-top: var(--table-border)}
-
-  `+/* SYNC[media_pad]. */`
-  &.media-pad {
-    th, td:not(.table-cell-colspan) {
-      &:first-child {padding-left: 1rem}
-      &:last-child {padding-right: 1rem}
-    }
-    tr:last-child:not(.table-row-colspan) {
-      > th, > td {padding-bottom: 0.25rem}
-    }
+  th, td:not(.table-cell-colspan) {
+    &:first-child {padding-left: 1rem}
+    &:last-child {padding-right: 1rem}
+  }
+  tr:last-child:not(.table-row-colspan) {
+    > th, > td {padding-bottom: 0.25rem}
   }
 }
 
@@ -319,6 +304,7 @@ export const TWIND = tw.twind({
     [`col-sta-end`, `flex-col justify-start items-end`],
     [`over-wrap`, {overflowWrap: `anywhere`}],
     [`shrink-(0|1)`, `flex-shrink`],
+    [`weight-unset`, {fontWeight: `unset`}],
     [`@container`, () => ({'container-type': `inline-size`})],
 
     [/^hide-below-\[(?<size>.*)\]$/, ({groups: {size}}) => {
@@ -360,8 +346,12 @@ export const CLS_BG_1 = `bg-gray-100 dark:bg-stone-900`
 export const CLS_BG_HOVER_1 = `bg-gray-200 dark:bg-stone-700`
 export const CLS_THEME_1 = a.spaced(CLS_BG_1, CLS_FG)
 
-export const CLS_TEXT_GRAY = `text-gray-500 dark:text-neutral-400`
-export const CLS_TEXT_GRAY_BUSY = a.spaced(CLS_TEXT_GRAY, `hover:text-gray-800 dark:hover:text-neutral-200`)
+export const CLS_TEXT_MUTED = `text-gray-500 dark:text-neutral-400`
+export const CLS_TEXT_MUTED_BUSY = a.spaced(CLS_TEXT_MUTED, `hover:text-gray-800 dark:hover:text-neutral-200`)
+
+export const CLS_TEXT_PALE = `text-gray-300 dark:text-neutral-700`
+// export const CLS_TEXT_PALE = `text-gray-400 dark:text-neutral-600`
+
 export const CLS_BTN_INLINE_BASE = `text-sky-700 dark:text-sky-300 hover:underline hover:decoration-dotted cursor-pointer text-left`
 export const CLS_BTN_INLINE = a.spaced(`inline`, CLS_BTN_INLINE_BASE)
 export const CLS_ERR = `text-red-600 dark:text-red-500`

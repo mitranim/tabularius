@@ -2,11 +2,11 @@ import * as a from '@mitranim/js/all.mjs'
 import * as idb from 'idb'
 
 import * as self from './idb.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.i = self
-tar.lib ??= a.Emp()
-tar.lib.idb = idb
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.i = self
+namespace.lib ??= a.Emp()
+namespace.lib.idb = idb
+a.patch(globalThis, namespace)
 
 export const IDB_NAME = `tabularius`
 export const IDB_VERSION = 1

@@ -47,8 +47,8 @@ export function FakeBtnInline({onclick, href, chi, trunc, width}) {
     {
       href,
       class: a.spaced(
-        ui.CLS_BTN_INLINE,
-        a.vac(trunc) && `trunc`,
+        ui.CLS_BTN_INLINE_BASE,
+        trunc ? `trunc` : `inline`,
         width,
       ),
       onkeydown: a.vac(onclick) && function fakeBtnOnKeydown(eve) {
@@ -120,8 +120,8 @@ export function withTooltip({elem, chi, under, suffixLine}) {
   a.reqElement(elem)
 
   if (a.vac(suffixLine)) chi = ui.LogLines(chi, suffixLine)
-  if (under) ui.addCls(elem, ui.CLS_HELP_UNDER)
-  else ui.addCls(elem, `cursor-help`)
+  if (under) ui.clsAdd(elem, ui.CLS_HELP_UNDER)
+  else ui.clsAdd(elem, `cursor-help`)
 
   elem.onpointerover = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}
   elem.onpointermove = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}
@@ -152,7 +152,7 @@ function tooltipReinitFor(elem, chi, eve) {
   a.reqElement(elem)
 
   if (TOOLTIP_LAST_ELEM !== elem) {
-    E(TOOLTIP, {}, chi)
+    E(TOOLTIP, undefined, chi)
     const val = elem.computedStyleMap()?.get(`font-size`)
     if (val) TOOLTIP.style.fontSize = val
   }
@@ -211,81 +211,67 @@ export function tooltipOrient({elem, posX, posY, wid, hei, off}) {
 
 export function Span(...chi) {return E(`span`, {}, chi)}
 export function Bold(...chi) {return E(`b`, {}, chi)}
-
-export function Muted(...chi) {
-  return E(`span`, {class: ui.CLS_TEXT_GRAY}, chi)
-}
-
-export function ErrSpan(...chi) {
-  return E(`span`, {class: ui.CLS_ERR}, chi)
-}
+export function Muted(...chi) {return E(`span`, {class: ui.CLS_TEXT_MUTED}, chi)}
+export function Pale(...chi) {return E(`span`, {class: ui.CLS_TEXT_PALE}, chi)}
+export function ErrSpan(...chi) {return E(`span`, {class: ui.CLS_ERR}, chi)}
 
 export function External() {
   return E(`span`, {class: `leading-none align-text-bottom`}, `↗`)
 }
 
 export function Details({
-  elem, chi, lvl, open, class: cls, tooltip,
-  summary, summaryOpen, summaryCls,
+  elem, chi, lvl, open, class: cls, summary, summaryCls, ontoggle,
 }) {
   a.optArr(chi)
-  lvl = a.laxNat(lvl)
-  a.optBool(tooltip)
+  a.optNat(lvl)
+  a.optBool(open)
+  a.optStr(cls)
+  a.optStr(summaryCls)
+  a.optFun(ontoggle)
+
   if (!a.vac(chi)) return undefined
 
-  const sumClosed = E(
-    `span`,
-    {class: a.spaced(
-      summaryCls || ui.CLS_BUSY_UNDER_OPT,
-      a.vac(summaryOpen) && `summary-closed`,
-    )},
-    u.callOpt(summary),
-  )
+  summaryCls ||= ui.CLS_BUSY_UNDER_OPT
 
-  if (tooltip) ui.withTooltip({elem: sumClosed, chi: `click to open`})
+  if (a.isElement(summary)) ui.clsAdd(summary, summaryCls)
+  else summary = E(`span`, {class: summaryCls}, summary)
 
-  const sumOpen = a.vac(summaryOpen) && E(
-    `span`,
-    {class: a.spaced(summaryCls || ui.CLS_BUSY_UNDER_OPT, `summary-open`)},
-    u.callOpt(summaryOpen),
-  )
-
-  if (sumOpen && tooltip) ui.withTooltip({elem: sumOpen, chi: `click to close`})
+  const indent = `  `.repeat(lvl ?? 0)
 
   return E(
     elem || `details`,
-    {class: a.spaced(`inline-block w-full`, cls), open},
-    E(`summary`, {class: `w-full trunc`}, `  `.repeat(lvl), sumOpen, sumClosed),
+    {class: a.spaced(`inline-block w-full`, cls), open, ontoggle},
+    E(`summary`, {class: `w-full trunc`}, indent, summary),
     ...chi,
   )
 }
 
-export function DetailsPre({summary, inf, chi, chiLvl, count, ...opt}) {
+export function DetailsPre({summary, inf, chi, chiLvl, count, ontoggle, ...opt}) {
   a.optArr(chi)
   a.reqValidStr(summary)
-  count = a.optBool(count) ?? true
+  a.optBool(count)
+  a.optFun(ontoggle)
 
   if (!chi?.length) return undefined
   if (chi.length === 1) return [ui.Muted(summary, `: `), chi[0]]
+
+  count ??= true
   if (count) inf ??= chi.length
-
-  function sum(open) {
-    const infix = u.callOpt(inf)
-
-    return [
-      ui.Muted(summary, `: `),
-      infix,
-      a.vac(infix) && ` `,
-      ui.Muted(open ? `↓` : `→`),
-    ]
-  }
+  const suf = ui.Muted(detailsSuf(opt.open))
+  summary = [ui.Muted(summary, `: `), inf, a.vac(inf) && ` `, suf]
 
   return Details({
     class: `whitespace-pre`,
-    summary() {return sum(false)},
-    summaryOpen() {return sum(true)},
+    summary,
+    ontoggle(eve) {
+      const {open} = a.ancestor(this, HTMLDetailsElement)
+      suf.textContent = detailsSuf(open)
+      ontoggle?.call(this, eve)
+    },
     summaryCls: ui.CLS_BUSY_UNDER_OPT,
     chi: ui.LogLines(...u.indentNodes(chi, a.laxNat(chiLvl))),
     ...opt,
   })
 }
+
+function detailsSuf(open) {return open ? `↓` : `→`}

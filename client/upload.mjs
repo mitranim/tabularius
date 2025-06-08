@@ -1,7 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import * as s from '../shared/schema.mjs'
-import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as fs from './fs.mjs'
@@ -9,9 +7,9 @@ import * as ui from './ui.mjs'
 import * as au from './auth.mjs'
 
 import * as self from './upload.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.up = self
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.up = self
+a.patch(globalThis, namespace)
 
 export const UPLOAD_LOCK_NAME = `tabularius.upload`
 export const UPLOAD_RETRY_INTERVAL_MS = a.minToMs(1)
@@ -108,7 +106,7 @@ export async function cmdUpload(proc) {
     if (key) {
       ui.LOG.err(
         `unrecognized `, ui.BtnPrompt({cmd, suf: pair}),
-        ` in `, ui.BtnPromptReplace({val: args}),
+        ` in `, ui.BtnPromptReplace(args),
       )
       return os.cmdHelpDetailed(cmdUpload)
     }
@@ -116,7 +114,7 @@ export async function cmdUpload(proc) {
     if (!val) continue
 
     if (path) {
-      ui.LOG.err(`too many upload paths in `, ui.BtnPromptReplace({val: args}))
+      ui.LOG.err(`too many upload paths in `, ui.BtnPromptReplace(args))
       return os.cmdHelpDetailed(cmdUpload)
     }
     path = val
@@ -163,7 +161,7 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
     sig, handle: hist, path: relPath, magic: true,
   })
   const absPath = u.paths.join(rootPath, resolvedPath)
-  const state = a.vac(!quiet) && ob.obs({
+  const state = a.vac(!quiet) && a.obs({
     done: false,
     status: ``,
     runsChecked: 0,
@@ -173,10 +171,10 @@ export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
 
   if (state) {
     if (fs.isFile(handle)) {
-      ui.LOG.info(new FileUploadProgress(absPath, state))
+      ui.LOG.info(a.bind(FileUploadProgress, absPath, state))
     }
     else {
-      ui.LOG.info(new DirUploadProgress(absPath, state))
+      ui.LOG.info(a.bind(DirUploadProgress, absPath, state))
     }
   }
 
@@ -233,7 +231,7 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
   a.reqStr(path)
   a.reqDict(opt)
   a.reqValidStr(userId)
-  a.optObj(state)
+  a.optRec(state)
 
   const lazy = a.optBool(opt.lazy)
   const force = a.optBool(opt.force)
@@ -356,16 +354,16 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
     migrated = true
   }
 
-  const jsonStr = JSON.stringify(round)
+  const jsonStr = a.jsonEncode(round)
   const gzipByteArr = await u.str_to_gzipByteArr(jsonStr)
   if (state) state.status = `uploading ${a.show(path)}`
 
   try {
-    const isGzip = u.QUERY.get(`upload_mode`) !== `json`
-    const body = isGzip ? gzipByteArr : jsonStr
+    const gzip = u.QUERY.get(`upload_mode`) !== `json`
+    const body = gzip ? gzipByteArr : jsonStr
 
     // if (u.VERBOSE.val) console.time(`upload_to_server_${id}`)
-    const info = await apiUploadRound(sig, {body, isGzip})
+    const info = await apiUploadRound(sig, {body, gzip})
     // if (u.VERBOSE.val) console.timeEnd(`upload_to_server_${id}`)
 
     if (info?.redundant) {
@@ -426,74 +424,57 @@ async function isRunUploaded({sig, dir, state}) {
 function isRoundUploaded(val) {return a.isNat(val?.tabularius_uploaded_at)}
 
 function uploadDone({state, lazy}) {
-  if (!a.optObj(state)) return
+  if (!a.optRec(state)) return
   state.done = true
   state.status = `done` + (a.optBool(lazy) ? ` (lazy mode)` : ``)
 }
 
-export class FileUploadProgress extends ui.Elem {
-  constructor(path, state) {
-    super()
-    this.path = a.reqStr(path)
-    this.state = a.reqObj(state)
-    ob.reac(this, this.init)
+function FileUploadProgress(path, state) {
+  a.reqStr(path)
+  const {done, status, roundsChecked, roundsUploaded} = state
+
+  if (!done) {
+    // All round upload statuses include the file path, don't repeat it.
+    return [`[upload] `, status || [`uploading `, a.show(path)]]
   }
 
-  init() {
-    const {path} = this
-    const {done, status, roundsChecked, roundsUploaded} = this.state
-
-    if (!done) {
-      // All round upload statuses include the file path, don't repeat it.
-      E(this, {}, `[upload] `, status || [`uploading `, a.show(path)])
-      return
-    }
-
-    if (roundsUploaded) {
-      E(this, {}, `[upload] uploaded `, a.show(path))
-      return
-    }
-
-    if (roundsChecked) {
-      E(this, {}, `[upload] checked `, a.show(path), `, no upload needed`)
-      return
-    }
-
-    E(this, {}, `[upload] tried to upload `, a.show(path), `, nothing done`)
+  if (roundsUploaded) {
+    return [`[upload] uploaded `, a.show(path)]
   }
+
+  if (roundsChecked) {
+    return [`[upload] checked `, a.show(path), `, no upload needed`]
+  }
+
+  return [`[upload] tried to upload `, a.show(path), `, nothing done`]
 }
 
-export class DirUploadProgress extends FileUploadProgress {
-  run() {
-    const {path} = this
-    const {done, status, runsChecked, roundsChecked, roundsUploaded} = this.state
+function DirUploadProgress(path, state) {
+  a.reqStr(path)
+  const {done, status, runsChecked, roundsChecked, roundsUploaded} = state
 
-    if (done && !roundsChecked) {
-      E(this, {},
-        `[upload] checked the run history directory, found no round backups; build your history by playing the game!`,
-      )
-      return
-    }
-
-    E(this, {}, ui.LogLines(
-      [
-        `[upload] `,
-        (
-          roundsUploaded
-          ? (done ? `uploaded` : `uploading`)
-          : (done ? `checked` : `checking`)
-        ),
-        ` `, a.show(path), `:`,
-      ],
-      `  status: ${status}`,
-      `  runs checked: ${runsChecked}`,
-      `  rounds checked: ${roundsChecked}`,
-      [`  rounds uploaded: ${roundsUploaded}`, a.vac(done && !roundsUploaded) && ` (none needed)`],
-    ))
+  if (done && !roundsChecked) {
+    return `[upload] checked the run history directory, found no round backups; build your history by playing the game!`
   }
+
+  return ui.LogLines(
+    [
+      `[upload] `,
+      (
+        roundsUploaded
+        ? (done ? `uploaded` : `uploading`)
+        : (done ? `checked` : `checking`)
+      ),
+      ` `, a.show(path), `:`,
+    ],
+    `  status: ${status}`,
+    `  runs checked: ${runsChecked}`,
+    `  rounds checked: ${roundsChecked}`,
+    [`  rounds uploaded: ${roundsUploaded}`, a.vac(done && !roundsUploaded) && ` (none needed)`],
+  )
 }
 
-export function apiUploadRound(sig, {body, isGzip}) {
+export function apiUploadRound(sig, {body, gzip}) {
   const url = u.paths.join(u.API_URL, `upload_round`)
   const opt = {
     signal: u.reqSig(sig),
@@ -501,7 +482,7 @@ export function apiUploadRound(sig, {body, isGzip}) {
     headers: a.compact([
       ...au.authHeadersOpt(),
       [`content-type`, `application/json`],
-      a.vac(isGzip) && [`content-encoding`, `gzip`],
+      a.vac(gzip) && [`content-encoding`, `gzip`],
     ]),
     body,
   }

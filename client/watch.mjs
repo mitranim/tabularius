@@ -8,9 +8,9 @@ import * as au from './auth.mjs'
 import * as p from './plot.mjs'
 
 import * as self from './watch.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.w = self
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.w = self
+a.patch(globalThis, namespace)
 
 export async function watchStartOpt() {
   if (!await shouldStartWatch()) return
@@ -147,10 +147,11 @@ async function watchInit(sig, state) {
   const roundFile = runDir && await fs.findLatestRoundFile(sig, runDir)
   await state.setRoundFile(roundFile?.name)
 
-  ui.LOG.info(`[watch] initialized: `, {
-    run: state.runDirName,
-    round: state.roundFileName,
-  })
+  ui.LOG.info(ui.LogLines(
+    `[watch] initialized:`,
+    [`  run = `, a.show(state.runDirName)],
+    [`  round = `, a.show(state.roundFileName)],
+  ))
 }
 
 /*
@@ -203,7 +204,7 @@ async function watchStep(sig, state) {
   const nameSplit = runDirName ? s.splitRunName(runDirName) : []
   const prevRunNum = a.laxNat(nameSplit?.[0])
   const prevRunMs = a.onlyNat(nameSplit?.[1]) ?? Date.now()
-  const nextFileName = u.intPadded(nextRoundNum) + u.paths.ext(state.progressFileHandle.name)
+  const nextFileName = u.makeRoundFileNameBase(nextRoundNum) + u.paths.ext(state.progressFileHandle.name)
 
   const event = {
     type: `new_round`,

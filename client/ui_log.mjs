@@ -1,10 +1,12 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as p from '@mitranim/js/prax.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
 import * as u from './util.mjs'
 import {E} from './ui_util.mjs'
 import * as uu from './ui_util.mjs'
 import * as ui from './ui.mjs'
+
+a.ShedMicro.main.onerror = logErr
+a.ShedTask.main.onerror = logErr
 
 export const LOG_MAX_MSGS = 1024
 export const LOG_LINE_HEIGHT = `leading-[1.25]`
@@ -32,14 +34,13 @@ export class ErrLog extends Error {
   get name() {return this.constructor.name}
 }
 
-export const REMOVED_MSG_NOTICE = E(`div`, {
-  class: a.spaced(
-    ui.CLS_TEXT_GRAY,
-    ui.CLS_BORD,
-    `text-center border-b py-1`,
-  ),
-  hidden: true,
-})
+const CLS_MSG_NOTICE = a.spaced(
+  ui.CLS_TEXT_MUTED,
+  ui.CLS_BORD,
+  `text-center border-b py-1`,
+)
+
+export const REMOVED_MSG_NOTICE = E(`div`, {class: CLS_MSG_NOTICE, hidden: true})
 
 export let LOG_REMOVED_MSG_COUNT = 0
 
@@ -90,7 +91,12 @@ export const LOG = new class Log extends ui.Elem {
 
   clear() {
     LOG_REMOVED_MSG_COUNT = 0
-    E(this, {}, E(REMOVED_MSG_NOTICE, {hidden: false}, `log cleared`))
+    E(this, undefined, E(
+      REMOVED_MSG_NOTICE,
+      {class: CLS_MSG_NOTICE, hidden: false},
+      `log cleared`,
+    ))
+    ui.PROMPT_INPUT.focus()
   }
 
   addMsg(props, ...chi) {
@@ -124,7 +130,7 @@ export const LOG = new class Log extends ui.Elem {
 
     E(
       REMOVED_MSG_NOTICE,
-      {hidden: !LOG_REMOVED_MSG_COUNT},
+      {class: CLS_MSG_NOTICE, hidden: !LOG_REMOVED_MSG_COUNT},
       LOG_REMOVED_MSG_COUNT, ` older messages removed`,
     )
 
@@ -172,19 +178,19 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
 
   setLatest() {
     if (this.isErr) return
-    ui.replaceCls(this, LOG_MSG_CLS_INFO, LOG_MSG_CLS_INFO_LATEST)
+    ui.clsReplace(this, LOG_MSG_CLS_INFO, LOG_MSG_CLS_INFO_LATEST)
   }
 
   unsetLatest() {
     if (this.isErr) return
-    ui.replaceCls(this, LOG_MSG_CLS_INFO_LATEST, LOG_MSG_CLS_INFO)
+    ui.clsReplace(this, LOG_MSG_CLS_INFO_LATEST, LOG_MSG_CLS_INFO)
   }
 
   setIndex(ind) {
     if (!a.optNat(ind)) return
     if (this.isErr) return
 
-    ui.replaceCls(
+    ui.clsReplace(
       this,
       LOG_MSG_CLS_INFO,
       (ind % 2 ? LOG_MSG_CLS_INFO_ODD : LOG_MSG_CLS_INFO_EVEN),
@@ -199,27 +205,15 @@ function LogPrefix(inp) {
     chi: ui.timeFormat.format(Date.now()),
     elem: E(
       `span`,
-      {class: a.spaced(ui.CLS_TEXT_GRAY, `cursor-help`)},
+      {class: a.spaced(ui.CLS_TEXT_MUTED, `cursor-help`)},
       inp ? PROMPT_PREFIX + ` ` : `< `,
     )
   })
 }
 
-/*
-Special renderer just for log messages. Supports falling back on `a.show` for
-non-stringable data structures. Unfortunately the library code doesn't support
-this properly, so we had to duplicate some of its logic.
-*/
 const MSG_REN = new class MsgRen extends uu.Ren {
-  appendChi(tar, src) {
-    if (a.hasMeth(src, `toNode`)) src = src.toNode()
-    if (a.isNil(src)) return undefined
-    if (a.isStr(src)) return tar.append(src)
-    if (a.isNode(src)) return tar.appendChild(src)
-    if (p.isRaw(src)) return this.appendRaw(tar, src)
-    if (a.isSeq(src)) return this.appendSeq(tar, src)
-    const out = a.renderOpt(src)
-    if (out) return this.appendChi(tar, out)
-    return this.appendChi(tar, a.show(src))
+  renderOpt(src, key) {
+    if (u.DEV) return super.renderOpt(src, key)
+    return a.renderOpt(src) ?? a.show(src)
   }
 }()

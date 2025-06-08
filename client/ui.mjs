@@ -12,20 +12,23 @@ export * from './ui_split.mjs'
 export * from './ui_prompt.mjs'
 
 import * as ui from './ui.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.ui = ui
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.ui = ui
+a.patch(globalThis, namespace)
 
 // Increment by 1 when publishing an update.
-const VERSION = 120
+const VERSION = 121
 let INITED
 
 /*
 Should be called exactly once.
 
-Any further UI updates must be done either via observables and reactive elements
-via `ob.reac`, or or semi-manually via `E`, or by lower-level manipulation in
-very simple cases.
+Any further UI updates must be done either via observables, or or semi-manually
+via `E`, or by lower-level manipulation in very simple cases. The rendering
+library we're using has built-in support for observables and reactivity. We can
+simply pass observables or functions into markup as "child nodes". Functions
+are invoked in a reactive context, and any observables they access during the
+call are automatically monitored, causing an update on change.
 */
 export function init() {
   if (INITED) return
@@ -133,7 +136,7 @@ export const NAV = E(
 
   // Right side with links.
   E(`div`, {class: `flex items-center`},
-    E(`span`, {class: a.spaced(NAV_LINK_CLS, ui.CLS_TEXT_GRAY)}, `v` + VERSION),
+    E(`span`, {class: a.spaced(NAV_LINK_CLS, ui.CLS_TEXT_MUTED)}, `v` + VERSION),
     E(`a`, {href: GITHUB_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS},
       ui.Svg(`github`, {class: a.spaced(NAV_ICON_CLS, `text-[#1f2328] dark:text-[#f0f6fc]`)}),
     ),

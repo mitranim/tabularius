@@ -74,13 +74,13 @@ await t.test(async function test_migrateUserRuns() {
 })
 
 function testOldRunRoundFormat(round) {
-  a.reqObj(round)
+  a.reqRec(round)
   t.is(round.tabularius_fields_schema_version, 1)
   a.is(round.tabularius_run_ms, undefined)
 }
 
 function testNewRunRoundFormat(round, runMs) {
-  a.reqObj(round)
+  a.reqRec(round)
   a.reqIntPos(runMs)
   t.is(round.tabularius_fields_schema_version, 2)
   a.is(round.tabularius_run_ms, runMs)

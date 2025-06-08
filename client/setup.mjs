@@ -1,5 +1,4 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
@@ -33,7 +32,7 @@ export async function cmdSaves({sig, args}) {
   if (u.hasHelpFlag(set)) return os.cmdHelpDetailed(cmdSaves)
 
   if (set.size > 1) {
-    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace(args))
     return os.cmdHelpDetailed(cmdSaves)
   }
 
@@ -79,7 +78,7 @@ export async function cmdHistory({sig, args}) {
   if (u.hasHelpFlag(set)) return os.cmdHelpDetailed(cmdHistory)
 
   if (set.size > 1) {
-    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace(args))
     return os.cmdHelpDetailed(cmdHistory)
   }
 
@@ -183,47 +182,43 @@ export function updateSetupFlowMsg(opt) {
   if (!change || (opt && save && hist && auth)) return
 
   SETUP_FLOW_PREV_MSG?.remove()
-  SETUP_FLOW_PREV_MSG = ui.LOG.info(new SetupFlow())
+  SETUP_FLOW_PREV_MSG = ui.LOG.info(SetupFlow)
 }
 
-class SetupFlow extends ui.Elem {
-  constructor() {ob.reac(super(), this.init)}
+// SYNC[setup_state].
+function SetupFlow() {
+  const save = !!fs.SAVE_DIR_CONF.handle
+  const hist = !!fs.HISTORY_DIR_CONF.handle
+  const auth = !!au.STATE.userId
 
-  // SYNC[setup_state].
-  init() {
-    const save = !!fs.SAVE_DIR_CONF.handle
-    const hist = !!fs.HISTORY_DIR_CONF.handle
-    const auth = !!au.STATE.userId
-
-    E(this, {}, ui.LogParagraphs(
-      ui.LogLines(
-        ui.Bold(`essential setup steps (any order):`),
-        Step(save,
-          `run `, os.BtnCmdWithHelp(`saves`),
-          ` to grant access to the game save directory`
-        ),
-        Step(hist,
-          `create a directory for run history and backups`,
-        ),
-        Step(hist,
-          `run `, os.BtnCmdWithHelp(`history`),
-          ` to grant access to the run history directory`
-        ),
-        Step(auth,
-          `run `, os.BtnCmdWithHelp(`auth`), ` to enable cloud backups`,
-        ),
+  return ui.LogParagraphs(
+    ui.LogLines(
+      ui.Bold(`essential setup steps (any order):`),
+      Step(save,
+        `run `, os.BtnCmdWithHelp(`saves`),
+        ` to grant access to the game save directory`
       ),
-      (
-        !save
-        ? NextStepSaves()
-        : !hist
-        ? NextStepHist()
-        : !auth
-        ? NextStepAuth()
-        : `setup done; all features available! 🎉`
+      Step(hist,
+        `create a directory for run history and backups`,
       ),
-    ))
-  }
+      Step(hist,
+        `run `, os.BtnCmdWithHelp(`history`),
+        ` to grant access to the run history directory`
+      ),
+      Step(auth,
+        `run `, os.BtnCmdWithHelp(`auth`), ` to enable cloud backups`,
+      ),
+    ),
+    (
+      !save
+      ? NextStepSaves()
+      : !hist
+      ? NextStepHist()
+      : !auth
+      ? NextStepAuth()
+      : `setup done; all features available! 🎉`
+    ),
+  )
 }
 
 function Step(ok, ...chi) {

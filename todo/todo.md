@@ -364,6 +364,8 @@ Find out where the game stores its "foes in current run" information.
 
 `plot`: consider removing the default `user_id=current` and `run_id=all` filters from all presets, and altering the warnings.
 
+Partially done: removed `user_id=current` from presets.
+
 ---
 
 Add `active:` indicators to all buttons and maybe some links.
@@ -695,3 +697,14 @@ Also see `./todo_show_round.md`.
 ---
 
 Consider if the Web Authentication API and/or Web Credentials API could be relevant for us.
+
+---
+
+* [ ] Additional stat: estimated resources spent so far.
+  * Can probably just store `bui_cost` for each building in a round.
+  * In plots, it should automatically be possible to aggregate them by `sum`.
+
+---
+
+* [ ] Detect "expired" rounds (which only exist on disk during the defeat screen) and back them up too.
+  * [ ] May need special handling when rollbacks are involved.

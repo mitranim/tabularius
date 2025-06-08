@@ -31,6 +31,10 @@
 !/server/*.mjs
 !/server/*.sql
 
+!/server/api
+/server/api/*
+!/server/api/*.mjs
+
 !/client
 /client/*
 !/client/*.mjs

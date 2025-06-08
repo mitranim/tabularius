@@ -1,17 +1,16 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as os from './os.mjs'
-import * as fs from './fs.mjs'
+import * as ls from './ls.mjs'
 import * as ui from './ui.mjs'
 
 import * as self from './auth.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.au = self
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.au = self
+a.patch(globalThis, namespace)
 
-export const STATE = ob.obs({userId: undefined})
+export const STATE = a.obs({userId: undefined})
 let PUB_KEY_BYTE_ARR = undefined
 let SEC_KEY_BYTE_ARR = undefined
 const STORAGE_KEY_PUB_KEY = `tabularius.pub_key`
@@ -37,7 +36,7 @@ cmdAuth.help = function cmdAuthHelp() {
       [`  `, os.BtnCmd(`auth`), `        -- make credentials`],
       [`  `, os.BtnCmd(`auth logout`), ` -- clear credentials`],
     ),
-    [`status: `, new AuthStatusMini()],
+    [`status: `, authStatusMsgMini],
   )
 }
 
@@ -46,7 +45,7 @@ export async function cmdAuth({sig, args}) {
   if (u.hasHelpFlag(inps)) return os.cmdHelpDetailed(cmdAuth)
 
   if (inps.length > 1) {
-    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace(args))
     return os.cmdHelpDetailed(cmdAuth)
   }
 
@@ -54,7 +53,7 @@ export async function cmdAuth({sig, args}) {
   if (mode && mode !== `logout`) {
     ui.LOG.err(
       `unrecognized auth mode `, a.show(mode), ` in `,
-      ui.BtnPromptReplace({val: args}),
+      ui.BtnPromptReplace(args),
     )
     return os.cmdHelpDetailed(cmdAuth)
   }
@@ -62,7 +61,7 @@ export async function cmdAuth({sig, args}) {
   const se = await import(`./setup.mjs`)
   try {
     if (mode === `logout`) return authLogout()
-    if (isAuthed()) return new AuthStatusMini()
+    if (isAuthed()) return authStatusMsgMini
     return await authLogin(sig)
   }
   finally {se.updateSetupFlowMsg(true)}
@@ -135,7 +134,7 @@ function authInstructions(suggs) {
     ],
     a.vac(suggs?.length) && [
       `sample passphrase: `,
-      ui.BtnPromptReplace({val: suggs.join(` `)}),
+      ui.BtnPromptReplace(suggs.join(` `)),
     ],
   )
 }
@@ -249,26 +248,16 @@ export function loadedAuthKeys() {
   }
 }
 
-export class AuthStatusMini extends ui.Elem {
-  constructor() {ob.reac(super(), this.init)}
-
-  init() {
-    const id = STATE.userId
-    E(this, {}, id ? AuthedAs(id) : `not authed`)
-  }
+export function authStatusMsgMini() {
+  const id = STATE.userId
+  if (id) return AuthedAs(id)
+  return `not authed`
 }
 
-export class AuthStatus extends ui.Elem {
-  constructor() {ob.reac(super(), this.init)}
-
-  init() {
-    const id = STATE.userId
-    E(this, {},
-      id
-      ? AuthedAs(id)
-      : [`not authed; run `, os.BtnCmdWithHelp(`auth`), ` to authenticate`]
-    )
-  }
+export function authStatusMsg() {
+  const id = STATE.userId
+  if (id) return AuthedAs(id)
+  return [`not authed; run `, os.BtnCmdWithHelp(`auth`), ` to authenticate`]
 }
 
 function AuthedAs(id) {
@@ -322,13 +311,12 @@ function roundTripErrMsg(type) {
 
 export async function listDirsFiles(sig, path) {
   u.reqSig(sig)
-  path = u.paths.cleanTop(a.laxStr(path))
-  const userId = reqUserId()
+  a.optStr(path)
 
   try {
-    const entry = await apiLs(sig, u.paths.join(userId, path))
+    const entry = await apiLs(sig, path)
     if (!entry) return `cloud file or dir ${a.show(path)} not found`
-    return fs.LsEntry({...entry, path, cloud: true})
+    return ls.LsEntry({...entry, path, cloud: true})
   }
   catch (err) {
     throw Error(`unable to list cloud files: ${err}`, {cause: err})

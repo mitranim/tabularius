@@ -1,12 +1,12 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
-import * as pt from '@mitranim/js/path.mjs'
 export * from '../shared/util.mjs'
 
 import * as u from './util.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.u = u
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.u = u
+namespace.lib ??= a.Emp()
+namespace.lib.a = a
+a.patch(globalThis, namespace)
 
 export const URL_CLEAN = new URL(globalThis.location)
 URL_CLEAN.search = ``
@@ -22,7 +22,7 @@ export function storageGetJson(store, key) {
   const src = store.getItem(key)
   if (!src) return undefined
 
-  try {return JSON.parse(src)}
+  try {return a.jsonDecode(src)}
   catch (err) {
     LOG.err(`unable to decode ${a.show(src)}, deleting ${a.show(key)} from storage`)
     storageSet(store, key)
@@ -74,7 +74,7 @@ export const STORAGE_OBS_KEYS = new Set()
 export function storageObs(...src) {return new StorageObs(...src)}
 
 // An observable with storage persistence. Reads and writes lazily as needed.
-export class StorageObs extends ob.ObsRef {
+export class StorageObs extends a.ObsRef {
   inited = false
   key = undefined
 
@@ -90,16 +90,14 @@ export class StorageObs extends ob.ObsRef {
   get() {
     if (!this.inited) {
       this.inited = true
-      this.$ = this.read()
+      super.set(this.read())
     }
-    return this.$
+    return super.get()
   }
 
   set(val) {
-    if (a.is(val, this.$)) return
     this.inited = true
-    this.$ = val
-    this.write(val)
+    return super.set(val) && (this.write(val), true)
   }
 
   decode(val) {return val}
@@ -127,7 +125,7 @@ export function storageObsJson(...src) {return new StorageObsJson(...src)}
 
 export class StorageObsJson extends StorageObs {
   decode(src) {return u.jsonDecodeOpt(src, u.jsonDecoder)}
-  encode(src) {return JSON.stringify(src)}
+  encode(src) {return a.jsonEncode(src)}
 }
 
 export const VERBOSE = storageObsBool(`tabularius.verbose`)
@@ -356,7 +354,7 @@ The caller MUST use `try/finally`, or a promise callback equivalent, to unlock.
 */
 export async function lockWith(name, opt) {
   a.reqValidStr(name)
-  a.optObj(opt)
+  a.optRec(opt)
   const {promise: request0, resolve: locked} = Promise.withResolvers()
   const {promise: block, resolve: unlock} = Promise.withResolvers()
 
@@ -457,7 +455,7 @@ events and custom events (where data is stored in different fields).
 export function listenData(tar, type, fun, opt) {
   a.reqStr(type)
   a.reqFun(fun)
-  a.optObj(opt)
+  a.optRec(opt)
   function onEvent(src) {fun(eventData(src))}
   return listenEvent(tar, type, onEvent, opt)
 }
@@ -497,7 +495,7 @@ export class Listener extends WeakRef {
   }
 
   init(tar, type, fun, opt) {
-    a.reqObj(tar)
+    a.reqRec(tar)
     a.reqStr(type)
     a.reqFun(fun)
 
@@ -519,29 +517,6 @@ export class Listener extends WeakRef {
     this.tar = this.args = undefined
   }
 }
-
-// Minor extensions and workarounds for library functionality.
-export const paths = new class PathsPosix extends pt.PathsPosix {
-  cleanTop(src) {return a.stripPre(super.clean(src), this.dirSep)}
-
-  splitTop(src) {return a.split(this.cleanTop(src), this.dirSep)}
-
-  splitRel(src) {
-    src = this.clean(src)
-    if (this.isRel(src)) return a.split(src, this.dirSep)
-    throw Error(`${a.show(src)} is not a relative path`)
-  }
-
-  withNameSuffix(src, suf) {
-    a.reqValidStr(src)
-    a.reqValidStr(suf)
-    const dir = this.dir(src)
-    const base = this.base(src)
-    const seg = base.split(this.extSep)
-    seg[0] += suf
-    return this.join(dir, seg.join(this.extSep))
-  }
-}()
 
 export function filterWhere(src, where) {
   src = a.values(src)

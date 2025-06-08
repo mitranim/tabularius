@@ -1,6 +1,7 @@
 /* global Deno */
 
 import * as a from '@mitranim/js/all.mjs'
+import * as io from '@mitranim/js/io_deno.mjs'
 import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
 
@@ -42,6 +43,6 @@ async function migExampleRuns() {
     return
   }
 
-  await Deno.writeTextFile(url, await u.data_to_json_to_gzip_to_base64Str(rounds))
+  await io.writeFile(url, await u.data_to_json_to_gzip_to_base64Str(rounds))
   console.log(`rounds updated`)
 }

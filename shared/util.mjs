@@ -5,7 +5,21 @@ Client-only utils should be placed in `../client/util.mjs`.
 */
 
 import * as a from '@mitranim/js/all.mjs'
+import * as pt from '@mitranim/js/path.mjs'
 import nc from 'tweetnacl'
+
+export function isValidTextData(val) {
+  return a.isStr(val) || a.isInst(val, Uint8Array)
+}
+
+export function optValidTextData(val) {
+  return a.isNil(val) ? undefined : reqValidTextData(val)
+}
+
+export function reqValidTextData(val) {
+  if (isValidTextData(val)) return val
+  throw TypeError(`text data must be a string or a Uint8Array, got ${a.show(val)}`)
+}
 
 export class Err extends Error {get name() {return this.constructor.name}}
 
@@ -158,7 +172,7 @@ export function dictPop(tar, key) {
 
 export function dictPush(tar, key, val) {
   a.reqDict(tar)
-  a.reqStructKey(key)
+  a.reqRecKey(key)
   tar[key] = a.laxArr(tar[key])
   tar[key].push(val)
 }
@@ -179,19 +193,13 @@ export function arrOfUniqValidStr(src) {
 }
 
 export function jsonDecodeOpt(src, fun) {
-  return isStrJsonLike(src) ? JSON.parse(src, fun) : undefined
-}
-
-export function jsonDecode(src, fun = jsonDecoder) {
-  a.optFun(fun)
-  if (!a.optStr(src)) return undefined
-  return JSON.parse(src, fun)
+  return isStrJsonLike(src) ? a.jsonDecode(src, fun) : undefined
 }
 
 /*
 Should be used when there's a possibility of dictionary keys in JSON data
-conflicting with properties of `Object.prototype` (which shouldn't be possible
-in our particular app), or when logging and browsing data in devtools, because
+conflicting with properties of `Object.prototype`, which shouldn't be possible
+in our particular app, or when logging and browsing data in devtools, because
 null-prototype objects look cleaner. Should be avoided in other cases due to
 performance overhead.
 */
@@ -203,33 +211,6 @@ export function jsonDecoder(_, src) {
   }
   return src
 }
-
-/*
-Should be used when encoding a value that may or may not be `undefined`. The
-default behavior of `JSON.stringify` is to return an actual `undefined` value
-(a nil) when given `undefined` as an input, which causes problems when encoding
-responses for API clients. Should also be used when encoding data that may
-contain bigints. Should be avoided in other cases for performance resons.
-*/
-export function jsonEncode(src, fun, ind) {
-  a.optFun(fun)
-  a.optNum(ind)
-  if (a.isNil(src)) return `null`
-  return JSON.stringify(src, fun ?? jsonEncoder, ind)
-}
-
-/*
-In our API endpoints, When sending JSON back to clients, we treat SQL `int64` as
-JS `float64` rather than `BigInt`, because:
-
-- Decoding string-encoded `BigInt` requires client-side special cases.
-- We do not care about minor imprecision in count aggregates.
-- We will probably never have imprecision in count aggregates.
-- We will never have imprecision in millisecond timestamps.
-
-We could define a DB value converter, but this is much easier.
-*/
-function jsonEncoder(_, src) {return a.isBigInt(src) ? Number(src) : src}
 
 function isStrJsonLike(src) {
   src = a.trim(src)
@@ -272,30 +253,38 @@ export async function decodeGdStr(src) {
   */
 
   // Enable manually when browsing data in devtools.
-  // return jsonDecode(await str_to_unbase64_to_ungzip_to_str(src))
+  // return a.jsonDecode(await str_to_unbase64_to_ungzip_to_str(src), u.jsonDecoder)
 
-  return JSON.parse(await str_to_unbase64_to_ungzip_to_str(src))
+  return a.jsonDecode(await str_to_unbase64_to_ungzip_to_str(src))
 }
 
 export function data_to_json_to_gzip_to_base64Str(src) {
-  return str_to_gzip_to_base64Str(JSON.stringify(src))
+  return str_to_gzip_to_base64Str(a.jsonEncode(src))
 }
 
 export function data_to_json_to_gzipByteArr(src) {
-  return resOkByteArr(new Response(str_to_gzipStream(JSON.stringify(src))))
+  return resOkByteArr(new Response(str_to_gzipStream(a.jsonEncode(src))))
 }
 
 export function str_to_unbase64_to_ungzip_to_str(src) {
   return byteArr_to_ungzip_to_str(base64Str_to_byteArr(src))
 }
 
+export function textData_to_stream(src) {
+  return new Response(reqValidTextData(src)).body
+}
+
+export function textDataStream_to_ungzipStream(src) {
+  return src.pipeThrough(new DecompressionStream(`gzip`))
+}
+
 export function byteArr_to_ungzipStream(src) {
   a.reqInst(src, Uint8Array)
-  return new Response(src).body.pipeThrough(new DecompressionStream(`gzip`))
+  return textDataStream_to_ungzipStream(textData_to_stream(src))
 }
 
 export async function byteArr_to_ungzip_to_unjsonData(src) {
-  return JSON.parse(await byteArr_to_ungzip_to_str(src))
+  return a.jsonDecode(await byteArr_to_ungzip_to_str(src))
 }
 
 export function byteArr_to_ungzip_to_str(src) {
@@ -481,31 +470,17 @@ export function authHeadersOpt(publicKey, secretKey, ts) {
 }
 
 /*
-Workaround for two unrelated problems.
-
-One is a problem in Uplot. Contrary to what the documentation claims, it seems
-to only support missing values when they're `undefined`, but not when they're
-`null`. When generating data locally, we automatically end up with `undefined`
-for missing values. But when receiving plot agg data from a remote endpoint,
-the encoding and decoding process involves JSON which only supports `null`,
-and we have to convert it to `undefined` for the plot.
-
-Two is that we generate plot aggs in a few different ways, which must be
-consistent with each other on the same dataset, and want to compare them in
-testing, but `undefined` and `null` are distinct values, breaking comparisons.
-See above for how we end up with both.
+Workaround for a problem in Uplot. Contrary to what the documentation claims,
+it seems to only support missing values when they're `undefined`, but not when
+they're `null`. When generating data locally, we automatically end up with
+`undefined` for missing values. But when receiving plot agg data from a remote
+endpoint, the encoding and decoding process involves JSON which only supports
+`null`, and we have to convert it to `undefined` for the plot.
 */
-export function consistentNil_undefined(val) {
+export function normNil(val) {
   if (a.isNil(val)) return undefined
-  if (a.isArr(val)) return a.map(val, consistentNil_undefined)
-  if (a.isDict(val)) return a.mapDict(val, consistentNil_undefined)
-  return val
-}
-
-export function consistentNil_null(val) {
-  if (a.isNil(val)) return null
-  if (a.isArr(val)) return a.map(val, consistentNil_null)
-  if (a.isDict(val)) return a.mapDict(val, consistentNil_null)
+  if (a.isArr(val)) return a.map(val, normNil)
+  if (a.isDict(val)) return a.mapDict(val, normNil)
   return val
 }
 
@@ -558,4 +533,38 @@ export class Semver extends a.Emp {
 
     return 0
   }
+}
+
+// Minor extensions for library functionality.
+export const paths = new class PathsPosix extends pt.PathsPosix {
+  cleanTop(src) {return a.stripPre(super.clean(src), this.dirSep)}
+
+  splitTop(src) {return a.split(this.cleanTop(src), this.dirSep)}
+
+  splitRel(src) {
+    src = this.clean(src)
+    if (this.isRel(src)) return a.split(src, this.dirSep)
+    throw Error(`${a.show(src)} is not a relative path`)
+  }
+
+  withNameSuffix(src, suf) {
+    a.reqValidStr(src)
+    a.reqValidStr(suf)
+    const dir = this.dir(src)
+    const base = this.base(src)
+    const seg = base.split(this.extSep)
+    seg[0] += suf
+    return this.join(dir, seg.join(this.extSep))
+  }
+}()
+
+export function headHas(src, key, val) {
+  a.reqInst(src, Headers)
+  a.reqStr(key)
+  a.reqStr(val)
+  return a.laxStr(src.get(key)).split(`,`).map(a.trim).map(a.lower).includes(val)
+}
+
+export function headHasGzip(src) {
+  return headHas(src, `content-encoding`, `gzip`)
 }

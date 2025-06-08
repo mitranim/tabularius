@@ -6,7 +6,12 @@ MAKE_CONC := $(MAKE) -j 128 clear=$(or $(clear),false)
 CLEAR ?= $(if $(filter false,$(clear)),, )
 DENO_FLAGS ?= --node-modules-dir=false
 DENO_RUN ?= deno run -A --no-check $(DENO_FLAGS)
-DENO_WATCH ?= $(DENO_RUN) --watch $(if $(CLEAR),,--no-clear-screen)
+DENO_WATCH ?= $(DENO_RUN) --watch $(or $(CLEAR),--no-clear-screen)
+RUN ?= $(and $(run),--run="$(run)")
+SERVER_TEST ?= $(or $(file),server/test.mjs)
+SERVER_BENCH ?= $(or $(file),server/bench.mjs)
+SHARED_TEST ?= $(or $(file),shared/test.mjs)
+SHARED_TEST ?= $(or $(file),shared/bench.mjs)
 PROJECT ?= tabularius
 DOCKER_LABEL ?= label=project=$(PROJECT)
 DOCKER_TAG_LATEST_DEV ?= $(PROJECT):latest_dev
@@ -69,29 +74,29 @@ server.test.w server.test shared.test.w shared.test: export TEST := true
 server.test.w server.test shared.test.w shared.test: export LOG_DEBUG := $(LOG_DEBUG)
 
 server.test.w:
-	$(DENO_WATCH) server/test.mjs
+	$(DENO_WATCH) $(SERVER_TEST) $(RUN)
 
 server.test: export LOG_DEBUG := $(LOG_DEBUG)
 server.test:
-	$(DENO_RUN) server/test.mjs
+	$(DENO_RUN) $(SERVER_TEST) $(RUN)
 
 server.bench.w:
-	$(DENO_WATCH) server/bench.mjs
+	$(DENO_WATCH) $(SERVER_BENCH) $(RUN)
 
 server.bench:
-	$(DENO_RUN) server/bench.mjs
+	$(DENO_RUN) $(SERVER_BENCH) $(RUN)
 
 shared.test.w:
-	$(DENO_WATCH) shared/test.mjs
+	$(DENO_WATCH) $(SHARED_TEST) $(RUN)
 
 shared.test:
-	$(DENO_RUN) shared/test.mjs
+	$(DENO_RUN) $(SHARED_TEST) $(RUN)
 
 shared.bench.w:
-	$(DENO_WATCH) shared/bench.mjs
+	$(DENO_WATCH) $(SHARED_BENCH) $(RUN)
 
 shared.bench:
-	$(DENO_RUN) shared/bench.mjs
+	$(DENO_RUN) $(SHARED_BENCH) $(RUN)
 
 mig.samples:
 	$(DENO_RUN) server/mig_samples.mjs
@@ -120,7 +125,7 @@ lint.deno:
 	deno lint
 
 lint.eslint:
-	$(DENO_RUN) npm:eslint@8.47.0 --config .eslintrc --ignore-path .gitignore --ext mjs .
+	$(DENO_RUN) npm:eslint@9.29.0 --ignore-pattern=local .
 
 docker.build.dev:
 	$(DOCKER_BUILD) -t=$(DOCKER_TAG_LATEST_DEV) -f=dockerfile_dev

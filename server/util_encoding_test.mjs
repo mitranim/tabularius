@@ -27,7 +27,7 @@ await t.test(async function test_gzip_roundtrip() {
 
   const outPath = io.paths.join(ctx.tmpDir, `example_progress.json.gz`)
   const outBin = await u.data_to_json_to_gzipByteArr(srcData)
-  await Deno.writeFile(outPath, outBin)
+  await io.writeFile(outPath, outBin)
   const outData = await u.byteArr_to_ungzip_to_unjsonData(await Deno.readFile(outPath))
   a.reqDict(outData)
   a.reqInt(outData.RoundIndex)

@@ -76,7 +76,7 @@ then the composite fields may be skipped when calling this in server code.
 export function datAddRound({
   dat, round, user_id, run_num, run_ms, composite, tables = DAT_TABLES_ALL,
 }) {
-  a.reqObj(dat)
+  a.reqRec(dat)
   a.reqDict(round)
   a.reqInt(run_num)
   a.reqNat(run_ms)
@@ -290,7 +290,7 @@ export function datAddRound({
 
     for (const [chi_type, src] of a.entries(bui.ChildLiveStats)) {
       a.reqStr(chi_type)
-      a.optObj(src)
+      a.optRec(src)
 
       if (!chi_type) continue
       if (round_bui.dumBulTypes.has(chi_type)) continue
@@ -316,7 +316,7 @@ export function datAddRound({
 
       // Linter false positive.
       // deno-lint-ignore no-inner-declarations
-      function chiAdd(stat_type, stat_val) { // eslint-disable-line no-inner-declarations
+      function chiAdd(stat_type, stat_val) {
         a.reqValidStr(stat_type)
         a.reqFin(stat_val)
         if (!chiFact || !stat_val) return
@@ -388,7 +388,7 @@ export function datAddRound({
     const buiStats = round_bui.stats
 
     // deno-lint-ignore no-inner-declarations
-    function buiAdd(stat_type, stat_val) { // eslint-disable-line no-inner-declarations
+    function buiAdd(stat_type, stat_val) {
       a.reqValidStr(stat_type)
       a.reqFin(stat_val)
       if (!stat_val) return
@@ -507,6 +507,12 @@ export function makeRunIdWithName(user_id, runName) {
 export function makeRoundId(user_id, run_num, run_ms, round_num) {
   return u.joinKeys(makeRunId(user_id, run_num, run_ms), u.intPadded(round_num))
 }
+
+/*
+Does not include the extension because server and client handle the extension
+and the content differently.
+*/
+export function makeRoundFileNameBase(src) {return u.intPadded(src)}
 
 // See `test_encodeUpgrade`.
 export function encodeUpgrades(src) {
@@ -942,8 +948,8 @@ export function plotAggAddFact({fact, state, opt}) {
 }
 
 function plotAggAddStats(fact, sets, opt) {
-  a.reqObj(fact)
-  a.reqObj(sets)
+  a.reqRec(fact)
+  a.reqRec(sets)
 
   let keys = a.reqArr(opt.totals)
   if (!keys.length) keys = defaultTotalKeys(opt)
@@ -1082,13 +1088,13 @@ Which makes it unusable for our purposes, since we want to calculate cost
 efficiency _with_ upgrades.
 */
 export function buiCost({release, bui_type: type, upgs, sell, hero}) {
-  a.reqObj(release)
+  a.reqRec(release)
   a.reqStr(type)
   a.optArr(upgs)
   a.optFin(sell)
   a.optStr(hero)
 
-  const costTable = a.reqObj(release.costs)
+  const costTable = a.reqRec(release.costs)
   const costs = costTable[type]
 
   if (!costs) {
@@ -1223,7 +1229,7 @@ export function namedToCoded(key, val) {
 }
 
 export function roundMigrated({round, userId, runNum, runMs}) {
-  a.reqObj(round)
+  a.reqRec(round)
   a.reqValidStr(userId)
   a.reqInt(runNum)
   a.reqInt(runMs)
@@ -1259,11 +1265,11 @@ export function roundMigrated({round, userId, runNum, runMs}) {
 }
 
 export function changed(tar, key, val) {
-  a.reqObj(tar), a.reqStr(key)
+  a.reqRec(tar), a.reqStr(key)
   return !a.is(tar[key], (tar[key] = val))
 }
 
 export function deleted(tar, key) {
-  a.reqObj(tar), a.reqStr(key)
+  a.reqRec(tar), a.reqStr(key)
   return key in tar && delete tar[key]
 }

@@ -1,16 +1,15 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import * as s from '../shared/schema.mjs'
-import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as i from './idb.mjs'
 import * as os from './os.mjs'
 import * as ui from './ui.mjs'
+import * as ls from './ls.mjs'
 
 import * as self from './fs.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.fs = self
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.fs = self
+a.patch(globalThis, namespace)
 
 /*
 The File System API throws non-descriptive instances of `DOMException`, without
@@ -35,7 +34,7 @@ export class FileConf extends a.Emp {
     this.validate = a.optFun(src.validate)
     this.handle = undefined
     this.perm = undefined
-    return ob.obs(this)
+    return a.obs(this)
   }
 
   clear() {
@@ -361,20 +360,12 @@ export async function fileConfDeinit(sig, conf) {
   return `${desc}: access revoked`
 }
 
-export class FileConfStatus extends ui.Elem {
-  constructor(conf) {
-    super()
-    this.conf = a.reqInst(conf, FileConf)
-    ob.reac(this, this.init)
-  }
-
-  // SYNC[file_conf_status].
-  init() {
-    const {handle, perm, desc} = this.conf
-    if (!handle) return E(this, {}, msgNotInited(this.conf))
-    if (perm !== `granted`) return E(this, {}, msgNotGranted(this.conf))
-    return E(this, {}, desc, `: `, handle.name)
-  }
+// SYNC[file_conf_status].
+export function fileConfStatusMsg(conf) {
+  const {handle, perm, desc} = a.reqInst(conf, FileConf)
+  if (!handle) return msgNotInited(conf)
+  if (perm !== `granted`) return msgNotGranted(conf)
+  return [desc, `: `, handle.name]
 }
 
 // SYNC[file_conf_status].
@@ -547,13 +538,13 @@ export async function listDirsFiles({sig, path, stat}) {
   const {kind, name} = handle
 
   if (isFile(handle)) {
-    return LsEntry({
+    return ls.LsEntry({
       kind, name, path, stat,
       statStr: a.vac(stat) && await fileStatStr(sig, handle),
     })
   }
 
-  return LsEntry({
+  return ls.LsEntry({
     kind, name, path, stat,
     entries: await dirEntries(sig, handle, stat),
   })
@@ -567,7 +558,7 @@ export async function FileConfLine(sig, conf, stat) {
   if (handle) {
     const cmd = a.spaced(`ls`, (stat ? `-s` : ``))
     const statStr = a.vac(stat) && await fileHandleStatStr(sig, handle)
-    return EntryLine({entry: handle, desc, cmd, statStr})
+    return ls.EntryLine({entry: handle, desc, cmd, statStr})
   }
 
   if (deprecated) return undefined
@@ -585,65 +576,6 @@ async function dirEntries(sig, dir, stat) {
     })
   }
   return out
-}
-
-export function LsEntry({kind, name, path, entries, stat, statStr, cloud}) {
-  a.reqStr(kind)
-  a.reqStr(name)
-  a.reqStr(path)
-  a.optBool(stat)
-  a.optStr(statStr)
-  a.optBool(cloud)
-  entries = a.laxArr(entries)
-
-  const locPre = cloud ? `cloud ` : `local `
-  const inf = `: `
-  const statSuf = a.vac(!stat && !cloud) && [` `, ...StatTip(path)]
-
-  if (kind === `file`) {
-    const base = locPre + kind + inf + path
-    if (statStr) return base + inf + statStr
-    return [base, statSuf]
-  }
-
-  if (!entries.length) return locPre + `directory ${a.show(path)} is empty`
-
-  const cmd = a.spaced(`ls`, (cloud ? `-c` : stat ? `-s` : ``))
-  const buf = []
-
-  for (const entry of a.values(entries)) {
-    const {kind, statStr} = entry
-    buf.push(EntryLine({entry, desc: kind, cmd, path, statStr}))
-  }
-
-  return ui.LogLines(
-    [`contents of `, locPre, `directory ${a.show(path)}`, statSuf, `:`],
-    ...u.alignCol(buf),
-  )
-}
-
-export function EntryLine({entry, desc, cmd, path, statStr}) {
-  a.reqObj(entry)
-  a.optStr(desc)
-  a.optStr(cmd)
-  a.optStr(statStr)
-
-  const name = a.reqValidStr(entry.name)
-  path = u.paths.join(a.laxStr(path), name)
-
-  return a.compact([
-    a.vac(desc) && desc + `: `,
-    a.compact([
-      (
-        isDir(entry) && cmd
-        ? os.BtnCmd(a.spaced(cmd, path), name)
-        : name
-      ),
-      ` `,
-      ui.BtnClip(path),
-      a.vac(statStr) && ` (${statStr})`,
-    ]),
-  ])
 }
 
 export function StatTip(path) {
@@ -738,13 +670,13 @@ export async function cmdShow({sig, args}) {
     else if (key === `-w`) opt.write = ui.cliBool(cmd, key, val)
     else if (!key) paths.push(val)
     else {
-      ui.LOG.err(`unrecognized input `, a.show(pair), ` in `, ui.BtnPromptReplace({val: args}))
+      ui.LOG.err(ui.msgUnrecInput(pair, args))
       return os.cmdHelpDetailed(cmdShow)
     }
   }
 
   if (!paths.length) {
-    ui.LOG.err(`missing input paths in `, ui.BtnPromptReplace({val: args}))
+    ui.LOG.err(`missing input paths in `, ui.BtnPromptReplace(args))
     return os.cmdHelpDetailed(cmdShow)
   }
 
@@ -804,7 +736,7 @@ export async function showFile({sig, handle, path, opt}) {
 export async function showData({sig, path, data, opt}) {
   u.reqSig(sig)
   a.reqValidStr(path)
-  a.optObj(opt)
+  a.optRec(opt)
 
   const copy = a.optBool(opt?.copy)
   const log = a.optBool(opt?.log)
@@ -812,7 +744,7 @@ export async function showData({sig, path, data, opt}) {
   let json
 
   if (copy) {
-    json ??= JSON.stringify(data, undefined, 2)
+    json ??= a.jsonEncode(data, undefined, 2)
     await u.copyToClipboard(json)
     ui.LOG.info(`copied decoded content of ${a.show(path)} to clipboard`)
   }
@@ -824,7 +756,7 @@ export async function showData({sig, path, data, opt}) {
   }
 
   if (write) {
-    json ??= JSON.stringify(data, undefined, 2)
+    json ??= a.jsonEncode(data, undefined, 2)
 
     const hist = await historyDirReq(sig)
     const outDirName = SHOW_DIR_NAME
@@ -958,6 +890,81 @@ export function findLatestRoundFile(sig, runDir) {
   return findLatestDirEntryOpt(sig, runDir, isHandleGameFile)
 }
 
+export function findRoundFileAny(sig, path) {
+  if (!path) return findRoundFileAnywhere(sig)
+  return findRoundFileAtPath(sig, path)
+}
+
+export async function findRoundFileAnywhere(sig) {
+  const progFile = await progressFileOpt(sig)
+  let progRound
+
+  if (progFile) {
+    progRound = await readDecodeGameFile(sig, progFile)
+
+    /*
+    Having a round index means having some data to show. If the round index
+    is zero, then we prefer to look for the latest round in the history dir.
+    */
+    if (progRound?.RoundIndex) {
+      return {handle: progFile, round: progRound, live: true}
+    }
+  }
+
+  const histDir = await historyDirOpt(sig)
+
+  if (histDir) {
+    const runDir = await findLatestRunDir(sig, histDir)
+    const roundFile = await findLatestRoundFile(sig, runDir)
+    if (roundFile) return {handle: roundFile, live: true}
+  }
+
+  return {handle: progFile, live: true}
+}
+
+export async function findRoundFileAtPath(sig, srcPath) {
+  u.reqSig(sig)
+  a.reqValidStr(srcPath)
+
+  let {handle, path: outPath} = await handleAtPathFromTop({
+    sig, path: srcPath, magic: true,
+  })
+  let latest = false
+
+  if (handle === HISTORY_DIR_CONF.handle) {
+    const dir = await findLatestRunDir(sig, handle)
+    if (!dir) {
+      throw new ErrFs(`no runs in the history directory; build your history by playing!`)
+    }
+    handle = dir
+    outPath = u.paths.join(outPath, dir.name)
+    latest = true
+  }
+
+  if (!isFile(handle)) {
+    handle = await findLatestRoundFile(sig, handle)
+    if (!handle) {
+      throw new ErrFs(`found no rounds in ${a.show(outPath)}; build your history by playing!`)
+    }
+    outPath = u.paths.join(outPath, handle.name)
+  }
+
+  if (!isFile(handle)) throw new ErrFs(`${a.show(outPath)} is not a file`)
+
+  const live = latest || (
+    // This has a false positive for paths like `history/<num>/latest`.
+    // Might consider fixing later.
+    srcPath.endsWith(`/latest`) ||
+
+    outPath === u.paths.join(
+      a.laxStr(SAVE_DIR_CONF.handle?.name),
+      PROG_FILE_NAME,
+    )
+  )
+
+  return {handle, path: outPath, live}
+}
+
 export async function findHandleByIntPrefixReq(sig, dir, int) {
   const out = await findHandleByIntPrefixOpt(sig, dir, int)
   if (out) return out
@@ -1073,7 +1080,7 @@ export async function readDecodeGameFile(sig, file) {
   try {
     if (file.name.endsWith(`.json.gz`)) {
       const src = await readFileByteArr(sig, file)
-      return JSON.parse(await u.byteArr_to_ungzip_to_str(src))
+      return a.jsonDecode(await u.byteArr_to_ungzip_to_str(src))
     }
 
     const src = await readFileText(sig, file)
@@ -1173,7 +1180,7 @@ export async function handleAtPathFromTop({sig, path, magic}) {
     path: u.paths.join(...tail),
     magic,
   })
-  return {parent, handle, path: u.paths.join(head, resolved)}
+  return {parent, handle, path: u.paths.join(head, resolved), fileConf: conf}
 }
 
 function msgTopEntries(confs) {
@@ -1272,11 +1279,8 @@ export async function writeDirFile(sig, dir, name, body) {
 export async function writeFile(sig, file, body, path) {
   u.reqSig(sig)
   a.reqInst(file, FileSystemFileHandle)
+  u.reqValidTextData(body)
   a.optStr(path)
-
-  if (!a.isStr(body) && !a.isInst(body, Uint8Array)) {
-    throw TypeError(`unable to write to ${a.show(file.name)}: body must be a string or a Uint8Array, got ${a.show(body)}`)
-  }
 
   const wri = await u.wait(sig, file.createWritable())
   try {
@@ -1289,8 +1293,8 @@ export async function writeFile(sig, file, body, path) {
   finally {await wri.close()}
 }
 
-export function isDir(val) {return a.optObj(val)?.kind === `directory`}
-export function isFile(val) {return a.optObj(val)?.kind === `file`}
+export function isDir(val) {return a.optRec(val)?.kind === `directory`}
+export function isFile(val) {return a.optRec(val)?.kind === `file`}
 
 export function readDirAsc(sig, dir) {
   return readDirSorted(sig, dir, compareHandlesAsc)
@@ -1339,7 +1343,7 @@ export async function queryPermission(sig, src, opt) {
 export async function requestPermission(sig, handle, opt) {
   u.reqSig(sig)
   a.reqInst(handle, FileSystemHandle)
-  const mode = a.laxStr(a.optObj(opt)?.mode)
+  const mode = a.laxStr(a.optRec(opt)?.mode)
 
   try {
     return await u.wait(sig, handle.requestPermission(opt))

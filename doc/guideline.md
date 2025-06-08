@@ -136,7 +136,7 @@ function emailReceiver(src) {
 
   // Validate relevant values.
   // Fail fast, trust the caller to handle errors.
-  a.reqObj(src)
+  a.reqRec(src)
 
   // Some strings are optional.
   a.optStr(src.name)
@@ -165,38 +165,30 @@ const domains = a.map(
 For creating and manipulating the DOM, use the tools provided by `@mitranim/js`. Examples below:
 
 ```js
-import * as p from '@mitranim/js/prax.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
+import * as a from '@mitranim/js/all.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
 
 // Create renderer.
-const REN = new p.Ren()
+const REN = new a.Ren()
 const E = REN.E.bind(REN)
 
 // Create or mutate elements via `E`.
-const elem = E(`div`, {class: `container`},
+const elem0 = E(`div`, {class: `container`},
   E(`h1`, {}, `Title`),
   E(`p`, {}, `Content`)
 )
 
-// Use observables for mutable state. Observables monitor access to object
-// properties, and notify subscribers on changes in object properties.
-const obs = ob.obs({count: 0})
+// Use observables for mutable state.
+const obs = a.obs({count: 0})
 
 function inc() {obs.count++}
 
-// Reactive custom elements automatically subscribe to observables.
-class Counter extends dr.MixReg(HTMLButtonElement) {
-  constructor() {
-    super()
-    this.onclick = inc
-    ob.reac(this, this.init)
-  }
-
-  init() {this.textContent = obs.count}
-}
-
-elem.append(new Counter())
+// In markup, react to observables by passing functions to the renderer:
+const elem1 = E(`div`, {},
+  E(`span`, {}, `count: `, () => obs.count),
+  ` `,
+  E(`button`, {onclick: inc, type: `button`}, `increment`),
+)
 ```
 
 Early returns over nested conditionals:

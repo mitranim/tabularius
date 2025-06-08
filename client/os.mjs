@@ -1,13 +1,12 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import {E} from './ui.mjs'
 import * as u from './util.mjs'
 import * as ui from './ui.mjs'
 
 import * as self from './os.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.os = self
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.os = self
+a.patch(globalThis, namespace)
 
 /*
 Centralized registry of CLI-style commands for our "terminal". Each is
@@ -47,7 +46,7 @@ export class Proc extends a.Emp {
   static id = 0
 
   constructor(src) {
-    a.reqObj(src)
+    a.reqRec(src)
     super()
     this.id = String(++new.target.id)  // Process id (pid). Must be unique.
     this.args = a.reqStr(src.args)     // CLI command name and args.
@@ -57,9 +56,9 @@ export class Proc extends a.Emp {
     this.promise = undefined           // Assigned after starting.
     this.startAt = Date.now()          // Shown in the UI.
     this.endAt = undefined             // Assigned by `runProc`.
-    this.val = undefined               // Eventual promise value, if any.
-    this.err = undefined               // Eventual promise error, if any.
-    return ob.obs(this)                // For reactive UI updates.
+    this.val = undefined               // Eventual return value, if any.
+    this.err = undefined               // Eventual exception, if any.
+    return a.obs(this)                // For reactive UI updates.
   }
 
   // Cmd funs should use this to support cancelation.
@@ -73,7 +72,7 @@ export class Proc extends a.Emp {
 Centralized registry of all currently running processes. Keys must be proc ids,
 values must be procs.
 */
-export const PROCS = ob.obs(a.Emp())
+export const PROCS = a.obs(a.Emp())
 
 // Suboptimal but doesn't matter.
 export function procByName(name) {
@@ -104,7 +103,7 @@ export function reqCmdByName(name) {
 export async function runProc({fun, args, desc, obs, user, waitFor}) {
   a.reqFun(fun)
   a.reqStr(args)
-  a.optObj(obs)
+  a.optRec(obs)
   a.optPromise(waitFor)
 
   /*
@@ -119,13 +118,15 @@ export async function runProc({fun, args, desc, obs, user, waitFor}) {
   try {out = fun(proc)}
   catch (err) {
     logCmdFail(name, err)
-    return
+    proc.err = err
+    return proc
   }
 
   if (!a.isPromise(out)) {
+    proc.val = out
     if (waitFor) await waitFor.catch(ui.logErr)
     logCmdDone(name, out, ui)
-    return
+    return proc
   }
 
   proc.promise = out
@@ -151,12 +152,14 @@ export async function runProc({fun, args, desc, obs, user, waitFor}) {
       if (obs) delete obs.proc
     }
   }
+
+  return proc
 }
 
 export class Combo extends a.Emp {
   constructor(src) {
     super()
-    a.optObj(src)
+    a.optRec(src)
     this.logMsgs = a.optArr(src?.logMsgs)
     this.mediaItems = a.optArr(src?.mediaItems)
   }
@@ -195,17 +198,23 @@ export function procToStatus(src) {
 }
 
 export function showProcs() {
-  if (!a.len(PROCS)) return `no active processes`
+  const src = a.map(PROCS, procToStatus)
+  if (!src.length) return `no active processes`
+
   return ui.LogLines(
     `active processes (pid, name, status):`,
-    ...a.map(PROCS, procToStatus).map(u.indentNode),
+    ...a.map(src, u.indentNode),
   )
 }
 
-// Also see `Kill`.
-export class Procs extends ui.Elem {
-  constructor() {ob.reac(super(), this.init)}
-  init() {E(this, {}, showProcs())}
+export function showProcsMini() {
+  const src = a.map(PROCS, lineKillProc)
+  if (!src.length) return `no active processes`
+  return ui.LogLines(`active processes:`, ...src)
+}
+
+function lineKillProc(val) {
+  return [`  `, BtnCmd(`kill ${val.id}`), `: `, val.args]
 }
 
 cmdKill.cmd = `kill`
@@ -224,7 +233,7 @@ cmdKill.help = function cmdKillHelp() {
       [`  `, ui.BtnPrompt({full: true, cmd: `kill`, eph: `<name>`}), `        -- kill by name`],
       [`  `, ui.BtnPrompt({full: true, cmd: `kill`, eph: `<id> <id> ...`}), ` -- kill multiple`],
     ),
-    new Kill(),
+    showProcsMini,
   )
 }
 
@@ -235,7 +244,7 @@ export function cmdKill({args}) {
 
   if (all) {
     if (inps.size) {
-      ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
+      ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace(args))
       return cmdHelpDetailed(cmdKill)
     }
     return procKillAll()
@@ -297,23 +306,6 @@ export function procKillOpt(pat) {
   }
 }
 
-// Also see `Procs`.
-export class Kill extends ui.Elem {
-  constructor() {ob.reac(super(), this.init)}
-
-  init() {
-    const active = a.map(PROCS, lineKillProc)
-    E(this, {}, ui.LogLines(
-      active.length ? `active processes:` : `no active processes`,
-      ...active,
-    ))
-  }
-}
-
-function lineKillProc(val) {
-  return [`  `, BtnCmd(`kill ${val.id}`), `: `, val.args]
-}
-
 cmdHelp.cmd = `help`
 cmdHelp.desc = `brief summary of all commands, or detailed help on one command`
 
@@ -343,7 +335,7 @@ export function cmdHelp({args}) {
 
     [
       `pro tip: run commands on page load via URL query; for example, try appending to the URL: `,
-      ui.BtnUrlAppend(`?run=plot -c -p=dmg user_id=all run_id=latest`),
+      ui.BtnUrlAppend(`?run=plot -c -p=dmg run_id=latest`),
     ],
   )
 }
@@ -386,7 +378,7 @@ export function BtnCmd(cmd, alias) {
     `button`,
     {
       type: `button`,
-      class: `px-1 inline whitespace-nowrap rounded border border-gray-300 dark:border-neutral-600 bg-neutral-200 dark:bg-stone-700 hover:bg-gray-300 dark:hover:bg-stone-600`,
+      class: `px-1 trunc whitespace-nowrap rounded border border-gray-300 dark:border-neutral-600 bg-neutral-200 dark:bg-stone-700 hover:bg-gray-300 dark:hover:bg-stone-600`,
       onclick() {runCmd(cmd).catch(ui.logErr)},
     },
     alias || cmd,

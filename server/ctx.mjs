@@ -2,7 +2,9 @@
 
 import * as a from '@mitranim/js/all.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
+import * as hd from '@mitranim/js/http_deno.mjs'
 import * as ud from './util_db.mjs'
+import * as us from './util_srv.mjs'
 
 /*
 Stateful app configuration used by server code and testing code.
@@ -16,6 +18,7 @@ export class Ctx extends a.Emp {
     this.dbFile = a.reqValidStr(dbFile)
     this.dataDir = a.reqValidStr(dataDir)
     this.tmpDir = a.reqValidStr(tmpDir)
+    this.httpDirUserRuns = new us.DirRel(this.userRunsDir)
   }
 
   get userRunsDir() {return io.paths.join(this.dataDir, `user_runs`)}

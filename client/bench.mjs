@@ -39,7 +39,7 @@ function whereFieldsInterpreted(src) {
 }
 
 function whereGroup([key, vals]) {
-  a.reqStructKey(key)
+  a.reqRecKey(key)
   return a.vac(a.map(vals, val => [key, val]))
 }
 

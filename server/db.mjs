@@ -162,10 +162,10 @@ We've compared the following:
 Prepared statements were particularly horrifyingly slow. The `.bind` step was
 the bottleneck, with inexcusable delays.
 
-Dumping to a JSON file and telling the DB to load it was the only approach that
-wasn't horrifyingly slow. The FFI bindings and/or the SQL queries seem to come
-with insane overheads, and loading in bulk is the only viable solution. We
-don't love having to dump files to disk and having to clean them up, but the
+Dumping to a JSON file and telling the DB to load it was the only approach
+that wasn't horrifyingly slow. The FFI bindings and/or the SQL queries seem
+to come with insane overheads, and loading in bulk is the only viable solution.
+We don't love having to dump files to disk and clean them up, but the
 alternatives are worse.
 
 DuckDB prefers newline-separated JSON, but also supports top-level-array JSON.
@@ -182,7 +182,7 @@ export async function insertBatch(conn, coll, src) {
   await Deno.mkdir(u.TMP_DIR, {recursive: true})
   const path = await Deno.makeTempFile({dir: u.TMP_DIR, suffix: `.json`})
   try {
-    await Deno.writeTextFile(path, u.jsonLines(src))
+    await io.writeFile(path, u.jsonLines(src))
     await conn.run(`copy ${coll} from ${ud.sqlStr(path)}`)
   }
   finally {await Deno.remove(path)}

@@ -35,6 +35,9 @@ export class SqlRaw extends String {
     tar.text = ensureTrailingSpace(tar.text)
     tar.text += this
   }
+
+  get text() {return this.toString()}
+  get args() {return undefined}
 }
 
 export class SqlIdent extends SqlRaw {

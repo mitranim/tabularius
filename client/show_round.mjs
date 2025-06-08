@@ -1,5 +1,4 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as ob from '@mitranim/js/obs.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
 import * as gc from '../shared/game_const.mjs'
 import * as s from '../shared/schema.mjs'
@@ -9,11 +8,13 @@ import * as os from './os.mjs'
 import * as d from './dat.mjs'
 import * as fs from './fs.mjs'
 import * as ui from './ui.mjs'
+import * as au from './auth.mjs'
+import * as ls from './ls.mjs'
 
 import * as self from './show_round.mjs'
-const tar = globalThis.tabularius ??= a.Emp()
-tar.sr = self
-a.patch(globalThis, tar)
+const namespace = globalThis.tabularius ??= a.Emp()
+namespace.sr = self
+a.patch(globalThis, namespace)
 
 cmdShowRound.cmd = `show_round`
 cmdShowRound.desc = `detailed breakdown of one round`
@@ -23,190 +24,239 @@ cmdShowRound.help = function cmdShowRoundHelp() {
 
   return ui.LogParagraphs(
     u.callOpt(cmdShowRound.desc),
-    `usage:`,
+    ls.helpSources(`show_round`),
+
+    `local usage:`,
+
     [
       `  `,
       os.BtnCmd(`show_round`),
-      ` -- displays details of the latest round; checks the game's save directory (grant access via `,
+      ` -- displays details of the latest round; checks the `,
       os.BtnCmdWithHelp(`saves`),
-      `), falls back on the run history directory (create yourself, grant access via `,
-      os.BtnCmdWithHelp(`history`), `)`,
-    ],
-    [
-      `  `,
-      (
-        saveDir
-        ? BtnAppend(u.paths.join(saveDir, fs.PROG_FILE_NAME))
-        : BtnAppendEph(u.paths.join(`<saves>`, fs.PROG_FILE_NAME))
-      ),
-      ` -- show current state of save file; requires `,
-      os.BtnCmdWithHelp(`saves`),
-    ],
-    [
-      `  `,
-      (
-        histDir
-        ? BtnAppend(u.paths.join(histDir, `latest/latest`))
-        : BtnAppendEph(`<history>/latest/latest`)
-      ),
-      ` -- show latest round in latest run; requires `,
+      ` directory, falls back on the `,
       os.BtnCmdWithHelp(`history`),
+      ` directory`,
     ],
+
+    ui.LogLines(
+      [
+        `  `,
+        (
+          saveDir
+          ? BtnReplace(u.paths.join(saveDir, fs.PROG_FILE_NAME))
+          : BtnReplaceEph(u.paths.join(`<saves>`, fs.PROG_FILE_NAME))
+        ),
+        ` -- use save file`,
+        a.vac(!saveDir) && [`; requires `, os.BtnCmdWithHelp(`saves`)],
+      ],
+      [
+        `  `,
+        (histDir ? BtnReplace(histDir) : BtnReplaceEph(`<history>`)),
+        ` -- latest round in latest run`,
+        a.vac(!histDir) && [`; requires `, os.BtnCmdWithHelp(`history`)],
+      ],
+      [
+        `  `,
+        (
+          histDir
+          ? BtnReplace(
+            histDir + `/`,
+            `<run_num>`,
+          )
+          : BtnReplaceEph(`<history>/<run_num>`)
+        ),
+      ],
+      [
+        `  `,
+        (
+          histDir
+          ? BtnReplace(
+            histDir + `/`,
+            `<run_num>/<round_num>`,
+          )
+          : BtnReplaceEph(`<history>/<run_num>/<round_num>`)
+        ),
+      ],
+      [
+        `  `,
+        (
+          histDir
+          ? BtnReplace(u.paths.join(histDir, `latest`))
+          : BtnReplaceEph(`<history>/latest`)
+        ),
+      ],
+      [
+        `  `,
+        (
+          histDir
+          ? BtnReplace(
+            u.paths.join(histDir, `latest`) + `/`,
+            `<round_num>`,
+          )
+          : BtnReplaceEph(`<history>/latest/<round_num>`)
+        ),
+      ],
+      [
+        `  `,
+        (
+          histDir
+          ? BtnReplace(u.paths.join(histDir, `latest/latest`))
+          : BtnReplaceEph(`<history>/latest/latest`)
+        ),
+      ],
+    ),
+
     [
-      `  `,
-      (
-        histDir
-        ? BtnAppend(
-          u.paths.join(histDir, `latest`) + `/`,
-          `<round_num>`,
-        )
-        : BtnAppendEph(`<history>/latest/<round_num>`)
-      ),
-      ` -- show specific round in latest run`,
-    ],
-    [
-      `  `,
-      (
-        histDir
-        ? BtnAppend(
-          histDir + `/`,
-          `<run_num>/<round_num>`,
-        )
-        : BtnAppendEph(`<history>/<run_num>/<round_num>`)
-      ),
-      ` -- show specific round in specific run`,
-    ],
-    [
-      `when showing the game's progress file or the latest round file, the resulting table is "live": it automatically updates to the latest round when the `,
+      `in local mode, when showing the progress file or the latest round file, the resulting table is "live": it automatically updates to the latest round when the `,
       os.BtnCmdWithHelp(`watch`),
       ` process detects changes and makes a new round backup`,
     ],
-    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse available files`],
+
+    [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local files`],
+
+    ui.LogLines(
+      `cloud usage:`,
+      [
+        `  `,
+        os.BtnCmd(`show_round -c`),
+        ` -- latest round from any user`,
+      ],
+      [
+        `  `,
+        os.BtnCmd(`show_round -c -u`),
+        ` -- latest round from current user`,
+        a.vac(!au.isAuthed()) && [`; requires `, os.BtnCmdWithHelp(`auth`)],
+      ],
+      [
+        `  `,
+        BtnReplace(`-c `, `<user_id>`),
+        ` -- latest round from specific user`,
+      ],
+      [
+        `  `,
+        BtnReplace(`-c `, `<user_id>/<run_num>`),
+        ` -- latest round from specific user and run`,
+      ],
+      [
+        `  `,
+        BtnReplace(`-c `, `<user_id>/<run_num>/<round_num>`),
+        ` -- specific user, run, round`,
+      ],
+    ),
+
+    [`tip: use `, os.BtnCmdWithHelp(`ls -c`), ` to browse uploaded rounds`],
   )
+}
+
+export async function cmdShowRound({sig, args}) {
+  const cmd = cmdShowRound.cmd
+  const paths = []
+  let cloud
+  let user
+
+  for (const [key, val, pair] of u.cliDecode(u.stripPreSpaced(args, cmd))) {
+    if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdShowRound)
+    if (key === `-c`) {
+      cloud = ui.cliBool(cmd, key, val)
+      continue
+    }
+    if (key === `-u`) {
+      user = ui.cliBool(cmd, key, val)
+      continue
+    }
+    if (key) {
+      ui.LOG.err(ui.msgUnrecInput(pair, args))
+      return os.cmdHelpDetailed(cmdShowRound)
+    }
+    paths.push(val)
+  }
+
+  if (user) {
+    if (!cloud) {
+      ui.LOG.err(
+        `ignoring `, ui.BtnPrompt({cmd, suf: `-u`}),
+        ` in local mode in `, ui.BtnPromptReplace(args),
+      )
+    }
+    else if (paths.length) {
+      ui.LOG.err(
+        `ignoring `, ui.BtnPrompt({cmd, suf: `-u`}),
+        ` in `, ui.BtnPromptReplace(args),
+        ` because some paths were provided`,
+      )
+    }
+    else paths.push(au.reqUserId())
+  }
+
+  if (!paths.length) paths.push(``)
+
+  return new os.Combo({mediaItems: await Promise.all(a.map(paths, path => (
+    cloud
+    ? showRoundCloud({sig, args, path})
+    : showRoundLocal({sig, args, path})
+  )))})
+}
+
+export async function showRoundLocal({sig, args, path}) {
+  const {handle, round, live} = await fs.findRoundFileAny(sig, path)
+  return showRoundFile({sig, args, handle, round, live})
 }
 
 /*
-The following is a placeholder. We plan to support cloud sources. We also want
-to provide better help / error messages.
+Missing:
+
+cloud:
+
+  show_round -c
+  show_round -c <run_num>
+  show_round -c <run_num>/latest
+  show_round -c <run_num>/latest/<file>
+  show_round -c <run_name>
+  show_round -c <run_name>/latest
+  show_round -c <run_name>/latest/<file>
+  show_round -c user_id/<run_num>
+  show_round -c user_id/<run_name>
+  show_round -c user_id/<run_num>/<file>
+  show_round -c user_id/<run_name>/<file>
 */
-export function cmdShowRound({sig, args}) {
-  const cmd = cmdShowRound.cmd
-  const inps = u.splitCliArgs(u.stripPreSpaced(args, cmd))
-  if (u.hasHelpFlag(inps)) return os.cmdHelpDetailed(cmdShowRound)
-
-  if (inps.length > 1) {
-    ui.LOG.err(`too many inputs in `, ui.BtnPromptReplace({val: args}))
-    return os.cmdHelpDetailed(cmdShowRound)
-  }
-
-  const path = inps[0]
-  if (path) return showRoundAtPath({sig, path, args})
-  return showRoundAny({sig, args})
+export async function showRoundCloud({sig, args, path}) {
+  const round = await apiDownloadRound(sig, path)
+  return showRoundFile({sig, args, round})
 }
 
-export async function showRoundAtPath({sig, path, args}) {
-  const {handle: file, path: resolvedPath} = await fs.handleAtPathFromTop({
-    sig, path, magic: true,
-  })
-
-  if (!fs.isFile(file)) {
-    throw new ui.ErrLog(`unable to show ${a.show(resolvedPath)}: not a file`)
-  }
-
-  // The overhead should be negligible.
-  const saveDir = await fs.saveDirOpt(sig)
-  const histDir = await fs.historyDirOpt(sig)
-  const live = (
-    resolvedPath === u.paths.join(a.laxStr(saveDir?.name), fs.PROG_FILE_NAME) ||
-    resolvedPath === u.paths.join(a.laxStr(histDir?.name), `latest/latest`)
-  )
-  return showRoundFile({sig, file, args, live})
-}
-
-export async function showRoundAny({sig, args}) {
-  const progFile = await fs.progressFileOpt(sig)
-  let progRound
-
-  if (progFile) {
-    progRound = await fs.readDecodeGameFile(sig, progFile)
-
-    /*
-    The progress file is at round 0 with no useful data after ending a run.
-    In such cases, we prefer to fall back on the latest round backup, below.
-    */
-    if (progRound?.RoundIndex) {
-      return showRoundFile({sig, round: progRound, args, live: true})
-    }
-  }
-
-  const histDir = await fs.historyDirOpt(sig)
-  if (histDir) {
-    const runDir = await fs.findLatestRunDir(sig, histDir)
-    const roundFile = await fs.findLatestRoundFile(sig, runDir)
-    if (roundFile) {
-      return showRoundFile({sig, file: roundFile, args, live: true})
-    }
-  }
-
-  /*
-  When falling back on the latest round backup is unsuccessful, we use an
-  existing progress file, if any.
-  */
-  if (progRound) return showRoundFile({sig, round: progRound, args, live: true})
-
-  const saveDir = await fs.saveDirOpt(sig)
-
-  if (!saveDir && !histDir) {
-    throw new ui.ErrLog(
-      `unable to show the latest round: need access to the `,
-      os.BtnCmdWithHelp(`saves`), ` directory or the run `,
-      os.BtnCmdWithHelp(`history`), ` directory`,
-    )
-  }
-
-  if (!saveDir && histDir) {
-    throw new ui.ErrLog(
-      `unable to show the latest round: found no round files in the `,
-      os.BtnCmdWithHelp(`history`), ` directory; lacking access to the `,
-      os.BtnCmdWithHelp(`saves`), ` directory; grant access and build your run history by playing!`,
-    )
-  }
-
-  /*
-  This code should only be reachable if the user granted access to the saves
-  directory, then the progress file somehow gets deleted. When picking the
-  saves directory, we validate that the progress file is present.
-  */
-  throw new ui.ErrLog(
-    `unable to show the latest round: missing file `,
-    a.show(fs.PROG_FILE_NAME), ` in the `,
-    os.BtnCmdWithHelp(`saves`), ` directory`,
-  )
-}
-
-export async function showRoundFile({sig, file, round, args, live}) {
+export async function showRoundFile({sig, args, handle, round, live}) {
   u.reqSig(sig)
-  a.optInst(file, FileSystemFileHandle)
+  a.optInst(handle, FileSystemFileHandle)
   a.optDict(round)
   a.reqValidStr(args)
   a.optBool(live)
 
-  round ??= await fs.readDecodeGameFile(sig, file)
+  round ??= await fs.readDecodeGameFile(sig, handle)
 
   const user_id = round.tabularius_user_id || d.USER_ID
   const run_num = round.tabularius_run_num ?? 0
   const run_ms = round.tabularius_run_ms ?? Date.parse(round.LastUpdated)
   const run_id = s.makeRunId(user_id, run_num, run_ms)
-  const out = new ShowRound({
+
+  return new ShowRound({
     round, user_id, run_id, run_num, run_ms, args, live,
   })
-  return new os.Combo({mediaItems: [out]})
 }
 
-export const HIDE_BREAKPOINT = a.reqValidStr(ui.MEDIA_ITEM_WID)
+export const HIDE_BREAKPOINT = `40rem`
 export const CLS_HIDE_BELOW = `hide-below-[${HIDE_BREAKPOINT}]`
 export const CLS_HIDE_ABOVE = `hide-above-[${HIDE_BREAKPOINT}]`
 export const CLS_CELL_COMMON = `px-2 trunc-base text-left`
+export const CLS_CELL_HEAD = a.spaced(
+  CLS_CELL_COMMON,
+  ui.CLS_TEXT_MUTED,
+  ui.CLS_BUSY_BG,
+  `cursor-pointer pb-1 weight-unset`,
+)
+export const CLS_ROW_TOP = a.spaced(ui.CLS_BORD, `border-t border-dashed`)
+
+// TODO: more colors for different types.
+export const CLS_PERC = `text-sky-700 dark:text-sky-300`
 
 export const TYPE_ANY = undefined
 export const TYPE_BOOL = `bool`
@@ -221,6 +271,7 @@ export const NUM_MODE_PERC = `perc`
 export const NUM_MODES = [NUM_MODE_BOTH, NUM_MODE_NUM, NUM_MODE_PERC]
 
 export const NUM_MODE = u.storageObs(`tabularius.show_round.num_mode`)
+export const SHOW_CHI = u.storageObsBool(`tabularius.round_table.show_chi`)
 export const MISSING_LAST = u.storageObsBool(`tabularius.show_round.missing_last`)
 export const WIDE = u.storageObsBool(`tabularius.show_round.wide`)
 export const LONG = u.storageObsBool(`tabularius.show_round.long`)
@@ -234,16 +285,17 @@ class ShowRound extends d.MixDatSub(ui.Elem) {
     super()
     this.opt = a.reqDict(opt)
 
-    E(
-      this,
-      {class: `@container flex col-sta-str max-w-none min-h-8 text-sm gap-2`},
-    )
-    ob.reac(this, this.onWide)
+    E(this, () => ({class: a.spaced(
+      `@container flex col-sta-str max-w-none min-h-8 text-sm gap-2`,
+      ui.CLS_MEDIA_CHI,
+      a.vac(WIDE.val) && ui.CLS_MEDIA_ITEM_WIDE,
+    )}))
+
     this.init()
   }
 
   init() {
-    return E(this, {},
+    return E(this, undefined,
       new RoundHead(this.opt),
       new TableSettingsAndHints(),
       new RoundTable(this.opt),
@@ -260,23 +312,20 @@ class ShowRound extends d.MixDatSub(ui.Elem) {
   }
 
   // Invoked by `MEDIA`.
-  addCloseBtn(btn) {a.descendant(this, RoundHead).addCloseBtn(btn)}
-
-  onWide() {ui.MEDIA.toggleWide(this, WIDE.val)}
+  addCloseBtn(btn) {a.descendant(this, RoundHead)?.addCloseBtn(btn)}
   connectedCallback() {if (this.opt.live) this.datSubInit()}
   disconnectedCallback() {this.datSubDeinit()}
 }
 
 class RoundHead extends ui.Elem {
+  closeBtn = a.obsRef()
+
   constructor({round, user_id, run_id, run_num, args}) {
     super()
     a.reqDict(round)
 
     const round_ms = a.onlyFin(Date.parse(round.LastUpdated))
-    const game_ver = (
-      round.tabularius_game_ver ||
-      gc.findGameReleaseForMs(round_ms)?.ver
-    )
+    const game_ver = gc.findGameReleaseForMs(round_ms)?.ver
     const hpCur = round.HqHp
     const hpMax = reify(round.HqMaxHpData)
     const grenadiers = (
@@ -304,15 +353,15 @@ class RoundHead extends ui.Elem {
         ui.CLS_MEDIA_PAD_X,
         ui.CLS_MEDIA_PAD_T,
       )},
-      this.header = E(
+      E(
         `div`,
-        {class: `flex row-bet-cen gap-2`},
-        E(`div`, {class: `flex col-sta-sta gap-2`},
-          E(`h2`, {class: `trunc-base`},
+        {class: `w-full flex row-bet-sta gap-2`},
+        E(`div`, {class: `flex-1 min-w-0 flex col-sta-sta gap-2`},
+          E(`h2`, {class: `trunc-base w-full`},
             `run `, ui.Bold(run_num), ` round `, ui.Bold(round.RoundIndex),
           ),
-          a.vac(a.optStr(args)) && ui.BtnPromptReplace({
-            val: u.preSpacedOpt(args, cmd),
+          a.vac(a.optStr(args)) && ui.BtnPrompt({
+            cmd, suf: args, full: true, trunc: true, width: `w-full`,
           }),
         ),
         this.closeBtn,
@@ -360,11 +409,7 @@ class RoundHead extends ui.Elem {
     )
   }
 
-  closeBtn = undefined
-  addCloseBtn(btn) {
-    this.closeBtn = btn
-    this.header?.appendChild(btn)
-  }
+  addCloseBtn(btn) {this.closeBtn.val = btn}
 }
 
 function DetailsGrid(...src) {
@@ -408,6 +453,8 @@ class TableSettingsAndHints extends dr.MixReg(HTMLDetailsElement) {
       class: a.spaced(ui.CLS_MEDIA_PAD_X, `whitespace-pre-wrap`),
       count: false,
       chiLvl: 1,
+      open: SETTINGS_OPEN.val,
+      ontoggle: this.onToggle,
       chi: [
         ...TableHints(),
         TableControlNumMode(),
@@ -417,13 +464,11 @@ class TableSettingsAndHints extends dr.MixReg(HTMLDetailsElement) {
         TableControlLong(),
       ],
     })
-
-    this.ontoggle = this.onToggle
-    ob.reac(this, this.onOpen)
   }
 
+  rec = a.recurTask(this, this.onSettings)
+  onSettings() {this.open = SETTINGS_OPEN.val}
   onToggle() {SETTINGS_OPEN.val = this.open}
-  onOpen() {this.open = SETTINGS_OPEN.val}
 }
 
 function TableHints() {
@@ -446,8 +491,7 @@ function TableHintSort() {
   return E(
     `span`,
     {class: CLS_HIDE_BELOW},
-    ui.Muted(`hint:`),
-    ` click columns to sort`,
+    ui.Muted(`hint:`), ` click columns to sort`,
   )
 }
 
@@ -512,18 +556,16 @@ export const SORTS = [BUI_SORT, CHI_SORT, WEP_SORT]
 // SYNC[bui_stat_types].
 export const BUI_STAT_TYPES = [...s.STAT_TYPES, `bui_cost`]
 
-export const BUI_COL_BASE = {sortObs: BUI_SORT}
-
 // SYNC[bui_cols].
 export const BUI_COLS = [
-  {...BUI_COL_BASE, key: `bui_type_upg`,           type: TYPE_ANY, colspan: 3},
-  {...BUI_COL_BASE, key: s.STAT_TYPE_DMG_DONE,     type: TYPE_NUM, colspan: 2},
-  {...BUI_COL_BASE, key: s.STAT_TYPE_DMG_OVER,     type: TYPE_NUM, colspan: 2},
-  {...BUI_COL_BASE, key: s.STAT_TYPE_DMG_DONE_ACC, type: TYPE_NUM, colspan: 2, hide: true},
-  {...BUI_COL_BASE, key: s.STAT_TYPE_DMG_OVER_ACC, type: TYPE_NUM, colspan: 2, hide: true},
-  {...BUI_COL_BASE, key: s.STAT_TYPE_COST_EFF,     type: TYPE_NUM, colspan: 2},
-  {...BUI_COL_BASE, key: s.STAT_TYPE_COST_EFF_ACC, type: TYPE_NUM, colspan: 2, hide: true},
-  {...BUI_COL_BASE, key: `bui_cost`,               type: TYPE_NUM, colspan: 2},
+  {sortObs: BUI_SORT, key: `bui_type_upg`,           type: TYPE_ANY, colspan: 3},
+  {sortObs: BUI_SORT, key: s.STAT_TYPE_DMG_DONE,     type: TYPE_NUM, colspan: 2},
+  {sortObs: BUI_SORT, key: s.STAT_TYPE_DMG_OVER,     type: TYPE_NUM, colspan: 2},
+  {sortObs: BUI_SORT, key: s.STAT_TYPE_DMG_DONE_ACC, type: TYPE_NUM, colspan: 2, hide: true},
+  {sortObs: BUI_SORT, key: s.STAT_TYPE_DMG_OVER_ACC, type: TYPE_NUM, colspan: 2, hide: true},
+  {sortObs: BUI_SORT, key: s.STAT_TYPE_COST_EFF,     type: TYPE_NUM, colspan: 2},
+  {sortObs: BUI_SORT, key: s.STAT_TYPE_COST_EFF_ACC, type: TYPE_NUM, colspan: 2, hide: true},
+  {sortObs: BUI_SORT, key: `bui_cost`,               type: TYPE_NUM, colspan: 2},
 ]
 
 // SYNC[chi_stat_types].
@@ -534,33 +576,29 @@ export const CHI_STAT_TYPES = [
   s.STAT_TYPE_DMG_OVER_ACC,
 ]
 
-export const CHI_COL_BASE = {sortObs: CHI_SORT}
-
 // SYNC[chi_cols].
 export const CHI_COLS = [
-  {...CHI_COL_BASE, key: `chi_type`, type: TYPE_ANY, colspan: 3, pre: subRowPrefix},
-  ...a.map(CHI_STAT_TYPES, key => ({...CHI_COL_BASE, key, type: TYPE_NUM, colspan: 2})),
-  {...CHI_COL_BASE, key: `enabled`, type: TYPE_BOOL, colspan: 6, hide: true},
+  {sortObs: CHI_SORT, key: `chi_type`, type: TYPE_ANY, colspan: 3},
+  ...a.map(CHI_STAT_TYPES, key => ({sortObs: CHI_SORT, key, type: TYPE_NUM, colspan: 2})),
+  {sortObs: CHI_SORT, key: `enabled`, type: TYPE_BOOL, colspan: 6, hide: true},
 ]
-
-export const WEP_COL_BASE = {sortObs: WEP_SORT}
 
 // SYNC[wep_cols].
 export const WEP_COLS = [
-  {...WEP_COL_BASE, key: `wep_type`, type: TYPE_ANY, colspan: 3, pre: subRowPrefix},
-  {...WEP_COL_BASE, key: `range`,    type: TYPE_ANY, hide: true},
-  {...WEP_COL_BASE, key: `mag`,      type: TYPE_NUM},
-  {...WEP_COL_BASE, key: `rof`,      type: TYPE_NUM},
-  {...WEP_COL_BASE, key: `rel`,      type: TYPE_NUM},
-  {...WEP_COL_BASE, key: `dmg`,      type: TYPE_NUM},
-  {...WEP_COL_BASE, key: `targs`,    type: TYPE_NUM},
-  {...WEP_COL_BASE, key: `dmg_base`, type: TYPE_NUM, hide: true},
-  {...WEP_COL_BASE, key: `dmg_perc`, type: TYPE_PERC_MOD, hide: true},
-  {...WEP_COL_BASE, key: `air`,      type: TYPE_PERC_MOD},
-  {...WEP_COL_BASE, key: `shield`,   type: TYPE_PERC_MOD},
-  {...WEP_COL_BASE, key: `aoe`,      type: TYPE_NUM, hide: true},
-  {...WEP_COL_BASE, key: `detec`,    type: TYPE_BOOL, hide: true},
-  {...WEP_COL_BASE, key: `targ`,     type: TYPE_ANY, colspan: 2, hide: true},
+  {sortObs: WEP_SORT, key: `wep_type`, type: TYPE_ANY, colspan: 3},
+  {sortObs: WEP_SORT, key: `range`,    type: TYPE_ANY, hide: true},
+  {sortObs: WEP_SORT, key: `mag`,      type: TYPE_NUM},
+  {sortObs: WEP_SORT, key: `rof`,      type: TYPE_NUM},
+  {sortObs: WEP_SORT, key: `rel`,      type: TYPE_NUM},
+  {sortObs: WEP_SORT, key: `dmg`,      type: TYPE_NUM},
+  {sortObs: WEP_SORT, key: `targs`,    type: TYPE_NUM},
+  {sortObs: WEP_SORT, key: `dmg_base`, type: TYPE_NUM, hide: true},
+  {sortObs: WEP_SORT, key: `dmg_perc`, type: TYPE_PERC_MOD, hide: true},
+  {sortObs: WEP_SORT, key: `air`,      type: TYPE_PERC_MOD},
+  {sortObs: WEP_SORT, key: `shield`,   type: TYPE_PERC_MOD},
+  {sortObs: WEP_SORT, key: `aoe`,      type: TYPE_NUM, hide: true},
+  {sortObs: WEP_SORT, key: `detec`,    type: TYPE_BOOL, hide: true},
+  {sortObs: WEP_SORT, key: `targ`,     type: TYPE_ANY, colspan: 2, hide: true},
 ]
 
 validateColAlignment()
@@ -568,79 +606,73 @@ validateColAlignment()
 class RoundTable extends dr.MixReg(HTMLTableElement) {
   constructor(opt) {
     super()
-    E(this, {class: `w-full table media-pad`},
-      new TableHead(opt),
-      new TableBody(opt),
+    E(
+      this,
+      {class: `w-full table table-fixed border-collapse`},
+      new RoundTableHead(opt),
+      new RoundTableBody(opt),
     )
   }
 }
 
-class TableHead extends dr.MixReg(HTMLTableSectionElement) {
+class RoundTableHead extends dr.MixReg(HTMLTableSectionElement) {
   static localName = `thead`
 
   constructor() {
     super()
-    E(this, {}, a.map(BUI_COLS, Th))
+    for (const col of BUI_COLS) {
+      this.appendChild(new TableHeadCell({...col, sortObs: BUI_SORT}))
+    }
   }
 }
 
-class TableBody extends dr.MixReg(HTMLTableSectionElement) {
+class RoundTableBody extends dr.MixReg(HTMLTableSectionElement) {
   static localName = `tbody`
-  sorted = false
+  inited = false
+  sorter = undefined
+  rowList = undefined
+  rowObs = a.obsRef()
 
   constructor(opt) {
     super()
-    const {tbodyRows} = roundTableRows(opt)
-    E(this, {}, tbodyRows)
-    ob.reac(this, this.onSort)
-    for (const row of this.rows) row.init()
-  }
-
-  onSort() {
-    a.each(SORTS, monitor)
-    const initial = !this.sorted
-    if (a.some(SORTS, isEnabled) || !initial) this.sort()
-    this.sorted = true
+    this.rowList = roundTableRows(opt).tbodyRows
+    this.sorter = a.recur(this, this.sort)
+    E(this, undefined, this.rowObs)
   }
 
   sort() {
-    const rows = a.arr(this.children).sort(compareRowsDeep)
-    setBuiInds(rows)
-    E(this, {}, rows)
+    a.each(SORTS, getVal)
+
+    let rows = this.rowList
+
+    if ((this.inited !== (this.inited = true)) || a.some(SORTS, isEnabled)) {
+      rows = a.sort(this.rowList, compareRowsDeep)
+    }
+
+    afterSort(rows)
+    this.rowObs.val = rows
   }
 }
 
 class TableRow extends dr.MixReg(HTMLTableRowElement) {
   parent = undefined
+  ancs = undefined
   sortInd = undefined
   sortObs = undefined
-  showRow = undefined
   cellDict = undefined
 
-  constructor({parent, sortInd, sortObs, showRow} = {}) {
+  constructor({parent, sortInd, sortObs} = {}) {
     super()
     this.parent = a.optNode(parent)
     this.sortInd = a.reqNat(sortInd)
     this.sortObs = a.optInst(sortObs, SortObs)
-    this.showRow = a.optObj(showRow)
   }
-
-  // Should be called by `tbody` after sorting.
-  init() {
-    const {showRow} = this
-    if (showRow) ob.reac(this, this.onShow)
-  }
-
-  onShow() {this.hidden = !a.optBool(this.showRow.val)}
 
   isSortable() {return true}
+  afterSort() {}
+  getCell(key) {return this.getCellDict()[a.reqValidStr(key)]}
 
-  getCell(key) {
-    a.reqValidStr(key)
-    return this.getCellIndex()[key]
-  }
-
-  getCellIndex() {
+  getCellDict() {
     if (this.cellDict) return this.cellDict
     const out = a.Emp()
     for (const node of this.cells) {
@@ -650,7 +682,12 @@ class TableRow extends dr.MixReg(HTMLTableRowElement) {
     return this.cellDict = out
   }
 
-  ancs = undefined
+  ancestorLen() {
+    let out = 0
+    let val = this
+    while (a.isSome(val = val.parent)) out++
+    return out
+  }
 
   ancestors() {
     let out = this.ancs
@@ -663,25 +700,62 @@ class TableRow extends dr.MixReg(HTMLTableRowElement) {
   }
 }
 
-class PseudoHeadRow extends TableRow {
-  constructor({cols, ...opt}) {
+class SubRow extends TableRow {
+  pre = ui.Pale()
+
+  constructor({showRow, ...opt}) {
     super(opt)
-    E(this, {class: `tr-sub`}, a.map(cols, Th))
+    E(this, () => ({class: `tr-sub`, hidden: !showRow.val}))
   }
+
+  afterSort({rows, ind}) {
+    this.pre.textContent = a.reqStr(rowPre(this, ind, rows))
+  }
+}
+
+class SubRowTheadPseudo extends SubRow {
+  constructor({cols, ...opt}) {
+    E(
+      super(opt),
+      undefined,
+      a.reqArr(cols).map(a.bind(Th, {headPre: this.pre})),
+    )
+  }
+
   isSortable() {return false}
 }
 
-function Th(opt) {return new TableHeadCell(opt)}
+class SubRowTr extends SubRow {
+  constructor({data, total, cols, ...opt}) {
+    E(
+      super(opt),
+      undefined,
+      a.reqArr(cols).map(a.bind(Td, {data, total, headPre: this.pre})),
+    )
+  }
+}
+
+function Th({headPre, headSuf}, col, ind) {
+  const isHead = ind === 0
+
+  return new TableHeadCell({
+    ...a.reqDict(col),
+    pre: a.vac(isHead) && headPre,
+    suf: a.vac(isHead) && headSuf,
+  })
+}
 
 class TableHeadCell extends dr.MixReg(HTMLTableCellElement) {
   static localName = `th`
-  key = undefined
   sortObs = undefined
+  key = undefined
+  pre = undefined
+  sort = new Text()
 
-  constructor({key, sortObs, pre, colspan, hide, attrs}) {
+  constructor({sortObs, key, colspan, hide, pre, suf, attrs}) {
     super()
-    this.key = a.reqValidStr(key)
     this.sortObs = a.reqInst(sortObs, SortObs)
+    this.key = a.reqValidStr(key)
 
     E(
       this,
@@ -689,37 +763,61 @@ class TableHeadCell extends dr.MixReg(HTMLTableCellElement) {
         ...a.optDict(attrs),
         colspan,
         class: a.spaced(
+          CLS_CELL_HEAD,
           attrs?.class,
-          ui.CLS_TEXT_GRAY,
-          CLS_CELL_COMMON,
-          `cursor-pointer pb-1`,
-          ui.CLS_BUSY_BG,
           a.vac(a.optBool(hide) && CLS_HIDE_BELOW),
         ),
       },
-      u.callOpt(pre),
+      pre,
+      this.sortIndicator.bind(this),
       ui.withGlossary({
-        key,
-        elem: ui.Span(key),
-        glos: STAT_GLOSSARY,
-        under: true,
+        key, elem: ui.Span(key), glos: STAT_GLOSSARY, under: true,
       }),
+      suf,
     )
     this.onclick = this.onClick
-    ob.reac(this, this.onSort)
   }
 
-  onClick() {this.sortNext()}
+  sortIndicator() {
+    const {key, desc} = this.sortObs.val
+    if (key !== this.key) return ``
+    if (a.isNil(desc)) return ``
+    if (desc) return `▼ `
+    return `△ `
+  }
+
+  onClick(eve) {
+    if (u.isEventModifiedPrimary(eve)) return
+    this.sortNext()
+  }
 
   sortNext() {
     const {key, sortObs} = this
     sortObs.val = cycleSort(key, sortObs.val)
   }
+}
 
-  onSort() {
-    const {key, desc} = this.sortObs.val
-    E(this, {'aria-sort': ariaSort(a.vac(key === this.key) && desc)})
+function Td({data, total, headPre, headSuf}, col, ind) {
+  const {key} = col
+
+  if (u.DEV) {
+    a.reqDict(data)
+    a.optDict(total)
+    reqCol(data, key)
   }
+
+  const val = data[key]
+  const perc = total && percOpt(val, total[key])
+  const isHead = ind === 0
+
+  return new TableCell({
+    ...col,
+    ind,
+    val,
+    perc,
+    pre: a.vac(isHead) && headPre,
+    suf: a.vac(isHead) && headSuf,
+  })
 }
 
 class TableCell extends dr.MixReg(HTMLTableCellElement) {
@@ -727,165 +825,95 @@ class TableCell extends dr.MixReg(HTMLTableCellElement) {
 
   type = a.optStr()
   key = a.optValidStr()
-  pre = undefined
   val = undefined
-  suf = undefined
   perc = a.optFin()
-  tooltip = undefined
 
-  constructor({type, key, val, pre, suf, colspan, hide, attrs}) {
+  constructor({type, key, val, perc, pre, suf, colspan, hide, attrs}) {
     super()
     this.type = a.optStr(type)
     this.key = a.reqValidStr(key)
     this.val = val
-    this.pre = pre
-    this.suf = suf
+    this.perc = a.optFin(perc)
 
-    E(this, {
-      ...a.optDict(attrs),
-      colspan,
-      class: a.spaced(
-        attrs?.class,
-        CLS_CELL_COMMON,
-        a.vac(a.optBool(hide) && CLS_HIDE_BELOW),
+    return E(
+      this,
+      {
+        ...a.optDict(attrs),
+        colspan,
+        class: a.spaced(
+          attrs?.class,
+          CLS_CELL_COMMON,
+          a.vac(a.optBool(hide) && CLS_HIDE_BELOW),
+        ),
+      },
+      pre,
+      (
+        type === TYPE_NUM && a.isSome(perc)
+        ? this.inner.bind(this)
+        : this.fmtVal()
       ),
-    })
-    this.drawVal()
-  }
-
-  setPre(val) {this.pre = val}
-  setSuf(val) {this.suf = val}
-
-  addPref(...chi) {
-    if (a.isSome(this.val)) this.val = [...chi, this.val]
-    return this
-  }
-
-  addPerc(val) {
-    if (!a.isFin(this.val) || !a.onlyFin(val)) return
-    this.perc = a.onlyFin(this.val / val)
-    ob.reac(this, this.onNumMode)
-  }
-
-  // TODO: more colors for different types.
-  showVal() {
-    const {type, val} = this
-    return fmtVal(type, val)
-  }
-
-  showPerc() {
-    return E(`span`, {class: `text-sky-700 dark:text-sky-300`},
-      u.callOpt(this.pre),
-      fmtNumPerc(this.perc),
-      u.callOpt(this.suf),
+      suf,
     )
   }
 
-  drawVal() {
-    return E(this, {},
-      u.callOpt(this.pre), this.showVal(), u.callOpt(this.suf),
-    )
-  }
-
-  drawPerc() {
-    return E(this, {},
-      u.callOpt(this.pre), this.showPerc(), u.callOpt(this.suf),
-    )
-  }
-
-  drawBoth() {
-    return E(this, {},
-      u.callOpt(this.pre),
-      E(`span`, {class: `flex row-bet-cen gap-2`},
-        E(`span`, {class: `trunc`}, this.showVal()),
-        this.showPerc(),
-      ),
-      u.callOpt(this.suf),
-    )
-  }
-
-  onNumMode() {
-    const {type} = this
-    if (type !== TYPE_NUM) return this.drawVal()
+  inner() {
+    const {type, perc} = this
+    if (type !== TYPE_NUM) return this.fmtVal()
 
     const mode = NUM_MODE.val
-    if (mode === NUM_MODE_NUM) return this.drawVal()
-    if (mode === NUM_MODE_PERC) return this.drawPerc()
+    if (mode === NUM_MODE_NUM) return this.fmtVal()
 
-    const {val, perc} = this
-    if (a.isNil(perc)) return this.drawVal()
-    if (a.isNil(val)) return this.drawPerc()
-    return this.drawBoth()
-  }
-}
-
-function Tds(src, cols) {
-  a.reqDict(src)
-  const out = []
-
-  for (const col of a.values(cols)) {
-    const {key} = a.reqDict(col)
-    a.reqValidStr(key)
-
-    if (u.DEV && !a.hasOwn(src, key)) {
-      throw Error(`internal: missing column ${a.show(key)} in ${a.show(src)}`)
+    if (mode === NUM_MODE_PERC) {
+      return E(`span`, {class: CLS_PERC}, this.fmtPerc())
     }
 
-    const val = src[key]
-    out.push(new TableCell({...col, val}))
-  }
-  return out
-}
+    if (a.isNil(perc)) return this.fmtVal()
 
-export const SHOW_CHI = u.storageObsBool(`tabularius.round_table.show_chi`)
+    return E(`span`, {class: `flex row-bet-cen gap-2`},
+      E(`span`, {class: `trunc`}, this.fmtVal()),
+      E(`span`, {class: CLS_PERC}, this.fmtPerc()),
+    )
+  }
+
+  fmtVal() {return fmtVal(this.type, this.val)}
+  fmtPerc() {return fmtNumPerc(this.perc)}
+}
 
 class BuiRow extends TableRow {
-  buiInd = ob.obsRef()
-  showRow = ob.obsRef(true)
-  showChi = ob.obsRef(SHOW_CHI.val)
+  sortObs = BUI_SORT
+  buiInd = a.obsRef()
+  showRow = a.calc(this, calcShowRow)
+  expandChi = a.calc(SHOW_CHI, getVal)
+  showChi = a.calc(this, calcShowChi)
 
-  constructor({buiData, buiInd, hasAssoc, ...opt}) {
-    super({sortObs: BUI_SORT, ...opt})
+  constructor({buiInd, sortInd, data, total, chiDatas, hasAssoc}) {
+    super({sortInd})
 
-    this.setBuiInd(buiInd)
-    this.append(...Tds(buiData, BUI_COLS))
+    this.buiInd.val = a.reqNat(buiInd)
 
-    if (a.reqBool(hasAssoc)) {
-      this.onclick = this.onClick
-      ui.addCls(this, `cursor-pointer`)
-      ui.addCls(this, ui.CLS_BUSY_BG)
-    }
+    const headSuf = (
+      a.len(chiDatas) === 1
+      ? [`: `, ui.Muted(a.head(chiDatas)[a.reqValidStr(a.head(CHI_COLS).key)])]
+      : a.len(chiDatas) > 1
+      ? [`: `, ui.Muted(a.len(chiDatas))]
+      : undefined
+    )
+
+    E(
+      this,
+      () => ({
+        class: a.spaced(
+          CLS_ROW_TOP,
+          a.vac(hasAssoc) && a.spaced(`cursor-pointer`, ui.CLS_BUSY_BG),
+        ),
+        hidden: !this.showRow.val,
+        onclick: a.vac(hasAssoc) && this.onClick,
+      }),
+      BUI_COLS.map(a.bind(Td, {data, total, headSuf})),
+    )
   }
 
-  // Should be called by `tbody` after sorting.
-  init() {ob.reac(this, this.onLongInd, this.onShow)}
-
-  setBuiInd(val) {this.buiInd.val = a.reqNat(val)}
-
-  addPerc(total) {
-    a.reqDict(total)
-    for (const type of BUI_STAT_TYPES) {
-      this.getCell(type)?.addPerc(total[type])
-    }
-  }
-
-  onLongInd() {
-    const long = a.laxBool(LONG.val)
-    const ind = this.buiInd.val
-
-    if (u.DEV) a.reqNat(ind)
-    else if (!a.isNat(ind)) return
-
-    this.showRow.val = long || (ind <= LONG_ROW_BREAKPOINT)
-  }
-
-  onShow() {
-    const showBui = this.showRow.val
-    const showChi = SHOW_CHI.val
-
-    this.hidden = !showBui
-    this.showChi.val = a.laxBool(showChi && showBui)
-  }
+  afterSort({buiInd}) {this.buiInd.val = a.reqNat(buiInd)}
 
   /*
   When clicking a bui row to toggle its children, we actually want other bui
@@ -900,26 +928,29 @@ class BuiRow extends TableRow {
   target. Inverse for a row whose assoc rows are visible.
   */
   onClick(eve) {
-    const show = !this.showChi.val
-    this.showChi.val = show
+    const show = !this.expandChi.val
+    this.expandChi.val = show
 
     if (!u.isEventModifiedPrimary(eve)) return
 
     SHOW_CHI.val = show
 
-    // Rerun all subscribers even if the value didn't change.
+    // Rerun all observers even if the value didn't change.
     // This causes all manually opened bui rows to close when `!show`.
-    SHOW_CHI.trigger()
+    SHOW_CHI.flush()
   }
 }
 
-class ChiRow extends TableRow {
-  addPerc(total) {
-    a.reqDict(total)
-    for (const type of CHI_STAT_TYPES) {
-      this.getCell(type)?.addPerc(total[type])
-    }
-  }
+function calcShowRow() {
+  const long = a.laxBool(LONG.val)
+  const ind = a.reqNat(this.buiInd.val)
+  return long || (ind <= LONG_ROW_BREAKPOINT)
+}
+
+function calcShowChi() {
+  const showRow = this.showRow.val
+  const expandChi = this.expandChi.val
+  return a.laxBool(showRow && expandChi)
 }
 
 class BuiLongToggleRow extends TableRow {
@@ -936,18 +967,20 @@ class BuiLongToggleRow extends TableRow {
 
     E(
       this,
-      {class: a.spaced(`cursor-pointer`, ui.CLS_BUSY_BG, ui.CLS_TEXT_GRAY, cls)},
-      E(`td`, {class: `text-center py-1`, colspan}),
+      {class: a.spaced(
+        CLS_ROW_TOP,
+        `cursor-pointer`, ui.CLS_BUSY_BG, ui.CLS_TEXT_MUTED,
+        cls,
+      )},
+      E(`td`, {class: `text-center py-1`, colspan}, this.text.bind(this)),
     )
     this.onclick = this.onClick
-    ob.reac(this, this.onLong)
   }
 
-  onLong() {
+  text() {
     const {lenBui, lenMax, obs} = this
     const show = a.optBool(obs.val)
-
-    this.cells[0].textContent = (
+    return (
       show
       ? `click to see first ${lenMax} of ${lenBui} buildings`
       : `click to show ${lenBui - lenMax} hidden buildings of ${lenBui}`
@@ -955,30 +988,6 @@ class BuiLongToggleRow extends TableRow {
   }
 
   onClick() {this.obs.val = !this.obs.val}
-}
-
-function addPseudoTableRows({
-  tbodyRows, Row, parent, cols, datas, total, ...opt
-}) {
-  a.reqArr(tbodyRows)
-
-  Row = a.optCls(Row) ?? TableRow
-
-  const head = new PseudoHeadRow({
-    parent, cols, sortInd: tbodyRows.length, ...opt
-  })
-
-  tbodyRows.push(head)
-
-  for (const src of datas) {
-    const row = E(
-      new Row({parent: head, sortInd: tbodyRows.length, ...opt}),
-      {class: `tr-sub`},
-      Tds(src, cols),
-    )
-    if (total) row.addPerc(total)
-    tbodyRows.push(row)
-  }
 }
 
 function roundTableRows({round, user_id, run_num, run_ms}) {
@@ -989,23 +998,28 @@ function roundTableRows({round, user_id, run_num, run_ms}) {
     tables: {round_buis: true},
   })
 
+  const buiEntries = a.entries(round.Buildings)
   const buiTotal = a.Emp()
+  const buiDatas = a.Emp()
   const tbodyRows = []
   const buiRows = []
 
-  for (const [bui_inst, bui] of a.entries(round.Buildings)) {
+  for (const [bui_inst] of buiEntries) {
     const round_bui = a.reqDict(dat.round_buis[bui_inst])
-    addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal})
+    buiDatas[bui_inst] = buiStatData({round_bui, buiTotal})
+  }
+
+  for (const [bui_inst, bui] of buiEntries) {
+    const round_bui = a.reqDict(dat.round_buis[bui_inst])
+    const buiData = buiDatas[bui_inst]
+    addRoundTableRows({tbodyRows, buiRows, bui, buiData, round_bui, buiTotal})
   }
 
   addBuiToggleRows({tbodyRows, buiRows})
-
-  for (const row of buiRows) row.addPerc(buiTotal)
-
   return {tbodyRows, buiRows}
 }
 
-function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
+function addRoundTableRows({tbodyRows, buiRows, bui, buiData, round_bui, buiTotal}) {
   a.reqArr(tbodyRows)
   a.reqArr(buiRows)
 
@@ -1029,32 +1043,25 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
   }
 
   // SYNC[bui_has_assoc].
-  const hasAssoc = (chiDatas.length > 1) || !!wepDatas.length
-  const buiData = buiStatData({round_bui, buiTotal})
+  const hasAssoc = (chiDatas.length > 1) || (wepDatas.length > 0)
+
   const buiRow = new BuiRow({
-    buiData, buiInd: buiRows.length, sortInd: tbodyRows.length, hasAssoc,
+    buiInd: buiRows.length, sortInd: tbodyRows.length,
+    data: buiData, total: buiTotal, chiDatas, hasAssoc,
   })
 
   tbodyRows.push(buiRow)
   buiRows.push(buiRow)
 
-  if (chiDatas.length) {
-    const head = buiRow.cells[0]
+  // SYNC[bui_has_assoc].
+  if (chiDatas.length > 1) {
     const cols = CHI_COLS
     const sortObs = CHI_SORT
 
-    // SYNC[bui_has_assoc].
-    if (chiDatas.length === 1) {
-      const key = a.reqValidStr(a.head(cols).key)
-      head.setSuf([`: `, ui.Muted(chiDatas[0][key])])
-    }
-    else {
-      addPseudoTableRows({
-        tbodyRows, Row: ChiRow, parent: buiRow, cols, datas: chiDatas,
-        sortObs, showRow: buiRow.showChi, total: chiTotal,
-      })
-      head.setSuf([`: `, ui.Muted(chiDatas.length)])
-    }
+    addPseudoTableRows({
+      tbodyRows, parent: buiRow, cols, datas: chiDatas,
+      sortObs, showRow: buiRow.showChi, total: chiTotal,
+    })
   }
 
   if (wepDatas.length) {
@@ -1065,6 +1072,26 @@ function addRoundTableRows({tbodyRows, buiRows, bui, round_bui, buiTotal}) {
       tbodyRows, parent: buiRow, cols, datas: wepDatas,
       sortObs, showRow: buiRow.showChi,
     })
+  }
+}
+
+function addPseudoTableRows({
+  tbodyRows, parent, cols, datas, total, sortObs, ...opt
+}) {
+  a.reqArr(tbodyRows)
+  a.reqArr(datas)
+
+  const head = new SubRowTheadPseudo({
+    parent, cols, sortInd: tbodyRows.length, sortObs, ...opt
+  })
+
+  tbodyRows.push(head)
+
+  for (const data of datas) {
+    tbodyRows.push(new SubRowTr({
+      parent: head, sortInd: tbodyRows.length, sortObs,
+      data, total, cols, ...opt,
+    }))
   }
 }
 
@@ -1167,12 +1194,11 @@ function wepDetailData(wep) {
   )
 
   out.mag = wep.MagazineSize
-  out.rel = reify(wep.ReloadTime)
+  out.rel = reifyReload(wep.ReloadTime)
   out.rof = reify(wep.RateOfFire)
 
   const targs = wep.TargetingPriorities
 
-  // TODO move the tooltip to the `td` and get rid of the span.
   out.targ = a.vac(targs) && ui.withTooltip({
     elem: ui.Span(abbrs(targs)),
     chi: a.joinLines(targs),
@@ -1201,9 +1227,8 @@ function wepDetailData(wep) {
 }
 
 // TODO simplify, add explanatory comments.
-export function compareRowsDeep(one, two) {
-  reqRow(one)
-  reqRow(two)
+function compareRowsDeep(one, two) {
+  if (u.DEV) reqRow(one), reqRow(two)
 
   const oneAncs = one.ancestors()
   const twoAncs = two.ancestors()
@@ -1240,7 +1265,7 @@ export function compareRowsDeep(one, two) {
 }
 
 // TODO simplify, add explanatory comments.
-export function compareRows(one, two) {
+function compareRows(one, two) {
   if (one === two) return 0
   if (a.isNil(two.sortInd)) return -1
   if (a.isNil(one.sortInd)) return 1
@@ -1279,56 +1304,43 @@ function withGlossary(key, elem) {
   return ui.withGlossary({elem, key, glos: STAT_GLOSSARY, under: true})
 }
 
-function subRowPrefix() {
-  return ui.Muted(`└ `)
-}
-
-function BtnAppend(suf, eph) {
+function BtnReplace(suf, eph) {
   return ui.BtnPrompt({cmd: cmdShowRound.cmd, suf, eph, full: true})
 }
 
-function BtnAppendEph(eph) {
-  return ui.BtnPrompt({cmd: cmdShowRound.cmd, eph, full: true})
-}
+function BtnReplaceEph(eph) {return BtnReplace(undefined, eph)}
 
 class ObsCheckbox extends dr.MixReg(HTMLLabelElement) {
-  obs = undefined
   input = undefined
 
   constructor({label, obs, tooltip, onchange}) {
     super()
-    this.obs = a.reqObj(obs)
-
-    let span
-
-    if (tooltip) {
-      span = ui.Span(label)
-      ui.addCls(span, ui.CLS_HELP_UNDER)
-      ui.withTooltip({elem: span, chi: tooltip})
-      span = ui.Muted(span, `:`)
-    }
-    else {
-      span = ui.Muted(label, `:`)
-    }
+    a.reqRec(obs)
 
     E(
       this,
       {class: `inline-flex row-sta-cen gap-2 cursor-pointer`},
-      span,
-      this.input = E(`input`, {
+
+      ui.Muted((
+        tooltip
+        ? ui.withTooltip({
+          chi: tooltip,
+          elem: ui.clsAdd(ui.Span(label), ui.CLS_HELP_UNDER),
+        })
+        : label
+      ), `:`),
+      E(`input`, () => ({
         type: `checkbox`,
         value: ``,
         class: `cursor-pointer`,
+        checked: a.laxBool(obs.val),
         onchange() {
           obs.val = this.checked
           onchange?.call(this, obs.val)
         },
-      }),
+      })),
     )
-    ob.reac(this, this.onObs)
   }
-
-  onObs() {this.input.checked = a.laxBool(this.obs.val)}
 }
 
 class ObsRadio extends dr.MixReg(HTMLFieldSetElement) {
@@ -1337,21 +1349,15 @@ class ObsRadio extends dr.MixReg(HTMLFieldSetElement) {
   constructor({label, obs, vals}) {
     super()
     a.reqSome(label)
-    this.obs = a.reqObj(obs)
+    this.obs = a.reqRec(obs)
     const name = a.uuid()
 
     E(
       this,
       {class: `inline-flex row-sta-cen gap-2`, onchange: onNumModeChange},
-      E(`span`, {class: a.spaced(ui.CLS_TEXT_GRAY, `trunc`)}, label, `:`),
+      E(`span`, {class: a.spaced(ui.CLS_TEXT_MUTED, `trunc`)}, label, `:`),
       a.map(vals, val => ObsRadioInput({val, obs, name})),
     )
-    ob.reac(this, this.onObs)
-  }
-
-  onObs() {
-    const val = this.obs.val
-    for (const elem of this.elements) elem.checked = elem.value === val
   }
 }
 
@@ -1359,7 +1365,7 @@ function onNumModeChange(eve) {NUM_MODE.val = eve.target.value}
 
 function ObsRadioInput({val, obs, name}) {
   a.reqStr(val)
-  a.reqObj(obs)
+  a.reqRec(obs)
   a.optStr(name)
 
   return E(
@@ -1367,14 +1373,14 @@ function ObsRadioInput({val, obs, name}) {
     {class: `flex row-sta-cen gap-1 cursor-pointer`},
     E(
       `input`,
-      {
+      () => ({
         type: `radio`,
         class: `cursor-pointer`,
         name,
         value: val,
         checked: a.laxStr(obs.val) === val,
         onchange() {obs.val = this.value},
-      },
+      }),
     ),
     E(`span`, {class: `flex row-cen-cen trunc-base`}, val || `all`),
   )
@@ -1404,12 +1410,29 @@ const STAT_GLOSSARY = u.dict({
 })
 
 // All values in the game are supposed to be calculated like this.
-export function reify(src) {
-  if (!a.optObj(src)) return undefined
+function reify(src) {
+  if (!a.optRec(src)) return undefined
   const base = a.laxFin(src.baseValue)
   const baseMod = a.laxFin(src.rawModifier)
   const percMod = a.laxFin(src.pctModifier)
   return (base + baseMod) * (1 + (percMod / 100))
+}
+
+/*
+The game seems to calculate reload differently than other values. It seems to
+treat the base value as reload time in seconds, while treating the percentages
+as modifiers for reload _speed_ rather than time, and with an opposite sign to
+boot. Negative sign seems to be treated as reload speed bonus, and vice versa.
+*/
+function reifyReload(src) {
+  if (!a.optRec(src)) return undefined
+  const timeBase = a.laxFin(src.baseValue)
+  const timeMod = a.laxFin(src.rawModifier)
+  const speedPercMod = a.laxFin(src.pctModifier)
+  const time = timeBase + timeMod
+  const speedBase = 1 / time
+  const speedFinal = speedBase * (1 + (-speedPercMod / 100))
+  return 1 / speedFinal
 }
 
 let FMT_WARNED = false
@@ -1433,6 +1456,10 @@ function fmtVal(type, val) {
 }
 
 function checktick(val) {return a.vac(a.optBool(val)) && `✓`}
+
+function percOpt(one, two) {
+  return a.isFin(one) && a.isFin(two) ? a.onlyFin(one / two) : undefined
+}
 
 function fmtNum(src) {
   return finOpt(src) && ui.formatNumCompact(src)
@@ -1499,7 +1526,7 @@ function shouldShowWep(wep, stats) {
 Takes a list of keys and a set of dicts, and "bins" the keys into groups
 according to which dicts they occur in.
 */
-export function bin(src, dicts) {
+function bin(src, dicts) {
   const len = a.reqArr(dicts).length
   const keyToInd = a.Emp()
 
@@ -1520,15 +1547,7 @@ export function bin(src, dicts) {
 }
 
 function reqRow(val) {return a.reqInst(val, TableRow)}
-// function strOpt(val) {return a.optStr(val) || undefined}
 function finOpt(val) {return a.optFin(val) || undefined}
-
-function ariaSort(desc) {
-  a.optBool(desc)
-  if (desc === false) return `ascending`
-  if (desc === true) return `descending`
-  return undefined
-}
 
 function cycleSort(key, opt) {
   a.reqValidStr(key)
@@ -1569,16 +1588,70 @@ function abbrs(src) {return a.spaced(...a.map(src, abbr))}
 function abbr(src) {return Words.from(src).abbr()}
 function first(src) {return src[0]}
 function isEnabled(val) {return val.isEnabled()}
-function monitor(val) {a.nop(a.reqObj(val).val)}
+function getVal(val) {return a.reqObs(val).val}
 
-function setBuiInds(rows) {
-  a.reqArr(rows)
+function reqCol(src, key) {
+  a.reqValidStr(key)
+  if (a.hasOwn(src, key)) return
+  throw Error(`internal: missing column ${a.show(key)} in ${a.show(src)}`)
+}
 
-  let buiCount = 0
+function afterSort(rows) {
+  let ind = -1
+  let buiInd = -1
 
   for (const row of rows) {
-    if (!a.isInst(row, BuiRow)) continue
-    row.setBuiInd(buiCount++)
+    ind++
+    if (a.isInst(row, BuiRow)) buiInd++
+    row.afterSort({rows, ind, buiInd})
   }
-  return buiCount
+}
+
+function rowPre(row, ind, rows) {
+  a.reqNat(ind)
+  a.reqArr(rows)
+
+  const ancs = a.reqArr(row.ancestors())
+  const lvls = ancs.length
+  if (!lvls) return ``
+
+  const prev = rows[ind - 1]
+  const next = rows[ind + 1]
+  const prevAncs = a.optArr(prev?.ancestors())
+  const nextAncs = a.optArr(next?.ancestors())
+
+  let pre = ``
+  let lvl = -1
+
+  while (++lvl < lvls) {
+    const anc = a.reqSome(ancs[lvl])
+    const lvlLast = lvl >= lvls - 1
+
+    const upAnc = anc === prevAncs?.[lvl] || anc === prev
+    const upShow = upAnc && !(prevAncs?.length > lvls)
+
+    const downAnc = anc === nextAncs?.[lvl] || anc === next
+    const downShow = downAnc && !(nextAncs?.length > lvls)
+
+    pre += (
+      !lvlLast
+      ? (upAnc ? `  ` : `──`)
+      : (
+        upShow && downShow
+        ? `├─`
+        : upShow && !downShow
+        ? `└─`
+        : !upShow && downShow
+        ? `┌─`
+        : `  `
+      )
+    )
+  }
+  return pre
+}
+
+export function apiDownloadRound(sig, path) {
+  const url = u.paths.join(u.API_URL, `download_round`, a.laxStr(path))
+  const opt = {signal: u.reqSig(sig)}
+  return u.fetchJson(url, opt)
 }
