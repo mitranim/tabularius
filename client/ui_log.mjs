@@ -1,7 +1,7 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
-import * as u from './util.mjs'
 import {E} from './ui_util.mjs'
+import * as u from './util.mjs'
 import * as uu from './ui_util.mjs'
 import * as ui from './ui.mjs'
 
@@ -153,7 +153,7 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
     const isErr = type === `err`
     const isInp = type === `inp`
 
-    const msg = MSG_REN.E(
+    const msg = E(
       new this(),
       {
         class: a.spaced(
@@ -210,10 +210,3 @@ function LogPrefix(inp) {
     )
   })
 }
-
-const MSG_REN = new class MsgRen extends uu.Ren {
-  renderOpt(src, key) {
-    if (u.DEV) return super.renderOpt(src, key)
-    return a.renderOpt(src) ?? a.show(src)
-  }
-}()
