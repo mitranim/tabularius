@@ -2,7 +2,6 @@ import * as a from '@mitranim/js/all.mjs'
 import * as dr from '@mitranim/js/dom_reg.mjs'
 import {E} from './ui_util.mjs'
 import * as u from './util.mjs'
-import * as uu from './ui_util.mjs'
 import * as ui from './ui.mjs'
 
 a.ShedMicro.main.onerror = logErr

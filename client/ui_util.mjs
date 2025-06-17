@@ -9,12 +9,6 @@ namespace.lib.a = a
 namespace.lib.dr = dr
 a.patch(globalThis, namespace)
 
-/*
-Needed for `dr.MixReg`, which enables automatic registration of any custom
-elements that we define.
-*/
-dr.Reg.main.setDefiner(customElements)
-
 export class Ren extends a.Ren {
   /*
   Hook Twind into our rendering system. It generates Tailwind-compliant styles
@@ -66,14 +60,24 @@ export function clsToggle(tar, ok, cls) {
 
 function splitClasses(src) {return a.split(src, /\s+/)}
 
-export function isElemInput(val) {
+export function isElemInteractive(val) {
   return a.isElement(val) && (
+    a.isInst(val, HTMLAnchorElement) ||
+    a.isInst(val, HTMLAudioElement) ||
+    a.isInst(val, HTMLButtonElement) ||
+    a.isInst(val, HTMLDetailsElement) ||
+    a.isInst(val, HTMLDialogElement) ||
+    a.isInst(val, HTMLEmbedElement) ||
     a.isInst(val, HTMLInputElement) ||
-    a.isInst(val, HTMLTextAreaElement) ||
+    a.isInst(val, HTMLLabelElement) ||
+    a.isInst(val, HTMLOptionElement) ||
     a.isInst(val, HTMLSelectElement) ||
+    a.isInst(val, HTMLTextAreaElement) ||
+    a.isInst(val, HTMLVideoElement) ||
     val.contentEditable === `true` ||
     val.contentEditable === `plaintext-only` ||
-    val.role === `textbox`
+    val.role === `textbox` ||
+    globalThis.getComputedStyle?.(val).cursor === `pointer`
   )
 }
 

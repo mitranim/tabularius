@@ -5,8 +5,6 @@ import * as u from './util.mjs'
 import * as os from './os.mjs'
 import * as ui from './ui.mjs'
 
-// SYNC[prompt_focus_key].
-export const PROMPT_FOCUS_KEY = `/`
 export const PROMPT_HIST_KEY = `tabularius.prompt_hist`
 export const PROMPT_HIST_MAX = 256
 
@@ -57,10 +55,10 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
 
   onBlur() {
     if (this.type === `password`) {
-      this.placeholder = `type a passphrase/password or press Esc to cancel; press ${a.show(PROMPT_FOCUS_KEY)} to focus`
+      this.placeholder = `type a passphrase/password or press Esc to cancel`
     }
     else {
-      this.placeholder = `type a command (try "help" or "help <some_cmd>"; press ${a.show(PROMPT_FOCUS_KEY)} to focus)`
+      this.placeholder = `type a command (try "help" or "help <some_cmd>")`
     }
   }
 
@@ -91,11 +89,6 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
       a.eventKill(eve)
       this.onSubmit()
       return
-    }
-
-    // Lets the user spam the prompt-focusing key.
-    if (eve.key === PROMPT_FOCUS_KEY && !this.value) {
-      a.eventKill(eve)
     }
   }
 
@@ -266,14 +259,23 @@ export function BtnPromptReplace(args) {
 
 // Shortcut for focusing the prompt input.
 export function onKeydownFocusPrompt(eve) {
-  if (
-    eve.key === PROMPT_FOCUS_KEY &&
-    !a.findAncestor(eve.target, ui.isElemInput)
-  ) {
-    // Prevent the prompt-focusing character from being typed.
-    a.eventKill(eve)
-    PROMPT_INPUT.focus()
+  if (document.activeElement === PROMPT_INPUT) return
+  if (eve.ctrlKey) return
+  if (eve.metaKey) return
+  if (eve.altKey) return
+
+  const {key} = eve
+
+  // According to bots, unprintable characters end at 31,
+  // which is patently false. TODO improve.
+  if (!(key.charCodeAt(0) > 31)) return
+
+  if (a.findAncestor(eve.target, ui.isElemInteractive)) {
+    if (key === `Escape`) PROMPT_INPUT.focus()
+    return
   }
+
+  PROMPT_INPUT.focus()
 }
 
 function histStore(store, hist, val) {

@@ -17,7 +17,7 @@ namespace.ui = ui
 a.patch(globalThis, namespace)
 
 // Increment by 1 when publishing an update.
-const VERSION = 122
+const VERSION = 123
 let INITED
 
 /*

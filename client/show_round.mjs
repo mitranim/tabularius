@@ -775,6 +775,8 @@ class TableHeadCell extends dr.MixReg(HTMLTableCellElement) {
       }),
       suf,
     )
+
+    // TODO: add a `.tabIndex` and a proper `.onkeydown`.
     this.onclick = this.onClick
   }
 
@@ -1329,6 +1331,7 @@ class ObsCheckbox extends dr.MixReg(HTMLLabelElement) {
         })
         : label
       ), `:`),
+
       E(`input`, () => ({
         type: `checkbox`,
         value: ``,

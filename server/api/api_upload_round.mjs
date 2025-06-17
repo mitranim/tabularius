@@ -15,7 +15,7 @@ let TIMER_ID = 0
 export async function apiUploadRound(ctx, req) {
   const id = ++TIMER_ID
   console.time(`[upload_${id}]`)
-  try {return new u.Res(a.jsonEncode(await uploadRound(ctx, req)))}
+  try {return new u.Res(a.jsonEncode(await uploadRound(ctx, req)), {status: 201})}
   finally {console.timeEnd(`[upload_${id}]`)}
 }
 

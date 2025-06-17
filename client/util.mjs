@@ -705,7 +705,7 @@ export function isEventModifiedPrimary(eve) {
   return (
     a.isEvent(eve) &&
     !eve.altKey &&
-    (eve.ctrlKey || eve.metaKey) &&
-    !eve.shiftKey
+    !eve.shiftKey &&
+    (eve.ctrlKey || eve.metaKey)
   )
 }
