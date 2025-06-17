@@ -204,7 +204,7 @@ async function watchStep(sig, state) {
   const nameSplit = runDirName ? s.splitRunName(runDirName) : []
   const prevRunNum = a.laxNat(nameSplit?.[0])
   const prevRunMs = a.onlyNat(nameSplit?.[1]) ?? Date.now()
-  const nextFileName = u.makeRoundFileNameBase(nextRoundNum) + u.paths.ext(state.progressFileHandle.name)
+  const nextFileName = s.makeRoundFileNameBase(nextRoundNum) + u.paths.ext(state.progressFileHandle.name)
 
   const event = {
     type: `new_round`,
