@@ -342,6 +342,7 @@ class RoundHead extends ui.Elem {
       gc.CODES_TO_DOTATIONS,
     ])
     const frontierMods = round.OwnedExpertSkills
+    const blueprints = a.laxDict(round.Blueprints)
 
     const cmd = cmdShowRound.cmd
     args = u.stripPreSpaced(args, cmd)
@@ -401,10 +402,11 @@ class RoundHead extends ui.Elem {
         Pair(`tech`, ui.formatNumCompact(round.Currencies?.Tech)),
       ),
       DetailsGrid(
-        Details(`doctrines`, doctrines),
-        Details(`frontier modifiers`, frontierMods),
-        Details(`frontier dotations`, dotations),
-        Details(`frontier curses`, curses),
+        Details(`doctrines`, a.map(doctrines, gc.codeToNameShort)),
+        Details(`frontier modifiers`, a.map(frontierMods, gc.codeToNameShort)),
+        Details(`frontier dotations`, a.map(dotations, gc.codeToNameShort)),
+        Details(`frontier curses`, a.map(curses, gc.codeToNameShort)),
+        Details(`blueprints`, a.entries(blueprints).map(Blueprint)),
       ),
     )
   }
@@ -425,9 +427,7 @@ function DetailsGrid(...src) {
   )
 }
 
-function Details(summary, src) {
-  return ui.DetailsPre({summary, chi: a.map(src, gc.codeToNameShort), chiLvl: 1})
-}
+function Details(summary, chi) {return ui.DetailsPre({summary, chi, chiLvl: 1})}
 
 function Pair(key, val) {
   if (a.isNil(val)) return undefined
@@ -441,6 +441,13 @@ function Pair(key, val) {
     }),
     E(`span`, {class: `trunc`}, val),
   )
+}
+
+function Blueprint([code, count]) {
+  return [
+    gc.codeToNameShortOpt(a.stripPre(code, `BP`)) || key,
+    a.vac(a.laxInt(count) > 1) && ` (${count})`,
+  ]
 }
 
 class TableSettingsAndHints extends dr.MixReg(HTMLDetailsElement) {

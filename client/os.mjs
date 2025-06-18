@@ -328,9 +328,8 @@ export function cmdHelp({args}) {
       `hotkeys and special interactions:`,
       [`  ctrl+k                 -- clear log (same as `, BtnCmd(`clear -l`), `)`],
       [`  shift+ctrl+k           -- clear log and media (same as `, BtnCmd(`clear`), `)`],
-      // SYNC[prompt_focus_key].
-      [`  /                      -- focus prompt (forward slash key)`],
       [`  ctrl+click drag handle -- reset UI split`],
+      [`  almost any key         -- focus prompt`],
     ),
 
     [

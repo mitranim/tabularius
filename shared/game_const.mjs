@@ -592,6 +592,7 @@ export const WEPS = new Set([
   `Quad_Barrage_LMG`,
   `Rampart_silo`,
   `Rampart_silo3A`,
+  `Rampart_silo3B`,
   `Reaper_cannon`,
   `Retribution_rack`,
   `Sanction_cannon_B5`,
@@ -608,6 +609,44 @@ export const WEPS = new Set([
   `Xenoprognosis_decelaration_field`,
   `Xenoprognosis_modular_core`,
 ])
+
+export const FOES = dict({
+  F01: dict({code: `F01`, name: `Minimucos`, tier: 0}),
+  F02: dict({code: `F02`, name: `Devorare`, tier: 0}),
+  F03: dict({code: `F03`, name: `Pendor`, tier: 0}),
+  F04: dict({code: `F04`, name: `Aramobis`, tier: 0}),
+  F05: dict({code: `F05`, name: `Mimucos`, tier: 1}),
+  F06: dict({code: `F06`, name: `Medacris`, tier: 1}),
+  F07: dict({code: `F07`, name: `Phagotrope`, tier: 1}),
+  F08: dict({code: `F08`, name: `Cnid`, tier: 2}),
+  F09: dict({code: `F09`, name: `Deviscor`, tier: 1}),
+  F10: dict({code: `F10`, name: `Bryta`, tier: 1}),
+  F11: dict({code: `F11`, name: `Sanatrope`, tier: 2}),
+  F12: dict({code: `F12`, name: `Megamucos`, tier: 3}),
+  F14: dict({code: `F14`, name: `Parasis`, tier: 2}),
+  F15: dict({code: `F15`, name: `Coleptis`, tier: 3}),
+  F16: dict({code: `F16`, name: `Lecos`, tier: 3}),
+  F17: dict({code: `F17`, name: `Medacris_brood`, tier: 3}),
+  F18: dict({code: `F18`, name: `Krylo`, tier: 2}),
+  F19: dict({code: `F19`, name: `Torrest`, tier: 3}),
+  F22: dict({code: `F22`, name: `Mucos`, tier: 2}),
+  FW01: dict({code: `FW01`, name: `Hell_from_above`, tier: 4}),
+  FW02: dict({code: `FW02`, name: `Threat_majoris`, tier: 4}),
+  FW03: dict({code: `FW03`, name: `Terminus_maximus`, tier: 4}),
+  FW04: dict({code: `FW04`, name: `Undying_onslaught`, tier: 4}),
+  FW05: dict({code: `FW05`, name: `Spearhead_attack`, tier: 4}),
+  FW06: dict({code: `FW06`, name: `Breeding_grounds`, tier: 4}),
+  FW07: dict({code: `FW07`, name: `Full_invasion`, tier: 4}),
+  FW08: dict({code: `FW08`, name: `Major_breach`, tier: 4}),
+  FW09: dict({code: `FW09`, name: `Powerful_host`, tier: 4}),
+  FW10: dict({code: `FW10`, name: `Colossal_outbreak`, tier: 4}),
+  FW11: dict({code: `FW11`, name: `Disrupted_logistic`, tier: 4}),
+  FE01: dict({code: `FE01`, name: `???`, tier: 5}),
+  FE03: dict({code: `FE03`, name: `Vagus`, tier: 5}),
+  FE04: dict({code: `FE04`, name: `Omegamucos`, tier: 5}),
+  FE05: dict({code: `FE05`, name: `???`, tier: 5}),
+  FE06: dict({code: `FE06`, name: `Threxid`, tier: 5}),
+})
 
 export const SELL_COST_MUL = 0.8
 
@@ -648,7 +687,7 @@ export function advUpgCodeToBuiCode(key) {
   return key.slice(0, -ADV_UPG_SUF.length)
 }
 
-export function codeToNameShort(key) {
+export function codeToNameShortOpt(key) {
   if (!a.optStr(key)) return undefined
 
   const name = CODES_TO_NAMES_SHORT[key]
@@ -657,7 +696,11 @@ export function codeToNameShort(key) {
   const buiCode = advUpgCodeToBuiCode(key)
   if (buiCode) return buiAdvUpgName(buiCode)
 
-  return key
+  return undefined
+}
+
+export function codeToNameShort(key) {
+  return codeToNameShortOpt(key) || key || undefined
 }
 
 // SYNC[bui_doct].
@@ -825,4 +868,5 @@ export const GAME_RELEASES = [
   {ver: `1.20.0`, ms: a.reqFin(Date.parse(`2025-06-05T18:50:00Z`)), costs: BUI_COSTS_1_20},
   {ver: `1.27.0`, ms: a.reqFin(Date.parse(`2025-06-16T17:00:00Z`)), costs: BUI_COSTS_1_20},
   {ver: `1.28.0`, ms: a.reqFin(Date.parse(`2025-06-16T21:00:00Z`)), costs: BUI_COSTS_1_20},
+  {ver: `1.29.0`, ms: a.reqFin(Date.parse(`2025-06-18T15:45:00Z`)), costs: BUI_COSTS_1_20},
 ]

@@ -15,6 +15,7 @@ export const PROGRESS_BUIS_KEY = `SeenBuildings`
 export const PROGRESS_NEUTS_KEY = `SeenNeutralBuildings`
 export const PROGRESS_DOCTS_KEY = `SeenSkills`
 export const PROGRESS_WEPS_KEY = `SeenWeapons`
+export const PROGRESS_FOES_KEY = `SeenFoes`
 
 cmdEdit.cmd = `edit`
 cmdEdit.desc = `edit game files, lock or unlock parts of meta progression`
@@ -433,6 +434,7 @@ export async function editAll(sig, state) {
       [PROGRESS_NEUTS_KEY]: seenNeuts,
       [PROGRESS_DOCTS_KEY]: seenDocts,
       [PROGRESS_WEPS_KEY]: seenWeps,
+      [PROGRESS_FOES_KEY]: seenFoes,
     },
   } = await loadSaveFileAndValidate({
     sig, state, name: fs.PROG_FILE_NAME, pre: Btn,
@@ -441,6 +443,7 @@ export async function editAll(sig, state) {
       [PROGRESS_NEUTS_KEY]: a.isArr,
       [PROGRESS_DOCTS_KEY]: a.isArr,
       [PROGRESS_WEPS_KEY]: a.isArr,
+      [PROGRESS_FOES_KEY]: a.isArr,
     },
   })
 
@@ -459,6 +462,7 @@ export async function editAll(sig, state) {
   editSeenBuisAll({state, file: progressFile, unlockables, seenBuis, seenNeuts})
   editSeenDoctsAll({state, file: progressFile, unlockables, seenDocts})
   editSeenWepsAll({state, file: progressFile, unlockables, seenWeps})
+  editSeenFoesAll({state, file: progressFile, unlockables, seenFoes})
 }
 
 export async function editHeros(sig, state) {
@@ -811,9 +815,21 @@ export function editSeenWepsAll({state, file, unlockables, seenWeps}) {
   return editSeenAll({
     state, file, unlockables, seen: seenWeps,
     type: `weapons`, codes: a.keys(gc.WEPS),
-    showShort: a.id, showLong: a.id,
+    showShort: a.id, showLong: showWep,
   })
 }
+
+function showWep(val) {return [`wep: `, val]}
+
+export function editSeenFoesAll({state, file, unlockables, seenFoes}) {
+  return editSeenAll({
+    state, file, unlockables, seen: seenFoes,
+    type: `foes`, codes: a.keys(gc.FOES),
+    showShort: a.id, showLong: showFoe,
+  })
+}
+
+function showFoe(val) {return [`foe: `, val]}
 
 export function editSeenAll({
   state, file, unlockables, seen, type, codes, showShort, showLong,

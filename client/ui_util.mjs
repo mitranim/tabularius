@@ -77,6 +77,11 @@ export function isElemInteractive(val) {
     val.contentEditable === `true` ||
     val.contentEditable === `plaintext-only` ||
     val.role === `textbox` ||
+    val.role === `button` ||
+    val.onclick ||
+    val.onkeydown ||
+    val.oninput ||
+    val.onchange ||
     globalThis.getComputedStyle?.(val).cursor === `pointer`
   )
 }
