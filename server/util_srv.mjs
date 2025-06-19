@@ -45,6 +45,7 @@ export class DirRel extends hd.DirRel {
 }
 
 export async function reqResBodyJson(src) {
+  if (!su.headHasGzip(src.headers)) return src.json()
   return a.jsonDecode(await reqResBodyText(src))
 }
 
