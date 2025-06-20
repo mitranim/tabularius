@@ -290,6 +290,7 @@ export const TWIND = tw.twind({
     [`trunc-base`, `text-clip text-ellipsis`],
 
     [`text-clip`, `min-w-0 whitespace-pre overflow-x-clip`],
+    [`row-sta-cen`, `flex-row justify-start items-center`],
     [`row-cen-cen`, `flex-row justify-center items-center`],
     [`row-bet-cen`, `flex-row justify-between items-center`],
     [`row-bet-str`, `flex-row justify-between items-stretch`],

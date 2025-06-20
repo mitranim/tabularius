@@ -105,7 +105,8 @@ function onKeydownClear(eve) {
 const NAV_PAD = `p-2`
 const NAV_ICON_SIZE = `w-6 h-6`
 const NAV_LINK_CLS = a.spaced(`flex row-cen-cen`, NAV_PAD)
-const NAV_ICON_CLS = a.spaced(NAV_ICON_SIZE, `hover:scale-[1.2]`)
+const NAV_ICON_BUSY = `hover:scale-[1.2]`
+const NAV_ICON_CLS = a.spaced(NAV_ICON_SIZE, NAV_ICON_BUSY)
 
 const GITHUB_LINK = `https://github.com/mitranim/tabularius`
 const STEAM_LINK = `https://store.steampowered.com/app/3226530`
@@ -119,14 +120,14 @@ export const NAV = E(
     class: a.spaced(
       ui.CLS_BG_1,
       ui.CLS_BORD,
-      `flex justify-between items-center gap-2 px-2 border-b`,
+      `flex row-bet-str gap-2 border-b`,
     ),
   },
 
   // Left side with title.
   E(
     `h1`,
-    {class: a.spaced(`flex-1 trunc`, NAV_PAD)},
+    {class: a.spaced(`flex-1 trunc pl-3`, NAV_PAD)},
     E(`a`, {href: u.URL_CLEAN, class: ui.CLS_BTN_INLINE}, `Tabularius`),
     ` — book-keeper for `,
     E(`a`, {href: STEAM_LINK, ...ui.TARBLAN, class: ui.CLS_BTN_INLINE},
@@ -135,17 +136,52 @@ export const NAV = E(
   ),
 
   // Right side with links.
-  E(`div`, {class: `flex items-center`},
-    E(`span`, {class: a.spaced(NAV_LINK_CLS, ui.CLS_TEXT_MUTED)}, `v` + VERSION),
-    E(`a`, {href: GITHUB_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS},
-      ui.Svg(`github`, {class: a.spaced(NAV_ICON_CLS, `text-[#1f2328] dark:text-[#f0f6fc]`)}),
-    ),
-    E(`a`, {href: STEAM_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS},
-      ui.Svg(`steam`, {class: NAV_ICON_CLS}),
-    ),
-    E(`a`, {href: DISCORD_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS},
-      ui.Svg(`discord`, {class: NAV_ICON_CLS}),
-    ),
+  E(`div`, {class: `flex row-end-cen`},
+    ui.withTooltip({
+      chi: `Tabularius version`,
+      elem: E(
+        `span`,
+        {class: a.spaced(NAV_LINK_CLS, ui.CLS_TEXT_MUTED)},
+        `v` + VERSION,
+      ),
+    }),
+    ui.withTooltip({
+      chi: `author's personal website`,
+      elem: E(`a`,
+        {
+          href: `https://mitranim.com`,
+          ...ui.TARBLAN,
+          class: a.spaced(
+            NAV_LINK_CLS, NAV_ICON_BUSY, ui.CLS_TEXT_MUTED_BUSY,
+            `text-lg leading-none`,
+          ),
+        },
+        `@me`,
+      ),
+      help: false,
+      inheritSize: false,
+    }),
+    ui.withTooltip({
+      chi: `Tabularius source code`,
+      elem: E(`a`, {href: GITHUB_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS},
+        ui.Svg(`github`, {class: a.spaced(NAV_ICON_CLS, `text-[#1f2328] dark:text-[#f0f6fc]`)}),
+      ),
+      help: false,
+    }),
+    ui.withTooltip({
+      chi: `Tower Dominion on Steam`,
+      elem: E(`a`, {href: STEAM_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS},
+        ui.Svg(`steam`, {class: NAV_ICON_CLS}),
+      ),
+      help: false,
+    }),
+    ui.withTooltip({
+      chi: `Tower Dominion's official Discord`,
+      elem: E(`a`, {href: DISCORD_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS},
+        ui.Svg(`discord`, {class: NAV_ICON_CLS}),
+      ),
+      help: false,
+    }),
   ),
 )
 

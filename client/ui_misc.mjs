@@ -115,16 +115,18 @@ export const TOOLTIP = E(
 let TOOLTIP_LAST_ELEM
 
 // TODO: remove the tooltip from the DOM when the element leaves the DOM.
-export function withTooltip({elem, chi, under, suffixLine}) {
+export function withTooltip({
+  elem, chi, under, help = true, suffixLine, inheritSize = true,
+}) {
   if (!a.vac(chi)) return a.optElement(elem)
   a.reqElement(elem)
 
   if (a.vac(suffixLine)) chi = ui.LogLines(chi, suffixLine)
   if (under) ui.clsAdd(elem, ui.CLS_HELP_UNDER)
-  else ui.clsAdd(elem, `cursor-help`)
+  else if (help) ui.clsAdd(elem, `cursor-help`)
 
-  elem.onpointerover = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}
-  elem.onpointermove = function reinit(eve) {tooltipReinitFor(elem, chi, eve)}
+  elem.onpointerover = function reinit(eve) {tooltipReinitFor(elem, chi, inheritSize, eve)}
+  elem.onpointermove = function reinit(eve) {tooltipReinitFor(elem, chi, inheritSize, eve)}
   elem.onpointerleave = function deinit() {tooltipDeinitFor(elem)}
   return elem
 }
@@ -148,13 +150,15 @@ export function withGlossary({elem, key, val, glos, under, suffixLine}) {
 */
 const SCROLL_LISTEN_OPT = {passive: true, capture: true, once: true}
 
-function tooltipReinitFor(elem, chi, eve) {
+function tooltipReinitFor(elem, chi, inheritSize, eve) {
   a.reqElement(elem)
 
   if (TOOLTIP_LAST_ELEM !== elem) {
     E(TOOLTIP, undefined, chi)
-    const val = elem.computedStyleMap()?.get(`font-size`)
-    if (val) TOOLTIP.style.fontSize = val
+    if (inheritSize) {
+      const val = elem.computedStyleMap()?.get(`font-size`)
+      if (val) TOOLTIP.style.fontSize = val
+    }
   }
   TOOLTIP_LAST_ELEM = elem
 

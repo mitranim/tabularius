@@ -232,23 +232,6 @@ export async function showRoundLocal({sig, args, path}) {
   return undefined
 }
 
-/*
-Missing:
-
-cloud:
-
-  show_round -c
-  show_round -c <run_num>
-  show_round -c <run_num>/latest
-  show_round -c <run_num>/latest/<file>
-  show_round -c <run_name>
-  show_round -c <run_name>/latest
-  show_round -c <run_name>/latest/<file>
-  show_round -c user_id/<run_num>
-  show_round -c user_id/<run_name>
-  show_round -c user_id/<run_num>/<file>
-  show_round -c user_id/<run_name>/<file>
-*/
 export async function showRoundCloud({sig, args, path}) {
   const round = await apiDownloadRound(sig, path)
   return showRoundFile({sig, args, round})
