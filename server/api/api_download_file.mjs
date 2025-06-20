@@ -1,4 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
+import * as hd from '@mitranim/js/http_deno.mjs'
 import * as u from '../util.mjs'
 
 export function apiDownloadFileOpt(ctx, rou) {
@@ -35,7 +36,12 @@ export async function resolveUserFile(ctx, srcPath, outPath) {
     )
   }
 
+  const ext = `.gz`
   let headers
-  if (outPath.endsWith(`.gz`)) headers = [[`content-encoding`, `gzip`]]
+  if (outPath.endsWith(ext)) {
+    headers = [[`content-encoding`, `gzip`]]
+    const typ = hd.guessContentType(outPath.slice(0, -ext.length))
+    if (typ) headers.push([`content-type`, typ])
+  }
   return info.res({headers})
 }
