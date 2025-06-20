@@ -108,6 +108,7 @@ export const CODES_TO_BUIS_SHORT = dict({
   F103: `SectFort`,
   F106: `OfficQuart`,
   F1H07CB01: `AgraftPuma`,
+  F1H10CB01: `Laethissa`,
   F201: `ArmStaGro`,
   F202: `Fortress`,
   F207: `StarCall`,
