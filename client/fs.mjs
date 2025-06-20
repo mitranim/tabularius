@@ -895,6 +895,7 @@ export function findRoundFileAny(sig, path) {
   return findRoundFileAtPath(sig, path)
 }
 
+// May return a nil handle, callers must be prepared.
 export async function findRoundFileAnywhere(sig) {
   const progFile = await progressFileOpt(sig)
   let progRound
@@ -919,7 +920,12 @@ export async function findRoundFileAnywhere(sig) {
     if (roundFile) return {handle: roundFile, live: true}
   }
 
-  return {handle: progFile, live: true}
+  return {
+    handle: progFile,
+    hasProg: !!progFile,
+    hasHist: !!histDir,
+    live: true,
+  }
 }
 
 export async function findRoundFileAtPath(sig, srcPath) {

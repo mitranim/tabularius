@@ -198,8 +198,38 @@ export async function cmdShowRound({sig, args}) {
 }
 
 export async function showRoundLocal({sig, args, path}) {
-  const {handle, round, live} = await fs.findRoundFileAny(sig, path)
-  return showRoundFile({sig, args, handle, round, live})
+  const {handle, round, live, hasProg, hasHist} = await fs.findRoundFileAny(sig, path)
+  if (handle) return showRoundFile({sig, args, handle, round, live})
+
+  if (!hasProg && !hasHist) {
+    ui.LOG.err(
+      `unable to show latest round: no access to `,
+      os.BtnCmdWithHelp(`saves`), ` or `, os.BtnCmdWithHelp(`history`),
+      `; click to grant`,
+    )
+    return undefined
+  }
+
+  if (!hasProg) {
+    ui.LOG.err(
+      `unable to show latest round: no access to `,
+      os.BtnCmdWithHelp(`saves`),
+      ` (click to grant), and found no rounds in `,
+      os.BtnCmdWithHelp(`history`), `; build your history by playing!`,
+    )
+    return undefined
+  }
+
+  // This should only be possible if the progress file was manually deleted
+  // from the saves dir.
+  ui.LOG.err(
+    `unable to show latest round: found no progress file in `,
+    os.BtnCmdWithHelp(`saves`),
+    `; also no rounds in `,
+    os.BtnCmdWithHelp(`history`),
+    `; build your history by playing`,
+  )
+  return undefined
 }
 
 /*
@@ -445,7 +475,7 @@ function Pair(key, val) {
 
 function Blueprint([code, count]) {
   return [
-    gc.codeToNameShortOpt(a.stripPre(code, `BP`)) || key,
+    gc.codeToNameShortOpt(a.stripPre(code, `BP`)) || code,
     a.vac(a.laxInt(count) > 1) && ` (${count})`,
   ]
 }

@@ -179,8 +179,8 @@ export function logCmdDone(name, out, ui) {
   }
 
   const {logMsgs, mediaItems} = out
-  for (const val of a.laxArr(logMsgs)) ui.LOG.info(val)
-  for (const val of a.laxArr(mediaItems)) ui.MEDIA.add(val)
+  for (const val of a.laxArr(logMsgs)) if (a.isSome(val)) ui.LOG.info(val)
+  for (const val of a.laxArr(mediaItems)) if (a.isSome(val)) ui.MEDIA.add(val)
 }
 
 export function logCmdFail(name, err) {
