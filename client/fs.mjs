@@ -805,9 +805,10 @@ export async function cmdRollback({sig, args}) {
   const runDir = await findLatestRunDir(sig, histDir)
   const roundFile = await findLatestRoundFile(sig, runDir)
   const targetFile = await progressFileReq(sig)
-  await requireOrRequestReadwrite(sig, targetFile)
-  const body = await readFileByteArr(sig, roundFile)
 
+  await requireOrRequestReadwrite(sig, targetFile)
+
+  const body = await readFileByteArr(sig, roundFile)
   const srcPath = u.paths.join(histDir.name, runDir.name, roundFile.name)
 
   const tarPath = u.paths.join(
@@ -1085,12 +1086,27 @@ export async function readDecodeGameFile(sig, file) {
 
   try {
     if (file.name.endsWith(`.json.gz`)) {
-      const src = await readFileByteArr(sig, file)
-      return a.jsonDecode(await u.byteArr_to_ungzip_to_str(src))
+      const src = await readFileStream(sig, file)
+      return await u.textDataStream_to_ungzip_to_unjsonData(src)
     }
 
     const src = await readFileText(sig, file)
     return await u.decodeGdStr(src)
+  }
+  catch (err) {
+    throw new u.ErrDecoding(`unable to decode file ${a.show(file.name)}: ${err}`, {cause: err})
+  }
+}
+
+// SYNC[decode_game_file].
+export async function readDecodeGameFileBlob(src) {
+  const {name} = a.reqInst(src, File)
+
+  try {
+    if (name.endsWith(`.json.gz`)) {
+      return await u.textDataStream_to_ungzip_to_unjsonData(src.stream())
+    }
+    return await u.decodeGdStr(await src.text())
   }
   catch (err) {
     throw new u.ErrDecoding(`unable to decode file ${a.show(file.name)}: ${err}`, {cause: err})
@@ -1129,6 +1145,11 @@ export async function readFileByteArr(sig, src) {
   src = await getFile(sig, src)
   src = await u.wait(sig, await src.arrayBuffer())
   return new Uint8Array(src)
+}
+
+export async function readFileStream(sig, src) {
+  src = await getFile(sig, src)
+  return src.stream()
 }
 
 export async function handleAtPathFromTop({sig, path, magic}) {
@@ -1466,15 +1487,12 @@ export async function getDirectoryHandle(sig, dir, name, opt) {
   }
 }
 
-export function reqFsFilePick() {
-  const fun = globalThis.showOpenFilePicker
-  if (a.isFun(fun)) return fun
-  throw errFsApi()
-}
+export function reqFsFilePick() {return reqFs(globalThis.showOpenFilePicker)}
+export function reqFsDirPick() {return reqFs(globalThis.showDirectoryPicker)}
+export function reqFsSaveFilePick() {return reqFs(globalThis.showSaveFilePicker)}
 
-export function reqFsDirPick() {
-  const fun = globalThis.showDirectoryPicker
-  if (a.isFun(fun)) return fun
+export function reqFs(fun) {
+  if (a.optFun(fun)) return fun
   throw errFsApi()
 }
 

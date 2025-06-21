@@ -329,8 +329,11 @@ export function cmdHelp({args}) {
       [`  ctrl+k                 -- clear log (same as `, BtnCmd(`clear -l`), `)`],
       [`  shift+ctrl+k           -- clear log and media (same as `, BtnCmd(`clear`), `)`],
       [`  ctrl+click drag handle -- reset UI split`],
+      [`  drag and drop file     -- save decoded file`],
       [`  almost any key         -- focus prompt`],
     ),
+
+    `tip: drag any ".gd" game file into this UI to decode it and save the result to a file`,
 
     [
       `pro tip: run commands on page load via URL query; for example, try appending to the URL: `,

@@ -108,6 +108,18 @@ seems to work. This problem doesn't seem to occur in other grids.
   }
 }
 
+.drag::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  border: 4px dashed var(--border-color);
+  pointer-events: none;
+}
+
 .uplot, .u-wrap, .u-wrap *, .u-legend, .u-legend * {
   all: unset;
   box-sizing: border-box;

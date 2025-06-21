@@ -267,7 +267,7 @@ export function data_to_json_to_gzipByteArr(src) {
 }
 
 export function str_to_unbase64_to_ungzip_to_str(src) {
-  return byteArr_to_ungzip_to_str(base64Str_to_byteArr(src))
+  return textData_to_ungzip_to_str(base64Str_to_byteArr(src))
 }
 
 export function textData_to_stream(src) {
@@ -278,17 +278,24 @@ export function textDataStream_to_ungzipStream(src) {
   return src.pipeThrough(new DecompressionStream(`gzip`))
 }
 
-export function byteArr_to_ungzipStream(src) {
-  a.reqInst(src, Uint8Array)
+export function textData_to_ungzipStream(src) {
   return textDataStream_to_ungzipStream(textData_to_stream(src))
 }
 
-export async function byteArr_to_ungzip_to_unjsonData(src) {
-  return a.jsonDecode(await byteArr_to_ungzip_to_str(src))
+export async function textDataStream_to_ungzip_to_unjsonData(src) {
+  return a.jsonDecode(await textDataStream_to_ungzip_to_str(src))
 }
 
-export function byteArr_to_ungzip_to_str(src) {
-  return resOkText(new Response(byteArr_to_ungzipStream(src)))
+export async function textData_to_ungzip_to_unjsonData(src) {
+  return a.jsonDecode(await textData_to_ungzip_to_str(src))
+}
+
+export function textDataStream_to_ungzip_to_str(src) {
+  return resOkText(new Response(textDataStream_to_ungzipStream(src)))
+}
+
+export function textData_to_ungzip_to_str(src) {
+  return resOkText(new Response(textData_to_ungzipStream(src)))
 }
 
 export async function str_to_gzip_to_base64Str(src) {
@@ -555,6 +562,14 @@ export const paths = new class PathsPosix extends pt.PathsPosix {
     const seg = base.split(this.extSep)
     seg[0] += suf
     return this.join(dir, seg.join(this.extSep))
+  }
+
+  replaceExt(src, next) {
+    a.reqStr(src)
+    a.reqStr(next)
+    const prev = this.ext(src)
+    src = src.slice(0, -prev.length)
+    return src + next
   }
 }()
 

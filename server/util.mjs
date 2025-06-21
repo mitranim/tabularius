@@ -96,7 +96,7 @@ export async function readDecodeGameFile(path, name) {
 
   if (name.endsWith(GAME_FILE_EXT_REAL)) {
     validGameFileGzName(name)
-    return a.jsonDecode(await su.byteArr_to_ungzip_to_str(await Deno.readFile(path)))
+    return a.jsonDecode(await su.textData_to_ungzip_to_str(await Deno.readFile(path)))
   }
 
   return su.decodeGdStr(await Deno.readTextFile(path))

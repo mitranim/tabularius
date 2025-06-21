@@ -17,7 +17,7 @@ namespace.ui = ui
 a.patch(globalThis, namespace)
 
 // Increment by 1 when publishing an update.
-const VERSION = 130
+const VERSION = 131
 let INITED
 
 /*
@@ -35,11 +35,13 @@ export function init() {
 
   E(
     document.body,
-    {class: a.spaced(
-      ui.CLS_FG,
-      ui.CLS_BG_ROOT,
-      `flex flex-col h-screen overflow-clip)`,
-    )},
+    {
+      class: a.spaced(
+        ui.CLS_FG,
+        ui.CLS_BG_ROOT,
+        `flex flex-col h-screen overflow-clip)`,
+      ),
+    },
     NAV,
     ui.MIDDLE,
     ui.PROMPT,
@@ -49,6 +51,12 @@ export function init() {
   document.getElementById(`loading_msg`)?.remove()
   document.addEventListener(`keydown`, onKeydownClear)
   document.addEventListener(`keydown`, ui.onKeydownFocusPrompt)
+
+  document.addEventListener(`dragover`, a.eventKill)
+  document.addEventListener(`dragenter`, ui.onDragEnter)
+  document.addEventListener(`dragleave`, ui.onDragLeave)
+  document.addEventListener(`drop`, ui.onDrop)
+
   INITED = true
 }
 

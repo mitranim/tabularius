@@ -279,3 +279,54 @@ export function DetailsPre({summary, inf, chi, chiLvl, count, ontoggle, ...opt})
 }
 
 function detailsSuf(open) {return open ? `↓` : `→`}
+
+const CLS_DRAG = `drag`
+let DRAG_COUNT = 0
+
+export function onDragLeave() {
+  if (--DRAG_COUNT) return
+  ui.clsDel(document.body, CLS_DRAG)
+}
+
+export function onDragEnter(eve) {
+  if (!DRAG_COUNT++) return
+  ui.clsAdd(document.body, CLS_DRAG)
+}
+
+export function onDrop(eve) {
+  a.eventKill(eve)
+  DRAG_COUNT = 0
+  ui.clsDel(document.body, CLS_DRAG)
+
+  for (const file of a.arr(eve.dataTransfer?.files)) {
+    onFileDrop(file).catch(ui.logErr)
+  }
+}
+
+async function onFileDrop(file) {
+  const {name} = a.reqInst(file, File)
+
+  if (!u.isGameFileName(name)) {
+    ui.LOG.err(
+      `unable to decide what to do with file `,
+      a.show(name), `: unsupported extension`,
+    )
+    return
+  }
+
+  const data = await fs.readDecodeGameFileBlob(file)
+  const text = a.jsonEncode(data, null, 2)
+  const outName = u.paths.replaceExt(name, `.json`)
+
+  const handle = await fs.reqFsSaveFilePick()({
+    suggestedName: outName,
+    types: [{
+      description: `decoded game file as JSON`,
+      accept: {'text/plain': [`.json`]},
+    }],
+  })
+
+  await fs.writeFile(u.sig, handle, text, outName)
+
+  ui.LOG.info(`saved decoded content of `, a.show(name), ` to `, a.show(outName))
+}
