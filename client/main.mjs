@@ -9,7 +9,7 @@ import * as au from './auth.mjs'
 import * as up from './upload.mjs'
 import * as p from './plot.mjs'
 import * as e from './edit.mjs'
-import * as sr from './show_round.mjs'
+import * as sr from './show_round_combined.mjs'
 import * as se from './setup.mjs'
 
 import * as self from './main.mjs'

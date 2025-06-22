@@ -11,7 +11,7 @@ import * as ui from './ui.mjs'
 import * as au from './auth.mjs'
 import * as ls from './ls.mjs'
 
-import * as self from './show_round.mjs'
+import * as self from './show_round_combined.mjs'
 const namespace = globalThis.tabularius ??= a.Emp()
 namespace.sr = self
 a.patch(globalThis, namespace)
