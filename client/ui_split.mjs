@@ -31,8 +31,9 @@ export const DRAG_HANDLE = E(
   {
     class: a.spaced(
       `w-[${DRAG_HANDLE_WID}]`,
-      `h-full cursor-ew-resize bg-gray-400 dark:bg-neutral-600 opacity-50 hover:opacity-100`,
+      `h-full bg-gray-400 dark:bg-neutral-600 opacity-50 hover:opacity-100`,
       `flex row-cen-cen`,
+      `cursor-ew-resize active:cursor-col-resize`,
       `after:content-[''] after:block after:w-[4px] after:h-8 after:shrink-1 after:min-w-0 after:bg-white dark:after:bg-black after:rounded`,
     ),
     style: {flex: `0 0 ${DRAG_HANDLE_WID}`},

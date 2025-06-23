@@ -170,13 +170,16 @@ import * as dr from '@mitranim/js/dom_reg.mjs'
 
 // Create renderer.
 const REN = new a.Ren()
-const E = REN.E.bind(REN)
+const {E} = REN
 
 // Create or mutate elements via `E`.
-const elem0 = E(`div`, {class: `container`},
-  E(`h1`, {}, `Title`),
-  E(`p`, {}, `Content`)
-)
+const elem0 = E(`div`, {
+  class: `container`,
+  chi: [
+    E(`h1`, {chi: `Title`}),
+    E(`p`, {chi: `Content`}),
+  ],
+})
 
 // Use observables for mutable state.
 const obs = a.obs({count: 0})
@@ -184,11 +187,13 @@ const obs = a.obs({count: 0})
 function inc() {obs.count++}
 
 // In markup, react to observables by passing functions to the renderer:
-const elem1 = E(`div`, {},
-  E(`span`, {}, `count: `, () => obs.count),
-  ` `,
-  E(`button`, {onclick: inc, type: `button`}, `increment`),
-)
+const elem1 = E(`div`, {
+  chi: [
+    E(`span`, {chi: [`count: `, () => obs.count]}),
+    ` `,
+    E(`button`, {onclick: inc, type: `button`, chi: `increment`}),
+  ],
+})
 ```
 
 Early returns over nested conditionals:
@@ -222,20 +227,24 @@ Make UI markup as flat as possible, minimize nesting:
 ```js
 // GOOD: minimal nesting, smaller building blocks
 function Page() {
-  return E(`div`, {},
-    Header(),
-    Content(),
-    Footer(),
-  )
+  return E(`div`, {
+    chi: [
+      E(Header),
+      E(Content),
+      E(Footer),
+    ],
+  })
 }
 
 // BAD: deep nesting
 function Page() {
-  return E(`div`, {},
-    E(`header`, {...}, ...), // Million lines of code.
-    E(`main`, {...}, ...),   // Million lines of code.
-    E(`footer`, {...}, ...), // Million lines of code.
-  )
+  return E(`div`, {
+    chi: [
+      E(`header`, {...}), // Million lines of code.
+      E(`main`, {...}),   // Million lines of code.
+      E(`footer`, {...}   // Million lines of code.
+    ],
+  })
 }
 ```
 

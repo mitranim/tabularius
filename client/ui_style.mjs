@@ -44,7 +44,7 @@ ttc.zinc[950] = `#09090b`
 ttc.neutral[950] = `#0a0a0a`
 ttc.stone[950] = `#0c0a09`
 
-const GRID_AND_FLEX_CALC = `calc(var(--grid-col-wid) - var(--grid-pad, 0px) * 2)`
+const GRID_AND_FLEX_CALC = `calc(var(--grid-col-wid) - var(--grid-pad-hor, 0px) * 2)`
 
 /*
 Should be kept minimal. Contains styles which are bothersome to implement with
@@ -64,6 +64,16 @@ STYLE.textContent = `
 `+/* Make "[hidden]" take priority over CSS classes which set "display". */`
 [hidden] {display: none !important}
 
+`+/*
+Make the font crisper. Default monospace fonts tend to be thicc.
+May only work on some platforms and for some fonts.
+*/`
+:root {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+}
+
 `+/* SYNC[bord_color]. */`
 :root {
   --border-color: ${a.reqValidStr(ttc.gray[300])};
@@ -77,7 +87,8 @@ seems to work. This problem doesn't seem to occur in other grids.
 */`
 .grid-auto {
   display: grid;
-  padding: var(--grid-pad);
+  padding-left: var(--grid-pad-hor);
+  padding-right: var(--grid-pad-hor);
   grid-template-columns: repeat(auto-fill, minmax(min(100%, ${GRID_AND_FLEX_CALC}), 1fr));
   > * {min-width: 0}
 
@@ -97,17 +108,6 @@ seems to work. This problem doesn't seem to occur in other grids.
   }
 }
 
-`+/* SYNC[media_pad]. */`
-.table {
-  th, td:not(.table-cell-colspan) {
-    &:first-child {padding-left: 1rem}
-    &:last-child {padding-right: 1rem}
-  }
-  tr:last-child:not(.table-row-colspan) {
-    > th, > td {padding-bottom: 0.25rem}
-  }
-}
-
 .drag::before {
   content: '';
   position: fixed;
@@ -118,6 +118,13 @@ seems to work. This problem doesn't seem to occur in other grids.
   z-index: 1;
   border: 4px dashed var(--border-color);
   pointer-events: none;
+}
+
+dialog:not([open]) {display: none}
+
+dialog[open] {
+  &::backdrop {backdrop-filter: blur(3px)}
+  outline: 0.5rem solid hsl(200deg 50% 80% / 20%);
 }
 
 .uplot, .u-wrap, .u-wrap *, .u-legend, .u-legend * {
@@ -300,8 +307,11 @@ export const TWIND = tw.twind({
     Caller must ensure that `display` is not `inline`.
     */
     [`trunc-base`, `text-clip text-ellipsis`],
-
     [`text-clip`, `min-w-0 whitespace-pre overflow-x-clip`],
+
+    // Requires either `flex` or `inline-flex`.
+    [`cen`, `row-cen-cen text-center`],
+
     [`row-sta-cen`, `flex-row justify-start items-center`],
     [`row-cen-cen`, `flex-row justify-center items-center`],
     [`row-bet-cen`, `flex-row justify-between items-center`],
@@ -309,6 +319,7 @@ export const TWIND = tw.twind({
     [`row-end-cen`, `flex-row justify-end items-center`],
     [`row-end-sta`, `flex-row justify-end items-start`],
     [`row-end-end`, `flex-row justify-end items-end`],
+    [`row-cen-str`, `flex-row justify-center items-stretch`],
     [`col-cen-cen`, `flex-col justify-center items-center`],
     [`col-cen-sta`, `flex-col justify-center items-start`],
     [`col-sta-sta`, `flex-col justify-start items-start`],
@@ -382,4 +393,16 @@ export const CLS_UNDER_TWEAKS = `decoration-1 underline-offset-4`
 export const CLS_BUSY_UNDER = a.spaced(CLS_UNDER_TWEAKS, `cursor-pointer underline decoration-dotted hover:decoration-solid`)
 export const CLS_BUSY_UNDER_OPT = a.spaced(CLS_UNDER_TWEAKS, `cursor-pointer hover:underline hover:decoration-dotted`)
 export const CLS_BUSY_BG = `hover:bg-neutral-300 dark:hover:bg-neutral-700`
+export const CLS_BUSY_BG_SELECTED = `bg-neutral-200 dark:bg-neutral-800 underline decoration-dashed underline-offset-4`
 export const CLS_HELP_UNDER = a.spaced(CLS_UNDER_TWEAKS, `cursor-help underline decoration-dotted`)
+
+// Used for hiding and showing parts of media items, such as table columns.
+// Should be slightly wider than `MEDIA_ITEM_WID`.
+export const WIDE_BREAKPOINT = `48rem`
+export const CLS_ONLY_WIDE = `hide-below-[${WIDE_BREAKPOINT}]`
+export const CLS_ONLY_NARROW = `hide-above-[${WIDE_BREAKPOINT}]`
+
+export function clsWide(wide) {
+  if (a.isNil(wide)) return undefined
+  return a.optBool(wide) ? CLS_ONLY_WIDE : CLS_ONLY_NARROW
+}

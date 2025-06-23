@@ -10,7 +10,7 @@ const namespace = globalThis.tabularius ??= a.Emp()
 namespace.au = self
 a.patch(globalThis, namespace)
 
-export const STATE = a.obs({userId: undefined})
+export const USER_ID = a.obsRef()
 let PUB_KEY_BYTE_ARR = undefined
 let SEC_KEY_BYTE_ARR = undefined
 const STORAGE_KEY_PUB_KEY = `tabularius.pub_key`
@@ -96,7 +96,7 @@ export async function authLogin(sig) {
 
   PUB_KEY_BYTE_ARR = publicKey
   SEC_KEY_BYTE_ARR = secretKey
-  STATE.userId = pubKeyStr
+  a.reset(USER_ID, pubKeyStr)
 
   u.storagesSet(STORAGE_KEY_PUB_KEY, pubKeyStr)
   u.storagesSet(STORAGE_KEY_SEC_KEY, secKeyStr)
@@ -110,7 +110,7 @@ export function authLogout() {
 
   PUB_KEY_BYTE_ARR = undefined
   SEC_KEY_BYTE_ARR = undefined
-  STATE.userId = undefined
+  a.reset(USER_ID)
 
   u.storagesSet(STORAGE_KEY_PUB_KEY)
   u.storagesSet(STORAGE_KEY_SEC_KEY)
@@ -123,13 +123,13 @@ function authInstructions(suggs) {
   return ui.LogParagraphs(
     `type your passphrase or password or press Esc to cancel`,
     [
-      E(`b`, {}, `note:`),
+      E(`b`, {chi: `note:`}),
       ` if you use `,
-      E(`em`, {}, `exactly`),
+      E(`em`, {chi: `exactly`}),
       ` the same pass as someone else, both of you will have the same user id; if you wish to avoid that, make it unique; consider using your browser's password manager to generate one`,
     ],
     [
-      E(`b`, {}, `recommendation:`),
+      E(`b`, {chi: `recommendation:`}),
       ` write down your pass, and/or use your browser's password manager to save it; using a different pass would split your run history between the accounts`,
     ],
     a.vac(suggs?.length) && [
@@ -205,7 +205,7 @@ function readPassFromPrompt(sig) {
 }
 
 export function reqUserId() {
-  const id = STATE.userId
+  const id = a.deref(USER_ID)
   if (id) return id
   throw new ui.ErrLog(
     `auth required; run the `, os.BtnCmdWithHelp(`auth`), ` command`,
@@ -221,7 +221,7 @@ export function authHeadersOpt() {
 }
 
 export function isAuthed() {
-  return !!STATE.userId && !!PUB_KEY_BYTE_ARR && !!SEC_KEY_BYTE_ARR
+  return !!a.deref(USER_ID) && !!PUB_KEY_BYTE_ARR && !!SEC_KEY_BYTE_ARR
 }
 
 export function isAuthedOrLoadedAuthKeys() {
@@ -239,7 +239,7 @@ export function loadedAuthKeys() {
 
     PUB_KEY_BYTE_ARR = publicKey
     SEC_KEY_BYTE_ARR = secretKey
-    STATE.userId = pubKeyStr
+    a.reset(USER_ID, pubKeyStr)
     return true
   }
   catch (err) {
@@ -249,13 +249,13 @@ export function loadedAuthKeys() {
 }
 
 export function authStatusMsgMini() {
-  const id = STATE.userId
+  const id = a.deref(USER_ID)
   if (id) return AuthedAs(id)
   return `not authed`
 }
 
 export function authStatusMsg() {
-  const id = STATE.userId
+  const id = a.deref(USER_ID)
   if (id) return AuthedAs(id)
   return [`not authed; run `, os.BtnCmdWithHelp(`auth`), ` to authenticate`]
 }
@@ -263,7 +263,7 @@ export function authStatusMsg() {
 function AuthedAs(id) {
   return [
     `authed as `,
-    E(`span`, {class: `break-all`}, a.reqValidStr(id)),
+    E(`span`, {class: `break-all`, chi: a.reqValidStr(id)}),
     ` `, ui.BtnClip(id),
   ]
 }

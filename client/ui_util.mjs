@@ -38,6 +38,11 @@ export const TARBLAN = Object.freeze({
   rel: `noopener noreferrer`,
 })
 
+export function withCls(src, ...cls) {
+  src = a.optDict(a.deref(src))
+  return {...src, class: a.spaced(src?.class, ...cls)}
+}
+
 export function clsDel(tar, src) {
   tar.classList.remove(...splitClasses(src))
   return tar
@@ -60,29 +65,36 @@ export function clsToggle(tar, ok, cls) {
 
 function splitClasses(src) {return a.split(src, /\s+/)}
 
-export function isElemInteractive(val) {
+export function isElemEditable(val) {
   return a.isElement(val) && (
-    a.isInst(val, HTMLAnchorElement) ||
-    a.isInst(val, HTMLAudioElement) ||
-    a.isInst(val, HTMLButtonElement) ||
-    a.isInst(val, HTMLDetailsElement) ||
-    a.isInst(val, HTMLDialogElement) ||
-    a.isInst(val, HTMLEmbedElement) ||
     a.isInst(val, HTMLInputElement) ||
-    a.isInst(val, HTMLLabelElement) ||
-    a.isInst(val, HTMLOptionElement) ||
-    a.isInst(val, HTMLSelectElement) ||
     a.isInst(val, HTMLTextAreaElement) ||
-    a.isInst(val, HTMLVideoElement) ||
     val.contentEditable === `true` ||
     val.contentEditable === `plaintext-only` ||
     val.role === `textbox` ||
+    val.onkeydown ||
+    val.oninput
+  )
+}
+
+export function isElemClickable(val) {
+  return a.isElement(val) && (
+    a.isInst(val, HTMLAnchorElement) ||
+    a.isInst(val, HTMLButtonElement) ||
+    a.isInst(val, HTMLLabelElement) ||
+    a.isInst(val, HTMLOptionElement) ||
+    a.isInst(val, HTMLSelectElement) ||
+    val.localName === `summary` ||
     val.role === `button` ||
     val.onclick ||
-    val.onkeydown ||
-    val.oninput ||
-    val.onchange ||
     globalThis.getComputedStyle?.(val).cursor === `pointer`
+  )
+}
+
+export function isElemEscapable(val) {
+  return a.isElement(val) && (
+    (val.localName === `dialog` && val.closedBy !== `none`) ||
+    (!!val.popover && val.popover !== `manual`)
   )
 }
 

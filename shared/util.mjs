@@ -123,6 +123,7 @@ export function compareNumerically(prev, next, desc) {
 
   if (a.isNil(one)) return 1
   if (a.isNil(two)) return -1
+
   if (one < two) return desc ? 1 : -1
   if (one > two) return desc ? -1 : 1
   return 0
@@ -182,6 +183,19 @@ export function mapUniq(src, fun) {
   const set = new Set()
   for (src of a.values(src)) set.add(fun(src))
   return a.arr(set)
+}
+
+export function uniqBy(src, fun) {
+  a.reqFun(fun)
+  const set = new Set()
+  const out = []
+  for (src of a.values(src)) {
+    const key = a.reqKey(fun(src))
+    if (set.has(key)) continue
+    set.add(key)
+    out.push(src)
+  }
+  return out
 }
 
 export function uniqArr(src) {return a.arr(a.setFrom(src))}

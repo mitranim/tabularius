@@ -109,7 +109,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     const src = this.value.trim()
     if (!src) return
 
-    const obs = a.obs({proc: undefined})
+    const obs = a.obsRef()
     ui.LOG.inp(a.bind(SubmittedCmd, src, obs))
 
     this.histPush(src)
@@ -180,29 +180,27 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
   }
 }()
 
-export const PROMPT = E(
-  `div`,
-  {
-    class: a.spaced(
-      ui.CLS_BG_1,
-      ui.CLS_BORD,
-      `flex row-bet-str relative`,
-    ),
-  },
-  E(
-    `span`,
-    {class: a.spaced(
-      `flex row-cen-cen text-green-600 dark:text-green-400`,
-      `absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none`
-    )},
-    ui.PROMPT_PREFIX,
+export const PROMPT = E(`div`, {
+  class: a.spaced(
+    ui.CLS_BG_1,
+    ui.CLS_BORD,
+    `flex row-bet-str relative`,
   ),
-  PROMPT_INPUT,
-)
+  chi: [
+    E(`span`, {
+      class: a.spaced(
+        `flex row-cen-cen text-green-600 dark:text-green-400`,
+        `absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none`
+      ),
+      chi: ui.PROMPT_PREFIX,
+    }),
+    PROMPT_INPUT,
+  ],
+})
 
 function SubmittedCmd(src, obs) {
   a.reqValidStr(src)
-  const proc = a.optInst(obs.proc, os.Proc)
+  const proc = a.optInst(a.deref(obs), os.Proc)
   if (!proc) return src
 
   return [
@@ -257,6 +255,12 @@ export function BtnPromptReplace(args) {
   })
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
+export const MODIFIER_KEYS = new Set([
+  `Alt`, `AltGraph`, `CapsLock`, `Control`, `Fn`, `FnLock`, `Hyper`,
+  `Meta`, `NumLock`, `ScrollLock`, `Shift`, `Super`, `Symbol`, `SymbolLock`,
+])
+
 // Shortcut for focusing the prompt input.
 export function onKeydownFocusPrompt(eve) {
   if (document.activeElement === PROMPT_INPUT) return
@@ -265,13 +269,18 @@ export function onKeydownFocusPrompt(eve) {
   if (eve.altKey) return
 
   const {key} = eve
+  if (MODIFIER_KEYS.has(key)) return
 
   // According to bots, unprintable characters end at 31,
   // which is patently false. TODO improve.
   if (!(key.charCodeAt(0) > 31)) return
 
-  if (a.findAncestor(eve.target, ui.isElemInteractive)) {
-    if (key === `Escape`) PROMPT_INPUT.focus()
+  if (
+    (key === `Tab`) ||
+    (key !== `Escape` && a.findAncestor(eve.target, ui.isElemEditable)) ||
+    ((key === `Enter` || key === ` `) && a.findAncestor(eve.target, ui.isElemClickable)) ||
+    (key === `Escape` && a.findAncestor(eve.target, ui.isElemEscapable))
+  ) {
     return
   }
 

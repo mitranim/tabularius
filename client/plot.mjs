@@ -226,7 +226,7 @@ export async function cmdPlotCloud({sig, args, opt, user}) {
   u.reqSig(sig)
   opt = s.validPlotAggOpt(opt)
 
-  if (opt.userCurrent && !au.STATE.userId) {
+  if (opt.userCurrent && !au.isAuthed()) {
     // SYNC[plot_user_current_err_msg].
     throw new ui.ErrLog(
       `filtering cloud data by current user requires authentication; run `,
@@ -253,7 +253,7 @@ function showPlot({opts, totals, args}) {
 }
 
 function plotReqUserId() {
-  const id = au.STATE.userId
+  const id = a.deref(au.USER_ID)
   if (id) return id
 
   throw new ui.ErrLog(
@@ -355,36 +355,37 @@ export function PlotTitle({elem, opt, args, pre, close}) {
     btn.style.textAlign = `center` // Override class.
   }
 
-  return E(
-    elem,
-    {class: a.spaced(`flex justify-between gap-2`, ui.CLS_MEDIA_PAD)},
-    E(
-      `div`,
-      {
+  return E(elem, {
+    class: a.spaced(`flex justify-between gap-2`, ui.CLS_MEDIA_PAD),
+    chi: [
+      E(`div`, {
         class: a.spaced(
           `flex-1 shrink-1 w-full min-w-0`,
           `flex col-sta-cen gap-2`,
         ),
-      },
-      E(
-        `h2`,
-        {class: `w-full trunc text-center`},
-        pre,
-        (
-          Z === `stat_type`
-          ? [
-            Glos(agg), ui.Muted(` of `), Glos(Z), ui.Muted(` per `), Glos(X),
-          ]
-          : [
-            Glos(agg), ui.Muted(` of `), Glos(Y),
-            ui.Muted(` per `), Glos(Z), ui.Muted(` per `), Glos(X),
-          ]
-        ),
-      ),
-      btn,
-    ),
-    close,
-  )
+        chi: [
+          E(`h2`, {
+            class: `w-full trunc text-center`,
+            chi: [
+              pre,
+              (
+                Z === `stat_type`
+                ? [
+                  Glos(agg), ui.Muted(` of `), Glos(Z), ui.Muted(` per `), Glos(X),
+                ]
+                : [
+                  Glos(agg), ui.Muted(` of `), Glos(Y),
+                  ui.Muted(` per `), Glos(Z), ui.Muted(` per `), Glos(X),
+                ]
+              ),
+            ],
+          }),
+          btn,
+        ],
+      }),
+      close,
+    ],
+  })
 }
 
 /*
@@ -798,7 +799,7 @@ Dark mode demo:
 
 Usage examples:
 
-  E(document.body, {}, new p.Plotter(opts))
+  E(document.body, {chi: new p.Plotter(opts)})
   ui.MEDIA.add(new p.Plotter(opts))
 */
 export class Plotter extends ui.Elem {
@@ -1238,7 +1239,7 @@ export class TooltipPlugin extends a.Emp {
 
     const wid = this.overWid ??= plot.over.offsetWidth
     const hei = this.overHei ??= plot.over.offsetHeight
-    ui.tooltipOrient({elem, posX, posY, wid, hei})
+    ui.tooltipOrient(elem, {posX, posY, wid, hei})
     plot.over.appendChild(elem)
   }
 
@@ -1278,7 +1279,7 @@ function BtnReplace(args, alias) {
 function BtnAppend({val, glos, alias}) {
   const elem = ui.BtnPrompt({cmd: cmdPlot.cmd, suf: val, chi: alias})
   if (!a.optStr(glos)) return elem
-  return withGlossary({elem, key: glos})
+  return withGlossary(elem, {key: glos})
 }
 
 function BtnAppendEq({key, val, eph, tooltip}) {
@@ -1292,8 +1293,8 @@ function BtnAppendEq({key, val, eph, tooltip}) {
     eph: a.vac(eph) && a.reqValidStr(val),
   })
 
-  if (!a.vac(tooltip)) return withGlossary({elem, key, val})
-  return ui.withTooltip({elem, chi: tooltip})
+  if (!a.vac(tooltip)) return withGlossary(elem, {key, val})
+  return ui.withTooltip(elem, {chi: tooltip})
 }
 
 function BtnAppendTrunc({key, val, width}) {
@@ -1563,7 +1564,7 @@ export async function cmdPlotLink({sig, args}) {
   if (!userIds.length) userIds.push(au.reqUserId())
 
   for (const userId of userIds) {
-    const current = userId === au.STATE.userId
+    const current = userId === a.deref(au.USER_ID)
     const run = await apiLatestRun(sig, userId)
     if (!run) {
       ui.LOG.info(`no runs found for user `, userId, a.vac(current) && ` (current)`)
@@ -1585,7 +1586,10 @@ async function msgPlotLink(url) {
 
   return [
     (copied ? `copied plot link to clipboard: ` : `plot link: `),
-    E(`a`, {href, class: ui.CLS_BTN_INLINE, ...ui.TARBLAN}, href, ` `, ui.External()),
+    E(`a`, {
+      href, class: ui.CLS_BTN_INLINE, ...ui.TARBLAN,
+      chi: [href, ` `, ui.External()],
+    }),
   ]
 }
 
@@ -1630,21 +1634,23 @@ export class PlotTotals extends ui.Elem {
     const cmd = cmdPlot.cmd
     const args = a.reqStr(src.args)
 
-    E(
-      this,
-      {class: `inline-block w-full whitespace-pre`},
-      ui.LogLines(
-        this.title ??= E(`span`, {class: `w-full trunc`},
-          this.logPrefix,
-          `totals for `,
-          ui.BtnPrompt({
-            cmd, suf: u.stripPreSpaced(args, cmd), full: false, replace: true,
-          }),
-          `:`,
-        ),
+    E(this, {
+      class: `inline-block w-full whitespace-pre`,
+      chi: ui.LogLines(
+        this.title ??= E(`span`, {
+          class: `w-full trunc`,
+          chi: [
+            this.logPrefix,
+            `totals for `,
+            ui.BtnPrompt({
+              cmd, suf: u.stripPreSpaced(args, cmd), full: false, replace: true,
+            }),
+            `:`,
+          ],
+        }),
         a.bind(PlotTotalBody, this.src),
       ),
-    )
+    })
   }
 
   logPrefix = undefined
@@ -1713,6 +1719,7 @@ function PlotTotalEntry(counts, values, key) {
         INDENT2 + `... ` + omitted + ` omitted`,
       ),
     ],
+    trunc: true,
   })
 }
 
@@ -1746,9 +1753,9 @@ export const PLOT_GLOSSARY = u.dict({
 
 function Glos(key) {
   const elem = ui.Span(key)
-  return withGlossary({elem, key, under: true})
+  return withGlossary(elem, {key, under: true})
 }
 
-function withGlossary(opt) {
-  return ui.withGlossary({glos: PLOT_GLOSSARY, ...a.reqDict(opt)})
+function withGlossary(elem, opt) {
+  return ui.withGlossary(elem, {glos: PLOT_GLOSSARY, ...a.reqDict(opt)})
 }

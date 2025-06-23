@@ -921,12 +921,36 @@ export async function findRoundFileAnywhere(sig) {
     if (roundFile) return {handle: roundFile, live: true}
   }
 
-  return {
-    handle: progFile,
-    hasProg: !!progFile,
-    hasHist: !!histDir,
-    live: true,
+  if (progFile) return {handle: progFile, live: true}
+
+  const hasSaves = !!await saveDirOpt(sig)
+
+  if (!hasSaves && !histDir) {
+    throw new ui.ErrLog(
+      `unable to find latest round: no access to `,
+      os.BtnCmdWithHelp(`saves`), ` or `, os.BtnCmdWithHelp(`history`),
+      `; click to grant`,
+    )
   }
+
+  if (!hasSaves) {
+    throw new ui.ErrLog(
+      `unable to find latest round: no access to `,
+      os.BtnCmdWithHelp(`saves`),
+      ` (click to grant), and found no rounds in `,
+      os.BtnCmdWithHelp(`history`), `; build your history by playing!`,
+    )
+  }
+
+  // This should only be possible if the progress file was manually deleted
+  // from the saves dir.
+  throw new ui.ErrLog(
+    `unable to find latest round: found no progress file in `,
+    os.BtnCmdWithHelp(`saves`),
+    `; also no rounds in `,
+    os.BtnCmdWithHelp(`history`),
+    `; build your history by playing`,
+  )
 }
 
 export async function findRoundFileAtPath(sig, srcPath) {
@@ -1089,13 +1113,9 @@ export async function readDecodeGameFile(sig, file) {
       const src = await readFileStream(sig, file)
       return await u.textDataStream_to_ungzip_to_unjsonData(src)
     }
-
-    const src = await readFileText(sig, file)
-    return await u.decodeGdStr(src)
+    return await u.decodeGdStr(await readFileText(sig, file))
   }
-  catch (err) {
-    throw new u.ErrDecoding(`unable to decode file ${a.show(file.name)}: ${err}`, {cause: err})
-  }
+  catch (err) {throw errDecodeFile(err, file.name)}
 }
 
 // SYNC[decode_game_file].
@@ -1108,9 +1128,11 @@ export async function readDecodeGameFileBlob(src) {
     }
     return await u.decodeGdStr(await src.text())
   }
-  catch (err) {
-    throw new u.ErrDecoding(`unable to decode file ${a.show(file.name)}: ${err}`, {cause: err})
-  }
+  catch (err) {throw errDecodeFile(err, name)}
+}
+
+function errDecodeFile(err, path) {
+  return new u.ErrDecoding(`unable to decode file ${a.show(path)}: ${err}`, {cause: err})
 }
 
 export async function writeEncodeGameFile(sig, tar, src) {

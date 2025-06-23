@@ -9,7 +9,8 @@ import * as au from './auth.mjs'
 import * as up from './upload.mjs'
 import * as p from './plot.mjs'
 import * as e from './edit.mjs'
-import * as sr from './show_round_combined.mjs'
+import * as src from './show_round_combined.mjs'
+import * as srs from './show_round_split.mjs'
 import * as se from './setup.mjs'
 
 import * as self from './main.mjs'
@@ -28,7 +29,8 @@ os.addCmd(se.cmdHistory)
 os.addCmd(au.cmdAuth)
 os.addCmd(p.cmdPlot)
 os.addCmd(p.cmdPlotLink)
-os.addCmd(sr.cmdShowRound)
+os.addCmd(srs.cmdShowRoundSplit)
+os.addCmd(src.cmdShowRoundCombined)
 os.addCmd(e.cmdEdit)
 os.addCmd(fs.cmdRollback)
 os.addCmd(ls.cmdLs)
@@ -70,21 +72,8 @@ async function main() {
   ]).catch(ui.logErr)
 
   if (!u.QUERY.get(`import`)) {
-    /*
-    Help is convenient to have on startup so you can click the commands. But
-    when the initial setup is not finished, we'd rather focus their attention
-    on the setup flow message, and avoid overwhelming them with help.
-    */
-    if (se.isSetupDone()) {
-      ui.LOG.info(`welcome to Tabularius! 🚀`)
-      await os.runCmd(`help`).catch(ui.logErr)
-    }
-    else {
-      ui.LOG.info(
-        `welcome to Tabularius! type or click `,
-        os.BtnCmd(`help`), ` to see available commands 🚀`,
-      )
-    }
+    ui.LOG.info(`welcome to Tabularius! 🚀`)
+    await os.runCmd(`help`).catch(ui.logErr)
   }
 
   // Other code relies on up-to-date FS state, so FS migrations run first.
@@ -151,4 +140,4 @@ async function main() {
   if (!se.isSetupDone()) se.updateSetupFlowMsg()
 }
 
-main().catch(ui.logErr)
+await main().catch(ui.logErr)

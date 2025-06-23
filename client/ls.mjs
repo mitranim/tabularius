@@ -213,6 +213,6 @@ export function EntryLine({entry, desc, cmd, path, statStr}) {
   ])
 }
 
-function TruncLine(src) {
-  return E(`span`, {class: `w-full inline-flex trunc-base whitespace-pre`}, src)
+function TruncLine(chi) {
+  return E(`span`, {class: `w-full inline-flex trunc-base whitespace-pre`, chi})
 }

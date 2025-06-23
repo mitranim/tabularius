@@ -157,7 +157,7 @@ export function isSetupDone() {
   return (
     !!fs.SAVE_DIR_CONF.handle &&
     !!fs.HISTORY_DIR_CONF.handle &&
-    !!au.STATE.userId
+    au.isAuthed()
   )
 }
 
@@ -174,7 +174,7 @@ export function updateSetupFlowMsg(opt) {
   a.optBool(opt)
   const save = !!fs.SAVE_DIR_CONF.handle
   const hist = !!fs.HISTORY_DIR_CONF.handle
-  const auth = !!au.STATE.userId
+  const auth = au.isAuthed()
   const state = boolMask(save, hist, auth)
   const change = state !== SETUP_FLOW_PREV_STATE
 
@@ -189,7 +189,7 @@ export function updateSetupFlowMsg(opt) {
 function SetupFlow() {
   const save = !!fs.SAVE_DIR_CONF.handle
   const hist = !!fs.HISTORY_DIR_CONF.handle
-  const auth = !!au.STATE.userId
+  const auth = au.isAuthed()
 
   return ui.LogParagraphs(
     ui.LogLines(
@@ -224,7 +224,7 @@ function SetupFlow() {
 function Step(ok, ...chi) {
   return [
     checkmark(ok), ` `,
-    E(`span`, {class: a.vac(ok) && `line-through`}, chi),
+    E(`span`, {class: a.vac(ok) && `line-through`, chi}),
   ]
 }
 

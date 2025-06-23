@@ -10,6 +10,7 @@ export const MEDIA_PAD = `1rem`
 export const CLS_MEDIA_PAD = `p-[${MEDIA_PAD}]`
 export const CLS_MEDIA_PAD_T = `pt-[${MEDIA_PAD}]`
 export const CLS_MEDIA_PAD_X = `px-[${MEDIA_PAD}]`
+export const CLS_MEDIA_PAD_Y = `py-[${MEDIA_PAD}]`
 export const MEDIA_STICKY = `sticky top-[-${MEDIA_PAD}]`
 export const MEDIA_ITEM_WID = `36rem`
 export const CLS_MEDIA_ITEM_WIDE = `span-all self-start`
@@ -29,28 +30,27 @@ export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends ui.Elem {
     const obs = this.state
     const placeholder = `[Plot Placeholder]`
 
-    E(this,
-      {class: a.spaced(
+    E(this, {
+      class: a.spaced(
         CLS_MEDIA_CHI,
         CLS_MEDIA_ITEM_WIDE,
         CLS_MEDIA_PAD,
         `flex flex-col gap-3`,
-      )},
-      E(`div`, {class: `text-center`},
-        () => obs.count ? `Plots loading...` : placeholder,
       ),
-      E(
-        `div`,
-        {class: `h-64 flex row-cen-cen border border-gray-400 dark:border-neutral-600 rounded bg-white dark:bg-neutral-800`},
-        E(
-          `div`,
-          {class: a.spaced(ui.CLS_TEXT_MUTED, `w-full text-center`)},
-          () => (
-            obs.count ? [`Loading `, obs.count, ` plots...`] : placeholder
-          ),
-        )
-      )
-    )
+      chi: [
+        E(`div`, {
+          class: `text-center`,
+          chi: () => obs.count ? `Plots loading...` : placeholder,
+        }),
+        E(`div`, {
+          class: `h-64 flex row-cen-cen border border-gray-400 dark:border-neutral-600 rounded bg-white dark:bg-neutral-800`,
+          chi: E(`div`, {
+            class: a.spaced(ui.CLS_TEXT_MUTED, `w-full text-center`),
+            chi: () => obs.count ? [`Loading `, obs.count, ` plots...`] : placeholder,
+          }),
+        }),
+      ],
+    })
   }
 }()
 
@@ -61,13 +61,12 @@ export const PROCESS_LIST = new class ProcessList extends ui.Elem {
   available at construction time.
   */
   connectedCallback() {
-    E(
-      this,
-      {class: a.spaced(
+    E(this, {
+      class: a.spaced(
         `flex flex-col gap-2`, CLS_MEDIA_CHI, CLS_MEDIA_ITEM_WIDE, CLS_MEDIA_PAD,
-      )},
-      ActiveProcs,
-    )
+      ),
+      chi: ActiveProcs,
+    })
   }
 }()
 
@@ -78,43 +77,41 @@ function ActiveProcs() {
   if (!len) return ui.Muted(`no active processes`)
 
   return [
-    E(`div`, {}, `active processes (${len}):`),
-    a.map(vals, Process),
+    E(`div`, {chi: `active processes (${len}):`}),
+    a.map(vals, a.bind(E, Process)),
   ]
 }
 
 export const MEDIA = new class MediaPanel extends ui.Elem {
   constructor() {
-    super()
-    E(
-      this,
-      {
-        class: a.spaced(
-          `@container w-full min-w-0 min-h-full grid-auto content-between gap-4`,
-          `overflow-y-auto overflow-x-clip break-words over-wrap`,
-        ),
-        style: {
-          '--grid-col-wid': `36rem`,
-          '--grid-pad': MEDIA_PAD,
-        },
+    E(super(), {
+      class: a.spaced(
+        `@container w-full min-w-0 min-h-full grid-auto content-between gap-4`,
+        `overflow-y-auto overflow-x-clip break-words over-wrap`,
+        CLS_MEDIA_PAD_Y,
+      ),
+      style: {
+        '--grid-col-wid': MEDIA_ITEM_WID,
+        '--grid-pad-hor': MEDIA_PAD,
       },
-      PLOT_PLACEHOLDER, PROCESS_LIST,
-    )
+      chi: [PLOT_PLACEHOLDER, PROCESS_LIST],
+    })
   }
 
   add(val) {
     a.reqElement(val)
     ui.clsAdd(val, CLS_MEDIA_CHI)
 
-    const onclick = () => {this.delete(val)}
-    const btn = BtnKill({onclick})
+    const native = a.hasMeth(val, `addCloseBtn`)
 
-    if (a.hasMeth(val, `addCloseBtn`)) {
-      val.addCloseBtn(btn)
-    }
+    const btn = BtnKill({
+      onclick: () => {this.delete(val)},
+      class: a.vac(!native) && `absolute top-2 right-2`,
+    })
+
+    if (native) val.addCloseBtn(btn)
     else {
-      ui.clsAdd(val, `relative`)
-      ui.clsAdd(btn, `absolute top-2 right-2`)
+      val.style.position = `relative`
       val.appendChild(btn)
     }
 
@@ -138,7 +135,7 @@ export const MEDIA = new class MediaPanel extends ui.Elem {
     ui.clsToggle(tar, ok, CLS_MEDIA_ITEM_WIDE)
   }
 
-  clear() {E(this, undefined, PLOT_PLACEHOLDER, PROCESS_LIST)}
+  clear() {E(this, {chi: [PLOT_PLACEHOLDER, PROCESS_LIST]})}
 
   updatePlaceholder() {
     if (this.children.length <= 1) {
@@ -176,42 +173,40 @@ function Process(src) {
   a.reqInst(src, os.Proc)
   const cls = a.spaced(ui.CLS_TEXT_MUTED, `trunc text-sm`)
 
-  return E(`div`, {class: `flex row-bet-cen gap-2`},
-    E(`pre`, {class: `flex-1 basis-auto trunc font-medium flex-1`},
-      ui.withTooltip({
-        chi: `process id`,
-        elem: E(`span`, {class: `cursor-help`}, src.id),
+  return E(`div`, {
+    class: `flex row-bet-cen gap-2`,
+    chi: [
+      E(`pre`, {
+        class: `flex-1 basis-auto trunc font-medium flex-1`,
+        chi: [
+          ui.withTooltip(E(`span`, {chi: src.id}), {chi: `process id`}),
+          ui.Muted(`: `),
+          ui.BtnPromptReplace(src.args),
+        ],
       }),
-      ui.Muted(`: `),
-      ui.BtnPromptReplace(src.args),
-    ),
-    // TODO: place description on its own line (under).
-    a.vac(src.desc && undefined) && E(
-      `pre`,
-      {class: cls},
-      `(`, u.callOpt(src.desc), `)`,
-    ),
-    a.vac(src.startAt) && ui.withTooltip({
-      chi: `started at: ` + ui.dateFormat.format(src.startAt),
-      elem: E(
-        `pre`,
-        {class: a.spaced(cls, `cursor-help`)},
-        ui.timeFormat.format(src.startAt),
+      a.vac(src.desc && undefined) && E(`pre`, {
+        class: cls,
+        chi: [`(`, u.callOpt(src.desc), `)`],
+      }),
+      a.vac(src.startAt) && ui.withTooltip(
+        E(`pre`, {class: cls, chi: ui.timeFormat.format(src.startAt)}),
+        {chi: `started at: ` + ui.dateFormat.format(src.startAt)},
       ),
-    }),
-    a.vac(src.id) && BtnKill({
-      onclick() {os.runCmd(`kill ` + src.id).catch(ui.logErr)},
-    }),
-  )
+      a.vac(src.id) && BtnKill({
+        onclick() {os.runCmd(`kill ` + src.id).catch(ui.logErr)},
+      }),
+    ],
+  })
 }
 
-export function BtnKill({class: cls, ...attrs}) {
+export function BtnKill(props) {
   return E(`button`, {
+    ...a.reqDict(props),
     type: `button`,
     class: a.spaced(
       `w-6 h-6 shrink-0 text-center align-middle leading-none bg-red-500 text-white rounded hover:bg-red-600`,
-      cls,
+      props.class,
     ),
-    ...attrs
-  }, `✕`)
+    chi: `✕`,
+  })
 }

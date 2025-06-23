@@ -16,21 +16,25 @@ const namespace = globalThis.tabularius ??= a.Emp()
 namespace.sr = self
 a.patch(globalThis, namespace)
 
-cmdShowRound.cmd = `show_round`
-cmdShowRound.desc = `detailed breakdown of one round`
-cmdShowRound.help = function cmdShowRoundHelp() {
+cmdShowRoundCombined.cmd = `show_round_combined`
+cmdShowRoundCombined.desc = `detailed breakdown of one round`
+cmdShowRoundCombined.help = function cmdShowRoundCombinedHelp() {
+  return cmdShowRoundHelp(cmdShowRoundCombined)
+}
+
+export function cmdShowRoundHelp({cmd, desc}) {
   const saveDir = a.laxStr(fs.SAVE_DIR_CONF.handle?.name)
   const histDir = a.laxStr(fs.HISTORY_DIR_CONF.handle?.name)
 
   return ui.LogParagraphs(
-    u.callOpt(cmdShowRound.desc),
-    ls.helpSources(`show_round`),
+    desc,
+    ls.helpSources(cmd),
 
     `local usage:`,
 
     [
       `  `,
-      os.BtnCmd(`show_round`),
+      os.BtnCmd(cmd),
       ` -- displays details of the latest round; checks the `,
       os.BtnCmdWithHelp(`saves`),
       ` directory, falls back on the `,
@@ -118,12 +122,12 @@ cmdShowRound.help = function cmdShowRoundHelp() {
       `cloud usage:`,
       [
         `  `,
-        os.BtnCmd(`show_round -c`),
+        os.BtnCmd(`${cmd} -c`),
         ` -- latest round from any user`,
       ],
       [
         `  `,
-        os.BtnCmd(`show_round -c -u`),
+        os.BtnCmd(`${cmd} -c -u`),
         ` -- latest round from current user`,
         a.vac(!au.isAuthed()) && [`; requires `, os.BtnCmdWithHelp(`auth`)],
       ],
@@ -148,14 +152,23 @@ cmdShowRound.help = function cmdShowRoundHelp() {
   )
 }
 
-export async function cmdShowRound({sig, args}) {
-  const cmd = cmdShowRound.cmd
+export function cmdShowRoundCombined({sig, args}) {
+  return cmdShowRound({sig, cmd: cmdShowRoundCombined, args, View: ShowRound})
+}
+
+export async function cmdShowRound({sig, cmd: cmdFun, args, View}) {
+  u.reqSig(sig)
+  os.reqCmd(cmdFun)
+  a.reqStr(args)
+  a.reqCls(View)
+
+  const cmd = u.cliArgHead(args)
   const paths = []
   let cloud
   let user
 
-  for (const [key, val, pair] of u.cliDecode(u.stripPreSpaced(args, cmd))) {
-    if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdShowRound)
+  for (const [key, val, pair] of u.cliDecode(u.cliArgTail(args))) {
+    if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdFun)
     if (key === `-c`) {
       cloud = ui.cliBool(cmd, key, val)
       continue
@@ -166,7 +179,7 @@ export async function cmdShowRound({sig, args}) {
     }
     if (key) {
       ui.LOG.err(ui.msgUnrecInput(pair, args))
-      return os.cmdHelpDetailed(cmdShowRound)
+      return os.cmdHelpDetailed(cmdFun)
     }
     paths.push(val)
   }
@@ -190,59 +203,32 @@ export async function cmdShowRound({sig, args}) {
 
   if (!paths.length) paths.push(``)
 
+  const opt = {sig, args, View}
+
   return new os.Combo({mediaItems: await Promise.all(a.map(paths, path => (
     cloud
-    ? showRoundCloud({sig, args, path})
-    : showRoundLocal({sig, args, path})
+    ? showRoundCloud({...opt, path})
+    : showRoundLocal({...opt, path})
   )))})
 }
 
-export async function showRoundLocal({sig, args, path}) {
-  const {handle, round, live, hasProg, hasHist} = await fs.findRoundFileAny(sig, path)
-  if (handle) return showRoundFile({sig, args, handle, round, live})
-
-  if (!hasProg && !hasHist) {
-    ui.LOG.err(
-      `unable to show latest round: no access to `,
-      os.BtnCmdWithHelp(`saves`), ` or `, os.BtnCmdWithHelp(`history`),
-      `; click to grant`,
-    )
-    return undefined
-  }
-
-  if (!hasProg) {
-    ui.LOG.err(
-      `unable to show latest round: no access to `,
-      os.BtnCmdWithHelp(`saves`),
-      ` (click to grant), and found no rounds in `,
-      os.BtnCmdWithHelp(`history`), `; build your history by playing!`,
-    )
-    return undefined
-  }
-
-  // This should only be possible if the progress file was manually deleted
-  // from the saves dir.
-  ui.LOG.err(
-    `unable to show latest round: found no progress file in `,
-    os.BtnCmdWithHelp(`saves`),
-    `; also no rounds in `,
-    os.BtnCmdWithHelp(`history`),
-    `; build your history by playing`,
-  )
-  return undefined
+export async function showRoundLocal({sig, args, path, View}) {
+  const {handle, round, live} = await fs.findRoundFileAny(sig, path)
+  return showRoundFile({sig, args, handle, round, live, View})
 }
 
-export async function showRoundCloud({sig, args, path}) {
+export async function showRoundCloud({sig, args, path, View}) {
   const round = await apiDownloadRound(sig, path)
-  return showRoundFile({sig, args, round})
+  return showRoundFile({sig, args, round, View})
 }
 
-export async function showRoundFile({sig, args, handle, round, live}) {
+export async function showRoundFile({sig, args, handle, round, live, View}) {
   u.reqSig(sig)
   a.optInst(handle, FileSystemFileHandle)
   a.optDict(round)
   a.reqValidStr(args)
   a.optBool(live)
+  a.reqCls(View)
 
   round ??= await fs.readDecodeGameFile(sig, handle)
 
@@ -251,32 +237,22 @@ export async function showRoundFile({sig, args, handle, round, live}) {
   const run_ms = round.tabularius_run_ms ?? Date.parse(round.LastUpdated)
   const run_id = s.makeRunId(user_id, run_num, run_ms)
 
-  return new ShowRound({
+  return new View({
     round, user_id, run_id, run_num, run_ms, args, live,
-  })
+  }).init()
 }
-
-export const HIDE_BREAKPOINT = `40rem`
-export const CLS_HIDE_BELOW = `hide-below-[${HIDE_BREAKPOINT}]`
-export const CLS_HIDE_ABOVE = `hide-above-[${HIDE_BREAKPOINT}]`
-export const CLS_CELL_COMMON = `px-2 trunc-base text-left`
-export const CLS_CELL_HEAD = a.spaced(
-  CLS_CELL_COMMON,
-  ui.CLS_TEXT_MUTED,
-  ui.CLS_BUSY_BG,
-  `cursor-pointer pb-1 weight-unset`,
-)
-export const CLS_ROW_TOP = a.spaced(ui.CLS_BORD, `border-t border-dashed`)
 
 // TODO: more colors for different types.
 export const CLS_PERC = `text-sky-700 dark:text-sky-300`
 
 export const TYPE_ANY = undefined
+export const TYPE_HELP = `help`
 export const TYPE_BOOL = `bool`
 export const TYPE_NUM = `num`
 export const TYPE_NUM_MOD = `num_mod`
 export const TYPE_PERC = `perc`
 export const TYPE_PERC_MOD = `perc_mod`
+export const TYPE_PRIO = `prio`
 
 export const NUM_MODE_BOTH = ``
 export const NUM_MODE_NUM = `num`
@@ -285,34 +261,46 @@ export const NUM_MODES = [NUM_MODE_BOTH, NUM_MODE_NUM, NUM_MODE_PERC]
 
 export const NUM_MODE = u.storageObs(`tabularius.show_round.num_mode`)
 export const SHOW_CHI = u.storageObsBool(`tabularius.round_table.show_chi`)
-export const MISSING_LAST = u.storageObsBool(`tabularius.show_round.missing_last`)
+export const MISSING_LAST = u.storageObsBool(`tabularius.show_round.missing_last`, true)
 export const WIDE = u.storageObsBool(`tabularius.show_round.wide`)
 export const LONG = u.storageObsBool(`tabularius.show_round.long`)
 export const SETTINGS_OPEN = u.storageObsBool(`tabularius.show_round.settings_open`)
 export const LONG_ROW_BREAKPOINT = 12
 
-class ShowRound extends d.MixDatSub(ui.Elem) {
+export class ShowRound extends d.MixDatSub(ui.Elem) {
+  closeBtn = a.obsRef()
   opt = undefined
 
   constructor(opt) {
     super()
-    this.opt = a.reqDict(opt)
+    this.opt = {...a.reqDict(opt), closeBtn: this.closeBtn}
 
-    E(this, () => ({class: a.spaced(
-      `@container flex col-sta-str max-w-none min-h-8 text-sm gap-2`,
-      ui.CLS_MEDIA_CHI,
-      a.vac(WIDE.val) && ui.CLS_MEDIA_ITEM_WIDE,
-    )}))
-
-    this.init()
+    E(this, {
+      class: () => a.spaced(
+        `@container flex col-sta-str max-w-none min-h-8 text-sm`,
+        ui.CLS_MEDIA_CHI,
+        a.vac(WIDE.val) && ui.CLS_MEDIA_ITEM_WIDE,
+      ),
+    })
   }
 
   init() {
-    return E(this, undefined,
-      new RoundHead(this.opt),
-      new TableSettingsAndHints(),
-      new RoundTable(this.opt),
-    )
+    const {opt} = this
+    return E(this, {chi: [
+      E(RoundHead, {
+        ...opt,
+        chi: E(TableHintsAndControls, [
+          [E(TableHintHidden), E(TableHintSort)],
+          E(TableHintClick),
+          E(TableControlNumMode),
+          E(TableControlShowChi),
+          E(TableControlMissingLast),
+          E(TableControlWide),
+          E(TableControlLong, `building`),
+        ]),
+      }),
+      E(RoundTableCombined, opt),
+    ]})
   }
 
   // Invoked by `MixDatSub`.
@@ -325,95 +313,90 @@ class ShowRound extends d.MixDatSub(ui.Elem) {
   }
 
   // Invoked by `MEDIA`.
-  addCloseBtn(btn) {a.descendant(this, RoundHead)?.addCloseBtn(btn)}
+  addCloseBtn(btn) {a.reset(this.closeBtn, btn)}
   connectedCallback() {if (this.opt.live) this.datSubInit()}
   disconnectedCallback() {this.datSubDeinit()}
 }
 
-class RoundHead extends ui.Elem {
-  closeBtn = a.obsRef()
+export function RoundHead({round, user_id, run_id, run_num, args, chi, closeBtn}) {
+  a.reqDict(round)
 
-  constructor({round, user_id, run_id, run_num, args}) {
-    super()
-    a.reqDict(round)
+  const round_ms = a.onlyFin(Date.parse(round.LastUpdated))
+  const game_ver = gc.findGameReleaseForMs(round_ms)?.ver
+  const hpCur = round.HqHp
+  const hpMax = reify(round.HqMaxHpData)
+  const grenadiers = (
+    a.laxFin(round.Currencies?.Grenadier) +
+    a.laxFin(round.Currencies?.CompanyStandard) +
+    a.laxFin(round.Currencies?.CompanyBugler) +
+    a.laxFin(round.Currencies?.Chaplain) +
+    a.laxFin(round.Currencies?.FieldMedic) +
+    a.laxFin(round.Currencies?.CompanyLieutenant) +
+    a.laxFin(round.Currencies?.QuarterMaster)
+  )
+  const [curses, dotations, doctrines] = bin(round.Skills, [
+    gc.CODES_TO_CURSES,
+    gc.CODES_TO_DOTATIONS,
+  ])
+  const frontierMods = round.OwnedExpertSkills
+  const blueprints = a.laxDict(round.Blueprints)
+  const [cmd, ...rest] = u.splitCliArgs(args)
+  args = a.spaced(...rest)
 
-    const round_ms = a.onlyFin(Date.parse(round.LastUpdated))
-    const game_ver = gc.findGameReleaseForMs(round_ms)?.ver
-    const hpCur = round.HqHp
-    const hpMax = reify(round.HqMaxHpData)
-    const grenadiers = (
-      a.laxFin(round.Currencies?.Grenadier) +
-      a.laxFin(round.Currencies?.CompanyStandard) +
-      a.laxFin(round.Currencies?.CompanyBugler) +
-      a.laxFin(round.Currencies?.Chaplain) +
-      a.laxFin(round.Currencies?.FieldMedic) +
-      a.laxFin(round.Currencies?.CompanyLieutenant) +
-      a.laxFin(round.Currencies?.QuarterMaster)
-    )
-    const [curses, dotations, doctrines] = bin(round.Skills, [
-      gc.CODES_TO_CURSES,
-      gc.CODES_TO_DOTATIONS,
-    ])
-    const frontierMods = round.OwnedExpertSkills
-    const blueprints = a.laxDict(round.Blueprints)
-
-    const cmd = cmdShowRound.cmd
-    args = u.stripPreSpaced(args, cmd)
-
-    E(
-      this,
-      {class: a.spaced(
-        `w-full flex col-sta-str gap-2`,
-        ui.CLS_MEDIA_PAD_X,
-        ui.CLS_MEDIA_PAD_T,
-      )},
-      E(
-        `div`,
-        {class: `w-full flex row-bet-sta gap-2`},
-        E(`div`, {class: `flex-1 min-w-0 flex col-sta-sta gap-2`},
-          E(`h2`, {class: `trunc-base w-full`},
-            `run `, ui.Bold(run_num), ` round `, ui.Bold(round.RoundIndex),
-          ),
-          a.vac(a.optStr(args)) && ui.BtnPrompt({
-            cmd, suf: args, full: true, trunc: true, width: `w-full`,
+  return E(`div`, {
+    class: `w-full flex col-sta-str gap-y-2 p-2`,
+    chi: [
+      E(`div`, {
+        class: `w-full flex row-bet-sta gap-x-2`,
+        chi: [
+          E(`div`, {
+            class: `flex-1 min-w-0 flex col-sta-sta gap-y-2`,
+            chi: [
+              E(`h2`, {
+                class: `trunc-base w-full`,
+                chi: [`run `, ui.Bold(run_num), ` round `, ui.Bold(round.RoundIndex)],
+              }),
+              a.vac(a.optStr(args)) && ui.BtnPrompt({
+                cmd, suf: args, full: true, trunc: true, width: `w-full`,
+              }),
+            ],
           }),
+          closeBtn,
+        ],
+      }),
+      E(`div`, {
+        class: a.spaced(
+          ui.CLS_BG_0,
+          ui.CLS_BORD,
+          `w-full grid-auto gap-x-4 gap-y-2 py-2 rounded border`,
         ),
-        this.closeBtn,
-      ),
-      E(
-        `div`,
-        {
-          class: a.spaced(
-            ui.CLS_BG_0,
-            ui.CLS_BORD,
-            `w-full grid-auto gap-x-4 gap-y-2 rounded border`,
-          ),
-          style: {
-            '--grid-col-wid': `20ch`,
-            '--grid-pad': `1rem`,
-          },
+        style: {
+          '--grid-col-wid': `20ch`,
+          '--grid-pad-hor': `0.5rem`,
         },
-        // Keep the total number of pairs at 12, nicely divisible.
-        Pair(`game_ver`, game_ver),
-        Pair(`user_id`, user_id),
-        Pair(`run_id`, run_id),
-        Pair(`seed`, round.EncodedSeed),
-        Pair(`diff`, round.DifficultyLevel),
-        Pair(`frontier`, round.CurrentExpertScore),
-        Pair(`hero`, gc.codeToNameShort(round.HeroType)),
-        Pair(`neutral_odds`, fmtCentPerc(round.CurrentNeutralOdds)),
-        Pair(`hq_hp`, a.vac(a.isSome(hpCur) || a.isSome(hpMax)) && (
-          hpCur === hpMax
-          ? ui.formatNumCompact(hpCur)
-          : [ui.formatNumCompact(hpCur), `/`, ui.formatNumCompact(hpMax)]
-        )),
-        a.vac(grenadiers) && Pair(`grenadiers`, grenadiers),
-        Pair(`supply_reinf`, fmtNumPercMod(a.laxFin(round.Currencies?.SupplyMultiplier) - 1)),
-        Pair(`recon_reinf`, fmtNumPercMod(a.laxFin(round.Currencies?.ReconMultiplier) - 1)),
-        Pair(`supply`, ui.formatNumCompact(round.Currencies?.Supply)),
-        Pair(`recon`, ui.formatNumCompact(round.Currencies?.Reconnaissance)),
-        Pair(`tech`, ui.formatNumCompact(round.Currencies?.Tech)),
-      ),
+        chi: [
+          // Keep the total number of pairs at 12, nicely divisible.
+          Pair(`game_ver`, game_ver),
+          Pair(`user_id`, user_id),
+          Pair(`run_id`, run_id),
+          Pair(`seed`, round.EncodedSeed),
+          Pair(`diff`, round.DifficultyLevel),
+          Pair(`frontier`, round.CurrentExpertScore),
+          Pair(`hero`, gc.codeToNameShort(round.HeroType)),
+          Pair(`neutral_odds`, fmtCentPerc(round.CurrentNeutralOdds)),
+          Pair(`hq_hp`, a.vac(a.isSome(hpCur) || a.isSome(hpMax)) && (
+            hpCur === hpMax
+            ? ui.formatNumCompact(hpCur)
+            : [ui.formatNumCompact(hpCur), `/`, ui.formatNumCompact(hpMax)]
+          )),
+          a.vac(grenadiers) && Pair(`grenadiers`, grenadiers),
+          Pair(`supply_reinf`, fmtNumPercMod(a.laxFin(round.Currencies?.SupplyMultiplier) - 1)),
+          Pair(`recon_reinf`, fmtNumPercMod(a.laxFin(round.Currencies?.ReconMultiplier) - 1)),
+          Pair(`supply`, ui.formatNumCompact(round.Currencies?.Supply)),
+          Pair(`recon`, ui.formatNumCompact(round.Currencies?.Reconnaissance)),
+          Pair(`tech`, ui.formatNumCompact(round.Currencies?.Tech)),
+        ]
+      }),
       DetailsGrid(
         Details(`doctrines`, a.map(doctrines, gc.codeToNameShort)),
         Details(`frontier modifiers`, a.map(frontierMods, gc.codeToNameShort)),
@@ -421,39 +404,38 @@ class RoundHead extends ui.Elem {
         Details(`frontier curses`, a.map(curses, gc.codeToNameShort)),
         Details(`blueprints`, a.entries(blueprints).map(Blueprint)),
       ),
-    )
-  }
-
-  addCloseBtn(btn) {this.closeBtn.val = btn}
+      chi,
+    ],
+  })
 }
 
-function DetailsGrid(...src) {
-  if (!a.vac(src)) return undefined
+function DetailsGrid(...chi) {
+  if (!a.vac(chi)) return undefined
 
-  return E(
-    `div`,
-    {
-      class: `grid-auto justify-between gap-2`,
-      style: {'--grid-col-wid': `32ch`, '--grid-pad': `0px`},
-    },
-    ...src,
-  )
+  return E(`div`, {
+    class: `grid-auto justify-between gap-2`,
+    style: {'--grid-col-wid': `32ch`, '--grid-pad-hor': `0px`},
+    chi,
+  })
 }
 
-function Details(summary, chi) {return ui.DetailsPre({summary, chi, chiLvl: 1})}
+function Details(summary, chi) {
+  return ui.DetailsPre({summary, chi, chiLvl: 1, trunc: false})
+}
 
 function Pair(key, val) {
   if (a.isNil(val)) return undefined
 
-  return E(
-    `span`,
-    {class: `flex row-bet-end gap-1 whitespace-pre overflow-clip`},
-    withGlossary(key, ui.Muted(key)),
-    E(`span`, {
-      class: a.spaced(ui.CLS_BORD, `flex-1 shrink-1 min-w-0 border-b border-dashed`),
-    }),
-    E(`span`, {class: `trunc`}, val),
-  )
+  return E(`span`, {
+    class: `flex row-bet-end gap-1 whitespace-pre overflow-clip`,
+    chi: [
+      withGlossary(ui.Muted(key), key),
+      E(`span`, {
+        class: a.spaced(ui.CLS_BORD, `flex-1 shrink-1 min-w-0 border-b border-dashed`),
+      }),
+      E(`span`, {class: `trunc`, chi: val}),
+    ],
+  })
 }
 
 function Blueprint([code, count]) {
@@ -463,128 +445,100 @@ function Blueprint([code, count]) {
   ]
 }
 
-class TableSettingsAndHints extends dr.MixReg(HTMLDetailsElement) {
-  constructor() {
-    super()
-
-    ui.DetailsPre({
-      elem: this,
-      summary: `settings and hints`,
-      class: a.spaced(ui.CLS_MEDIA_PAD_X, `whitespace-pre-wrap`),
-      count: false,
-      chiLvl: 1,
-      open: SETTINGS_OPEN.val,
-      ontoggle: this.onToggle,
-      chi: [
-        ...TableHints(),
-        TableControlNumMode(),
-        TableControlShowChi(),
-        TableControlMissingLast(),
-        TableControlWide(),
-        TableControlLong(),
-      ],
-    })
-  }
-
-  rec = a.recurTask(this, this.onSettings)
-  onSettings() {this.open = SETTINGS_OPEN.val}
-  onToggle() {SETTINGS_OPEN.val = this.open}
+export function TableHintsAndControls(chi) {
+  return ui.DetailsPre({
+    summary: `hints and settings`,
+    count: false,
+    trunc: false,
+    chiLvl: 1,
+    obs: SETTINGS_OPEN,
+    chi,
+  })
 }
 
-function TableHints() {
-  return [
-    [TableHintHidden(), TableHintSort()],
-    TableHintClick(),
-  ]
+export function TableHintHidden() {
+  return E(`span`, {
+    class: ui.CLS_ONLY_NARROW,
+    chi: [
+      ui.Muted(`hint:`),
+      ` some columns are hidden; make the media panel wider to see them`,
+    ],
+  })
 }
 
-function TableHintHidden() {
-  return E(
-    `span`,
-    {class: CLS_HIDE_ABOVE},
-    ui.Muted(`hint:`),
-    ` some columns are hidden; make the media panel wider to see them`,
-  )
+export function TableHintSort() {
+  return E(`span`, {
+    class: ui.CLS_ONLY_WIDE,
+    chi: [ui.Muted(`hint:`), ` click columns to sort`],
+  })
 }
 
-function TableHintSort() {
-  return E(
-    `span`,
-    {class: CLS_HIDE_BELOW},
-    ui.Muted(`hint:`), ` click columns to sort`,
-  )
+export function TableHintClick() {
+  return E(`span`, {
+    chi: [
+      ui.Muted(`hint:`),
+      ` ctrl+click a building row to toggle `,
+      ui.Bold(`all`), ` children`,
+    ]
+  })
 }
 
-function TableHintClick() {
-  return [
-    ui.Muted(`hint:`),
-    ` ctrl+click a building row to toggle `,
-    ui.Bold(`all`), ` children`,
-  ]
-}
-
-function TableControlNumMode() {
-  return new ObsRadio({
+export function TableControlNumMode() {
+  return E(ui.ObsRadio, {
     label: `numbers`,
     obs: NUM_MODE,
     vals: NUM_MODES,
   })
 }
 
-function TableControlShowChi() {
-  return new ObsCheckbox({
-    label: `show children`,
+export function TableControlShowChi() {
+  return E(ui.ObsCheckbox, {
     obs: SHOW_CHI,
-    tooltip: `same as ctrl+click on any building row`,
+    label: ui.withTooltip(ui.Muted(`show children`), {
+      chi: `same as ctrl+click on any building row`,
+    }),
   })
 }
 
-function TableControlMissingLast() {
-  return new ObsCheckbox({
-    label: `missing last`,
+export function TableControlMissingLast() {
+  return E(ui.ObsCheckbox, {
     obs: MISSING_LAST,
-    tooltip: `prefer to sort missing values to the bottom`,
+    label: ui.withTooltip(ui.Muted(`missing last`), {
+      chi: `prefer to sort missing values to the bottom`
+    }),
   })
 }
 
-function TableControlWide() {
-  return new ObsCheckbox({
-    label: `wide`,
+export function TableControlWide() {
+  return E(ui.ObsCheckbox, {
     obs: WIDE,
-    tooltip: `take the entire width of the media panel`,
+    label: ui.withTooltip(ui.Muted(`wide`), {
+      chi: `take the entire width of the media panel`
+    }),
   })
 }
 
-function TableControlLong() {
-  return new ObsCheckbox({
-    label: `long`,
+export function TableControlLong(desc) {
+  return E(ui.ObsCheckbox, {
     obs: LONG,
-    tooltip: `show every building`,
+    label: ui.withTooltip(ui.Muted(`long`), {chi: [`show every `, desc]}),
   })
 }
 
-class SortObs extends u.StorageObsJson {
-  decode(src) {return a.laxDict(a.onlyDict(super.decode(src)))}
-  isEnabled() {return !!this.get()?.key}
-}
-
-export const BUI_SORT = new SortObs(`tabularius.round_table.sort_bui`)
-export const CHI_SORT = new SortObs(`tabularius.round_table.sort_chi`)
-export const WEP_SORT = new SortObs(`tabularius.round_table.sort_wep`)
+export const BUI_SORT = ui.sortObs(`tabularius.round_table.sort_bui`)
+export const CHI_SORT = ui.sortObs(`tabularius.round_table.sort_chi`)
+export const WEP_SORT = ui.sortObs(`tabularius.round_table.sort_wep`)
 export const SORTS = [BUI_SORT, CHI_SORT, WEP_SORT]
-
-// SYNC[bui_stat_types].
-export const BUI_STAT_TYPES = [...s.STAT_TYPES, `bui_cost`]
 
 // SYNC[bui_cols].
 export const BUI_COLS = [
   {sortObs: BUI_SORT, key: `bui_type_upg`,           type: TYPE_ANY, colspan: 3},
   {sortObs: BUI_SORT, key: s.STAT_TYPE_DMG_DONE,     type: TYPE_NUM, colspan: 2},
   {sortObs: BUI_SORT, key: s.STAT_TYPE_DMG_OVER,     type: TYPE_NUM, colspan: 2},
-  {sortObs: BUI_SORT, key: s.STAT_TYPE_DMG_DONE_ACC, type: TYPE_NUM, colspan: 2, hide: true},
-  {sortObs: BUI_SORT, key: s.STAT_TYPE_DMG_OVER_ACC, type: TYPE_NUM, colspan: 2, hide: true},
+  {sortObs: BUI_SORT, key: s.STAT_TYPE_DMG_DONE_ACC, type: TYPE_NUM, colspan: 2, wide: true},
+  {sortObs: BUI_SORT, key: s.STAT_TYPE_DMG_OVER_ACC, type: TYPE_NUM, colspan: 2, wide: true},
   {sortObs: BUI_SORT, key: s.STAT_TYPE_COST_EFF,     type: TYPE_NUM, colspan: 2},
-  {sortObs: BUI_SORT, key: s.STAT_TYPE_COST_EFF_ACC, type: TYPE_NUM, colspan: 2, hide: true},
+  {sortObs: BUI_SORT, key: s.STAT_TYPE_COST_EFF_ACC, type: TYPE_NUM, colspan: 2, wide: true},
   {sortObs: BUI_SORT, key: `bui_cost`,               type: TYPE_NUM, colspan: 2},
 ]
 
@@ -600,107 +554,70 @@ export const CHI_STAT_TYPES = [
 export const CHI_COLS = [
   {sortObs: CHI_SORT, key: `chi_type`, type: TYPE_ANY, colspan: 3},
   ...a.map(CHI_STAT_TYPES, key => ({sortObs: CHI_SORT, key, type: TYPE_NUM, colspan: 2})),
-  {sortObs: CHI_SORT, key: `enabled`, type: TYPE_BOOL, colspan: 6, hide: true},
+  {sortObs: CHI_SORT, key: `enab`, type: TYPE_BOOL, colspan: 6, wide: true},
 ]
 
 // SYNC[wep_cols].
 export const WEP_COLS = [
-  {sortObs: WEP_SORT, key: `wep_type`, type: TYPE_ANY, colspan: 3},
-  {sortObs: WEP_SORT, key: `range`,    type: TYPE_ANY, hide: true},
-  {sortObs: WEP_SORT, key: `mag`,      type: TYPE_NUM},
-  {sortObs: WEP_SORT, key: `rof`,      type: TYPE_NUM},
-  {sortObs: WEP_SORT, key: `rel`,      type: TYPE_NUM},
-  {sortObs: WEP_SORT, key: `dmg`,      type: TYPE_NUM},
-  {sortObs: WEP_SORT, key: `targs`,    type: TYPE_NUM},
-  {sortObs: WEP_SORT, key: `dmg_base`, type: TYPE_NUM, hide: true},
-  {sortObs: WEP_SORT, key: `dmg_perc`, type: TYPE_PERC_MOD, hide: true},
-  {sortObs: WEP_SORT, key: `air`,      type: TYPE_PERC_MOD},
-  {sortObs: WEP_SORT, key: `shield`,   type: TYPE_PERC_MOD},
-  {sortObs: WEP_SORT, key: `aoe`,      type: TYPE_NUM, hide: true},
-  {sortObs: WEP_SORT, key: `detec`,    type: TYPE_BOOL, hide: true},
-  {sortObs: WEP_SORT, key: `targ`,     type: TYPE_ANY, colspan: 2, hide: true},
+  {sortObs: WEP_SORT, key: `wep_type`,  type: TYPE_ANY, colspan: 3},
+  {sortObs: WEP_SORT, key: `range`,     type: TYPE_ANY, wide: true},
+  {sortObs: WEP_SORT, key: `mag`,       type: TYPE_NUM},
+  {sortObs: WEP_SORT, key: `rof`,       type: TYPE_NUM},
+  {sortObs: WEP_SORT, key: `rel`,       type: TYPE_NUM},
+  {sortObs: WEP_SORT, key: `dmg`,       type: TYPE_NUM},
+  {sortObs: WEP_SORT, key: `targ`,      type: TYPE_NUM},
+  {sortObs: WEP_SORT, key: `dmg_base`,  type: TYPE_NUM, wide: true},
+  {sortObs: WEP_SORT, key: `perc_dmg`,  type: TYPE_PERC_MOD, wide: true},
+  {sortObs: WEP_SORT, key: `perc_air`,  type: TYPE_PERC_MOD},
+  {sortObs: WEP_SORT, key: `perc_shld`, type: TYPE_PERC_MOD},
+  {sortObs: WEP_SORT, key: `aoe`,       type: TYPE_NUM, wide: true},
+  {sortObs: WEP_SORT, key: `det`,       type: TYPE_BOOL, wide: true},
+  {sortObs: WEP_SORT, key: `prio`,      type: TYPE_PRIO, wide: false},
+  {sortObs: WEP_SORT, key: `prio`,      type: TYPE_PRIO, colspan: 2, wide: true},
 ]
 
 validateColAlignment()
 
-class RoundTable extends dr.MixReg(HTMLTableElement) {
-  constructor(opt) {
-    super()
-    E(
-      this,
-      {class: `w-full table table-fixed border-collapse`},
-      new RoundTableHead(opt),
-      new RoundTableBody(opt),
-    )
-  }
+function RoundTableCombined(opt) {
+  return E(`table`, {
+    class: ui.CLS_TABLE,
+    chi: [
+      E(`thead`, {
+        chi: a.map(BUI_COLS, col => E(TableHeadCell, {...col, sortObs: BUI_SORT})),
+      }),
+      E(RoundTableBody, opt),
+    ],
+  })
 }
 
-class RoundTableHead extends dr.MixReg(HTMLTableSectionElement) {
-  static localName = `thead`
+function RoundTableBody(opt) {
+  const {sortableRows: sortable, otherRows} = roundTableRows(opt)
 
-  constructor() {
-    super()
-    for (const col of BUI_COLS) {
-      this.appendChild(new TableHeadCell({...col, sortObs: BUI_SORT}))
-    }
-  }
-}
+  const rowObs = a.obsRef(sortable)
 
-class RoundTableBody extends dr.MixReg(HTMLTableSectionElement) {
-  static localName = `tbody`
-  inited = false
-  sorter = undefined
-  rowList = undefined
-  rowObs = a.obsRef()
+  const sorter = a.recur(function sortRows() {
+    a.each(SORTS, a.deref)
+    const enabled = a.some(SORTS, isEnabled)
+    const rows = enabled ? a.sort(sortable, compareRowsDeep) : sortable
 
-  constructor(opt) {
-    super()
-    this.rowList = roundTableRows(opt).tbodyRows
-    this.sorter = a.recur(this, this.sort)
-    E(this, undefined, this.rowObs)
-  }
-
-  sort() {
-    a.each(SORTS, getVal)
-
-    let rows = this.rowList
-
-    if ((this.inited !== (this.inited = true)) || a.some(SORTS, isEnabled)) {
-      rows = a.sort(this.rowList, compareRowsDeep)
-    }
+    a.RUN_REF.set()
 
     afterSort(rows)
-    this.rowObs.val = rows
-  }
+    a.reset(rowObs, rows)
+  })
+
+  const body = E(`tbody`, {chi: [rowObs, otherRows]})
+  u.retain(body, sorter)
+  return body
 }
 
 class TableRow extends dr.MixReg(HTMLTableRowElement) {
   parent = undefined
   ancs = undefined
-  sortInd = undefined
-  sortObs = undefined
-  cellDict = undefined
 
-  constructor({parent, sortInd, sortObs} = {}) {
-    super()
-    this.parent = a.optNode(parent)
-    this.sortInd = a.reqNat(sortInd)
-    this.sortObs = a.optInst(sortObs, SortObs)
-  }
-
-  isSortable() {return true}
+  constructor({parent} = {}) {super().parent = a.optNode(parent)}
+  hasSortData() {return false}
   afterSort() {}
-  getCell(key) {return this.getCellDict()[a.reqValidStr(key)]}
-
-  getCellDict() {
-    if (this.cellDict) return this.cellDict
-    const out = a.Emp()
-    for (const node of this.cells) {
-      const {key} = node
-      if (a.isValidStr(key)) out[key] = node
-    }
-    return this.cellDict = out
-  }
 
   ancestorLen() {
     let out = 0
@@ -720,12 +637,32 @@ class TableRow extends dr.MixReg(HTMLTableRowElement) {
   }
 }
 
-class SubRow extends TableRow {
+function MixSortable(cls) {
+  return class Sortable extends cls {
+    sortObs = undefined
+    sortInd = undefined
+    data = undefined
+
+    constructor(opt) {
+      super(opt)
+      this.sortObs = a.reqInst(opt.sortObs, ui.SortObs)
+      this.sortInd = a.reqNat(opt.sortInd)
+      this.data = a.reqDict(opt.data)
+    }
+
+    hasSortData() {return true}
+    getSortVal(key) {return this.data[a.reqValidStr(key)]}
+  }
+}
+
+class SubRowBase extends TableRow {
   pre = ui.Pale()
 
   constructor({showRow, ...opt}) {
-    super(opt)
-    E(this, () => ({class: `tr-sub`, hidden: !showRow.val}))
+    E(super(opt), {
+      class: `tr-sub`,
+      hidden: a.vac(showRow) && (() => !showRow.val),
+    })
   }
 
   afterSort({rows, ind}) {
@@ -733,106 +670,72 @@ class SubRow extends TableRow {
   }
 }
 
-class SubRowTheadPseudo extends SubRow {
-  constructor({cols, ...opt}) {
-    E(
-      super(opt),
-      undefined,
-      a.reqArr(cols).map(a.bind(Th, {headPre: this.pre})),
-    )
-  }
+class SubRowTheadPseudo extends SubRowBase {
+  sortObs = undefined
+  sortInd = undefined
 
-  isSortable() {return false}
+  constructor({cols, sortObs, sortInd, ...opt}) {
+    super(opt)
+    this.sortObs = a.reqInst(sortObs, ui.SortObs)
+    this.sortInd = a.reqNat(sortInd)
+    E(this, {
+      chi: a.reqArr(cols).map(a.bind(Th, {headPre: this.pre})),
+    })
+  }
 }
 
-class SubRowTr extends SubRow {
-  constructor({data, total, cols, ...opt}) {
-    E(
-      super(opt),
-      undefined,
-      a.reqArr(cols).map(a.bind(Td, {data, total, headPre: this.pre})),
-    )
+export class SubRow extends MixSortable(SubRowBase) {
+  constructor(opt) {
+    super(opt)
+    const {data, total, cols} = opt
+    E(this, {
+      chi: a.reqArr(cols).map((col, ind) => Td({
+        data, col, ind, total, headPre: this.pre,
+      })),
+    })
   }
 }
 
 function Th({headPre, headSuf}, col, ind) {
   const isHead = ind === 0
 
-  return new TableHeadCell({
+  return E(TableHeadCell, {
     ...a.reqDict(col),
     pre: a.vac(isHead) && headPre,
     suf: a.vac(isHead) && headSuf,
   })
 }
 
-class TableHeadCell extends dr.MixReg(HTMLTableCellElement) {
-  static localName = `th`
-  sortObs = undefined
-  key = undefined
-  pre = undefined
-  sort = new Text()
+function TableHeadCell(opt) {
+  const {key, sortObs, props, pre, suf} = opt
 
-  constructor({sortObs, key, colspan, hide, pre, suf, attrs}) {
-    super()
-    this.sortObs = a.reqInst(sortObs, SortObs)
-    this.key = a.reqValidStr(key)
-
-    E(
-      this,
-      {
-        ...a.optDict(attrs),
-        colspan,
-        class: a.spaced(
-          CLS_CELL_HEAD,
-          attrs?.class,
-          a.vac(a.optBool(hide) && CLS_HIDE_BELOW),
-        ),
-      },
+  return E(ui.ThWithSort, {
+    ...props,
+    ...ui.withCls(cellProps(opt), ui.CLS_CELL_HEAD),
+    key, sortObs,
+    chi: [
       pre,
-      this.sortIndicator.bind(this),
-      ui.withGlossary({
-        key, elem: ui.Span(key), glos: STAT_GLOSSARY, under: true,
-      }),
+      a.bind(ui.SortIndicator, key, sortObs),
+      ui.withGlossary(ui.Span(key), {key, glos: STAT_GLOSSARY, under: true}),
       suf,
-    )
-
-    // TODO: add a `.tabIndex` and a proper `.onkeydown`.
-    this.onclick = this.onClick
-  }
-
-  sortIndicator() {
-    const {key, desc} = this.sortObs.val
-    if (key !== this.key) return ``
-    if (a.isNil(desc)) return ``
-    if (desc) return `▼ `
-    return `△ `
-  }
-
-  onClick(eve) {
-    if (u.isEventModifiedPrimary(eve)) return
-    this.sortNext()
-  }
-
-  sortNext() {
-    const {key, sortObs} = this
-    sortObs.val = cycleSort(key, sortObs.val)
-  }
+    ],
+  })
 }
 
-function Td({data, total, headPre, headSuf}, col, ind) {
+export function Td({data, col, ind, total, headPre, headSuf}) {
   const {key} = col
 
   if (u.DEV) {
     a.reqDict(data)
     a.optDict(total)
-    reqCol(data, key)
+    reqColVal(data, key)
   }
 
   const val = data[key]
-  const perc = total && percOpt(val, total[key])
+  const perc = optColPerc(total, val, key)
   const isHead = ind === 0
 
-  return new TableCell({
+  return E(TableCell, {
     ...col,
     ind,
     val,
@@ -842,74 +745,72 @@ function Td({data, total, headPre, headSuf}, col, ind) {
   })
 }
 
-class TableCell extends dr.MixReg(HTMLTableCellElement) {
-  static localName = `td`
+export function cellProps({colspan, wide, toggleObs, props}) {
+  return {
+    colspan,
+    class: a.spaced(ui.clsWide(wide), props?.cls),
+    hidden: toggleObs && (() => !a.deref(toggleObs)),
+  }
+}
 
-  type = a.optStr()
-  key = a.optValidStr()
-  val = undefined
-  perc = a.optFin()
+function TableCell(opt) {
+  const {type, key, val, perc, pre, suf, props} = opt
+  a.optStr(type)
+  a.reqValidStr(key)
+  a.optFin(perc)
 
-  constructor({type, key, val, perc, pre, suf, colspan, hide, attrs}) {
-    super()
-    this.type = a.optStr(type)
-    this.key = a.reqValidStr(key)
-    this.val = val
-    this.perc = a.optFin(perc)
-
-    return E(
-      this,
-      {
-        ...a.optDict(attrs),
-        colspan,
-        class: a.spaced(
-          attrs?.class,
-          CLS_CELL_COMMON,
-          a.vac(a.optBool(hide) && CLS_HIDE_BELOW),
-        ),
-      },
+  const cell = E(`td`, {
+    ...props,
+    ...ui.withCls(cellProps(opt), ui.CLS_CELL_COMMON),
+    chi: [
       pre,
       (
         type === TYPE_NUM && a.isSome(perc)
-        ? this.inner.bind(this)
-        : this.fmtVal()
+        ? a.bind(CellInner, {type, val, perc})
+        : fmtVal(type, val)
       ),
       suf,
-    )
+    ],
+  })
+
+  if (type === TYPE_HELP) {
+    ui.withTooltip(cell, {chi: val})
   }
-
-  inner() {
-    const {type, perc} = this
-    if (type !== TYPE_NUM) return this.fmtVal()
-
-    const mode = NUM_MODE.val
-    if (mode === NUM_MODE_NUM) return this.fmtVal()
-
-    if (mode === NUM_MODE_PERC) {
-      return E(`span`, {class: CLS_PERC}, this.fmtPerc())
-    }
-
-    if (a.isNil(perc)) return this.fmtVal()
-
-    return E(`span`, {class: `flex row-bet-cen gap-2`},
-      E(`span`, {class: `trunc`}, this.fmtVal()),
-      E(`span`, {class: CLS_PERC}, this.fmtPerc()),
-    )
+  else if (type === TYPE_PRIO) {
+    ui.withTooltip(cell, {chi: a.joinLines(val)})
   }
-
-  fmtVal() {return fmtVal(this.type, this.val)}
-  fmtPerc() {return fmtNumPerc(this.perc)}
+  return cell
 }
 
-class BuiRow extends TableRow {
-  sortObs = BUI_SORT
+function CellInner({type, val, perc}) {
+  if (type !== TYPE_NUM) return fmtVal(type, val)
+
+  const mode = NUM_MODE.val
+  if (mode === NUM_MODE_NUM) return fmtVal(type, val)
+
+  if (mode === NUM_MODE_PERC) {
+    return E(`span`, {class: CLS_PERC, chi: fmtNumPerc(perc)})
+  }
+
+  if (a.isNil(perc)) return fmtVal(type, val)
+
+  return E(`span`, {
+    class: `flex row-bet-cen gap-2`,
+    chi: [
+      E(`span`, {class: `trunc`, chi: fmtVal(type, val)}),
+      E(`span`, {class: CLS_PERC, chi: fmtNumPerc(perc)}),
+    ],
+  })
+}
+
+class BuiRow extends MixSortable(TableRow) {
   buiInd = a.obsRef()
   showRow = a.calc(this, calcShowRow)
-  expandChi = a.calc(SHOW_CHI, getVal)
+  expandChi = a.calc(SHOW_CHI, a.deref)
   showChi = a.calc(this, calcShowChi)
 
   constructor({buiInd, sortInd, data, total, chiDatas, hasAssoc}) {
-    super({sortInd})
+    super({data, sortInd, sortObs: BUI_SORT})
 
     this.buiInd.val = a.reqNat(buiInd)
 
@@ -921,18 +822,15 @@ class BuiRow extends TableRow {
       : undefined
     )
 
-    E(
-      this,
-      () => ({
-        class: a.spaced(
-          CLS_ROW_TOP,
-          a.vac(hasAssoc) && a.spaced(`cursor-pointer`, ui.CLS_BUSY_BG),
-        ),
-        hidden: !this.showRow.val,
-        onclick: a.vac(hasAssoc) && this.onClick,
-      }),
-      BUI_COLS.map(a.bind(Td, {data, total, headSuf})),
-    )
+    E(this, {
+      class: a.spaced(
+        ui.CLS_ROW_TOP,
+        a.vac(hasAssoc) && a.spaced(`cursor-pointer`, ui.CLS_BUSY_BG),
+      ),
+      hidden: () => !this.showRow.val,
+      onclick: a.vac(hasAssoc) && this.onClick,
+      chi: BUI_COLS.map((col, ind) => Td({data, col, ind, total, headSuf})),
+    })
   }
 
   afterSort({buiInd}) {this.buiInd.val = a.reqNat(buiInd)}
@@ -975,42 +873,58 @@ function calcShowChi() {
   return a.laxBool(showRow && expandChi)
 }
 
-class BuiLongToggleRow extends TableRow {
-  lenBui = undefined
-  lenMax = undefined
+export function LongToggleRows({count, cols, type}) {
+  a.reqNat(count)
+  a.reqArr(cols)
+  a.reqSome(type)
 
-  get obs() {return LONG}
-  get cols() {return BUI_COLS}
+  const limit = LONG_ROW_BREAKPOINT
+  if (count <= limit) return undefined
 
-  constructor({lenBui, lenMax, class: cls, colspan, ...opt}) {
-    super(opt)
-    this.lenBui = a.reqNat(lenBui)
-    this.lenMax = a.reqNat(lenMax)
-
-    E(
-      this,
-      {class: a.spaced(
-        CLS_ROW_TOP,
-        `cursor-pointer`, ui.CLS_BUSY_BG, ui.CLS_TEXT_MUTED,
-        cls,
-      )},
-      E(`td`, {class: `text-center py-1`, colspan}, this.text.bind(this)),
-    )
-    this.onclick = this.onClick
-  }
-
-  text() {
-    const {lenBui, lenMax, obs} = this
-    const show = a.optBool(obs.val)
-    return (
-      show
-      ? `click to see first ${lenMax} of ${lenBui} buildings`
-      : `click to show ${lenBui - lenMax} hidden buildings of ${lenBui}`
-    )
-  }
-
-  onClick() {this.obs.val = !this.obs.val}
+  return [
+    E(LongToggleRow, {
+      count, limit, type,
+      cols: colsNarrow(cols),
+      cls: ui.CLS_ONLY_NARROW,
+    }),
+    E(LongToggleRow, {
+      count, limit, type,
+      cols: colsWide(cols),
+      cls: ui.CLS_ONLY_WIDE,
+    }),
+  ]
 }
+
+export function LongToggleRow({count, limit, type, cols, cls}) {
+  a.reqNat(count)
+  a.reqNat(limit)
+
+  return E(`tr`, {
+    class: a.spaced(
+      ui.CLS_ROW_TOP,
+      `cursor-pointer`,
+      ui.CLS_BUSY_BG,
+      ui.CLS_TEXT_MUTED,
+      cls,
+    ),
+    onclick: toggleLong,
+    chi: E(`td`, {
+      class: `text-center py-1`,
+      colspan() {return sumColspans(cols).all},
+      chi() {
+        const show = a.optBool(a.deref(LONG))
+        const diff = count - limit
+        return [
+          `click to `,
+          (show ? `collapse` : `expand`),
+          ` trailing `, diff, ` of `, count, ` `, type,
+        ]
+      },
+    }),
+  })
+}
+
+function toggleLong() {a.reset(LONG, !a.deref(LONG))}
 
 function roundTableRows({round, user_id, run_num, run_ms}) {
   const dat = a.Emp()
@@ -1023,56 +937,44 @@ function roundTableRows({round, user_id, run_num, run_ms}) {
   const buiEntries = a.entries(round.Buildings)
   const buiTotal = a.Emp()
   const buiDatas = a.Emp()
-  const tbodyRows = []
+  const sortableRows = []
   const buiRows = []
 
-  for (const [bui_inst] of buiEntries) {
-    const round_bui = a.reqDict(dat.round_buis[bui_inst])
-    buiDatas[bui_inst] = buiStatData({round_bui, buiTotal})
+  for (const [buiInst] of buiEntries) {
+    const roundBui = a.reqDict(dat.round_buis[buiInst])
+    buiDatas[buiInst] = buiStatData({roundBui, buiTotal})
   }
 
-  for (const [bui_inst, bui] of buiEntries) {
-    const round_bui = a.reqDict(dat.round_buis[bui_inst])
-    const buiData = buiDatas[bui_inst]
-    addRoundTableRows({tbodyRows, buiRows, bui, buiData, round_bui, buiTotal})
+  for (const [buiInst, bui] of buiEntries) {
+    const roundBui = a.reqDict(dat.round_buis[buiInst])
+    const buiData = buiDatas[buiInst]
+    addRoundTableRows({rows: sortableRows, buiRows, bui, buiData, roundBui, buiTotal})
   }
 
-  addBuiToggleRows({tbodyRows, buiRows})
-  return {tbodyRows, buiRows}
+  const otherRows = LongToggleRows({
+    count: buiRows.length, cols: BUI_COLS, type: `buildings`,
+  })
+  return {sortableRows, otherRows, buiRows}
 }
 
-function addRoundTableRows({tbodyRows, buiRows, bui, buiData, round_bui, buiTotal}) {
-  a.reqArr(tbodyRows)
+function addRoundTableRows({rows, buiRows, bui, buiData, roundBui, buiTotal}) {
+  a.reqArr(rows)
   a.reqArr(buiRows)
 
-  const {wepTypes, dumBulTypes} = a.reqDict(round_bui)
   const chiTotal = a.Emp()
   const chiDatas = []
   const wepDatas = []
-
-  for (const [ind, wep] of a.entries(bui.Weapons)) {
-    const stats = bui.WeaponStats[ind]?.stats
-    if (!shouldShowWep(wep, stats)) continue
-
-    chiDatas.push(wepStatData({wep, stats, chiTotal}))
-    wepDatas.push(wepDetailData(wep))
-  }
-
-  for (const [type, val] of a.entries(bui.ChildLiveStats)) {
-    if (wepTypes.has(type) || dumBulTypes.has(type)) continue
-    const stats = val?.stats
-    chiDatas.push(chiStatData({type, stats, chiTotal}))
-  }
+  addChiWepData({chiDatas, wepDatas, chiTotal, bui, roundBui})
 
   // SYNC[bui_has_assoc].
   const hasAssoc = (chiDatas.length > 1) || (wepDatas.length > 0)
 
   const buiRow = new BuiRow({
-    buiInd: buiRows.length, sortInd: tbodyRows.length,
+    buiInd: buiRows.length, sortInd: rows.length,
     data: buiData, total: buiTotal, chiDatas, hasAssoc,
   })
 
-  tbodyRows.push(buiRow)
+  rows.push(buiRow)
   buiRows.push(buiRow)
 
   // SYNC[bui_has_assoc].
@@ -1081,7 +983,7 @@ function addRoundTableRows({tbodyRows, buiRows, bui, buiData, round_bui, buiTota
     const sortObs = CHI_SORT
 
     addPseudoTableRows({
-      tbodyRows, parent: buiRow, cols, datas: chiDatas,
+      rows, parent: buiRow, cols, datas: chiDatas,
       sortObs, showRow: buiRow.showChi, total: chiTotal,
     })
   }
@@ -1091,100 +993,92 @@ function addRoundTableRows({tbodyRows, buiRows, bui, buiData, round_bui, buiTota
     const sortObs = WEP_SORT
 
     addPseudoTableRows({
-      tbodyRows, parent: buiRow, cols, datas: wepDatas,
+      rows, parent: buiRow, cols, datas: wepDatas,
       sortObs, showRow: buiRow.showChi,
     })
   }
 }
 
+function addChiWepData({chiDatas, wepDatas, chiTotal, bui, roundBui}) {
+  a.reqArr(chiDatas)
+  a.reqArr(wepDatas)
+  a.reqDict(chiTotal)
+  a.reqDict(bui)
+
+  const {wepTypes, dumBulTypes} = a.reqDict(roundBui)
+
+  for (const [ind, wep] of a.entries(bui.Weapons)) {
+    const stats = bui.WeaponStats[ind]?.stats
+    if (!shouldShowWep(wep, stats)) continue
+
+    const type = wep.EntityID
+    chiDatas.push(chiStatData({type, stats, total: chiTotal, enabled: wep.Enabled}))
+    wepDatas.push(wepDetailData(wep))
+  }
+
+  for (const [type, val] of a.entries(bui.ChildLiveStats)) {
+    if (wepTypes.has(type) || dumBulTypes.has(type)) continue
+    const stats = val?.stats
+    chiDatas.push(chiStatData({type, stats, total: chiTotal}))
+  }
+}
+
 function addPseudoTableRows({
-  tbodyRows, parent, cols, datas, total, sortObs, ...opt
+  rows, parent, cols, datas, total, sortObs, ...opt
 }) {
-  a.reqArr(tbodyRows)
+  a.reqArr(rows)
   a.reqArr(datas)
 
   const head = new SubRowTheadPseudo({
-    parent, cols, sortInd: tbodyRows.length, sortObs, ...opt
+    parent, cols, sortInd: rows.length, sortObs, ...opt
   })
 
-  tbodyRows.push(head)
+  rows.push(head)
 
   for (const data of datas) {
-    tbodyRows.push(new SubRowTr({
-      parent: head, sortInd: tbodyRows.length, sortObs,
+    rows.push(new SubRow({
+      parent: head, sortInd: rows.length, sortObs,
       data, total, cols, ...opt,
     }))
   }
 }
 
-function addBuiToggleRows({tbodyRows, buiRows}) {
-  a.reqArr(tbodyRows)
-  a.reqArr(buiRows)
-
-  const lenBui = buiRows.length
-  const lenMax = LONG_ROW_BREAKPOINT
-  if (lenBui <= lenMax) return
-
-  tbodyRows.push(
-    new BuiLongToggleRow({
-      lenBui, lenMax, class: CLS_HIDE_BELOW, sortInd: tbodyRows.length,
-      colspan: sumColspans(BUI_COLS).all,
-    }),
-    new BuiLongToggleRow({
-      lenBui, lenMax, class: CLS_HIDE_ABOVE, sortInd: tbodyRows.length,
-      colspan: sumColspans(BUI_COLS).show,
-    }),
-  )
-}
-
-function buiStatData({round_bui, buiTotal}) {
-  a.reqDict(round_bui)
+function buiStatData({roundBui, buiTotal}) {
+  a.reqDict(roundBui)
   a.reqDict(buiTotal)
 
-  const bui_type_upg = a.reqValidStr(round_bui.bui_type_upg)
-  const stats = a.optDict(round_bui.stats)
+  const bui_type_upg = a.reqValidStr(roundBui.bui_type_upg)
+  const stats = a.optDict(roundBui.stats)
 
   // SYNC[bui_cols].
   const out = a.Emp()
   out.bui_type_upg = s.codedToNamed(`bui_type_upg`, bui_type_upg)
 
-  // SYNC[bui_stat_types].
-  for (const type of s.STAT_TYPES) {
+  for (const type of s.BUI_STAT_TYPES) {
     a.reqValidStr(type)
     const val = a.laxFin(stats?.[type])
     out[type] = val
     addTotal(buiTotal, type, val)
   }
-
-  const cost = a.laxFin(round_bui.cost)
-  out.bui_cost = cost
-  addTotal(buiTotal, `bui_cost`, cost)
   return out
 }
 
-function addTotal(tar, key, val) {
+// TODO: consider if this works properly for "sum" vs "avg" stats.
+export function addTotal(tar, key, val) {
   a.reqDict(tar)
   a.reqValidStr(key)
   if (a.isFin(val)) tar[key] = a.laxFin(tar[key]) + val
 }
 
-function wepStatData({wep, stats, chiTotal}) {
-  a.reqDict(wep)
-  // SYNC[chi_cols].
-  const out = chiStatData({type: wep.EntityID, stats, chiTotal})
-  out.enabled = wep.Enabled
-  return out
-}
-
 // SYNC[chi_cols].
 // SYNC[chi_stat_types].
-function chiStatData({type, stats, chiTotal}) {
+export function chiStatData({type, stats, total, enabled}) {
   a.reqStr(type)
   a.optDict(stats)
 
   function add(key, val) {
     out[key] = val
-    addTotal(chiTotal, key, val)
+    addTotal(total, key, val)
   }
 
   const out = a.Emp()
@@ -1195,18 +1089,18 @@ function chiStatData({type, stats, chiTotal}) {
   add(`dmg_over`, stats?.DamageOverkill?.valueThisWave)
   add(`dmg_over_acc`, stats?.DamageOverkill?.valueThisGame)
 
-  out.enabled = undefined
+  out.enab = enabled
   return out
 }
 
-function wepDetailData(wep) {
+// SYNC[wep_cols].
+export function wepDetailData(wep) {
   a.reqDict(wep)
 
   const out = a.Emp()
   const bul = wep.DummyBullet
   const aoe = bul.AreaOfEffect
 
-  // SYNC[wep_cols].
   out.wep_type = wep.EntityID
 
   out.range = (
@@ -1215,36 +1109,38 @@ function wepDetailData(wep) {
     : wep.DistanceRangeMax
   )
 
-  out.mag = wep.MagazineSize
-  out.rel = reifyReload(wep.ReloadTime)
-  out.rof = reify(wep.RateOfFire)
+  const mag = out.mag = wep.MagazineSize
+  const rof = out.rof = reify(wep.RateOfFire)
+  const rel = out.rel = reifyReload(wep.ReloadTime)
+  out.det = wep.IsDetection
 
-  const targs = wep.TargetingPriorities
+  out.perc_dmg = a.laxFin(aoe.Damage.pctModifier) / 100
 
-  out.targ = a.vac(targs) && ui.withTooltip({
-    elem: ui.Span(abbrs(targs)),
-    chi: a.joinLines(targs),
-  })
-
-  out.detec = wep.IsDetection
-
-  out.air = (
+  const percAir = out.perc_air = (
     bul.IsAntiAircraft
     ? a.laxFin(bul.AntiAircraftModifier) / 100
     : a.laxFin(bul.AircraftModifier) / 100
   )
 
-  out.shield = (
+  const percShld = out.perc_shld = (
     isWepAntiShield(wep)
     ? a.laxFin(bul.AntiShieldModifier) / 100
     : a.laxFin(bul.ShieldModifier) / 100
   )
 
-  out.dmg = reify(aoe.Damage)
   out.dmg_base = a.laxFin(aoe.Damage.baseValue) + a.laxFin(aoe.Damage.rawModifier)
-  out.dmg_perc = a.laxFin(aoe.Damage.pctModifier) / 100
+  const dmg = out.dmg = reify(aoe.Damage)
+  const dmgAir = out.dmg_air = dmg * (1 + percAir)
+  const dmgShld = out.dmg_shld = dmg * (1 + percShld)
+
+  out.dps_est = dpsEstimate(dmg, mag, rof, rel)
+  out.dps_air_est = dpsEstimate(dmgAir, mag, rof, rel)
+  out.dps_shld_est = dpsEstimate(dmgShld, mag, rof, rel)
+
   out.aoe = reify(aoe.SizeValue)
-  out.targs = aoe.MaxTarget
+  out.targ = aoe.MaxTarget
+  out.prio = wep.TargetingPriorities
+  out.enab = wep.Enabled
   return out
 }
 
@@ -1287,7 +1183,7 @@ function compareRowsDeep(one, two) {
 }
 
 // TODO simplify, add explanatory comments.
-function compareRows(one, two) {
+export function compareRows(one, two) {
   if (one === two) return 0
   if (a.isNil(two.sortInd)) return -1
   if (a.isNil(one.sortInd)) return 1
@@ -1298,134 +1194,66 @@ function compareRows(one, two) {
 
   const {key, desc} = obs.val
   if (!key) return fallback
-  if (!one.isSortable()) return fallback
-  if (!two.isSortable()) return fallback
+  if (!one.hasSortData()) return fallback
+  if (!two.hasSortData()) return fallback
 
-  const oneCell = one.getCell(key)
-  if (!oneCell) return fallback
-
-  const twoCell = two.getCell(key)
-  if (!twoCell) return fallback
-
-  const oneVal = oneCell.val
-  const twoVal = twoCell.val
-
-  if (MISSING_LAST.val) {
-    if (!oneVal && twoVal) return 1
-    if (oneVal && !twoVal) return -1
-  }
-
-  return (
-    desc
-    ? u.compareDesc(oneVal, twoVal)
-    : u.compareAsc(oneVal, twoVal)
-  ) || fallback
+  const oneVal = one.getSortVal(key)
+  const twoVal = two.getSortVal(key)
+  const miss = compareMissing(oneVal, twoVal)
+  if (miss) return miss
+  return u.compareNumerically(oneVal, twoVal, desc) || fallback
 }
 
-function withGlossary(key, elem) {
-  return ui.withGlossary({elem, key, glos: STAT_GLOSSARY, under: true})
+export function compareMissing(one, two) {
+  if (a.deref(MISSING_LAST)) {
+    if (!one && two) return 1
+    if (one && !two) return -1
+  }
+  return undefined
+}
+
+function withGlossary(elem, key) {
+  return ui.withGlossary(elem, {key, glos: STAT_GLOSSARY, under: true})
 }
 
 function BtnReplace(suf, eph) {
-  return ui.BtnPrompt({cmd: cmdShowRound.cmd, suf, eph, full: true})
+  return ui.BtnPrompt({cmd: cmdShowRoundCombined.cmd, suf, eph, full: true})
 }
 
 function BtnReplaceEph(eph) {return BtnReplace(undefined, eph)}
 
-class ObsCheckbox extends dr.MixReg(HTMLLabelElement) {
-  input = undefined
-
-  constructor({label, obs, tooltip, onchange}) {
-    super()
-    a.reqRec(obs)
-
-    E(
-      this,
-      {class: `inline-flex row-sta-cen gap-2 cursor-pointer`},
-
-      ui.Muted((
-        tooltip
-        ? ui.withTooltip({
-          chi: tooltip,
-          elem: ui.clsAdd(ui.Span(label), ui.CLS_HELP_UNDER),
-        })
-        : label
-      ), `:`),
-
-      E(`input`, () => ({
-        type: `checkbox`,
-        value: ``,
-        class: `cursor-pointer`,
-        checked: a.laxBool(obs.val),
-        onchange() {
-          obs.val = this.checked
-          onchange?.call(this, obs.val)
-        },
-      })),
-    )
-  }
-}
-
-class ObsRadio extends dr.MixReg(HTMLFieldSetElement) {
-  obs = undefined
-
-  constructor({label, obs, vals}) {
-    super()
-    a.reqSome(label)
-    this.obs = a.reqRec(obs)
-    const name = a.uuid()
-
-    E(
-      this,
-      {class: `inline-flex row-sta-cen gap-2`, onchange: onNumModeChange},
-      E(`span`, {class: a.spaced(ui.CLS_TEXT_MUTED, `trunc`)}, label, `:`),
-      a.map(vals, val => ObsRadioInput({val, obs, name})),
-    )
-  }
-}
-
-function onNumModeChange(eve) {NUM_MODE.val = eve.target.value}
-
-function ObsRadioInput({val, obs, name}) {
-  a.reqStr(val)
-  a.reqRec(obs)
-  a.optStr(name)
-
-  return E(
-    `label`,
-    {class: `flex row-sta-cen gap-1 cursor-pointer`},
-    E(
-      `input`,
-      () => ({
-        type: `radio`,
-        class: `cursor-pointer`,
-        name,
-        value: val,
-        checked: a.laxStr(obs.val) === val,
-        onchange() {obs.val = this.value},
-      }),
-    ),
-    E(`span`, {class: `flex row-cen-cen trunc-base`}, val || `all`),
-  )
-}
-
 // SYNC[wep_cols].
-const STAT_GLOSSARY = u.dict({
+export const STAT_GLOSSARY = u.dict({
   ...s.GLOSSARY,
   wep_type: `weapon type`,
-  targ: `targeting modes`,
   range: `weapon range (squares)`,
   mag: `magazine size`,
   rof: `rate of fire (shots per second)`,
   rel: `reload duration (seconds)`,
-  dmg: `calculated damage`,
   dmg_base: `base damage before ±%`,
-  dmg_perc: `damage ±%`,
-  air: `anti-air ±%`,
-  shield: `anti-shield ±%`,
+  dmg: `calculated damage`,
+  dmg_air: `calculated anti-air damage`,
+  dmg_shld: `calculated anti-shield damage`,
+  perc_dmg: `damage ±%`,
+  perc_air: `anti-air damage ±%`,
+  perc_shld: `anti-shield damage ±%`,
+  dps_est: `
+estimated sustained DPS;
+assumes one target and no overkill
+`.trim(),
+  dps_air_est: `
+estimated sustained anti-air DPS;
+assumes one target and no overkill
+`.trim(),
+  dps_shld_est: `
+estimated sustained anti-shield DPS;
+assumes one target and no overkill
+`.trim(),
   aoe: `area of effect radius (squares)`,
-  targs: `maximum targets in AoE`,
-  detec: `has detection or not`,
+  targ: `maximum targets in AoE`,
+  prio: `targeting priorities`,
+  det: `has detection or not`,
+  enab: `enabled or not`,
   seed: `initial state of random number generator`,
   neutral_odds: `chance of neutral building on next zone`,
   supply_reinf: `±% supply in reinforcements`,
@@ -1458,18 +1286,34 @@ function reifyReload(src) {
   return 1 / speedFinal
 }
 
+function dpsEstimate(dmg, mag, rof, rel) {
+  a.reqFin(dmg)
+  a.reqFin(mag)
+  a.reqFin(rof)
+  a.reqFin(rel)
+
+  if (!dmg || !mag || !rof) return 0
+
+  const cycleDmg = dmg * mag
+  const magTime = mag / rof
+  const cycleTime = magTime + a.reqFin(rel)
+  return cycleDmg / cycleTime
+}
+
 let FMT_WARNED = false
 
-function fmtVal(type, val) {
+export function fmtVal(type, val) {
   a.optValidStr(type)
   if (a.isNil(val)) return undefined
 
   if (type === TYPE_ANY) return val
+  if (type === TYPE_HELP) return val
   if (type === TYPE_BOOL) return checktick(val)
   if (type === TYPE_NUM) return fmtNum(val)
   if (type === TYPE_NUM_MOD) return fmtNumMod(val)
   if (type === TYPE_PERC) return fmtNumPerc(val)
   if (type === TYPE_PERC_MOD) return fmtNumPercMod(val)
+  if (type === TYPE_PRIO) return abbrs(val)
 
   if (!FMT_WARNED) {
     FMT_WARNED = true
@@ -1539,7 +1383,7 @@ function isWepAntiShield(wep) {
   return /pulse/i.test(a.reqStr(wep.EntityID))
 }
 
-function shouldShowWep(wep, stats) {
+export function shouldShowWep(wep, stats) {
   a.reqDict(wep)
   a.optDict(stats)
   return !!a.optBool(wep.Enabled) || !!(stats?.DamageDone?.valueThisGame)
@@ -1572,51 +1416,58 @@ function bin(src, dicts) {
 function reqRow(val) {return a.reqInst(val, TableRow)}
 function finOpt(val) {return a.optFin(val) || undefined}
 
-function cycleSort(key, opt) {
-  a.reqValidStr(key)
-  a.reqDict(opt)
-
-  const keyPrev = a.optStr(opt.key)
-  const descPrev = a.optBool(opt.desc)
-
-  if (key !== keyPrev) return {key, desc: true}
-  if (descPrev === true) return {key, desc: false}
-  return {}
-}
-
 function validateColAlignment() {
   const bui = sumColspans(BUI_COLS)
   const chi = sumColspans(CHI_COLS)
   const wep = sumColspans(WEP_COLS)
 
-  if (bui.all === chi.all && chi.all === wep.all) return
-
-  ui.logErr(`colspan mismatch: bui = ${a.show(bui)}, chi = ${a.show(chi)}, wep = ${a.show(wep)}`)
+  if (
+    (bui.wide !== chi.wide || bui.wide !== wep.wide) ||
+    (bui.narrow !== chi.narrow || bui.narrow !== wep.narrow)
+  ) {
+    ui.logErr(`colspan mismatch: bui = ${a.show(bui)}, chi = ${a.show(chi)}, wep = ${a.show(wep)}`)
+  }
 }
 
 function sumColspans(cols) {
-  let show = 0
-  let hide = 0
+  let all = 0
+  let wide = 0
+  let narrow = 0
 
   for (const col of cols) {
-    const val = a.optNat(col.colspan) ?? 1
-    if (a.optBool(col.hide)) hide += val
-    else show += val
+    const colspan = a.optNat(col.colspan) ?? 1
+    const hide = a.deref(col.toggleObs) === false
+    if (hide) continue
+
+    all += colspan
+    if (isColWide(col)) wide += colspan
+    if (isColNarrow(col)) narrow += colspan
   }
-  return {all: show + hide, show, hide}
+  return {all, wide, narrow}
 }
 
 class Words extends a.Words {abbr() {return this.mapMut(first).join(``)}}
 function abbrs(src) {return a.spaced(...a.map(src, abbr))}
 function abbr(src) {return Words.from(src).abbr()}
 function first(src) {return src[0]}
+function getKey(src) {return src.key}
 function isEnabled(val) {return val.isEnabled()}
-function getVal(val) {return a.reqObs(val).val}
+function isColWide(val) {return a.optBool(val.wide) !== false}
+function isColNarrow(val) {return a.optBool(val.wide) !== true}
+export function colsWide(src) {return a.filter(src, isColWide)}
+export function colsNarrow(src) {return a.filter(src, isColNarrow)}
+export function colsDedup(src) {return u.uniqBy(src, getKey)}
 
-function reqCol(src, key) {
+export function reqColVal(src, key) {
+  a.reqDict(src)
   a.reqValidStr(key)
-  if (a.hasOwn(src, key)) return
+  if (a.hasOwn(src, key)) return src[key]
   throw Error(`internal: missing column ${a.show(key)} in ${a.show(src)}`)
+}
+
+export function optColPerc(src, val, key) {
+  a.reqValidStr(key)
+  return a.optDict(src) && percOpt(val, src[key])
 }
 
 function afterSort(rows) {

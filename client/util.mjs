@@ -69,7 +69,7 @@ export function storageSet(store, key, val) {
   }
 }
 
-export const STORAGE_OBS_KEYS = new Set()
+export const STORAGE_OBS = new Map()
 
 export function storageObs(...src) {return new StorageObs(...src)}
 
@@ -77,14 +77,13 @@ export function storageObs(...src) {return new StorageObs(...src)}
 export class StorageObs extends a.ObsRef {
   inited = false
   key = undefined
+  def = undefined
 
-  constructor(key) {
+  constructor(key, val) {
     super()
     this.key = a.reqValidStr(key)
-    if (STORAGE_OBS_KEYS.has(key)) {
-      console.error(`redundant ${new.target.name} with key ${a.show(key)}`)
-    }
-    STORAGE_OBS_KEYS.add(key)
+    this.def = val
+    return new.target.dedup(this)
   }
 
   get() {
@@ -92,7 +91,7 @@ export class StorageObs extends a.ObsRef {
       this.inited = true
       super.set(this.read())
     }
-    return super.get()
+    return super.get() ?? this.def
   }
 
   set(val) {
@@ -103,8 +102,28 @@ export class StorageObs extends a.ObsRef {
   decode(val) {return val}
   encode(val) {return val}
 
-  read() {return this.decode(storagesGet(this.key))}
+  read() {
+    const src = storagesGet(this.key)
+    if (!src) return this.def
+    return this.decode(src)
+  }
+
   write(val) {storagesSet(this.key, this.encode(val))}
+
+  static dedup(next) {
+    const {key} = a.reqInst(next, this)
+    const prev = STORAGE_OBS.get(key)
+
+    if (!prev) {
+      STORAGE_OBS.set(key, next)
+      return next
+    }
+
+    const prevCon = prev.constructor
+    const nextCon = next.constructor
+    if (prevCon === nextCon) return prev
+    throw Error(`redundant ${new.target.name} with key ${a.show(key)} with different constructors: ${a.show(prevCon)} vs ${a.show(nextCon)}`)
+  }
 }
 
 export function storageObsBool(...src) {return new StorageObsBool(...src)}
@@ -264,10 +283,33 @@ export function cliArgSet(cmd, args) {
   return new Set(splitCliArgs(stripPreSpaced(args, cmd)))
 }
 
-export function firstCliArg(src) {return splitCliArgs(src)[0]}
+export function hasPreSpaced(src, pre) {
+  src = a.laxStr(src)
+  pre = a.laxStr(pre)
+
+  return !!pre && src.startsWith(pre) && (
+    src.length === pre.length ||
+    src.slice(pre.length)[0] === ` `
+  )
+}
+
+export function stripPreSpaced(src, pre) {
+  if (!hasPreSpaced(src, pre)) return a.laxStr(src)
+  return src.slice(pre.length).trim()
+}
 
 // TODO support quotes.
 export function splitCliArgs(src) {return a.split(src, /\s+/)}
+
+export function cliArgHead(src) {
+  const ind = a.reqStr(src).indexOf(` `)
+  return ind >= 0 ? src.slice(0, ind) : src
+}
+
+export function cliArgTail(src) {
+  const ind = a.reqStr(src).indexOf(` `)
+  return ind >= 0 ? src.slice(ind + 1) : ``
+}
 
 export function cliDecode(src) {return splitCliArgs(src).map(cliDecodeArg)}
 
@@ -403,6 +445,13 @@ export const REG_DEINIT = new FinalizationRegistry(function finalizeDeinit(val) 
   if (a.isFun(val)) val()
   else val.deinit()
 })
+
+/*
+Allows to tie the lifetime of `a.recur` to the lifetime of another object
+such as a DOM element, preventing it from being GCd too early.
+*/
+export const RETAIN = new WeakMap()
+export function retain(tar, val) {RETAIN.set(a.reqObj(tar), a.reqObj(val))}
 
 /*
 We have several event targets (`BROAD` and `DAT`). `BroadcastChannel`
@@ -588,24 +637,6 @@ export function alignCol(rows) {
 
 function rowPreLen(src) {return a.reqStr(a.reqArr(src)[0]).length}
 
-// Suboptimal implementation.
-export function preSpacedOpt(src, pre) {
-  return a.spaced(pre, stripPreSpaced(src, pre))
-}
-
-export function stripPreSpaced(src, pre) {
-  src = a.laxStr(src)
-  pre = a.laxStr(pre)
-
-  if (!pre) return src
-  if (!src.startsWith(pre)) return src
-
-  const out = src.slice(pre.length)
-  if (!out) return out
-  if (/^\s/.test(out)) return out.trim()
-  return src
-}
-
 export function randInt(min, max) {
   const buf = crypto.getRandomValues(new Uint32Array(1))
   return toIntBetween(min, max, buf[0])
@@ -708,4 +739,13 @@ export function isEventModifiedPrimary(eve) {
     !eve.shiftKey &&
     (eve.ctrlKey || eve.metaKey)
   )
+}
+
+export function btnOnKeydown(fun, eve) {
+  a.reqFun(fun)
+  if (a.isEventModified(eve)) return
+  if (eve.key === `Enter` || eve.key === ` `) {
+    a.eventKill(eve)
+    fun.call(this, eve)
+  }
 }

@@ -1,5 +1,8 @@
 Also see `todo.md` in repo root.
 
+- [x] Implement separate tables for bui, chi, wep.
+- [x] Rename the commands, prioritize the one that makes separate tables.
+
 - [x] Local sources.
   - [x] If no path provided:
     - [x] If have access to `saves`:
@@ -11,9 +14,9 @@ Also see `todo.md` in repo root.
         encouraging to grant access to `saves` and/or `history`.
   - [x] If path is provided:
     - [x] If file, verify that it's a round file, and use.
-- [ ] Cloud sources.
-  - [ ] Requires backend support for downloading round files as-is.
-    - [ ] Add an endpoint for downloading one specific round file, by the
+- [x] Cloud sources.
+  - [x] Requires backend support for downloading round files as-is.
+    - [x] Add an endpoint for downloading one specific round file, by the
       `<user>/<run>/<round>` path. Stream `.json.gz` from disk as-is; don't
       forget to set `content-encoding`.
 - [x] Decode the round; add an element with various details in the media grid.
@@ -32,7 +35,7 @@ Also see `todo.md` in repo root.
   - [ ] Make it possible to group stats by `bui_type_upg`.
 - [x] Add an option to always "zero last" in sorting, which would always put zero and nil at the end.
 - [x] Calculate totals and percentages for child stats.
-- [ ] Show blueprints, as collapsable similar to doctrines.
+- [x] Show blueprints, as collapsable similar to doctrines.
 
 - [x] Each bui:
   - [x] One row: bui stats.

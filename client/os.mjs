@@ -58,7 +58,7 @@ export class Proc extends a.Emp {
     this.endAt = undefined             // Assigned by `runProc`.
     this.val = undefined               // Eventual return value, if any.
     this.err = undefined               // Eventual exception, if any.
-    return a.obs(this)                // For reactive UI updates.
+    return a.obs(this)                 // For reactive UI updates.
   }
 
   // Cmd funs should use this to support cancelation.
@@ -77,18 +77,18 @@ export const PROCS = a.obs(a.Emp())
 // Suboptimal but doesn't matter.
 export function procByName(name) {
   a.reqStr(name)
-  return a.find(PROCS, val => u.firstCliArg(val.args) === name)
+  return a.find(PROCS, val => u.hasPreSpaced(val.args, name))
 }
 
 // Suboptimal but doesn't matter.
 export function procsByName(name) {
   a.reqStr(name)
-  return a.filter(PROCS, val => u.firstCliArg(val.args) === name)
+  return a.filter(PROCS, val => u.hasPreSpaced(val.args, name))
 }
 
 export async function runCmd(args, opt) {
   args = a.trim(args)
-  const name = u.firstCliArg(args)
+  const name = u.cliArgHead(args)
   const cmd = reqCmdByName(name)
   await runProc({fun: cmd, args, desc: u.callOpt(cmd.desc), ...a.optDict(opt)})
 }
@@ -103,7 +103,7 @@ export function reqCmdByName(name) {
 export async function runProc({fun, args, desc, obs, user, waitFor}) {
   a.reqFun(fun)
   a.reqStr(args)
-  a.optRec(obs)
+  a.optRef(obs)
   a.optPromise(waitFor)
 
   /*
@@ -112,7 +112,7 @@ export async function runProc({fun, args, desc, obs, user, waitFor}) {
   a promise, then we'll register the proc.
   */
   const proc = new Proc({args, desc, user})
-  const name = u.firstCliArg(args)
+  const name = u.cliArgHead(args)
 
   let out
   try {out = fun(proc)}
@@ -132,7 +132,7 @@ export async function runProc({fun, args, desc, obs, user, waitFor}) {
   proc.promise = out
   PROCS[proc.id] = proc
   try {
-    if (obs) obs.proc = proc
+    if (obs) a.reset(obs, proc)
     out = await out
     proc.val = out
     if (waitFor) await waitFor.catch(ui.logErr)
@@ -149,7 +149,7 @@ export async function runProc({fun, args, desc, obs, user, waitFor}) {
     }
     finally {
       delete PROCS[proc.id]
-      if (obs) delete obs.proc
+      if (obs) a.reset(obs)
     }
   }
 
@@ -302,7 +302,7 @@ export function procKillAll() {
 export function procKillOpt(pat) {
   a.reqStr(pat)
   for (const [key, val] of a.entries(PROCS)) {
-    if (key === pat || u.firstCliArg(val.args) === pat) val.deinit()
+    if (key === pat || u.hasPreSpaced(val.args, pat)) val.deinit()
   }
 }
 
@@ -363,42 +363,36 @@ export function BtnCmdWithHelp(cmd) {
     args = name
   }
   else {
-    name = a.reqValidStr(u.firstCliArg(cmd))
+    name = a.reqValidStr(u.cliArgHead(cmd))
     args = a.reqValidStr(cmd)
     cmd = CMDS[name]
   }
 
   if (!a.vac(cmd?.help)) return BtnCmd(name)
-  return [BtnCmd(args), BtnHelp(name, {class: `ml-1`})]
+  return [BtnCmd(args), BtnHelp(name, {cls: `ml-1`})]
 }
 
 export function BtnCmd(cmd, alias) {
   a.reqValidStr(cmd)
   a.optStr(alias)
 
-  return E(
-    `button`,
-    {
-      type: `button`,
-      class: `px-1 trunc whitespace-nowrap rounded border border-gray-300 dark:border-neutral-600 bg-neutral-200 dark:bg-stone-700 hover:bg-gray-300 dark:hover:bg-stone-600`,
-      onclick() {runCmd(cmd).catch(ui.logErr)},
-    },
-    alias || cmd,
-  )
+  return E(`button`, {
+    type: `button`,
+    class: `px-1 trunc whitespace-nowrap rounded border border-gray-300 dark:border-neutral-600 bg-neutral-200 dark:bg-stone-700 hover:bg-gray-300 dark:hover:bg-stone-600`,
+    onclick() {runCmd(cmd).catch(ui.logErr)},
+    chi: alias || cmd,
+  })
 }
 
-export function BtnHelp(cmd, {class: cls} = {}) {
+export function BtnHelp(cmd, {cls} = {}) {
   a.reqValidStr(cmd)
 
-  return E(
-    `button`,
-    {
-      type: `button`,
-      class: a.spaced(cls, ui.CLS_BTN_INLINE),
-      onclick() {runCmd(`help ${cmd}`).catch(ui.logErr)},
-    },
-    `?`,
-  )
+  return E(`button`, {
+    type: `button`,
+    class: a.spaced(cls, ui.CLS_BTN_INLINE),
+    onclick() {runCmd(`help ${cmd}`).catch(ui.logErr)},
+    chi: `?`,
+  })
 }
 
 export function runCmdMock(dur) {

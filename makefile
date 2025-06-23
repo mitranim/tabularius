@@ -7,6 +7,8 @@ CLEAR ?= $(if $(filter false,$(clear)),, )
 DENO_FLAGS ?= --node-modules-dir=false
 DENO_RUN ?= deno run -A --no-check $(DENO_FLAGS)
 DENO_WATCH ?= $(DENO_RUN) --watch $(or $(CLEAR),--no-clear-screen)
+WATCH ?= watchexec $(and $(CLEAR),-c) -r -d=1ms -n -q
+WATCH_SRC ?= $(WATCH) -e=mjs
 RUN ?= $(and $(run),--run="$(run)")
 SERVER_TEST ?= $(or $(file),server/test.mjs)
 SERVER_BENCH ?= $(or $(file),server/bench.mjs)
@@ -20,9 +22,10 @@ DOCKER_ENV ?= --env-file=.env.default.properties
 DOCKER_VOL_PWD ?= -v=$(PWD):/app
 DOCKER_VOL_DATA ?= -v=$(PWD)/$(DATA_DIR):/app/$(DATA_DIR)
 DOCKER_PORTS ?= -p=$(SRV_PORT):$(SRV_PORT)
-DOCKER_BUILD := docker build --build-arg=PROJECT=$(PROJECT)
-DOCKER_RUN := docker run --init -it $(DOCKER_ENV)
-SRV := server/srv.mjs
+DOCKER_BUILD ?= docker build --build-arg=PROJECT=$(PROJECT)
+DOCKER_RUN ?= docker run --init -it $(DOCKER_ENV)
+SRV ?= server/srv.mjs
+OK = echo [$@] ok
 
 # SYNC[test_tmp_dir]
 TEST_TMP_DIR := .test_tmp
@@ -119,13 +122,23 @@ duck.attach.dev:
 duck.attach.prod:
 	duckdb -cmd "attach 'https://tabularius.mitranim.com/api/db' as db; use db;"
 
+lint.w:
+	$(MAKE_CONC) lint.deno.w lint.eslint.w
+
 lint: lint.deno lint.eslint
+
+lint.deno.w:
+	$(WATCH_SRC) -- $(MAKE) lint.deno
 
 lint.deno:
 	deno lint
 
+lint.eslint.w:
+	$(WATCH_SRC) -- $(MAKE) lint.eslint
+
 lint.eslint:
 	$(DENO_RUN) npm:eslint@9.29.0 --ignore-pattern=local .
+	$(OK)
 
 docker.build.dev:
 	$(DOCKER_BUILD) -t=$(DOCKER_TAG_LATEST_DEV) -f=dockerfile_dev

@@ -32,6 +32,7 @@ export const STAT_TYPE_DMG_EFF_ACC = `dmg_eff_acc`
 export const STAT_TYPE_DPS = `dps`
 export const STAT_TYPE_DPS_ACC = `dps_acc`
 
+// SYNC[stat_types].
 export const STAT_TYPES = [
   STAT_TYPE_DMG_DONE,
   STAT_TYPE_DMG_DONE_ACC,
@@ -44,6 +45,9 @@ export const STAT_TYPES = [
   STAT_TYPE_DPS,
   STAT_TYPE_DPS_ACC,
 ]
+
+// SYNC[bui_stat_types].
+export const BUI_STAT_TYPES = [...STAT_TYPES, `bui_cost`]
 
 export const STAT_TYPE_PERC = new Set([
   STAT_TYPE_DMG_EFF,
@@ -195,13 +199,16 @@ export function datAddRound({
     round_bui.inst = bui_inst_str
     round_bui.bui_type = bui_type
     round_bui.bui_type_upg = bui_type_upg
-    round_bui.cost = bui_cost
     round_bui.wepTypes = new Set()
     round_bui.dumBulTypes = new Set()
     round_bui.enabledWepTypes = new Set()
     round_bui.wepDumBulTypes = a.Emp()
-    round_bui.stats = a.vac(tables.round_buis) && a.Emp()
-    if (tables.round_buis) datRoundBuiAddUniq(dat.round_buis, round_bui)
+
+    if (tables.round_buis) {
+      round_bui.stats = a.Emp()
+      round_bui.stats.bui_cost = bui_cost
+      datRoundBuiAddUniq(dat.round_buis, round_bui)
+    }
 
     const baseFact = a.vac(tables.facts) && {
       game_ver,
@@ -637,7 +644,10 @@ export const GLOSSARY = u.dict({
   [STAT_TYPE_DMG_OVER_ACC]: `damage overkill in run`,
 
   [STAT_TYPE_COST_EFF]: `cost efficiency (dmg_done/cost) in round`,
-  [STAT_TYPE_COST_EFF_ACC]: `cost efficiency (dmg_done/cost) in run`,
+  [STAT_TYPE_COST_EFF_ACC]: `
+cost efficiency (dmg_done/cost) in run
+caution: not equivalent to averaging cost_eff
+`.trim(),
 
   [STAT_TYPE_TIME]: `time spent shooting in round`,
   [STAT_TYPE_TIME_ACC]: `time spent shooting in run`,

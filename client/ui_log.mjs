@@ -22,7 +22,7 @@ error's original nodes instead of its message string.
 */
 export class ErrLog extends Error {
   constructor(...nodes) {
-    const msg = E(`pre`, {}, nodes).textContent
+    const msg = E(`pre`, {chi: nodes}).textContent
     super(msg)
     this.nodes = nodes
   }
@@ -55,18 +55,13 @@ export function logErr(err) {LOG.err(err)}
 
 export const LOG = new class Log extends ui.Elem {
   constructor() {
-    super()
-
-    E(
-      this,
-      {
-        class: a.spaced(
-          ui.CLS_BG_1,
-          `block w-full min-w-0 overflow-x-clip overflow-y-auto over-wrap`,
-          LOG_LINE_HEIGHT,
-        ),
-      },
-    )
+    E(super(), {
+      class: a.spaced(
+        ui.CLS_BG_1,
+        `block w-full min-w-0 overflow-x-clip overflow-y-auto over-wrap`,
+        LOG_LINE_HEIGHT,
+      ),
+    })
   }
 
   // Must be used for all info logging.
@@ -90,11 +85,7 @@ export const LOG = new class Log extends ui.Elem {
 
   clear() {
     LOG_REMOVED_MSG_COUNT = 0
-    E(this, undefined, E(
-      REMOVED_MSG_NOTICE,
-      {class: CLS_MSG_NOTICE, hidden: false},
-      `log cleared`,
-    ))
+    E(this, {chi: E(REMOVED_MSG_NOTICE, {hidden: false, chi: `log cleared`})})
     ui.PROMPT_INPUT.focus()
   }
 
@@ -127,11 +118,10 @@ export const LOG = new class Log extends ui.Elem {
       LOG_REMOVED_MSG_COUNT++
     }
 
-    E(
-      REMOVED_MSG_NOTICE,
-      {class: CLS_MSG_NOTICE, hidden: !LOG_REMOVED_MSG_COUNT},
-      LOG_REMOVED_MSG_COUNT, ` older messages removed`,
-    )
+    E(REMOVED_MSG_NOTICE, {
+      hidden: !LOG_REMOVED_MSG_COUNT,
+      chi: [LOG_REMOVED_MSG_COUNT, ` older messages removed`],
+    })
 
     // Move the notice to the top of the message log.
     if (LOG_REMOVED_MSG_COUNT) this.prepend(REMOVED_MSG_NOTICE)
@@ -152,17 +142,14 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
     const isErr = type === `err`
     const isInp = type === `inp`
 
-    const msg = E(
-      new this(),
-      {
-        class: a.spaced(
-          LOG_MSG_CLS,
-          a.vac(isErr) && LOG_MSG_CLS_ERR,
-          a.vac(isInp) && `animate-flash-light dark:animate-flash-dark`,
-        ),
-      },
-      ...chi,
-    )
+    const msg = E(new this(), {
+      class: a.spaced(
+        LOG_MSG_CLS,
+        a.vac(isErr) && LOG_MSG_CLS_ERR,
+        a.vac(isInp) && `animate-flash-light dark:animate-flash-dark`,
+      ),
+      chi,
+    })
 
     const head = msg.firstChild
     if (!head) return undefined
@@ -200,12 +187,11 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
 export const PROMPT_PREFIX = `>`
 
 function LogPrefix(inp) {
-  return ui.withTooltip({
-    chi: ui.timeFormat.format(Date.now()),
-    elem: E(
-      `span`,
-      {class: a.spaced(ui.CLS_TEXT_MUTED, `cursor-help`)},
-      inp ? PROMPT_PREFIX + ` ` : `< `,
-    )
-  })
+  return ui.withTooltip(
+    E(`span`, {
+      class: a.spaced(ui.CLS_TEXT_MUTED, `cursor-help`),
+      chi: inp ? PROMPT_PREFIX + ` ` : `< `,
+    }),
+    {chi: ui.timeFormat.format(Date.now())},
+  )
 }

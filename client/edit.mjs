@@ -910,11 +910,11 @@ export async function editCommit(sig, state) {
   }
 
   if (changes.length) {
-    msgs.push(ui.DetailsPre({summary: `changes`, chi: changes, chiLvl: 1}))
+    msgs.push(ui.DetailsPre({summary: `changes`, chi: changes, chiLvl: 1, trunc: true}))
   }
 
   if (nonChanges.length) {
-    msgs.push(ui.DetailsPre({summary: `non-changes`, chi: nonChanges, chiLvl: 1}))
+    msgs.push(ui.DetailsPre({summary: `non-changes`, chi: nonChanges, chiLvl: 1, trunc: true}))
   }
 
   if (!changedFiles.length) {
@@ -1353,6 +1353,7 @@ function SpecificOptions({key, coll, type}) {
     lvl: 1,
     summary: ui.Muted(`specific ${type}: click to expand`),
     chi: ui.LogLines(...a.map(a.keys(coll), Btn)),
+    trunc: true,
   })
 }
 

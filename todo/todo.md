@@ -675,20 +675,19 @@ Also see `./todo_show_round.md`.
 ---
 
 * [ ] Add a new command (tentative name `show_run`) which takes a run id (for cloud stuff) or a run num (for local stuff) and renders various default analyses (currently plots, but more in the future).
-  * [x] Preliminary implementation: only local and manual.
   * [ ] Server: add an endpoint that takes a run id and returns the data needed for this command.
   * [ ] Client: an analogous function.
   * [ ] Both environments:
-    * [ ] Find the run directory.
-    * [ ] Iterate rounds, load them into a `dat`.
-    * [ ] Query multiple plot aggs for the default plot presets.
-    * [ ] Query a single plot total.
-    * [ ] Return the resulting plot aggs and total.
-    * [ ] Render multiple plots with one total.
-    * [ ] When using local data, the plots must be live. However, we'll need to change how we update them. The current approach in `cmdPlotLocal` would cause redundant re-aggregations of the total. The total needs to become live by itself, independent of the plots.
-    * [ ] After we implement `show_round`:
-      * [ ] Server endpoint: if the opt-in query parameter `?include_round` is true, include the latest round in this run into the response, as base64 of gzipped JSON.
-      * [ ] Client: use the latest round to render the equivalent of the output of `show_round` above the plots.
+    * [ ] Find latest round and use it for an equivalent of `show_round`.
+    * [ ] Query multiple plot aggs and render corresponding plots, with one total (can opt-out via `-t=false`).
+  * [ ] Server: query plot aggs and one total from DB, as for plots.
+  * [ ] Server: return round data as part of the JSON response, as base64 gzipped JSON.
+  * [ ] Client: load matching rounds into a `dat` once, then query the same `dat` for each plot agg.
+    * [ ] `datLoad` should also return the latest round it found.
+  * [ ] When using local data, the plots must be live. However, we'll need to change how we update them. The current approach in `cmdPlotLocal` would cause redundant re-aggregations of the total. The total needs to become live by itself, independent of the plots.
+* [ ] Options:
+  * [ ] Take any number of `-p=` for plot presets. If at least one is provided, the provided set of presets overrides the default set of presets.
+  * [ ] `-t` for plot totals.
 * [ ] Replace `plot_link` with `run_link` which generates a link for the above.
 * [ ] On app startup:
   * [ ] Auto-detect if the current URL is one of the old "plot link" style links, and interpret it as the new format, extracting the run id.

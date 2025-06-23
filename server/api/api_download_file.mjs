@@ -38,7 +38,7 @@ export async function resolveUserFile(ctx, srcPath, outPath) {
 
   let headers
 
-  if (outPath !== (outPath = a.stripOpt(outPath, `.gz`))) {
+  if (outPath !== (outPath = a.stripSuf(outPath, `.gz`))) {
     headers = [[`content-encoding`, `gzip`]]
     const typ = hd.guessContentType(outPath)
     if (typ) headers.push([`content-type`, typ])
