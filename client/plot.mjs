@@ -1141,6 +1141,8 @@ Relevant demos with tooltips:
   https://leeoniya.github.io/uPlot/demos/tooltips-closest.html
 */
 export class TooltipPlugin extends a.Emp {
+  tooltip = undefined
+
   // Index of currenly hovered series.
   indS = undefined
 
@@ -1157,6 +1159,7 @@ export class TooltipPlugin extends a.Emp {
   overWid = undefined
   overHei = undefined
   resObs = new ResizeObserver(this.onResize.bind(this))
+
 
   constructor(opt) {
     super()
@@ -1627,6 +1630,7 @@ export function apiLatestRun(sig, user) {
 export class PlotTotals extends ui.Elem {
   // May or may not be observable.
   src = undefined
+  title = undefined
 
   constructor(src) {
     super()

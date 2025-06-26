@@ -123,7 +123,7 @@ seems to work. This problem doesn't seem to occur in other grids.
 dialog:not([open]) {display: none}
 
 dialog[open] {
-  &::backdrop {backdrop-filter: blur(3px)}
+  &::backdrop {backdrop-filter: blur(6px)}
   outline: 0.5rem solid hsl(200deg 50% 80% / 20%);
 }
 

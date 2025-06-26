@@ -140,4 +140,4 @@ async function main() {
   if (!se.isSetupDone()) se.updateSetupFlowMsg()
 }
 
-await main().catch(ui.logErr)
+main().catch(ui.logErr)
