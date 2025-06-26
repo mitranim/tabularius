@@ -1631,6 +1631,7 @@ export class PlotTotals extends ui.Elem {
   // May or may not be observable.
   src = undefined
   title = undefined
+  logPrefix = undefined
 
   constructor(src) {
     super()
@@ -1656,9 +1657,6 @@ export class PlotTotals extends ui.Elem {
       ),
     })
   }
-
-  logPrefix = undefined
-  title = undefined
 
   addLogPrefix(val) {
     this.logPrefix = val

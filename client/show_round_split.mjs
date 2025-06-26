@@ -106,22 +106,22 @@ class ShowRound extends sr.ShowRound {
   tableType = undefined
 
   constructor(opt) {
-    const dat = a.Emp()
-    s.datAddRound({...opt, dat, composite: false, tables: {round_buis: true}})
-    opt.roundBuis = dat.round_buis
-
     super(opt)
-
     let type = a.deref(TABLE_TYPE)
     if (!TABLE_TYPES.has(type)) type = TABLE_TYPE_BUI
     this.tableType = a.obsRef(type)
   }
 
   init() {
-    const {opt, tableType} = this
+    const {tableType} = this
+    const opt = a.reqDict(this.opt)
+    const dat = a.Emp()
+    s.datAddRound({...opt, dat, composite: false, tables: {round_buis: true}})
+    opt.roundBuis = dat.round_buis
+
     return E(this, {chi: [
       E(sr.RoundHead, {
-        ...opt,
+        ...a.reqDict(opt),
         chi: E(sr.TableHintsAndControls, [
           [E(sr.TableHintHidden), E(sr.TableHintSort)],
           E(sr.TableControlMissingLast),
@@ -229,7 +229,7 @@ function SelectedTable(type, opt) {
 }
 
 function BuiTable(opt) {
-  const data = buiData({...opt, cols: BUI_COLS})
+  const data = buiData({...a.reqDict(opt), cols: BUI_COLS})
   const {rows, cols} = data
 
   return E(`table`, {
@@ -245,7 +245,7 @@ function BuiTable(opt) {
 }
 
 function ChiTable(opt) {
-  const data = chiData({...opt, cols: CHI_COLS})
+  const data = chiData({...a.reqDict(opt), cols: CHI_COLS})
   const {rows, cols} = data
 
   return E(`table`, {
@@ -281,7 +281,7 @@ function rowProps(ind) {
 }
 
 function WepTable(opt) {
-  const data = wepData({...opt, cols: WEP_COLS})
+  const data = wepData({...a.reqDict(opt), cols: WEP_COLS})
   const {rows, cols} = data
 
   return E(`table`, {

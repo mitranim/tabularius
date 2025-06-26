@@ -285,7 +285,11 @@ export class ShowRound extends d.MixDatSub(ui.Elem) {
   }
 
   init() {
-    const {opt} = this
+    const opt = a.reqDict(this.opt)
+    const dat = a.Emp()
+    s.datAddRound({...opt, dat, composite: false, tables: {round_buis: true}})
+    opt.roundBuis = dat.round_buis
+
     return E(this, {chi: [
       E(RoundHead, {
         ...opt,
@@ -926,14 +930,8 @@ export function LongToggleRow({count, limit, type, cols, cls}) {
 
 function toggleLong() {a.reset(LONG, !a.deref(LONG))}
 
-function roundTableRows({round, user_id, run_num, run_ms}) {
-  const dat = a.Emp()
-
-  s.datAddRound({
-    dat, round, user_id, run_num, run_ms, composite: false,
-    tables: {round_buis: true},
-  })
-
+function roundTableRows({round, roundBuis}) {
+  a.reqDict(roundBuis)
   const buiEntries = a.entries(round.Buildings)
   const buiTotal = a.Emp()
   const buiDatas = a.Emp()
@@ -941,12 +939,12 @@ function roundTableRows({round, user_id, run_num, run_ms}) {
   const buiRows = []
 
   for (const [buiInst] of buiEntries) {
-    const roundBui = a.reqDict(dat.round_buis[buiInst])
+    const roundBui = a.reqDict(roundBuis[buiInst])
     buiDatas[buiInst] = buiStatData({roundBui, buiTotal})
   }
 
   for (const [buiInst, bui] of buiEntries) {
-    const roundBui = a.reqDict(dat.round_buis[buiInst])
+    const roundBui = a.reqDict(roundBuis[buiInst])
     const buiData = buiDatas[buiInst]
     addRoundTableRows({rows: sortableRows, buiRows, bui, buiData, roundBui, buiTotal})
   }
