@@ -141,9 +141,10 @@ function Tabs(obs) {
   return E(`div`, {
     class: `w-full flex row-cen-cen rounded mb-2`,
     chi: [
-      E(Tab, {obs, val: TABLE_TYPE_BUI, dialog: DIALOG_BUI, chi: `bui_stats`}),
-      E(Tab, {obs, val: TABLE_TYPE_CHI, dialog: DIALOG_CHI, chi: `chi_stats`}),
-      E(Tab, {obs, val: TABLE_TYPE_WEP, dialog: DIALOG_WEP, chi: `wep_details`}),
+      E(Tab, {obs, val: TABLE_TYPE_BUI, chi: `bui_stats`}),
+      E(Tab, {obs, val: TABLE_TYPE_CHI, chi: `chi_stats`}),
+      E(Tab, {obs, val: TABLE_TYPE_WEP, chi: `wep_details`}),
+      a.bind(ColToggler, obs),
     ],
   })
 }
@@ -151,10 +152,7 @@ function Tabs(obs) {
 function Tab({obs, val, dialog, chi}) {
   return E(`span`, {
     class: `inline-flex row-cen-str`,
-    chi: [
-      TabBtn({obs, val, chi}),
-      () => a.vac(a.deref(obs) === val) && ColumnToggler(dialog),
-    ],
+    chi: TabBtn({obs, val, chi}),
   })
 }
 
@@ -194,6 +192,14 @@ function ColumnToggler(dialog) {
     }),
     {chi: `toggle columns`},
   )
+}
+
+function ColToggler(obs) {
+  const type = a.deref(obs)
+  if (type === TABLE_TYPE_BUI) return E(ColumnToggler, DIALOG_BUI)
+  if (type === TABLE_TYPE_CHI) return E(ColumnToggler, DIALOG_CHI)
+  if (type === TABLE_TYPE_WEP) return E(ColumnToggler, DIALOG_WEP)
+  return undefined
 }
 
 function ColumnToggleDialog(cols) {
