@@ -1081,10 +1081,17 @@ export function chiStatData({type, stats, total, enabled}) {
   const out = a.Emp()
   out.chi_type = s.codedToNamed(`chi_type`, type)
 
-  add(`dmg_done`, stats?.DamageDone?.valueThisWave)
-  add(`dmg_done_acc`, stats?.DamageDone?.valueThisGame)
-  add(`dmg_over`, stats?.DamageOverkill?.valueThisWave)
-  add(`dmg_over_acc`, stats?.DamageOverkill?.valueThisGame)
+  const dmg_done = stats?.DamageDone?.valueThisWave
+  const dmg_done_acc = stats?.DamageDone?.valueThisGame
+  const dmg_over = stats?.DamageOverkill?.valueThisWave
+  const dmg_over_acc = stats?.DamageOverkill?.valueThisGame
+
+  add(s.STAT_TYPE_DMG_DONE,     dmg_done)
+  add(s.STAT_TYPE_DMG_DONE_ACC, dmg_done_acc)
+  add(s.STAT_TYPE_DMG_OVER,     dmg_over)
+  add(s.STAT_TYPE_DMG_OVER_ACC, dmg_over_acc)
+  add(s.STAT_TYPE_DMG_EFF,      s.dmgEff(dmg_done, dmg_over))
+  add(s.STAT_TYPE_DMG_EFF_ACC,  s.dmgEff(dmg_done_acc, dmg_over_acc))
 
   out.enab = enabled
   return out

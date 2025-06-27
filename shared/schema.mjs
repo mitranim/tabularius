@@ -471,7 +471,7 @@ function divFin(num, div) {
   return div && (num / div)
 }
 
-function dmgEff(dmg, over) {
+export function dmgEff(dmg, over) {
   dmg = a.laxFin(dmg)
   over = a.laxFin(over)
   const sum = dmg + over

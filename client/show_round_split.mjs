@@ -71,6 +71,8 @@ export const CHI_COLS = [
   withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_DONE_ACC, type: sr.TYPE_NUM})),
   withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_OVER,     type: sr.TYPE_NUM})),
   withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_OVER_ACC, type: sr.TYPE_NUM})),
+  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_EFF,      type: sr.TYPE_PERC})),
+  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_EFF_ACC,  type: sr.TYPE_PERC})),
 ]
 
 // SYNC[wep_cols].
