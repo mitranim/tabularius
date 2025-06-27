@@ -120,6 +120,13 @@ seems to work. This problem doesn't seem to occur in other grids.
   pointer-events: none;
 }
 
+`+/*
+In Chromium, the `<summary>` marker is disabled when changing its `display`
+property from the default. Safari and FF require CSS rules.
+*/`
+summary::marker {display: none;}
+summary::-webkit-details-marker {display: none;}
+
 dialog:not([open]) {display: none}
 
 dialog[open] {

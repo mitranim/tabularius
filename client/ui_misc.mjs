@@ -5,7 +5,7 @@ import * as ui from './ui.mjs'
 import * as fs from './fs.mjs'
 
 // Increment by 1 when publishing an update.
-export const VERSION = 135
+export const VERSION = 136
 
 export function BtnUrlAppend(val) {
   const href = globalThis.location.href + a.reqValidStr(val)
@@ -282,6 +282,11 @@ export function Details({
     ontoggle,
     chi: [
       E(`summary`, {
+        /*
+        We assign `display: inline-block` by default to disable the default
+        open / closed marker in Chrome. Safari and FF require CSS rules for
+        that; see `ui_style.mjs`.
+        */
         class: trunc ? `w-full trunc` : `inline-block`,
         chi: [indent, summary],
       }),

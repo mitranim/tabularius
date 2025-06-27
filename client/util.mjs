@@ -103,9 +103,9 @@ export class StorageObs extends a.ObsRef {
   encode(val) {return val}
 
   read() {
-    const src = storagesGet(this.key)
-    if (!src) return this.def
-    return this.decode(src)
+    const src = a.laxStr(storagesGet(this.key))
+    if (src) return this.decode(src)
+    return this.def ?? this.decode(src)
   }
 
   write(val) {storagesSet(this.key, this.encode(val))}
