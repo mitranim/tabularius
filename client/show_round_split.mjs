@@ -232,7 +232,7 @@ function SelectedTable(type, opt) {
 
 function BuiTable(opt) {
   const data = buiData({...a.reqDict(opt), cols: BUI_COLS})
-  const {rows, cols} = data
+  const {rowCount, cols} = data
 
   return E(`table`, {
     class: ui.CLS_TABLE,
@@ -240,7 +240,7 @@ function BuiTable(opt) {
       E(`thead`, {chi: a.map(cols, HeadCell)}),
       E(StatTableBody, {
         data,
-        chi: E(LongToggleRow, {count: rows.length, cols, type: `buildings`}),
+        chi: E(LongToggleRow, {count: rowCount, cols, type: `buildings`}),
       }),
     ],
   })
@@ -248,7 +248,7 @@ function BuiTable(opt) {
 
 function ChiTable(opt) {
   const data = chiData({...a.reqDict(opt), cols: CHI_COLS})
-  const {rows, cols} = data
+  const {rowCount, cols} = data
 
   return E(`table`, {
     class: ui.CLS_TABLE,
@@ -256,22 +256,54 @@ function ChiTable(opt) {
       E(`thead`, {chi: a.map(cols, HeadCell)}),
       E(StatTableBody, {
         data,
-        chi: E(LongToggleRow, {count: rows.length, cols, type: `children`}),
+        chi: E(LongToggleRow, {count: rowCount, cols, type: `children`}),
       }),
     ],
   })
 }
 
 function StatTableBody({data, chi}) {
-  const {rows} = data
-  return E(`tbody`, {chi: [a.times(rows.length, a.bind(StatRow, data)), chi]})
+  const {rowCount} = data
+  return E(`tbody`, {chi: [a.times(rowCount, a.bind(StatRow, data)), chi]})
 }
 
-function StatRow({rows, cols, total}, rowInd) {
+function StatRow({cols, total}, rowInd) {
   return E(`tr`, {
     ...rowProps(rowInd),
-    chi: cols.map(a.bind(StatCell, {rows, cols, total, rowInd})),
+    chi: cols.map(a.bind(StatCell, {cols, total, rowInd})),
   })
+}
+
+function StatCell({cols, total, rowInd}, col, colInd) {
+  const {type, props} = col
+
+  return E(`td`, {
+    ...props,
+    ...sr.cellProps(col),
+    chi: E(`span`, {
+      class: a.spaced(ui.CLS_CELL_PAD, `flex row-bet-cen`),
+      chi: a.bind(
+        StatCellInner,
+        {cols, total, type, rowInd, colInd},
+      ),
+    }),
+  })
+}
+
+/*
+TODO: either support percentages like in `show_round_combined`,
+or don't bother building `total`.
+*/
+function StatCellInner({cols, total: __, type, rowInd, colInd}) {
+  const {val, label} = a.deref(cols[colInd].sorted)[rowInd]
+
+  return [
+    ui.withTooltip(
+      E(`span`, {class: a.spaced(ui.CLS_TEXT_MUTED, `trunc`), chi: label}),
+      {chi: label},
+    ),
+    E(`span`, {class: `whitespace-pre`, chi: sr.fmtVal(type, val)}),
+  ]
 }
 
 function rowProps(ind) {
@@ -330,39 +362,6 @@ function HeadCell(col) {
   })
 }
 
-function StatCell({rows, cols, total, rowInd}, col, colInd) {
-  const {type, props} = col
-
-  return E(`td`, {
-    ...props,
-    ...sr.cellProps(col),
-    chi: E(`span`, {
-      class: a.spaced(ui.CLS_CELL_PAD, `flex row-bet-cen`),
-      chi: a.bind(
-        StatCellInner,
-        {rows, cols, total, type, rowInd, colInd},
-      ),
-    }),
-  })
-}
-
-/*
-TODO: either support percentages like in `show_round_combined`,
-or don't bother building `total`.
-*/
-function StatCellInner({rows, cols, total: __, type, rowInd, colInd}) {
-  const {val, rowInd: cellRowInd} = a.deref(cols[colInd].sorted)[rowInd]
-  const label = rows[cellRowInd]
-
-  return [
-    ui.withTooltip(
-      E(`span`, {class: a.spaced(ui.CLS_TEXT_MUTED, `trunc`), chi: label}),
-      {chi: label},
-    ),
-    E(`span`, {class: `whitespace-pre`, chi: sr.fmtVal(type, val)}),
-  ]
-}
-
 function LongToggleRow({count, cols, type}) {
   const limit = sr.LONG_ROW_BREAKPOINT
   if (count <= limit) return undefined
@@ -372,7 +371,6 @@ function LongToggleRow({count, cols, type}) {
 // TODO: dedup with `chiData`.
 function buiData({cols, round, roundBuis}) {
   cols = a.map(cols, makeStatCol)
-  const rows = []
   const total = a.Emp()
   let rowInd = -1
 
@@ -387,19 +385,16 @@ function buiData({cols, round, roundBuis}) {
       a.reqValidStr(key)
       const val = a.laxFin(stats?.[key])
       sr.addTotal(total, key, val)
-      cols[colInd].cells.push({val, rowInd})
+      cols[colInd].cells.push({label, val, rowInd})
     }
-
-    rows.push(label)
   }
 
-  return {rows, cols, total}
+  return {rowCount: rowInd, cols, total}
 }
 
 // TODO: dedup with `buiData`.
 function chiData({cols, round, roundBuis}) {
   cols = a.map(cols, makeStatCol)
-  const rows = []
   const total = a.Emp()
   let rowInd = -1
 
@@ -420,10 +415,8 @@ function chiData({cols, round, roundBuis}) {
       for (const [colInd, {key}] of cols.entries()) {
         const val = a.laxFin(data?.[key])
         sr.addTotal(total, key, val)
-        cols[colInd].cells.push({val, rowInd})
+        cols[colInd].cells.push({label, val, rowInd})
       }
-
-      rows.push(label)
     }
 
     for (const [ind, wep] of a.entries(bui.Weapons)) {
@@ -438,7 +431,7 @@ function chiData({cols, round, roundBuis}) {
     }
   }
 
-  return {rows, cols}
+  return {rowCount: rowInd, cols}
 }
 
 function wepData({cols, round, roundBuis}) {
