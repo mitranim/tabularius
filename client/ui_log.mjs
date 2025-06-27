@@ -77,7 +77,7 @@ export const LOG = new class Log extends ui.Elem {
 
   // Should be used for optional verbose logging.
   verb(...msg) {
-    if (!u.VERBOSE.val) return undefined
+    if (!a.deref(u.VERBOSE)) return undefined
     return this.addMsg({}, ...msg)
   }
 

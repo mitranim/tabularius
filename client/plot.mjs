@@ -403,7 +403,7 @@ export function decodePlotAggOpt(src) {
   const srcPairs = a.reqArr(u.cliDecode(src))
   const outPairs = a.reqArr(plotAggOptExpandPresets(srcPairs))
 
-  if (u.VERBOSE.val && srcPairs.length !== outPairs.length) {
+  if (a.deref(u.VERBOSE && srcPairs.length !== outPairs.length)) {
     const opts = a.map(outPairs, u.cliEncodePair).join(` `)
     if (opts) ui.LOG.verb(`[plot] expanded opts: `, BtnAppend({val: opts}))
   }
@@ -754,7 +754,7 @@ export async function plotDefault() {
     if (await fs.hasRoundFile(sig)) return await plotDefaultLocal()
   }
   catch (err) {
-    if (u.VERBOSE.val) ui.LOG.err(`error analyzing latest run: `, err)
+    if (a.deref(u.VERBOSE)) ui.LOG.err(`error analyzing latest run: `, err)
     ui.LOG.verb(`unable to plot latest run, plotting example run`)
   }
   return plotDefaultExample(sig)
@@ -878,7 +878,7 @@ export class Plotter extends ui.Elem {
   closeBtn = a.obsRef()
 
   // Invoked by `MEDIA`.
-  addCloseBtn(btn) {this.closeBtn.val = btn}
+  addCloseBtn(btn) {a.reset(this.closeBtn, btn)}
 
   updatePlotDom() {
     const root = this.plot?.root
@@ -1673,7 +1673,7 @@ function PlotTotalEntry(counts, values, key) {
   const omitted = totalCount - sampleCount
 
   // For the rest of this function we assume `omitted >= 0`.
-  if (omitted < 0 && u.VERBOSE.val) {
+  if (omitted < 0 && a.deref(u.VERBOSE)) {
     ui.LOG.verb(`[plot] unexpected state in plot totals: `, counts, values)
   }
 

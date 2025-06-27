@@ -158,7 +158,8 @@ export async function cmdVerbose({args}) {
     return os.cmdHelpDetailed(cmdVerbose)
   }
 
-  const val = VERBOSE.val = !VERBOSE.val
+  const val = !a.deref(VERBOSE)
+  a.reset(VERBOSE, val)
   return `logging is now ` + (val ? `verbose` : `selective`)
 }
 
@@ -464,12 +465,12 @@ export const EVENT_MSG = `message`
 export const BROAD = new BroadcastChannel(`tabularius_broadcast`)
 
 BROAD.onmessage = function onBroadcastMessage(eve) {
-  if (!VERBOSE.val) return
+  if (!a.deref(VERBOSE)) return
   console.log(`broadcast message event:`, eve)
 }
 
 BROAD.onmessageerror = function onBroadcastError(eve) {
-  if (!VERBOSE.val) return
+  if (!a.deref(VERBOSE)) return
   console.error(`broadcast error event:`, eve)
 }
 

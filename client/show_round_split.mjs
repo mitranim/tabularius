@@ -287,10 +287,7 @@ function StatCell({cols, total, rowInd}, col, colInd) {
     ...sr.cellProps(col),
     chi: E(`span`, {
       class: a.spaced(ui.CLS_CELL_PAD, `flex row-bet-cen`),
-      chi: a.bind(
-        StatCellInner,
-        {cols, total, type, rowInd, colInd},
-      ),
+      chi: a.bind(StatCellInner, {cols, total, type, rowInd, colInd}),
     }),
   })
 }

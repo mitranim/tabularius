@@ -258,7 +258,7 @@ export function cmdKill({args}) {
   const {count, msgs} = procKill(...inps)
 
   return ui.LogLines(
-    a.vac(u.VERBOSE.val && count) && `sent kill signal to ${count} processes`,
+    a.vac(a.deref(u.VERBOSE) && count) && `sent kill signal to ${count} processes`,
     ...msgs,
   )
 }

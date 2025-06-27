@@ -302,7 +302,7 @@ let UPLOAD_ROUND_TIMER_ID = 0
 
 export async function uploadRound({sig, file, runName, userId, state, force}) {
   const id = ++UPLOAD_ROUND_TIMER_ID
-  if (u.VERBOSE.val) console.time(`upload_round_${id}`)
+  if (a.deref(u.VERBOSE)) console.time(`upload_round_${id}`)
 
   a.reqInst(file, FileSystemFileHandle)
   a.reqValidStr(runName)
@@ -321,13 +321,13 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
 
   const roundNum = u.toNatOpt(file.name)
   if (!roundNum) {
-    if (u.VERBOSE.val) console.log(`skipping round ${a.show(path)} with round_num ${a.show(roundNum)}`)
+    if (a.deref(u.VERBOSE)) console.log(`skipping round ${a.show(path)} with round_num ${a.show(roundNum)}`)
     return
   }
 
-  // if (u.VERBOSE.val) console.time(`read_file_${id}`)
+  // if (a.deref(u.VERBOSE)) console.time(`read_file_${id}`)
   const round = await fs.readDecodeGameFile(sig, file)
-  // if (u.VERBOSE.val) console.timeEnd(`read_file_${id}`)
+  // if (a.deref(u.VERBOSE)) console.timeEnd(`read_file_${id}`)
 
   const roundNumFromData = a.reqInt(round.RoundIndex)
   if (roundNum !== roundNumFromData) {
@@ -342,7 +342,7 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
   // We can't attempt to upload it with the old user id, because our server
   // rejects the attempt. Users can only upload rounds with their own user id.
   if (prevUserId && prevUserId !== userId) {
-    if (u.VERBOSE.val) console.log(`skipping upload of ${a.show(path)}: user id mismatch: old ${prevUserId} ≠ new ${userId}`)
+    if (a.deref(u.VERBOSE)) console.log(`skipping upload of ${a.show(path)}: user id mismatch: old ${prevUserId} ≠ new ${userId}`)
     return
   }
 
@@ -362,16 +362,16 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
     const gzip = u.QUERY.get(`upload_mode`) !== `json`
     const body = gzip ? gzipByteArr : jsonStr
 
-    // if (u.VERBOSE.val) console.time(`upload_to_server_${id}`)
+    // if (a.deref(u.VERBOSE)) console.time(`upload_to_server_${id}`)
     const info = await apiUploadRound(sig, {body, gzip})
-    // if (u.VERBOSE.val) console.timeEnd(`upload_to_server_${id}`)
+    // if (a.deref(u.VERBOSE)) console.timeEnd(`upload_to_server_${id}`)
 
     if (info?.redundant) {
-      if (u.VERBOSE.val) console.log(`server: skipped redundant upload of ${a.show(path)}`)
+      if (a.deref(u.VERBOSE)) console.log(`server: skipped redundant upload of ${a.show(path)}`)
     }
     else {
       if (state) state.roundsUploaded++
-      if (u.VERBOSE.val && info?.facts) {
+      if (a.deref(u.VERBOSE) && info?.facts) {
         ui.LOG.info(`uploaded ${a.show(path)}: ${a.show(info.facts)} facts`)
       }
     }
@@ -389,15 +389,15 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
     command is killed between uploading and writing the file. The desync is still
     possible if the browser tab is killed at this point.
     */
-    // if (u.VERBOSE.val) console.time(`write_file_${id}`)
+    // if (a.deref(u.VERBOSE)) console.time(`write_file_${id}`)
     await fs.writeFile(u.sig, file, fileContentGdStr, path)
-    // if (u.VERBOSE.val) console.timeEnd(`write_file_${id}`)
+    // if (a.deref(u.VERBOSE)) console.timeEnd(`write_file_${id}`)
   }
-  else if (u.VERBOSE.val) {
+  else if (a.deref(u.VERBOSE)) {
     console.log(`skipping write of ${a.show(path)}: no data change and previously uploaded`)
   }
 
-  if (u.VERBOSE.val) console.timeEnd(`upload_round_${id}`)
+  if (a.deref(u.VERBOSE)) console.timeEnd(`upload_round_${id}`)
 }
 
 async function isRunUploaded({sig, dir, state}) {

@@ -455,7 +455,7 @@ export async function editAll(sig, state) {
   for (const code of codes) {
     const key = codeToKey(code)
     const name = gc.codeToNameShort(code)
-    const pre = key ? (() => BtnAppendEq(key, name)) : name
+    const pre = key ? a.bind(BtnAppendEq, key, name) : name
     editUnlockConds({state, code, file: unlockablesFile, unlockables, pre})
   }
 

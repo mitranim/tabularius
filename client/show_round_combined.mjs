@@ -274,7 +274,7 @@ export class ShowRound extends ui.Elem {
       class: () => a.spaced(
         `@container flex col-sta-str max-w-none min-h-8 text-sm`,
         ui.CLS_MEDIA_CHI,
-        a.vac(WIDE.val) && ui.CLS_MEDIA_ITEM_WIDE,
+        a.vac(a.deref(WIDE)) && ui.CLS_MEDIA_ITEM_WIDE,
       ),
     })
 
@@ -659,7 +659,7 @@ class SubRowBase extends TableRow {
   constructor({showRow, ...opt}) {
     E(super(opt), {
       class: `tr-sub`,
-      hidden: a.vac(showRow) && (() => !showRow.val),
+      hidden: a.vac(showRow) && (() => !a.deref(showRow)),
     })
   }
 
@@ -781,7 +781,7 @@ function TableCell(opt) {
 function CellInner({type, val, perc}) {
   if (type !== TYPE_NUM) return fmtVal(type, val)
 
-  const mode = NUM_MODE.val
+  const mode = a.deref(NUM_MODE)
   if (mode === NUM_MODE_NUM) return fmtVal(type, val)
 
   if (mode === NUM_MODE_PERC) {
@@ -808,7 +808,7 @@ class BuiRow extends MixSortable(TableRow) {
   constructor({buiInd, sortInd, data, total, chiDatas, hasAssoc}) {
     super({data, sortInd, sortObs: BUI_SORT})
 
-    this.buiInd.val = a.reqNat(buiInd)
+    a.reset(this.buiInd, a.reqNat(buiInd))
 
     const headSuf = (
       a.len(chiDatas) === 1
@@ -823,13 +823,13 @@ class BuiRow extends MixSortable(TableRow) {
         ui.CLS_ROW_TOP,
         a.vac(hasAssoc) && a.spaced(`cursor-pointer`, ui.CLS_BUSY_BG),
       ),
-      hidden: () => !this.showRow.val,
+      hidden: () => !a.deref(this.showRow),
       onclick: a.vac(hasAssoc) && this.onClick,
       chi: BUI_COLS.map((col, ind) => Td({data, col, ind, total, headSuf})),
     })
   }
 
-  afterSort({buiInd}) {this.buiInd.val = a.reqNat(buiInd)}
+  afterSort({buiInd}) {a.reset(this.buiInd, a.reqNat(buiInd))}
 
   /*
   When clicking a bui row to toggle its children, we actually want other bui
@@ -844,12 +844,12 @@ class BuiRow extends MixSortable(TableRow) {
   target. Inverse for a row whose assoc rows are visible.
   */
   onClick(eve) {
-    const show = !this.expandChi.val
-    this.expandChi.val = show
+    const show = !a.deref(this.expandChi)
+    a.reset(this.expandChi, show)
 
     if (!u.isEventModifiedPrimary(eve)) return
 
-    SHOW_CHI.val = show
+    a.reset(SHOW_CHI, show)
 
     // Rerun all observers even if the value didn't change.
     // This causes all manually opened bui rows to close when `!show`.
@@ -858,14 +858,14 @@ class BuiRow extends MixSortable(TableRow) {
 }
 
 function calcShowRow() {
-  const long = a.laxBool(LONG.val)
-  const ind = a.reqNat(this.buiInd.val)
+  const long = a.laxBool(a.deref(LONG))
+  const ind = a.reqNat(a.deref(this.buiInd))
   return long || (ind <= LONG_ROW_BREAKPOINT)
 }
 
 function calcShowChi() {
-  const showRow = this.showRow.val
-  const expandChi = this.expandChi.val
+  const showRow = a.deref(this.showRow)
+  const expandChi = a.deref(this.expandChi)
   return a.laxBool(showRow && expandChi)
 }
 
@@ -1186,7 +1186,7 @@ export function compareRows(one, two) {
   const obs = one.sortObs
   if (!obs || obs !== two.sortObs) return fallback
 
-  const {key, desc} = obs.val
+  const {key, desc} = a.deref(obs)
   if (!key) return fallback
   if (!one.hasSortData()) return fallback
   if (!two.hasSortData()) return fallback

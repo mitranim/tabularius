@@ -167,9 +167,9 @@ async function migrateRunDir({
     for (const file of handles) {
       state.status = `writing file ` + a.show(u.paths.join(dirHandleNext.name, file.name))
 
-      if (u.VERBOSE.val) console.time(`writing_file`)
+      if (a.deref(u.VERBOSE)) console.time(`writing_file`)
       await fs.copyFileTo(sig, file, dirHandleNext)
-      if (u.VERBOSE.val) console.timeEnd(`writing_file`)
+      if (a.deref(u.VERBOSE)) console.timeEnd(`writing_file`)
     }
 
     ui.LOG.verb(`[fs_mig] copied run dir ${a.show(dirNamePrev)} to ${a.show(dirPathNext)}`)
@@ -179,17 +179,17 @@ async function migrateRunDir({
     ui.LOG.err(`[fs_mig] unable to migrate run dir ${a.show(dirNamePrev)}: ${err}`)
 
     // Clean up new dir on error.
-    if (u.VERBOSE.val) console.time(`deleting_err`)
+    if (a.deref(u.VERBOSE)) console.time(`deleting_err`)
     await dirHandleParent.removeEntry(dirNameNext, {recursive: true})
-    if (u.VERBOSE.val) console.timeEnd(`deleting_err`)
+    if (a.deref(u.VERBOSE)) console.timeEnd(`deleting_err`)
 
     throw err
   }
 
   // Drop old dir on success.
-  if (u.VERBOSE.val) console.time(`deleting_old_dir`)
+  if (a.deref(u.VERBOSE)) console.time(`deleting_old_dir`)
   await dirHandleParent.removeEntry(dirNamePrev, {recursive: true})
-  if (u.VERBOSE.val) console.timeEnd(`deleting_old_dir`)
+  if (a.deref(u.VERBOSE)) console.timeEnd(`deleting_old_dir`)
   ui.LOG.verb(`[fs_mig] removed run dir ${a.show(dirNamePrev)}`)
 }
 
