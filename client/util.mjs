@@ -448,7 +448,7 @@ export const REG_DEINIT = new FinalizationRegistry(function finalizeDeinit(val) 
 
 /*
 Allows to tie the lifetime of `a.recur` to the lifetime of another object
-such as a DOM element, preventing it from being GCd too early.
+such as a DOM element, preventing it from being GC-d too early.
 */
 export const RETAIN = new WeakMap()
 export function retain(tar, val) {RETAIN.set(a.reqObj(tar), a.reqObj(val))}
@@ -496,33 +496,33 @@ export function dispatch(tar, typ, data) {
   tar.dispatchEvent(new CustomEvent(a.reqStr(typ), {detail: data}))
 }
 
+export function listen(tar, typ, han, opt) {
+  a.reqObj(tar).addEventListener(a.reqStr(typ), a.reqComp(han), a.optDict(opt))
+  return function deinit() {tar.removeEventListener(typ, han, opt)}
+}
+
 export class HandlerRef extends WeakRef {
-  constructor(han, fun) {super(han).fun = a.reqFun(fun)}
+  constructor(ctx, fun) {super(ctx).fun = a.reqFun(fun)}
 
   handleEvent(eve) {
-    const han = this.deref()
-    if (!han) return
-    this.fun.call(han, eve)
+    const ctx = this.deref()
+    if (!ctx) return
+    this.fun.call(ctx, eve)
   }
 }
 
-export function listen(tar, typ, fun, opt) {
-  a.reqObj(tar).addEventListener(a.reqStr(typ), a.reqFun(fun), a.optDict(opt))
-  return function deinit() {tar.removeEventListener(typ, fun, opt)}
-}
-
-export function listenWeak(tar, typ, han, fun, opt) {
-  a.reqObj(tar)
-  a.reqStr(typ)
-  a.reqObj(han)
-  a.reqFun(fun)
-  a.optDict(opt)
+/*
+An advanced version of `listen` / `.addEventListener` which auto-unlistens
+when the context object is GC-d.
+*/
+export function listenWeak(tar, typ, ctx, fun, opt) {
+  a.reqObj(tar), a.reqStr(typ), a.reqObj(ctx), a.reqFun(fun), a.optDict(opt)
 
   const tarRef = new WeakRef(tar)
-  const hanRef = new HandlerRef(han, fun)
+  const hanRef = new HandlerRef(ctx, fun)
 
   tar.addEventListener(typ, hanRef, opt)
-  REG_DEINIT.register(han, deinit, hanRef)
+  REG_DEINIT.register(ctx, deinit, hanRef)
 
   function deinit() {
     tarRef.deref()?.removeEventListener(typ, hanRef, opt)
@@ -531,6 +531,11 @@ export function listenWeak(tar, typ, han, fun, opt) {
   return deinit
 }
 
+/*
+Similar to `listenWeak` in holding the context object weakly and
+auto-unlistening when it's GC-d, but also can be repeatedly deinited
+and reinited.
+*/
 export class Listener extends WeakRef {
   constructor(tar, typ, ctx, fun, opt) {
     super(ctx)

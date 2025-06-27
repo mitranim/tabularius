@@ -47,15 +47,15 @@ export function cmdShowRoundHelp({cmd, desc}) {
         `  `,
         (
           saveDir
-          ? BtnReplace(u.paths.join(saveDir, fs.PROG_FILE_NAME))
-          : BtnReplaceEph(u.paths.join(`<saves>`, fs.PROG_FILE_NAME))
+          ? BtnReplace(cmd, u.paths.join(saveDir, fs.PROG_FILE_NAME))
+          : BtnReplaceEph(cmd, u.paths.join(`<saves>`, fs.PROG_FILE_NAME))
         ),
         ` -- use save file`,
         a.vac(!saveDir) && [`; requires `, os.BtnCmdWithHelp(`saves`)],
       ],
       [
         `  `,
-        (histDir ? BtnReplace(histDir) : BtnReplaceEph(`<history>`)),
+        (histDir ? BtnReplace(cmd, histDir) : BtnReplaceEph(cmd, `<history>`)),
         ` -- latest round in latest run`,
         a.vac(!histDir) && [`; requires `, os.BtnCmdWithHelp(`history`)],
       ],
@@ -63,11 +63,24 @@ export function cmdShowRoundHelp({cmd, desc}) {
         `  `,
         (
           histDir
-          ? BtnReplace(
-            histDir + `/`,
-            `<run_num>`,
-          )
-          : BtnReplaceEph(`<history>/<run_num>`)
+          ? BtnReplace(cmd, histDir + `/`, `<run_num>`)
+          : BtnReplaceEph(cmd, `<history>/<run_num>`)
+        ),
+      ],
+      [
+        `  `,
+        (
+          histDir
+          ? BtnReplace(cmd, histDir + `/`, `<run_num>/<round_num>`)
+          : BtnReplaceEph(cmd, `<history>/<run_num>/<round_num>`)
+        ),
+      ],
+      [
+        `  `,
+        (
+          histDir
+          ? BtnReplace(cmd, u.paths.join(histDir, `latest`))
+          : BtnReplaceEph(cmd, `<history>/latest`)
         ),
       ],
       [
@@ -75,37 +88,19 @@ export function cmdShowRoundHelp({cmd, desc}) {
         (
           histDir
           ? BtnReplace(
-            histDir + `/`,
-            `<run_num>/<round_num>`,
-          )
-          : BtnReplaceEph(`<history>/<run_num>/<round_num>`)
-        ),
-      ],
-      [
-        `  `,
-        (
-          histDir
-          ? BtnReplace(u.paths.join(histDir, `latest`))
-          : BtnReplaceEph(`<history>/latest`)
-        ),
-      ],
-      [
-        `  `,
-        (
-          histDir
-          ? BtnReplace(
+            cmd,
             u.paths.join(histDir, `latest`) + `/`,
             `<round_num>`,
           )
-          : BtnReplaceEph(`<history>/latest/<round_num>`)
+          : BtnReplaceEph(cmd, `<history>/latest/<round_num>`)
         ),
       ],
       [
         `  `,
         (
           histDir
-          ? BtnReplace(u.paths.join(histDir, `latest/latest`))
-          : BtnReplaceEph(`<history>/latest/latest`)
+          ? BtnReplace(cmd, u.paths.join(histDir, `latest/latest`))
+          : BtnReplaceEph(cmd, `<history>/latest/latest`)
         ),
       ],
     ),
@@ -133,17 +128,17 @@ export function cmdShowRoundHelp({cmd, desc}) {
       ],
       [
         `  `,
-        BtnReplace(`-c `, `<user_id>`),
+        BtnReplace(cmd, `-c `, `<user_id>`),
         ` -- latest round from specific user`,
       ],
       [
         `  `,
-        BtnReplace(`-c `, `<user_id>/<run_num>`),
+        BtnReplace(cmd, `-c `, `<user_id>/<run_num>`),
         ` -- latest round from specific user and run`,
       ],
       [
         `  `,
-        BtnReplace(`-c `, `<user_id>/<run_num>/<round_num>`),
+        BtnReplace(cmd, `-c `, `<user_id>/<run_num>/<round_num>`),
         ` -- specific user, run, round`,
       ],
     ),
@@ -710,10 +705,9 @@ function Th({headPre, headSuf}, col, ind) {
 }
 
 function TableHeadCell(opt) {
-  const {key, sortObs, props, pre, suf} = opt
+  const {key, sortObs, pre, suf} = opt
 
   return E(ui.ThWithSort, {
-    ...props,
     ...ui.withCls(cellProps(opt), ui.CLS_CELL_HEAD),
     key, sortObs,
     chi: [
@@ -748,22 +742,21 @@ export function Td({data, col, ind, total, headPre, headSuf}) {
   })
 }
 
-export function cellProps({colspan, wide, toggleObs, props}) {
+export function cellProps({props, colspan, wide}) {
   return {
+    ...a.optDict(props),
     colspan,
-    class: a.spaced(ui.clsWide(wide), props?.cls),
-    hidden: toggleObs && (() => !a.deref(toggleObs)),
+    class: a.spaced(props?.cls, ui.clsWide(wide)),
   }
 }
 
 function TableCell(opt) {
-  const {type, key, val, perc, pre, suf, props} = opt
+  const {type, key, val, perc, pre, suf} = opt
   a.optStr(type)
   a.reqValidStr(key)
   a.optFin(perc)
 
   const cell = E(`td`, {
-    ...props,
     ...ui.withCls(cellProps(opt), ui.CLS_CELL_COMMON),
     chi: [
       pre,
@@ -877,21 +870,14 @@ function calcShowChi() {
 }
 
 export function LongToggleRows({count, cols, type}) {
-  a.reqNat(count)
-  a.reqArr(cols)
-  a.reqSome(type)
-
-  const limit = LONG_ROW_BREAKPOINT
-  if (count <= limit) return undefined
-
   return [
     E(LongToggleRow, {
-      count, limit, type,
+      count, type,
       cols: colsNarrow(cols),
       cls: ui.CLS_ONLY_NARROW,
     }),
     E(LongToggleRow, {
-      count, limit, type,
+      count, type,
       cols: colsWide(cols),
       cls: ui.CLS_ONLY_WIDE,
     }),
@@ -900,7 +886,11 @@ export function LongToggleRows({count, cols, type}) {
 
 export function LongToggleRow({count, limit, type, cols, cls}) {
   a.reqNat(count)
-  a.reqNat(limit)
+  a.optNat(limit)
+  a.reqArr(cols)
+
+  limit ??= LONG_ROW_BREAKPOINT
+  if (count <= limit) return undefined
 
   return E(`tr`, {
     class: a.spaced(
@@ -1220,11 +1210,11 @@ function withGlossary(elem, key) {
   return ui.withGlossary(elem, {key, glos: STAT_GLOSSARY, under: true})
 }
 
-function BtnReplace(suf, eph) {
-  return ui.BtnPrompt({cmd: cmdShowRoundCombined.cmd, suf, eph, full: true})
+function BtnReplace(cmd, suf, eph) {
+  return ui.BtnPrompt({cmd, suf, eph, full: true})
 }
 
-function BtnReplaceEph(eph) {return BtnReplace(undefined, eph)}
+function BtnReplaceEph(cmd, eph) {return BtnReplace(cmd, undefined, eph)}
 
 // SYNC[wep_cols].
 export const STAT_GLOSSARY = u.dict({
@@ -1440,8 +1430,7 @@ function sumColspans(cols) {
 
   for (const col of cols) {
     const colspan = a.optNat(col.colspan) ?? 1
-    const hide = a.deref(col.toggleObs) === false
-    if (hide) continue
+    if (a.deref(col.props?.hidden)) continue
 
     all += colspan
     if (isColWide(col)) wide += colspan

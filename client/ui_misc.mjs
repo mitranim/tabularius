@@ -5,7 +5,7 @@ import * as ui from './ui.mjs'
 import * as fs from './fs.mjs'
 
 // Increment by 1 when publishing an update.
-export const VERSION = 138
+export const VERSION = 139
 
 export function BtnUrlAppend(val) {
   const href = globalThis.location.href + a.reqValidStr(val)
@@ -387,9 +387,10 @@ async function onFileDrop(file) {
   ui.LOG.info(`saved decoded content of `, a.show(name), ` to `, a.show(outName))
 }
 
-export function ObsCheckbox({obs, label, cls}) {
+export function ObsCheckbox({obs, label, cls, invert}) {
   a.reqObsRef(obs)
   a.reqElement(label)
+  a.optBool(invert)
 
   return E(`label`, {
     class: a.spaced(`inline-flex row-bet-cen gap-x-2 cursor-pointer`, cls),
@@ -399,8 +400,12 @@ export function ObsCheckbox({obs, label, cls}) {
         type: `checkbox`,
         value: ``,
         class: `cursor-pointer`,
-        checked: () => a.laxBool(a.deref(obs)),
-        onchange() {a.reset(obs, this.checked)},
+        checked: invert ? (() => !a.deref(obs)) : obs,
+        onchange() {
+          let val = this.checked
+          if (invert) val = !val
+          a.reset(obs, val)
+        },
       }),
     ],
   })

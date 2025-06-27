@@ -52,52 +52,52 @@ export const TABLE_TYPES = new Set([TABLE_TYPE_BUI, TABLE_TYPE_CHI, TABLE_TYPE_W
 
 // SYNC[bui_stat_types].
 export const BUI_COLS = [
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_DONE,     type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_DONE_ACC, type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_OVER,     type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_OVER_ACC, type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_COST_EFF,     type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_COST_EFF_ACC, type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_EFF,      type: sr.TYPE_PERC})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_EFF_ACC,  type: sr.TYPE_PERC})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DPS,          type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DPS_ACC,      type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: `bui_cost`,               type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_DONE,     type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_DONE_ACC, type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_OVER,     type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_OVER_ACC, type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_COST_EFF,     type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_COST_EFF_ACC, type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_EFF,      type: sr.TYPE_PERC})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_EFF_ACC,  type: sr.TYPE_PERC})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DPS,          type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DPS_ACC,      type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: `bui_cost`,               type: sr.TYPE_NUM})),
 ]
 
 // SYNC[stat_types].
 export const CHI_COLS = [
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_DONE,     type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_DONE_ACC, type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_OVER,     type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_OVER_ACC, type: sr.TYPE_NUM})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_EFF,      type: sr.TYPE_PERC})),
-  withSortObs(withToggleObs({key: s.STAT_TYPE_DMG_EFF_ACC,  type: sr.TYPE_PERC})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_DONE,     type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_DONE_ACC, type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_OVER,     type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_OVER_ACC, type: sr.TYPE_NUM})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_EFF,      type: sr.TYPE_PERC})),
+  withSortObs(withHideObs({key: s.STAT_TYPE_DMG_EFF_ACC,  type: sr.TYPE_PERC})),
 ]
 
 // SYNC[wep_cols].
 export const WEP_COLS = [
-  withToggleObs({sortObs: sr.WEP_SORT, key: `bui_type`,     type: sr.TYPE_HELP, colspan: 2, props: {cls: ui.CLS_TEXT_MUTED}}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `wep_type`,     type: sr.TYPE_HELP, colspan: 2}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `range`,        type: sr.TYPE_ANY}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `mag`,          type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `rof`,          type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `rel`,          type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `dmg_base`,     type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `dmg`,          type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `dmg_air`,      type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `dmg_shld`,     type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `perc_dmg`,     type: sr.TYPE_PERC_MOD}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `perc_air`,     type: sr.TYPE_PERC_MOD}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `perc_shld`,    type: sr.TYPE_PERC_MOD}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `dps_est`,      type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `dps_air_est`,  type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `dps_shld_est`, type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `aoe`,          type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `targ`,         type: sr.TYPE_NUM}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `prio`,         type: sr.TYPE_PRIO}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `det`,          type: sr.TYPE_BOOL}),
-  withToggleObs({sortObs: sr.WEP_SORT, key: `enab`,         type: sr.TYPE_BOOL}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `bui_type`,     type: sr.TYPE_HELP, colspan: 2, props: {cls: ui.CLS_TEXT_MUTED}}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `wep_type`,     type: sr.TYPE_HELP, colspan: 2}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `range`,        type: sr.TYPE_ANY}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `mag`,          type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `rof`,          type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `rel`,          type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `dmg_base`,     type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `dmg`,          type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `dmg_air`,      type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `dmg_shld`,     type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `perc_dmg`,     type: sr.TYPE_PERC_MOD}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `perc_air`,     type: sr.TYPE_PERC_MOD}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `perc_shld`,    type: sr.TYPE_PERC_MOD}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `dps_est`,      type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `dps_air_est`,  type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `dps_shld_est`, type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `aoe`,          type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `targ`,         type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `prio`,         type: sr.TYPE_PRIO}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `det`,          type: sr.TYPE_BOOL}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `enab`,         type: sr.TYPE_BOOL}),
 ]
 
 const DIALOG_BUI = ColumnToggleDialog(BUI_COLS)
@@ -139,7 +139,7 @@ class ShowRound extends sr.ShowRound {
 
 function Tabs(obs) {
   return E(`div`, {
-    class: `w-full flex row-cen-cen rounded mb-2`,
+    class: `w-full flex row-cen-str rounded mb-2`,
     chi: [
       E(Tab, {obs, val: TABLE_TYPE_BUI, chi: `bui_stats`}),
       E(Tab, {obs, val: TABLE_TYPE_CHI, chi: `chi_stats`}),
@@ -149,7 +149,7 @@ function Tabs(obs) {
   })
 }
 
-function Tab({obs, val, dialog, chi}) {
+function Tab({obs, val, chi}) {
   return E(`span`, {
     class: `inline-flex row-cen-str`,
     chi: TabBtn({obs, val, chi}),
@@ -210,13 +210,13 @@ function ColumnToggleDialog(cols) {
   })
 }
 
-function ColToggle(cols, {key, toggleObs}) {
+function ColToggle(cols, {key, props: {hidden}}) {
   a.reqArr(cols)
   a.reqValidStr(key)
-  a.reqInst(toggleObs, u.StorageObsBool)
 
   return E(ui.ObsCheckbox, {
-    obs: toggleObs,
+    obs: hidden,
+    invert: true,
     label: ui.withTooltip(ui.Span(key), {
       chi: sr.STAT_GLOSSARY[key], under: true, help: false,
     }),
@@ -246,7 +246,7 @@ function BuiTable(opt) {
       E(`thead`, {chi: a.map(cols, HeadCell)}),
       E(StatTableBody, {
         data,
-        chi: E(LongToggleRow, {count: rowCount, cols, type: `buildings`}),
+        chi: E(sr.LongToggleRow, {count: rowCount, cols, type: `buildings`}),
       }),
     ],
   })
@@ -262,7 +262,7 @@ function ChiTable(opt) {
       E(`thead`, {chi: a.map(cols, HeadCell)}),
       E(StatTableBody, {
         data,
-        chi: E(LongToggleRow, {count: rowCount, cols, type: `children`}),
+        chi: E(sr.LongToggleRow, {count: rowCount, cols, type: `children`}),
       }),
     ],
   })
@@ -281,10 +281,9 @@ function StatRow({cols, total}, rowInd) {
 }
 
 function StatCell({cols, total, rowInd}, col, colInd) {
-  const {type, props} = col
+  const {type} = col
 
   return E(`td`, {
-    ...props,
     ...sr.cellProps(col),
     chi: E(`span`, {
       class: a.spaced(ui.CLS_CELL_PAD, `flex row-bet-cen`),
@@ -330,7 +329,7 @@ function WepTable(opt) {
       E(`thead`, {chi: a.map(cols, HeadCell)}),
       E(WepTableBody, {
         data,
-        chi: E(LongToggleRow, {count: rows.length, cols, type: `weapons`}),
+        chi: E(sr.LongToggleRow, {count: rows.length, cols, type: `weapons`}),
       }),
     ],
   })
@@ -355,10 +354,9 @@ function WepRow(cols, data, ind) {
 }
 
 function HeadCell(col) {
-  const {key, sortObs, props} = col
+  const {key, sortObs} = col
 
   return E(ui.ThWithSort, {
-    ...props,
     ...ui.withCls(sr.cellProps(col), ui.CLS_CELL_HEAD, `font-normal`),
     key, sortObs,
     chi: [
@@ -366,12 +364,6 @@ function HeadCell(col) {
       ui.withGlossary(ui.Span(key), {key, glos: sr.STAT_GLOSSARY, under: true}),
     ],
   })
-}
-
-function LongToggleRow({count, cols, type}) {
-  const limit = sr.LONG_ROW_BREAKPOINT
-  if (count <= limit) return undefined
-  return E(sr.LongToggleRow, {count, limit, type, cols})
 }
 
 // TODO: dedup with `chiData`.
@@ -469,10 +461,11 @@ function withSortObs(opt) {
   return opt
 }
 
-function withToggleObs(opt) {
+function withHideObs(opt) {
   a.reqDict(opt)
   const key = a.reqValidStr(opt.key)
-  opt.toggleObs = u.storageObsBool(`tabularius.toggle.${key}`, true)
+  opt.props ??= a.Emp()
+  opt.props.hidden = u.storageObsBool(`tabularius.hide.${key}`)
   return opt
 }
 
