@@ -19,7 +19,7 @@ export const DAT = new EventTarget()
 export const USER_ID = `local_user`
 
 // Allows live plot updates on dat changes. See `LivePlotter`.
-u.listenMessage(u.BROAD, datOnBroadcast)
+u.BROAD.addEventListener(u.EVENT_MSG, datOnBroadcast)
 
 export const DAT_QUERY_TABLES = Object.freeze(u.dict({
   runs: true,
@@ -143,43 +143,24 @@ export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms, t
 }
 
 function datOnBroadcast(src) {
+  src = u.eventData(src)
   const type = src?.type
   if (type !== `new_round`) return
+
   const {round, run_num, run_ms} = src
   s.datAddRound({
     dat: DAT, round, user_id: USER_ID, run_num, run_ms, composite: true,
   })
-  u.dispatchMessage(DAT, src)
+  u.dispatch(DAT, u.EVENT_MSG, src)
 }
 
-/*
-Mixin for various "live" media that want to receive notifications
-about new local data.
-*/
-export function MixDatSub(cls) {return MixinDatSub.get(cls)}
+export function listenNewRound(ctx, fun) {
+  a.reqFun(fun)
 
-class MixinDatSub extends a.Mixin {
-  static make(cls) {
-    return class DatSub extends cls {
-      datSub = new u.Listener(this)
-
-      onDatEvent(eve) {
-        if (this.isConnected) this.onDatMsg(u.eventData(eve))
-        else this.datSubDeinit()
-      }
-
-      onDatMsg(src) {
-        if (src?.type !== `new_round`) return
-        this.onNewRound(src)
-      }
-
-      onNewRound() {}
-
-      datSubInit() {
-        this.datSub.init(DAT, u.DEFAULT_EVENT_TYPE, this.onDatEvent)
-      }
-
-      datSubDeinit() {this.datSub.deinit()}
-    }
+  function onDatEvent(src) {
+    src = u.eventData(src)
+    if (src?.type === `new_round`) fun.call(this, src)
   }
+
+  return u.listenWeak(DAT, u.EVENT_MSG, ctx, onDatEvent)
 }

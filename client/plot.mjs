@@ -925,20 +925,11 @@ export class Plotter extends ui.Elem {
 function getLabel(val) {return a.onlyStr(val?.label)}
 function getLabelLen(val) {return getLabel(val)?.length}
 
-export class LivePlotter extends d.MixDatSub(Plotter) {
+export class LivePlotter extends Plotter {
   constructor(opts, fun) {
     super(opts || fun())
     this.fun = a.reqFun(fun)
-  }
-
-  plotInit() {
-    super.plotInit()
-    this.datSubInit()
-  }
-
-  plotDeinit() {
-    this.datSubDeinit()
-    super.plotDeinit()
+    d.listenNewRound(this, this.onNewRound)
   }
 
   /*

@@ -141,9 +141,9 @@ function authInstructions(suggs) {
 
 function readPassFromPrompt(sig) {
   const input = ui.PROMPT_INPUT
-  const unlisten0 = u.listenEvent(sig, `abort`, onAbort, {once: true})
-  const unlisten1 = u.listenEvent(input, `submit_pass`, onSubmit)
-  const unlisten2 = u.listenEvent(input, `disable_pass_mode`, onDisable, {once: true})
+  const unlisten0 = u.listen(sig, `abort`, onAbort, {once: true})
+  const unlisten1 = u.listen(input, `submit_pass`, onSubmit)
+  const unlisten2 = u.listen(input, `disable_pass_mode`, onDisable, {once: true})
   const {promise, resolve} = Promise.withResolvers()
   let count = 0
   let prev = ``

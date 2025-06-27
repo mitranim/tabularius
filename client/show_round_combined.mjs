@@ -267,7 +267,7 @@ export const LONG = u.storageObsBool(`tabularius.show_round.long`)
 export const SETTINGS_OPEN = u.storageObsBool(`tabularius.show_round.settings_open`)
 export const LONG_ROW_BREAKPOINT = 12
 
-export class ShowRound extends d.MixDatSub(ui.Elem) {
+export class ShowRound extends ui.Elem {
   closeBtn = a.obsRef()
   opt = undefined
 
@@ -282,6 +282,8 @@ export class ShowRound extends d.MixDatSub(ui.Elem) {
         a.vac(WIDE.val) && ui.CLS_MEDIA_ITEM_WIDE,
       ),
     })
+
+    if (a.optBool(opt.live)) d.listenNewRound(this, this.onNewRound)
   }
 
   init() {
@@ -307,7 +309,9 @@ export class ShowRound extends d.MixDatSub(ui.Elem) {
     ]})
   }
 
-  // Invoked by `MixDatSub`.
+  // Invoked by `MEDIA`.
+  addCloseBtn(btn) {a.reset(this.closeBtn, btn)}
+
   onNewRound(src) {
     const {round, run_num, run_ms} = src
     this.opt.round = round
@@ -315,11 +319,6 @@ export class ShowRound extends d.MixDatSub(ui.Elem) {
     this.opt.run_ms = run_ms
     this.init()
   }
-
-  // Invoked by `MEDIA`.
-  addCloseBtn(btn) {a.reset(this.closeBtn, btn)}
-  connectedCallback() {if (this.opt.live) this.datSubInit()}
-  disconnectedCallback() {this.datSubDeinit()}
 }
 
 export function RoundHead({round, user_id, run_id, run_num, args, chi, closeBtn}) {

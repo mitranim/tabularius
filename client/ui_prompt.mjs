@@ -26,7 +26,7 @@ const CLS_PROMPT_INPUT = a.spaced(
 )
 
 export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputElement) {
-  listener = new u.Listener(this)
+  listener = new u.Listener(document, `keydown`, this, this.onKeydown)
 
   constructor() {
     super()
@@ -64,13 +64,11 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
 
   onKeydown(eve) {
     if (eve.key === `Escape`) {
-      this.listener.deinit()
-
       if (this.type === `password`) {
         a.eventKill(eve)
         this.disablePassMode()
-        return
       }
+      return
     }
 
     if (eve.key === `ArrowUp`) {
@@ -127,11 +125,11 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     if (document.activeElement === this) this.onFocus()
     else this.focus()
 
-    this.listener.init(document, `keydown`, this.onKeydown)
+    this.listener.init()
   }
 
   disablePassMode() {
-    if (!(this.type === `password`)) return
+    if (this.type !== `password`) return
 
     this.value = ``
     this.type = `text`

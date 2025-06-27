@@ -214,6 +214,7 @@ async function watchStep(sig, state) {
     run_num: prevRunNum,
     run_ms: prevRunMs,
     round_num: nextRoundNum,
+    hadPrev: !!runDirName,
   }
 
   if (prevRoundNum < nextRoundNum) {
@@ -249,7 +250,6 @@ async function watchStep(sig, state) {
   state.setRoundFile(nextFileName)
   ui.LOG.info(`[watch] backed up ${a.show(u.paths.join(dir.name, nextFileName))}`)
 
-  event.prevRunNum = event.run_num
   event.runDirName = nextRunDirName
   event.roundFileName = nextFileName
   event.run_num = nextRunNum
@@ -258,8 +258,8 @@ async function watchStep(sig, state) {
 
 function afterRoundBackup(eve) {
   u.broadcastToAllTabs(eve)
-  const {prevRunNum, runDirName, roundFileName} = eve
-  if (!prevRunNum) p.plotDefaultLocalOpt({quiet: true}).catch(ui.logErr)
+  const {hadPrev, runDirName, roundFileName} = eve
+  if (!hadPrev) p.plotDefaultLocalOpt({quiet: true}).catch(ui.logErr)
   if (!au.isAuthed()) return
   os.runCmd(`upload ${u.paths.join(runDirName, roundFileName)}`).catch(ui.logErr)
 }

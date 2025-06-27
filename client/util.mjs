@@ -454,12 +454,12 @@ export const RETAIN = new WeakMap()
 export function retain(tar, val) {RETAIN.set(a.reqObj(tar), a.reqObj(val))}
 
 /*
-We have several event targets (`BROAD` and `DAT`). `BroadcastChannel`
-prioritizes `message` events; they're dispatched when using `.postMessage`.
-Sometimes we pass them along to other event targets. So for simplicity,
-we just use this event type for everything.
+We have several event targets (`BROAD` and `DAT`). `BroadcastChannel` prefers
+`message` events; using `.postMessage` dispatches events with the `message`
+type. Sometimes we pass them along to other event targets. So for simplicity,
+we just use `message` events for everything.
 */
-export const DEFAULT_EVENT_TYPE = `message`
+export const EVENT_MSG = `message`
 
 export const BROAD = new BroadcastChannel(`tabularius_broadcast`)
 
@@ -479,35 +479,10 @@ export function broadcastToAllTabs(data) {
 }
 
 export function broadcastToThisTab(data) {
-  BROAD.dispatchEvent(new MessageEvent(DEFAULT_EVENT_TYPE, {data}))
+  BROAD.dispatchEvent(new MessageEvent(EVENT_MSG, {data}))
 }
 
-export function broadcastToOtherTabs(data) {
-  BROAD.postMessage(data)
-}
-
-// Default way of subscribing to our event targets.
-export function listenMessage(tar, fun, opt) {
-  return listenData(tar, DEFAULT_EVENT_TYPE, fun, opt)
-}
-
-// Default way of dispatching on our event targets.
-export function dispatchMessage(tar, data) {
-  dispatch(tar, DEFAULT_EVENT_TYPE, data)
-}
-
-/*
-A simplifying wrapper for `.addEventListener`/`.removeEventListener` that
-provides only the event data, without the event, supporting both message
-events and custom events (where data is stored in different fields).
-*/
-export function listenData(tar, type, fun, opt) {
-  a.reqStr(type)
-  a.reqFun(fun)
-  a.optRec(opt)
-  function onEvent(src) {fun(eventData(src))}
-  return listenEvent(tar, type, onEvent, opt)
-}
+export function broadcastToOtherTabs(data) {BROAD.postMessage(data)}
 
 export function eventData(src) {
   a.reqInst(src, Event)
@@ -517,53 +492,70 @@ export function eventData(src) {
   )
 }
 
-/*
-A safer wrapper for `.addEventListener`/`.removeEventListener` that returns a
-cleanup function. Prevents common misuse of `.removeEventListener` where the
-calling code accidentally passes a different reference than the one which was
-passed to `.addEventListener`. In addition, this only keeps a weak reference
-to the target.
-*/
-export function listenEvent(tar, type, han, opt) {
-  a.reqStr(type)
-  tar.addEventListener(type, han, opt)
-  return function unlisten() {tar.removeEventListener(type, han, opt)}
+export function dispatch(tar, typ, data) {
+  tar.dispatchEvent(new CustomEvent(a.reqStr(typ), {detail: data}))
 }
 
-export function dispatch(tar, type, data) {
-  tar.dispatchEvent(new CustomEvent(a.reqStr(type), {detail: data}))
+export class HandlerRef extends WeakRef {
+  constructor(han, fun) {super(han).fun = a.reqFun(fun)}
+
+  handleEvent(eve) {
+    const han = this.deref()
+    if (!han) return
+    this.fun.call(han, eve)
+  }
+}
+
+export function listen(tar, typ, fun, opt) {
+  a.reqObj(tar).addEventListener(a.reqStr(typ), a.reqFun(fun), a.optDict(opt))
+  return function deinit() {tar.removeEventListener(typ, fun, opt)}
+}
+
+export function listenWeak(tar, typ, han, fun, opt) {
+  a.reqObj(tar)
+  a.reqStr(typ)
+  a.reqObj(han)
+  a.reqFun(fun)
+  a.optDict(opt)
+
+  const tarRef = new WeakRef(tar)
+  const hanRef = new HandlerRef(han, fun)
+
+  tar.addEventListener(typ, hanRef, opt)
+  REG_DEINIT.register(han, deinit, hanRef)
+
+  function deinit() {
+    tarRef.deref()?.removeEventListener(typ, hanRef, opt)
+    REG_DEINIT.unregister(hanRef)
+  }
+  return deinit
 }
 
 export class Listener extends WeakRef {
-  tar = undefined
-  args = undefined
-
-  constructor(ref) {
-    super(ref)
-    REG_DEINIT.register(ref, this)
+  constructor(tar, typ, ctx, fun, opt) {
+    super(ctx)
+    this.tar = a.reqObj(tar)
+    this.typ = a.reqStr(typ)
+    this.fun = a.reqFun(fun)
+    this.opt = a.optDict(opt)
+    REG_DEINIT.register(ctx, this)
   }
 
-  init(tar, type, fun, opt) {
-    a.reqRec(tar)
-    a.reqStr(type)
-    a.reqFun(fun)
+  handleEvent(eve) {
+    const ctx = this.deref()
+    if (ctx) this.fun.call(ctx, eve)
+    else this.deinit()
+  }
 
-    const onEvent = (eve) => {
-      const ref = this.deref()
-      if (ref) fun.call(ref, eve)
-      else this.deinit()
-    }
-
-    this.deinit()
-    this.tar = tar
-    this.args = [type, onEvent, opt]
-    tar.addEventListener(...this.args)
+  init() {
+    const {tar, typ, opt} = this
+    tar.addEventListener(typ, this, opt)
+    return this
   }
 
   deinit() {
-    const {tar, args} = this
-    if (tar && args) tar.removeEventListener(...args)
-    this.tar = this.args = undefined
+    const {tar, typ, opt} = this
+    tar.removeEventListener(typ, this, opt)
   }
 }
 
