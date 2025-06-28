@@ -312,7 +312,7 @@ function rowProps(ind) {
   a.reqNat(ind)
   return {
     class: ui.CLS_ROW_TOP,
-    hidden: a.vac(ind > sr.LONG_ROW_BREAKPOINT) && (() => !a.deref(sr.LONG)),
+    hidden: a.vac(ind > sr.LONG_ROW_BREAKPOINT) && short,
   }
 }
 
@@ -508,3 +508,5 @@ function compareRecs(key, desc, one, two) {
   if (miss) return miss
   return u.compareNumerically(one, two, desc)
 }
+
+function short() {return !a.deref(sr.LONG)}

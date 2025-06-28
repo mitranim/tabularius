@@ -1087,7 +1087,12 @@ export function chiStatData({type, stats, total, enabled}) {
   return out
 }
 
-// SYNC[wep_cols].
+/*
+TODO: "reified" values should have a tooltip with the source values for the
+calculation, maybe in the shape of a formula.
+
+SYNC[wep_cols].
+*/
 export function wepDetailData(wep) {
   a.reqDict(wep)
 
@@ -1105,7 +1110,7 @@ export function wepDetailData(wep) {
 
   const mag = out.mag = wep.MagazineSize
   const rof = out.rof = reify(wep.RateOfFire)
-  const rel = out.rel = reifyReload(wep.ReloadTime)
+  const rel = out.rel = reify(wep.ReloadTime)
   out.det = wep.IsDetection
 
   out.perc_dmg = a.laxFin(aoe.Damage.pctModifier) / 100
@@ -1261,23 +1266,6 @@ function reify(src) {
   const baseMod = a.laxFin(src.rawModifier)
   const percMod = a.laxFin(src.pctModifier)
   return (base + baseMod) * (1 + (percMod / 100))
-}
-
-/*
-The game seems to calculate reload differently than other values. It seems to
-treat the base value as reload time in seconds, while treating the percentages
-as modifiers for reload _speed_ rather than time, and with an opposite sign to
-boot. Negative sign seems to be treated as reload speed bonus, and vice versa.
-*/
-function reifyReload(src) {
-  if (!a.optRec(src)) return undefined
-  const timeBase = a.laxFin(src.baseValue)
-  const timeMod = a.laxFin(src.rawModifier)
-  const speedPercMod = a.laxFin(src.pctModifier)
-  const time = timeBase + timeMod
-  const speedBase = 1 / time
-  const speedFinal = speedBase * (1 + (-speedPercMod / 100))
-  return 1 / speedFinal
 }
 
 function dpsEstimate(dmg, mag, rof, rel) {

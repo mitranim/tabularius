@@ -5,7 +5,7 @@ import * as ui from './ui.mjs'
 import * as fs from './fs.mjs'
 
 // Increment by 1 when publishing an update.
-export const VERSION = 139
+export const VERSION = 140
 
 export function BtnUrlAppend(val) {
   const href = globalThis.location.href + a.reqValidStr(val)
@@ -250,6 +250,8 @@ export function External() {
   return E(`span`, {class: `leading-none align-text-bottom`, chi: `↗`})
 }
 
+const TOGGLE = Symbol.for(`toggle`)
+
 /*
 TODO convert to a more shallow abstraction with support for just the count and
 the summary toggle indicator.
@@ -295,7 +297,7 @@ export function Details({
   })
 
   if (obs) {
-    details[Symbol.for(`toggle`)] = a.recurTask(function onObsChange() {
+    details[TOGGLE] = a.recurTask(function onObsChange() {
       details.open = !!a.deref(obs)
     })
     details.addEventListener(`toggle`, function onToggle() {
