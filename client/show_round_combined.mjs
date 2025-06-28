@@ -590,6 +590,7 @@ function RoundTableCombined(opt) {
 
 function RoundTableBody(opt) {
   const {sortableRows: sortable, otherRows} = roundTableRows(opt)
+
   const rowObs = a.obsRef(sortable)
 
   const sorter = a.recur(function sortRows() {
@@ -600,10 +601,20 @@ function RoundTableBody(opt) {
     a.RUN_REF.set()
 
     afterSort(rows)
-    a.reset(rowObs, rows)
+
+    /*
+    Instead of concatenating, we could also have told the rendering framework
+    that the tbody's children are `[rowObs, otherRows]`. But that seems to run
+    up against a strange behavior in Chrome, possibly a bug, where re-inserting
+    the newly sorted rows before the `otherRows` (via a single `.after` call
+    executed internally by the rendering framework after building up a list of
+    nodes) causes the browser to scroll up on any re-sort, for no apparent
+    reason.
+    */
+    a.reset(rowObs, rows.concat(otherRows))
   })
 
-  const body = E(`tbody`, {chi: [rowObs, otherRows]})
+  const body = E(`tbody`, {chi: rowObs})
   u.retain(body, sorter)
   return body
 }
