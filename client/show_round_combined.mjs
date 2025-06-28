@@ -285,7 +285,7 @@ export class ShowRound extends ui.Elem {
     const opt = a.reqDict(this.opt)
     const dat = a.Emp()
     s.datAddRound({...opt, dat, composite: false, tables: {round_buis: true}})
-    opt.roundBuis = dat.round_buis
+    opt.roundBuis = a.laxDict(dat.round_buis)
 
     return E(this, {chi: [
       E(RoundHead, {
@@ -590,7 +590,6 @@ function RoundTableCombined(opt) {
 
 function RoundTableBody(opt) {
   const {sortableRows: sortable, otherRows} = roundTableRows(opt)
-
   const rowObs = a.obsRef(sortable)
 
   const sorter = a.recur(function sortRows() {

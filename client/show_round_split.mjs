@@ -119,7 +119,7 @@ class ShowRound extends sr.ShowRound {
     const opt = a.reqDict(this.opt)
     const dat = a.Emp()
     s.datAddRound({...opt, dat, composite: false, tables: {round_buis: true}})
-    opt.roundBuis = dat.round_buis
+    opt.roundBuis = a.laxDict(dat.round_buis)
 
     return E(this, {chi: [
       E(sr.RoundHead, {
