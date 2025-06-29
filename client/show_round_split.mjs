@@ -125,7 +125,7 @@ class ShowRound extends sr.ShowRound {
       E(sr.RoundHead, {
         ...a.reqDict(opt),
         chi: E(sr.TableHintsAndControls, [
-          [E(sr.TableHintHidden), E(sr.TableHintSort)],
+          E(sr.TableHintSort),
           E(sr.TableControlMissingLast),
           E(sr.TableControlWide),
           E(sr.TableControlLong, `row`),

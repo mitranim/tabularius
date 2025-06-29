@@ -291,7 +291,10 @@ export class ShowRound extends ui.Elem {
       E(RoundHead, {
         ...opt,
         chi: E(TableHintsAndControls, [
-          [E(TableHintHidden), E(TableHintSort)],
+          [
+            E(TableHintHidden, {class: ui.CLS_ONLY_NARROW}),
+            E(TableHintSort, {class: ui.CLS_ONLY_WIDE}),
+          ],
           E(TableHintClick),
           E(TableControlNumMode),
           E(TableControlShowChi),
@@ -454,9 +457,9 @@ export function TableHintsAndControls(chi) {
   })
 }
 
-export function TableHintHidden() {
+export function TableHintHidden(props) {
   return E(`span`, {
-    class: ui.CLS_ONLY_NARROW,
+    ...props,
     chi: [
       ui.Muted(`hint:`),
       ` some columns are hidden; make the media panel wider to see them`,
@@ -464,9 +467,9 @@ export function TableHintHidden() {
   })
 }
 
-export function TableHintSort() {
+export function TableHintSort(props) {
   return E(`span`, {
-    class: ui.CLS_ONLY_WIDE,
+    ...props,
     chi: [ui.Muted(`hint:`), ` click columns to sort`],
   })
 }
