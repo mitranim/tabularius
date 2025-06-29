@@ -21,38 +21,33 @@ export const CLS_MEDIA_CHI = a.spaced(
   `border rounded overflow-x-clip`,
 )
 
-export const PLOT_PLACEHOLDER = new class PlotPlaceholder extends ui.Elem {
-  state = a.obs({count: 0})
+const placeholderTitle = `[Plot Placeholder]`
 
-  constructor() {
-    super()
+export const PLOT_LOAD = a.obsRef(0)
 
-    const obs = this.state
-    const placeholder = `[Plot Placeholder]`
-
-    E(this, {
-      class: a.spaced(
-        CLS_MEDIA_CHI,
-        CLS_MEDIA_ITEM_WIDE,
-        CLS_MEDIA_PAD,
-        `flex flex-col gap-3`,
-      ),
-      chi: [
-        E(`div`, {
-          class: `text-center`,
-          chi: () => obs.count ? `Plots loading...` : placeholder,
-        }),
-        E(`div`, {
-          class: `h-64 flex row-cen-cen border border-gray-400 dark:border-neutral-600 rounded bg-white dark:bg-neutral-800`,
-          chi: E(`div`, {
-            class: a.spaced(ui.CLS_TEXT_MUTED, `w-full text-center`),
-            chi: () => obs.count ? [`Loading `, obs.count, ` plots...`] : placeholder,
-          }),
-        }),
-      ],
-    })
-  }
-}()
+export const PLOT_PLACEHOLDER = E(`div`, {
+  class: a.spaced(
+    CLS_MEDIA_CHI,
+    CLS_MEDIA_ITEM_WIDE,
+    CLS_MEDIA_PAD,
+    `flex flex-col gap-3`,
+  ),
+  chi: [
+    E(`div`, {
+      class: `text-center`,
+      chi: () => a.deref(PLOT_LOAD) ? `Plots loading...` : placeholderTitle,
+    }),
+    E(`div`, {
+      class: `h-64 flex row-cen-cen border border-gray-400 dark:border-neutral-600 rounded bg-white dark:bg-neutral-800`,
+      chi: E(`div`, {
+        class: a.spaced(ui.CLS_TEXT_MUTED, `w-full text-center`),
+        chi: () => a.deref(PLOT_LOAD)
+          ? [`Loading `, a.deref(PLOT_LOAD), ` plots...`]
+          : placeholderTitle,
+      }),
+    }),
+  ],
+})
 
 export const PROCESS_LIST = new class ProcessList extends ui.Elem {
   /*
@@ -117,7 +112,7 @@ export const MEDIA = new class MediaPanel extends ui.Elem {
 
     PLOT_PLACEHOLDER.remove()
     for (const val of this.children) {
-      if (isElementMediaDefault(val)) val.remove()
+      if (isElementPlaceholder(val)) val.remove()
     }
     this.prepend(val)
   }
@@ -146,26 +141,24 @@ export const MEDIA = new class MediaPanel extends ui.Elem {
     }
   }
 
-  isDefault() {
-    return a.every(this.children, isElementMediaDefaultOrBase)
-  }
+  isDefault() {return a.every(this.children, isElementMediaPlaceholderOrBase)}
 }()
 
-function isElementMediaDefaultOrBase(val) {
+function isElementMediaPlaceholderOrBase(val) {
   return (
-    isElementMediaDefault(val) ||
+    isElementPlaceholder(val) ||
     val === PLOT_PLACEHOLDER ||
     val === PROCESS_LIST
   )
 }
 
-export function isElementMediaDefault(val) {
-  return val?.dataset?.isDefault === `true`
+export function isElementPlaceholder(val) {
+  return val?.dataset?.placeholder === `true`
 }
 
-export function markElementMediaDefault(val) {
+export function markElemPlaceholder(val) {
   a.reqElement(val)
-  val.dataset.isDefault = `true`
+  val.dataset.placeholder = `true`
   return val
 }
 

@@ -609,7 +609,8 @@ function RoundTableBody(opt) {
     the newly sorted rows before the `otherRows` (via a single `.after` call
     executed internally by the rendering framework after building up a list of
     nodes) causes the browser to scroll up on any re-sort, for no apparent
-    reason.
+    reason. Replacing all rows together (done internally via a single `.append`
+    call) avoids that.
     */
     a.reset(rowObs, rows.concat(otherRows))
   })
@@ -687,7 +688,7 @@ class SubRowTheadPseudo extends SubRowBase {
     this.sortObs = a.reqInst(sortObs, ui.SortObs)
     this.sortInd = a.reqNat(sortInd)
     E(this, {
-      chi: a.reqArr(cols).map(a.bind(Th, {headPre: this.pre})),
+      chi: a.reqArr(cols).map((col, ind) => Th({col, ind, headPre: this.pre})),
     })
   }
 }
@@ -704,7 +705,7 @@ export class SubRow extends MixSortable(SubRowBase) {
   }
 }
 
-function Th({headPre, headSuf}, col, ind) {
+function Th({col, ind, headPre, headSuf}) {
   const isHead = ind === 0
 
   return E(TableHeadCell, {

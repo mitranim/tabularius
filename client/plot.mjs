@@ -138,15 +138,14 @@ export async function cmdPlot({sig, args, user}) {
   if (opt.help) return os.cmdHelpDetailed(cmdPlot)
 
   const inp = {sig, args, opt, user}
-  const {state} = ui.PLOT_PLACEHOLDER
-  state.count++
+  ui.PLOT_LOAD.val++
 
   try {
     if (opt.cloud) return await cmdPlotCloud(inp)
     if (opt.fetch) return await cmdPlotFetch(inp)
     return await cmdPlotLocal(inp)
   }
-  finally {state.count--}
+  finally {ui.PLOT_LOAD.val--}
 }
 
 /*
@@ -780,7 +779,7 @@ export async function plotDefaultExample(sig) {
   const args = `plot -f=samples/example_run.gd -p=dmg -t=false run_id=all`
   const out = await cmdPlotFetch({sig, args, opt: decodePlotAggOpt(args), example: true})
   a.reqInst(out, os.Combo)
-  for (const val of out.mediaItems) ui.markElementMediaDefault(val)
+  for (const val of out.mediaItems) ui.markElemPlaceholder(val)
   return out
 }
 
@@ -803,11 +802,19 @@ Usage examples:
   ui.MEDIA.add(new p.Plotter(opts))
 */
 export class Plotter extends ui.Elem {
+  resObs = new ResizeObserver(this.onResize.bind(this))
+  lastResize = 0
+  closeBtn = a.obsRef()
+
   constructor(opts) {
     super()
     E(this, {class: `flex col-sta-str`})
     this.setOpts(opts)
+    u.listenWeak(ui.MEDIA_QUERY_DARK, `change`, this, this.plotInit)
+    this.resObs.observe(this)
   }
+
+  setOpts(opts) {this.opts = a.reqDict(opts)}
 
   plotInit() {
     this.plotDeinit()
@@ -823,29 +830,15 @@ export class Plotter extends ui.Elem {
   }
 
   connectedCallback() {
-    this.disconnectedCallback()
+    this.plotDeinit()
 
-    ui.MEDIA_QUERY_DARK.addEventListener(`change`, this)
-    this.resObs = new ResizeObserver(this.onResize.bind(this))
-    this.resObs.observe(this)
+    const init = () => {if (this.isConnected) this.plotInit()}
 
     // Need to wait a tick for the element's geometry to be determined.
-    const init = () => {if (this.isConnected) this.plotInit()}
     globalThis.requestAnimationFrame(init)
   }
 
-  disconnectedCallback() {
-    this.resObs?.disconnect()
-    ui.MEDIA_QUERY_DARK.removeEventListener(`change`, this)
-    this.plotDeinit()
-  }
-
-  setOpts(opts) {
-    a.reqDict(opts)
-    this.opts = opts
-  }
-
-  lastResize = 0
+  disconnectedCallback() {this.plotDeinit()}
 
   onResize() {
     if (!this.plot) return
@@ -872,10 +865,6 @@ export class Plotter extends ui.Elem {
       height: this.clientWidth/(16/9), // Golden ratio.
     }
   }
-
-  handleEvent(eve) {if (eve.type === `change` && eve.media) this.plotInit()}
-
-  closeBtn = a.obsRef()
 
   // Invoked by `MEDIA`.
   addCloseBtn(btn) {a.reset(this.closeBtn, btn)}

@@ -27,7 +27,7 @@ export class ErrLog extends Error {
     this.nodes = nodes
   }
 
-  // Special interface supported by our renderer.
+  // Special interface supported by the rendering framework.
   toNode() {return this.nodes}
 
   get name() {return this.constructor.name}
