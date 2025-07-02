@@ -2,6 +2,12 @@ Also see `todo.md` in repo root.
 
 - [x] Implement separate tables for bui, chi, wep.
 - [x] Rename the commands, prioritize the one that makes separate tables.
+- [ ] CLI option to choose default table type.
+- [ ] Colors! More colors.
+  - [ ] Assign specific colors to specific entities, like in plots, or:
+  - [ ] Implement a heatmap. Maybe assign a color per stat type, and shade it.
+- [ ] Update help. The help for each version of the command should mention the
+  other version of the command.
 
 - [x] Local sources.
   - [x] If no path provided:

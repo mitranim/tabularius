@@ -904,15 +904,11 @@ export function LongToggleRow({count, limit, type, cols, cls}) {
   a.reqArr(cols)
 
   limit ??= LONG_ROW_BREAKPOINT
-  if (count <= limit) return undefined
+  if (!(count > limit)) return undefined
 
   return E(`tr`, {
     class: a.spaced(
-      ui.CLS_ROW_TOP,
-      `cursor-pointer`,
-      ui.CLS_BUSY_BG,
-      ui.CLS_TEXT_MUTED,
-      cls,
+      ui.CLS_ROW_TOP, `cursor-pointer`, ui.CLS_BUSY_BG, ui.CLS_TEXT_MUTED, cls,
     ),
     onclick: toggleLong,
     chi: E(`td`, {
@@ -1277,9 +1273,9 @@ assumes one target and no overkill
 function reify(src) {
   if (!a.optRec(src)) return undefined
   const base = a.laxFin(src.baseValue)
-  const baseMod = a.laxFin(src.rawModifier)
+  const flatMod = a.laxFin(src.rawModifier)
   const percMod = a.laxFin(src.pctModifier)
-  return (base + baseMod) * (1 + (percMod / 100))
+  return (base + flatMod) * (100 + percMod) / 100
 }
 
 function dpsEstimate(dmg, mag, rof, rel) {

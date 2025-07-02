@@ -1,27 +1,3 @@
-/*
-Work in progress.
-
-- [x] Table type: building stats.
-- [x] Table type: child stats.
-- [x] Table type: weapon details.
-- [x] Tabs for switching between table types.
-- [x] Fix tooltip stucking.
-- [x] Long-toggle rows.
-- [x] Settings and hints: implement appropriately for this UI.
-- [x] Ability to toggle each column off / on.
-  - [x] Via dialog.
-  - [x] Only columns suitable for current table type (stats vs wep details).
-  - [x] When any columns are disabled, also disable the "hide narrow" feature.
-- [x] Weapon details: add calculated damage against Air and Shield.
-- [x] Weapon details: consider estimating ideal single-target DPS.
-- [ ] CLI option to choose default table type.
-- [ ] Colors! More colors.
-  - [ ] Assign specific colors to specific entities, like in plots, or:
-  - [ ] Implement a heatmap. Maybe assign a color per stat type, and shade it.
-- [ ] Update help. The help for each version of the command should mention the
-  other version of the command.
-*/
-
 import * as a from '@mitranim/js/all.mjs'
 import * as s from '../shared/schema.mjs'
 import {E} from './ui.mjs'
@@ -83,10 +59,10 @@ export const WEP_COLS = [
   withHideObs({sortObs: sr.WEP_SORT, key: `mag`,          type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `rof`,          type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `rel`,          type: sr.TYPE_NUM}),
-  withHideObs({sortObs: sr.WEP_SORT, key: `dmg_base`,     type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `dmg`,          type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `dmg_air`,      type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `dmg_shld`,     type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `dmg_base`,     type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `perc_dmg`,     type: sr.TYPE_PERC_MOD}),
   withHideObs({sortObs: sr.WEP_SORT, key: `perc_air`,     type: sr.TYPE_PERC_MOD}),
   withHideObs({sortObs: sr.WEP_SORT, key: `perc_shld`,    type: sr.TYPE_PERC_MOD}),
@@ -312,7 +288,7 @@ function rowProps(ind) {
   a.reqNat(ind)
   return {
     class: ui.CLS_ROW_TOP,
-    hidden: a.vac(ind > sr.LONG_ROW_BREAKPOINT) && short,
+    hidden: a.vac(ind >= sr.LONG_ROW_BREAKPOINT) && short,
   }
 }
 

@@ -131,7 +131,11 @@ dialog:not([open]) {display: none}
 
 dialog[open] {
   &::backdrop {backdrop-filter: blur(6px)}
-  outline: 0.5rem solid hsl(200deg 50% 80% / 20%);
+  outline: 0.5rem solid var(--outline-color);
+  --outline-color: hsl(200deg 50% 30% / 20%);
+  @media (prefers-color-scheme: dark) {
+    --outline-color: hsl(200deg 50% 80% / 20%);
+  }
 }
 
 .uplot, .u-wrap, .u-wrap *, .u-legend, .u-legend * {

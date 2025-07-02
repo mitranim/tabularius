@@ -649,6 +649,22 @@ export const FOES = dict({
   FE06: dict({code: `FE06`, name: `Threxid`, tier: 5}),
 })
 
+// Courtesy of Shmafoo on Discord.
+export const ZONES = new Set([
+  `ZoneC1_001`, `ZoneC1_002`, `ZoneC1_003`, `ZoneC1_004`, `ZoneC1_005`, `ZoneC1_006`, `ZoneC1_007`, `ZoneC1_008`, `ZoneC1_009`, `ZoneC1_010`, `ZoneC1_011`,
+  `ZoneC2_001`, `ZoneC2_002`, `ZoneC2_003`, `ZoneC2_004`, `ZoneC2_005`, `ZoneC2_006`, `ZoneC2_007`, `ZoneC2_008`, `ZoneC2_009`, `ZoneC2_010`, `ZoneC2_011`,
+  `ZoneC3_001`, `ZoneC3_002`, `ZoneC3_003`, `ZoneC3_004`, `ZoneC3_005`, `ZoneC3_006`, `ZoneC3_007`, `ZoneC3_008`, `ZoneC3_009`, `ZoneC3_010`, `ZoneC3_011`,
+  `ZoneC4_001`, `ZoneC4_002`, `ZoneC4_003`, `ZoneC4_004`, `ZoneC4_005`, `ZoneC4_006`, `ZoneC4_007`, `ZoneC4_008`, `ZoneC4_009`, `ZoneC4_010`,
+  `ZoneL1_001`, `ZoneL1_002`, `ZoneL1_003`, `ZoneL1_004`, `ZoneL1_005`, `ZoneL1_006`, `ZoneL1_007`, `ZoneL1_008`, `ZoneL1_009`, `ZoneL1_010`, `ZoneL1_011`, `ZoneL1_012`,
+  `ZoneL2_001`, `ZoneL2_002`, `ZoneL2_003`, `ZoneL2_004`, `ZoneL2_005`, `ZoneL2_006`, `ZoneL2_007`, `ZoneL2_008`, `ZoneL2_009`, `ZoneL2_010`, `ZoneL2_011`, `ZoneL2_012`,
+  `ZoneL3_001`, `ZoneL3_002`, `ZoneL3_003`, `ZoneL3_004`, `ZoneL3_005`, `ZoneL3_006`, `ZoneL3_007`, `ZoneL3_008`, `ZoneL3_009`, `ZoneL3_010`, `ZoneL3_011`, `ZoneL3_012`,
+  `ZoneP1_001`, `ZoneP1_002`, `ZoneP1_003`, `ZoneP1_004`, `ZoneP1_005`,
+  `ZoneT1_001`, `ZoneT1_002`, `ZoneT1_003`, `ZoneT1_004`, `ZoneT1_005`, `ZoneT1_006`, `ZoneT1_007`, `ZoneT1_008`, `ZoneT1_009`, `ZoneT1_010`, `ZoneT1_011`, `ZoneT1_012`,
+  `ZoneT2_001`, `ZoneT2_002`, `ZoneT2_003`, `ZoneT2_004`, `ZoneT2_005`, `ZoneT2_006`, `ZoneT2_007`, `ZoneT2_008`, `ZoneT2_009`, `ZoneT2_010`, `ZoneT2_011`, `ZoneT2_012`,
+  `ZoneT3_001`, `ZoneT3_002`, `ZoneT3_003`, `ZoneT3_004`, `ZoneT3_005`, `ZoneT3_006`, `ZoneT3_007`, `ZoneT3_008`, `ZoneT3_009`, `ZoneT3_010`, `ZoneT3_011`, `ZoneT3_012`,
+  `ZoneX1_001`, `ZoneX1_002`, `ZoneX1_003`, `ZoneX1_004`, `ZoneX1_005`, `ZoneX1_006`, `ZoneX1_007`, `ZoneX1_008`, `ZoneX1_009`, `ZoneX1_010`, `ZoneX1_011`, `ZoneX1_012`, `ZoneX1_013`,
+])
+
 export const SELL_COST_MUL = 0.8
 
 export const DIFF_MAX_ROUND_NUM = new Map()
