@@ -1287,8 +1287,14 @@ function dpsEstimate(dmg, mag, rof, rel) {
   if (!dmg || !mag || !rof) return 0
 
   const cycleDmg = dmg * mag
+
+  /*
+  The game waits for the refire delay after each shot, thus effectively adding
+  one refire delay to each reload. This simple division matches that behavior.
+  */
   const magTime = mag / rof
-  const cycleTime = magTime + a.reqFin(rel)
+
+  const cycleTime = magTime + rel
   return cycleDmg / cycleTime
 }
 

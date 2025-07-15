@@ -707,3 +707,7 @@ Consider if the Web Authentication API and/or Web Credentials API could be relev
 
 * [ ] Detect "expired" rounds (which only exist on disk during the defeat screen) and back them up too.
   * [ ] May need special handling when rollbacks are involved.
+
+---
+
+`plot`: when `-a` is not `count`, count the data points anyway, and display the resulting counts in labels and tooltips.

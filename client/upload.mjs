@@ -78,6 +78,14 @@ cmdUpload.help = function cmdUploadHelp() {
   )
 }
 
+/*
+TODO: sometimes a single round upload fails, and then it's never retried and
+never rechecked when shadowed by the next round.
+
+Single round upload must also retry.
+
+Lazy mode should check the entire latest run.
+*/
 export async function cmdUpload(proc) {
   const cmd = cmdUpload.cmd
   const {args} = proc

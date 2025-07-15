@@ -267,11 +267,6 @@ export function onKeydownFocusPrompt(eve) {
   if (eve.altKey) return
 
   const {key} = eve
-  if (MODIFIER_KEYS.has(key)) return
-
-  // According to bots, unprintable characters end at 31,
-  // which is patently false. TODO improve.
-  if (!(key.charCodeAt(0) > 31)) return
 
   if (
     (key === `Tab`) ||

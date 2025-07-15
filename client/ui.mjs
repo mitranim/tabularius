@@ -22,12 +22,12 @@ let INITED
 /*
 Should be called exactly once.
 
-Any further UI updates must be done either via observables, or or semi-manually
+Any further UI updates must be done either via observables, or semi-manually
 via `E`, or by lower-level manipulation in very simple cases. The rendering
-library we're using has built-in support for observables and reactivity. We can
-simply pass observables or functions into markup as "child nodes". Functions
-are invoked in a reactive context, and any observables they access during the
-call are automatically monitored, causing an update on change.
+library we're using has built-in support for observables and reactivity.
+We can simply pass observables or functions into markup as "child nodes".
+Functions are invoked in a reactive context, and any observables they access
+during the call are automatically monitored, causing an update on change.
 */
 export function init() {
   if (INITED) return

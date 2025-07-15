@@ -189,7 +189,7 @@ export const PROMPT_PREFIX = `>`
 function LogPrefix(inp) {
   return ui.withTooltip(
     E(`span`, {
-      class: a.spaced(ui.CLS_TEXT_MUTED, `cursor-help`),
+      class: ui.CLS_TEXT_MUTED,
       chi: inp ? PROMPT_PREFIX + ` ` : `< `,
     }),
     {chi: ui.timeFormat.format(Date.now())},
