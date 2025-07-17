@@ -1,7 +1,7 @@
 /* global Deno */
 
 import * as a from '@mitranim/js/all.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as pt from '@mitranim/js/path.mjs'
 import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
 
@@ -29,7 +29,7 @@ export async function migrateUserRuns(ctx) {
   for await (const userId of await u.readDirs(baseDir)) {
     out.userCheck++
 
-    const userDir = io.paths.join(baseDir, userId)
+    const userDir = pt.join(baseDir, userId)
     const runDirs = await u.readRunDirs(userDir)
     if (!runDirs.length) continue
     let userRunsMigrated = 0
@@ -43,12 +43,12 @@ export async function migrateUserRuns(ctx) {
       const runName = runDirs[0]
 
       if (!isRunOld(runName)) {
-        const runDir = io.paths.join(userDir, runName)
+        const runDir = pt.join(userDir, runName)
         const roundFiles = (await u.readFiles(runDir)).sort(u.compareDesc)
         const roundName = roundFiles[0]
 
         if (roundName) {
-          const roundFile = io.paths.join(runDir, roundName)
+          const roundFile = pt.join(runDir, roundName)
           const round = await u.readDecodeGameFile(roundFile)
 
           if (!isRoundOld(round)) {
@@ -65,14 +65,14 @@ export async function migrateUserRuns(ctx) {
 
     for (const runName of runDirs) {
       out.runCheck++
-      const runDir = io.paths.join(userDir, runName)
+      const runDir = pt.join(userDir, runName)
       const runNum = u.toNatOpt(runName)
       let runRoundsChecked = 0
       let runRoundsMigrated = 0
       let runMs
 
       for (const roundName of await u.readRoundFiles(runDir)) {
-        const roundFile = io.paths.join(runDir, roundName)
+        const roundFile = pt.join(runDir, roundName)
         const round = await u.readDecodeGameFile(roundFile)
         runMs ??= a.reqInt(Date.parse(round.LastUpdated))
 
@@ -117,7 +117,7 @@ export async function migrateUserRuns(ctx) {
       }
 
       const runNameNext = s.makeRunName(runNum, runMs)
-      const runDirNext = io.paths.join(userDir, runNameNext)
+      const runDirNext = pt.join(userDir, runNameNext)
 
       await Deno.rename(runDir, runDirNext)
       verb(`[fs_mig] renamed run dir`, a.show(runDir), `to`, a.show(runDirNext))

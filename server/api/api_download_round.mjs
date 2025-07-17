@@ -1,5 +1,5 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as pt from '@mitranim/js/path.mjs'
 import * as s from '../../shared/schema.mjs'
 import * as u from '../util.mjs'
 import * as adf from './api_download_file.mjs'
@@ -58,6 +58,6 @@ export async function downloadRound(ctx, path) {
   const {user_id, run_ms, run_num, round_num} = row
   const runName = s.makeRunName(run_num, run_ms)
   const roundName = s.makeRoundFileNameBase(round_num) + u.GAME_FILE_EXT_REAL
-  const filePath = io.paths.join(user_id, runName, roundName)
+  const filePath = pt.join(user_id, runName, roundName)
   return adf.resolveUserFile(ctx, path, filePath)
 }

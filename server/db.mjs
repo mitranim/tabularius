@@ -7,6 +7,7 @@ DuckDB docs:
 /* global Deno */
 
 import * as a from '@mitranim/js/all.mjs'
+import * as pt from '@mitranim/js/path.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
 import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
@@ -108,14 +109,14 @@ export async function initDataFromRounds(ctx, conn) {
 
   for await (const {name: user_id, isDirectory} of Deno.readDir(rootDirPath)) {
     if (!isDirectory) continue
-    const userDir = io.paths.join(rootDirPath, user_id)
+    const userDir = pt.join(rootDirPath, user_id)
 
     for (const runName of await u.readRunDirs(userDir)) {
-      const runDir = io.paths.join(userDir, runName)
+      const runDir = pt.join(userDir, runName)
       const [run_num, run_ms] = s.splitRunName(runName)
 
       for (const roundName of await u.readRoundFiles(runDir)) {
-        const roundFile = io.paths.join(runDir, roundName)
+        const roundFile = pt.join(runDir, roundName)
         const round = await u.readDecodeGameFile(roundFile, roundName)
 
         dat ??= a.Emp()

@@ -71,7 +71,7 @@ export function liveSend(val) {
 
   const url = new URL(`http://localhost`)
   url.port = uc.LIVE_PORT
-  url.pathname = pt.posix.join(ld.LIVE_PATH, `send`)
+  url.pathname = pt.join(ld.LIVE_PATH, `send`)
 
   return fetch(url, {
     method: a.POST,

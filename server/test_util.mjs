@@ -3,7 +3,7 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
 import * as cl from '@mitranim/js/cli.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as pt from '@mitranim/js/path.mjs'
 import * as hd from '@mitranim/js/http_deno.mjs'
 import * as u from '../shared/util.mjs'
 import * as us from './util_srv.mjs'
@@ -48,7 +48,7 @@ export class TestCtx extends a.Emp {
     )
   }
 
-  get userRunsDir() {return io.paths.join(this.dataDir, `user_runs`)}
+  get userRunsDir() {return pt.join(this.dataDir, `user_runs`)}
   get httpDirUserRuns() {return hd.dirRel(this.userRunsDir)}
 
   #db

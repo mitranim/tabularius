@@ -557,7 +557,7 @@ export class Semver extends a.Emp {
 }
 
 // Minor extensions for library functionality.
-export const paths = new class PathsPosix extends pt.PathsPosix {
+export const paths = new class Paths extends pt.Paths {
   cleanTop(src) {return a.stripPre(super.clean(src), this.dirSep)}
 
   splitTop(src) {return a.split(this.cleanTop(src), this.dirSep)}

@@ -13,35 +13,35 @@ export * from './util_db.mjs'
 export * from './util_srv.mjs'
 
 export function cwdUrl() {
-  return new URL(pt.posix.dirLike(Deno.cwd()), `file:`)
+  return new URL(pt.dirLike(Deno.cwd()), `file:`)
 }
 
 export function dirUrl(src) {
   if (a.isInst(src, URL)) {
     src = new URL(src)
-    src.pathname = pt.posix.dirLike(src.pathname)
+    src.pathname = pt.dirLike(src.pathname)
     return src
   }
 
   if (a.isStr(src)) {
-    if (io.paths.isAbs(src)) return new URL(pt.posix.dirLike(src), `file:`)
-    return new URL(pt.posix.dirLike(src), cwdUrl())
+    if (pt.isAbs(src)) return new URL(pt.dirLike(src), `file:`)
+    return new URL(pt.dirLike(src), cwdUrl())
   }
 
   throw a.errConv(src, `directory URL`)
 }
 
 export function urlAtDir(path, base) {
-  return new URL(path, pt.posix.dirLike(a.render(base)))
+  return new URL(path, pt.dirLike(a.render(base)))
 }
 
 export function dirUrlAtDir(path, base) {
-  return new URL(pt.posix.dirLike(path), pt.posix.dirLike(a.render(base)))
+  return new URL(pt.dirLike(path), pt.dirLike(a.render(base)))
 }
 
 export function pathToName(src) {
-  if (a.isInst(src, URL)) return pt.posix.base(src.pathname)
-  if (a.isStr(src)) return io.paths.base(src)
+  if (a.isInst(src, URL)) return pt.name(src.pathname)
+  if (a.isStr(src)) return pt.name(src)
   throw a.errConv(src, `file or directory name`)
 }
 
@@ -58,7 +58,7 @@ allow "valid" forms of collapse, but most clients do that by default anyway.
 */
 export function reqValidRelFilePath(src) {
   src = a.laxStr(src)
-  if (pt.posix.isAbs(src) || src.includes(`..`)) {
+  if (pt.isAbs(src) || src.includes(`..`)) {
     throw new us.ErrHttp(`invalid path ${a.show(src)}`, {status: 400})
   }
   return src

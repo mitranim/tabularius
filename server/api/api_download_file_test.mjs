@@ -31,7 +31,7 @@ await t.test(async function test_fileDownload() {
   ]
 
   for (const {name, body} of files) {
-    await io.writeFile(pt.posix.join(dirPath, name), body)
+    await io.writeFile(pt.join(dirPath, name), body)
   }
 
   tu.testFailInsecurePaths(a.bind(adf.downloadFile, ctx))
@@ -45,7 +45,7 @@ await t.test(async function test_fileDownload() {
 })
 
 async function testFileDownload(ctx, dirPath, {name: fileName, body: fileBody}) {
-  const filePath = pt.posix.join(dirPath, fileName)
+  const filePath = pt.join(dirPath, fileName)
   await io.writeFile(filePath, fileBody)
 
   fail(ctx, filePath)

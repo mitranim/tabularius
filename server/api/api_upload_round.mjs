@@ -1,6 +1,7 @@
 /* global Deno */
 
 import * as a from '@mitranim/js/all.mjs'
+import * as pt from '@mitranim/js/path.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
 import * as s from '../../shared/schema.mjs'
 import * as u from '../util.mjs'
@@ -73,9 +74,9 @@ export async function uploadRound(ctx, req) {
   }
 
   const runName = s.makeRunName(run_num, run_ms)
-  const outDir = io.paths.join(ctx.userRunsDir, user_id, runName)
+  const outDir = pt.join(ctx.userRunsDir, user_id, runName)
   const roundName = s.makeRoundFileNameBase(round.RoundIndex)
-  const outPath = io.paths.join(outDir, roundName + u.GAME_FILE_EXT_REAL)
+  const outPath = pt.join(outDir, roundName + u.GAME_FILE_EXT_REAL)
   const info = await io.FileInfo.statOpt(outPath)
 
   if (info) {

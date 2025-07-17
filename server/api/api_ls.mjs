@@ -32,12 +32,12 @@ utilized by our client code. The additional `entries` are non-standard.
 export async function apiLsEntry(ctx, path) {
   path = u.reqValidRelFilePath(path)
   path = u.gameFilePathFakeToReal(path)
-  path = io.paths.join(ctx.userRunsDir, path)
+  path = pt.join(ctx.userRunsDir, path)
 
   const info = await io.FileInfo.statOpt(path)
   if (!info) return undefined
 
-  const name = pt.posix.base(path)
+  const name = pt.name(path)
   if (info.isFile()) {
     return {kind: `file`, name: u.gameFilePathRealToFake(name)}
   }

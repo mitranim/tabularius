@@ -2,6 +2,7 @@
 
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
+import * as pt from '@mitranim/js/path.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
 import * as tu from './test_util.mjs'
 import * as u from './util.mjs'
@@ -25,7 +26,7 @@ await t.test(async function test_gzip_roundtrip() {
   a.reqDict(srcData)
   a.reqInt(srcData.RoundIndex)
 
-  const outPath = io.paths.join(ctx.tmpDir, `example_progress.json.gz`)
+  const outPath = pt.join(ctx.tmpDir, `example_progress.json.gz`)
   const outBin = await u.data_to_json_to_gzipByteArr(srcData)
   await io.writeFile(outPath, outBin)
   const outData = await u.textData_to_ungzip_to_unjsonData(await Deno.readFile(outPath))

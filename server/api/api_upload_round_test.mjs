@@ -2,6 +2,7 @@
 
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
+import * as pt from '@mitranim/js/path.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
 import * as s from '../../shared/schema.mjs'
 import * as tu from '../test_util.mjs'
@@ -13,7 +14,7 @@ const TEST_PROGRESS_BIG = await Deno.readTextFile(new URL(`../../samples/example
 
 await t.test(async function test_duckdb_import_json_gz() {
   const ctx = new tu.TestCtx()
-  const progPath = io.paths.join(ctx.tmpDir, `example_progress_big.json.gz`)
+  const progPath = pt.join(ctx.tmpDir, `example_progress_big.json.gz`)
   const srcData = a.jsonDecode(TEST_PROGRESS_BIG)
   const outBin = await u.data_to_json_to_gzipByteArr(srcData)
   await io.writeFile(progPath, outBin)
@@ -29,7 +30,7 @@ await t.test(async function test_duckdb_import_json_gz() {
     tables: {facts: true},
   })
 
-  const factsPath = io.paths.join(ctx.tmpDir, `example_facts.json.gz`)
+  const factsPath = pt.join(ctx.tmpDir, `example_facts.json.gz`)
   await io.writeFile(factsPath, await u.str_to_gzipByteArr(u.jsonLines(dat.facts)))
 
   const dbInst = await u.DuckDb.create(`:memory:`)
@@ -108,7 +109,7 @@ await t.test(async function test_uploadRound() {
 
   const runName = s.makeRunName(run_num, run_ms)
   const roundName = s.makeRoundFileNameBase(round.RoundIndex)
-  const path = io.paths.join(ctx.userRunsDir, user_id, runName, roundName + `.json.gz`)
+  const path = pt.join(ctx.userRunsDir, user_id, runName, roundName + `.json.gz`)
   const roundRead = await u.readDecodeGameFile(path)
   t.eq(roundRead, round)
 })

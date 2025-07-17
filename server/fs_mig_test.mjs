@@ -1,5 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
+import * as pt from '@mitranim/js/path.mjs'
 import * as io from '@mitranim/js/io_deno.mjs'
 import * as tu from './test_util.mjs'
 import * as u from './util.mjs'
@@ -19,17 +20,17 @@ await t.test(async function test_migrateUserRuns() {
   )
 
   const user = `c04935d40ca33b8fed1f67efb0e4d731dab67e012db132917bf00c3e05bf2457`
-  const dir0 = io.paths.join(ctx.userRunsDir, user, `0000`)
-  const dir1 = io.paths.join(ctx.userRunsDir, user, `0015`)
+  const dir0 = pt.join(ctx.userRunsDir, user, `0000`)
+  const dir1 = pt.join(ctx.userRunsDir, user, `0015`)
   const file0 = `0014.json.gz`
   const file1 = `0034.json.gz`
 
   testOldRunRoundFormat(
-    await u.readDecodeGameFile(io.paths.join(dir0, file0))
+    await u.readDecodeGameFile(pt.join(dir0, file0))
   )
 
   testOldRunRoundFormat(
-    await u.readDecodeGameFile(io.paths.join(dir1, file1))
+    await u.readDecodeGameFile(pt.join(dir1, file1))
   )
 
   t.eq(
@@ -51,12 +52,12 @@ await t.test(async function test_migrateUserRuns() {
   const runMs1 = 1744498279426
 
   testNewRunRoundFormat(
-    await u.readDecodeGameFile(io.paths.join(ctx.userRunsDir, user, `0000_` + runMs0, file0)),
+    await u.readDecodeGameFile(pt.join(ctx.userRunsDir, user, `0000_` + runMs0, file0)),
     runMs0,
   )
 
   testNewRunRoundFormat(
-    await u.readDecodeGameFile(io.paths.join(ctx.userRunsDir, user, `0015_` + runMs1, file1)),
+    await u.readDecodeGameFile(pt.join(ctx.userRunsDir, user, `0015_` + runMs1, file1)),
     runMs1,
   )
 
