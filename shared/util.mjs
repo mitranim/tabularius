@@ -572,7 +572,7 @@ export const paths = new class Paths extends pt.Paths {
     a.reqValidStr(src)
     a.reqValidStr(suf)
     const dir = this.dir(src)
-    const base = this.base(src)
+    const base = this.name(src)
     const seg = base.split(this.extSep)
     seg[0] += suf
     return this.join(dir, seg.join(this.extSep))
