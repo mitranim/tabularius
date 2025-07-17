@@ -378,7 +378,11 @@ export function BtnCmd(cmd, alias) {
 
   return E(`button`, {
     type: `button`,
-    class: `px-1 trunc whitespace-nowrap rounded border border-gray-300 dark:border-neutral-600 bg-neutral-200 dark:bg-stone-700 hover:bg-gray-300 dark:hover:bg-stone-600`,
+    /*
+    For unclear reasons, `text-decoration: inherit` seems to be required here,
+    otherwise we can't inherit `line-through`.
+    */
+    class: `px-1 trunc whitespace-nowrap [text-decoration:inherit] rounded border border-gray-300 dark:border-neutral-600 bg-neutral-200 dark:bg-stone-700 hover:bg-gray-300 dark:hover:bg-stone-600`,
     onclick() {runCmd(cmd).catch(ui.logErr)},
     chi: alias || cmd,
   })
