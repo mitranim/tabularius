@@ -17,7 +17,7 @@ export const UPLOAD_MAX_ERRS = 3
 
 export async function uploadStartOpt() {
   if (!await shouldStartUpload()) return
-  os.runCmd(`upload -p -l`).catch(ui.logErr)
+  os.runCmd(`upload -p latest`).catch(ui.logErr)
 }
 
 export async function shouldStartUpload() {
@@ -62,15 +62,19 @@ cmdUpload.help = function cmdUploadHelp() {
     ui.LogLines(
       `flags:`,
       [`  `, ui.BtnPrompt({cmd: `upload`, suf: `-p`}), ` -- persistent mode`],
-      [
-        `  `, ui.BtnPrompt({cmd: `upload`, suf: `-l`}),
-        ` -- lazy mode: skip all runs if `,
-        ui.BtnPrompt({cmd: `upload`, suf: `latest/latest`}),
-        ` is already uploaded`,
-      ],
       [`  `, ui.BtnPrompt({cmd: `upload`, suf: `-q`}), ` -- quiet mode, minimal logging`],
+      [
+        `  `,
+        ui.BtnPrompt({cmd: `upload`, suf: `-f`}),
+        ` -- "force" mode: skip client-side checks, try to upload every file; server will deduplicate redundant files`,
+      ],
+      [
+        `  `,
+        ui.BtnPrompt({cmd: `upload`, suf: `-u`}),
+        ` -- uncoordinated mode: run concurrently with any other upload`,
+      ],
     ),
-    `upload is idempotent, meaning no duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
+    `upload is idempotent, which means it doesn't produce duplicates; for each run, we upload only one of each round; re-running the command is safe and intended`,
     [
       `tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local files`,
       ` and `, os.BtnCmdWithHelp(`ls -c`), ` to browse cloud files`,
@@ -78,14 +82,6 @@ cmdUpload.help = function cmdUploadHelp() {
   )
 }
 
-/*
-TODO: sometimes a single round upload fails, and then it's never retried and
-never rechecked when shadowed by the next round.
-
-Single round upload must also retry.
-
-Lazy mode should check the entire latest run.
-*/
 export async function cmdUpload(proc) {
   const cmd = cmdUpload.cmd
   const {args} = proc
@@ -98,16 +94,16 @@ export async function cmdUpload(proc) {
       opt.persistent = ui.cliBool(cmd, key, val)
       continue
     }
-    if (key === `-l`) {
-      opt.lazy = ui.cliBool(cmd, key, val)
-      continue
-    }
     if (key === `-q`) {
       opt.quiet = ui.cliBool(cmd, key, val)
       continue
     }
     if (key === `-f`) {
       opt.force = ui.cliBool(cmd, key, val)
+      continue
+    }
+    if (key === `-u`) {
+      opt.unlocked = ui.cliBool(cmd, key, val)
       continue
     }
 
@@ -129,6 +125,8 @@ export async function cmdUpload(proc) {
   }
 
   if (isUploadingLocal()) return `[upload] already running`
+
+  opt.lazy = opt.path === `latest`
 
   const {sig} = proc
   proc.desc = `acquiring lock`
@@ -241,7 +239,6 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
   a.reqValidStr(userId)
   a.optRec(state)
 
-  const lazy = a.optBool(opt.lazy)
   const force = a.optBool(opt.force)
   const segs = u.paths.splitRel(path)
 
@@ -249,29 +246,19 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
     if (state) state.status = `checking runs`
 
     const runHandles = await fs.readRunsAsc(sig, hist)
-    if (lazy && await isRunUploaded({sig, dir: a.last(runHandles), state})) {
-      uploadDone({state, lazy: true})
-      return undefined
-    }
-
     if (state) state.status = `uploading all runs`
     for (const dir of runHandles) {
       await uploadRun({sig, dir, userId, state, force})
     }
-    uploadDone({state})
+    uploadDone({state, opt})
     return undefined
   }
 
   const dir = await fs.getDirectoryHandle(sig, hist, segs.shift())
 
   if (!segs.length) {
-    if (lazy && await isRunUploaded({sig, dir, state})) {
-      uploadDone({state, lazy: true})
-      return undefined
-    }
-
     await uploadRun({sig, dir, userId, state, force})
-    uploadDone({state})
+    uploadDone({state, opt})
     return undefined
   }
 
@@ -282,7 +269,7 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
 
   const file = await fs.getFileHandle(sig, dir, segs.shift())
   await uploadRound({sig, file, runName: dir.name, userId, state, force})
-  uploadDone({state})
+  uploadDone({state, opt})
   return undefined
 }
 
@@ -408,31 +395,12 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
   if (a.deref(u.VERBOSE)) console.timeEnd(`upload_round_${id}`)
 }
 
-async function isRunUploaded({sig, dir, state}) {
-  if (!a.optInst(dir, FileSystemDirectoryHandle)) return false
-
-
-  try {
-    const file = await fs.findLatestRoundFile(sig, dir)
-    if (!file) return false
-
-    const data = await fs.readDecodeGameFile(sig, file)
-
-    if (state) state.runsChecked++
-    if (state) state.roundsChecked++
-
-    return isRoundUploaded(data)
-  }
-  catch (err) {
-    ui.LOG.err(`unable to check if run ${a.show(dir.name)} is uploaded: `, err)
-    return false
-  }
-}
-
 function isRoundUploaded(val) {return a.isNat(val?.tabularius_uploaded_at)}
 
-function uploadDone({state, lazy}) {
+function uploadDone({state, opt}) {
+  a.optRec(opt)
   if (!a.optRec(state)) return
+  const lazy = a.optBool(opt?.lazy)
   state.done = true
   state.status = `done` + (a.optBool(lazy) ? ` (lazy mode)` : ``)
 }

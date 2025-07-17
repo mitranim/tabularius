@@ -261,5 +261,5 @@ function afterRoundBackup(eve) {
   const {hadPrev, runDirName, roundFileName} = eve
   if (!hadPrev) p.plotDefaultLocalOpt({quiet: true}).catch(ui.logErr)
   if (!au.isAuthed()) return
-  os.runCmd(`upload ${u.paths.join(runDirName, roundFileName)}`).catch(ui.logErr)
+  os.runCmd(`upload -p -u ${u.paths.join(runDirName, roundFileName)}`).catch(ui.logErr)
 }
