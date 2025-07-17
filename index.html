@@ -6,14 +6,23 @@
   <link rel="icon" href="data:base64,">
   <title>Tabularius — book-keeper for Tower Dominion</title>
   <meta name="og:site_name" content="Tabularius">
-  <meta name="description" content="Book-keeper for Tower Dominion: run history, data analysis with plots, and more!">
-  <meta name="og:description" content="Book-keeper for Tower Dominion: run history, save editing, data analysis with plots, and more!">
+  <meta name="description" content="Book-keeper for Tower Dominion: run history, data analysis with plots, save editing, and more! Pure web app, no installation required.">
+  <meta name="og:description" content="Book-keeper for Tower Dominion: run history, data analysis with plots, save editing, and more! Pure web app, no installation required.">
 
-  <!-- Instruct robots to index only one route without URL query stuff. -->
+  <!--
+  Instruct robots that only the origin + pathname URL is valid,
+  without query or hash.
+  -->
   <link rel="canonical" href="https://mitranim.com/tabularius/">
+
+  <!--
+  Instruct robots to avoid indexing pages with non-default content.
+  See above. Affects only robots which run JS.
+  -->
   <script id="meta_script">
     document.getElementById(`meta_script`)?.remove()
-    if (window.location.search !== ``) {
+    const {search, hash} = window.location
+    if (search || hash) {
       const tar = document.createElement(`meta`)
       tar.name = `robots`
       tar.content = `noindex,follow`
@@ -75,7 +84,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@ungap/custom-elements@1.3.0/es.js"></script>
 
-  <!-- Showing initialization errors may help both users and developers. -->
   <script type="module">
     try {
       await import(`./client/main.mjs`)
@@ -104,12 +112,6 @@
       }
     }
   </script>
-
-  <!--
-  Alternative: just use normal module loading and hope for the best.
-
-  <script type="module" src="./client/main.mjs"></script>
-  -->
 </head>
 
 <body>
