@@ -49,7 +49,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
       this.placeholder = `type a passphrase/password or press Esc to cancel`
     }
     else {
-      this.placeholder = `type a command (try "help" or "help <some_cmd>", ↑↓ for history)`
+      this.placeholder = `type a command (try "help" or "help <some_cmd>"; ↑↓ for history)`
     }
   }
 
@@ -58,7 +58,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
       this.placeholder = `type a passphrase/password or press Esc to cancel`
     }
     else {
-      this.placeholder = `type a command (try "help" or "help <some_cmd>")`
+      this.placeholder = `type a command (try "help" or "help <some_cmd>"; Esc to focus)`
     }
   }
 
