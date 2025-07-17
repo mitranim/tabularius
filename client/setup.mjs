@@ -48,6 +48,7 @@ export async function savesGrant({sig, args}) {
   const conf = fs.SAVE_DIR_CONF
   if (!await confGranted({sig, conf, args})) return
   await w.watchStartOpt()
+  await up.uploadStartOpt()
 }
 
 export async function savesRevoke(sig) {
