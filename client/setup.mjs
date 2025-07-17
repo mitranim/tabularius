@@ -229,6 +229,8 @@ function Step(ok, ...chi) {
 }
 
 function NextStepSaves() {
+  const path = `%UserProfile%\\${fs.SAVE_DIR_PATH}`
+
   return ui.LogParagraphs(
     [
       ui.Bold(`recommended next step:`),
@@ -236,8 +238,10 @@ function NextStepSaves() {
       ` and pick the game's save directory (read-only and safe)`,
     ],
     fs.SaveDirLocation(),
+    [ui.Bold(`option 1:`), ` copy-paste into the Explorer address bar:`],
+    [`  `, ui.Bold(path), `\u00a0`, ui.BtnClip(path)],
+    [ui.Bold(`option 2:`), ` find "AppData" manually:`],
     ui.LogLines(
-      `how to access "AppData":`,
       `  * open Explorer`,
       `  * goto your user directory; if you're unsure where, goto "C:\\Users" and look for your username`,
       `  * in the ribbon above: click View → tick "Hidden items"`,

@@ -44,6 +44,7 @@ export class FileConf extends a.Emp {
 }
 
 export const SAVE_DIR_NAME = `SaveFolder`
+export const SAVE_DIR_PATH = `AppData\\LocalLow\\Parallel45\\tower-dominion\\${SAVE_DIR_NAME}`
 export const SAVE_BACKUP_DIR_NAME = `Backup`
 export const PROG_FILE_NAME = `Progress.gd`
 export const BACKUP_DIR_NAME = `backup`
@@ -71,7 +72,7 @@ function progFileHelp() {
   return ui.LogParagraphs(
     `pick your game progress file`,
     `typical location of progress file; note that "AppData" is hidden by default:`,
-    `  C:\\Users\\<user>\\AppData\\LocalLow\\Parallel45\\tower-dominion\\${SAVE_DIR_NAME}\\${PROG_FILE_NAME}`,
+    `  C:\\Users\\<user>\\${SAVE_DIR_PATH}\\${PROG_FILE_NAME}`,
   )
 }
 
@@ -96,11 +97,8 @@ export function SaveDirLocation() {
   )
 }
 
-export function SaveDirPath() {
-  return ui.Bold(
-    `C:\\Users\\`, ui.Muted(`<user>`),
-    `\\AppData\\LocalLow\\Parallel45\\tower-dominion\\SaveFolder`,
-  )
+function SaveDirPath() {
+  return ui.Bold(`C:\\Users\\`, ui.Muted(`<user>`), `\\`, SAVE_DIR_PATH)
 }
 
 export const HISTORY_DIR_CONF = new FileConf({
@@ -123,7 +121,7 @@ function histDirHelp() {
 export function HistDirSuggestedLocation() {
   return ui.LogParagraphs(
     `suggested location of run history dir; create it yourself; use a name without spaces:`,
-    [`  `, SaveDirPath()],
+    [`  `, HistDirSuggestedPath()],
   )
 }
 
