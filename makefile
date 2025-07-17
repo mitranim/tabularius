@@ -8,7 +8,7 @@ DENO_FLAGS ?= --node-modules-dir=false
 DENO_RUN ?= deno run -A --no-check $(DENO_FLAGS)
 DENO_WATCH ?= $(DENO_RUN) --watch $(or $(CLEAR),--no-clear-screen)
 WATCH ?= watchexec $(and $(CLEAR),-c) -r -d=1ms -n -q
-WATCH_SRC ?= $(WATCH) -e=mjs
+WATCH_JS ?= $(WATCH) -e=mjs
 RUN ?= $(and $(run),--run="$(run)")
 SERVER_TEST ?= $(or $(file),server/test.mjs)
 SERVER_BENCH ?= $(or $(file),server/bench.mjs)
@@ -37,24 +37,24 @@ help:
 	echo
 	for val in $(MAKEFILE_LIST); do grep -E '^\S+:' $$val; done | sed 's/:.*//' | sort | uniq
 
-dev.w dev: export DEV := $(or $(DEV),true)
+dev_w dev: export DEV := $(or $(DEV),true)
 
-dev.w:
-	$(MAKE_CONC) live srv.w
+dev_w:
+	$(MAKE_CONC) live srv_w
 
 dev:
 	$(MAKE_CONC) live srv
 
-dev.w dev: export DEV := $(DEV)
-srv.w srv: export SRV_HOST := $(SRV_HOST)
-srv.w srv: export SRV_PORT := $(SRV_PORT)
-srv.w srv: export LIVE_PORT := $(LIVE_PORT)
-srv.w srv: export LOG_DEBUG := $(LOG_DEBUG)
-srv.w srv: export DATA_DIR := $(DATA_DIR)
-srv.w srv: export DB_FILE := $(DB_FILE)
-srv.w srv: export TMP_DIR := $(TMP_DIR)
+dev_w dev: export DEV := $(DEV)
+srv_w srv: export SRV_HOST := $(SRV_HOST)
+srv_w srv: export SRV_PORT := $(SRV_PORT)
+srv_w srv: export LIVE_PORT := $(LIVE_PORT)
+srv_w srv: export LOG_DEBUG := $(LOG_DEBUG)
+srv_w srv: export DATA_DIR := $(DATA_DIR)
+srv_w srv: export DB_FILE := $(DB_FILE)
+srv_w srv: export TMP_DIR := $(TMP_DIR)
 
-srv.w:
+srv_w:
 	$(DENO_WATCH) $(SRV)
 
 srv:
@@ -64,7 +64,7 @@ live: export LIVE_PORT := $(LIVE_PORT)
 live:
 	$(DENO_RUN) server/live.mjs
 
-run.w:
+run_w:
 	$(DENO_WATCH) $(run)
 
 run:
@@ -73,35 +73,35 @@ run:
 clean:
 	rm -rf $(TMP_DIR) $(TEST_TMP_DIR)
 
-server.test.w server.test shared.test.w shared.test: export TEST := true
-server.test.w server.test shared.test.w shared.test: export LOG_DEBUG := $(LOG_DEBUG)
+server_test_w server_test shared_test_w shared_test: export TEST := true
+server_test_w server_test shared_test_w shared_test: export LOG_DEBUG := $(LOG_DEBUG)
 
-server.test.w:
+server_test_w:
 	$(DENO_WATCH) $(SERVER_TEST) $(RUN)
 
-server.test: export LOG_DEBUG := $(LOG_DEBUG)
-server.test:
+server_test: export LOG_DEBUG := $(LOG_DEBUG)
+server_test:
 	$(DENO_RUN) $(SERVER_TEST) $(RUN)
 
-server.bench.w:
+server_bench_w:
 	$(DENO_WATCH) $(SERVER_BENCH) $(RUN)
 
-server.bench:
+server_bench:
 	$(DENO_RUN) $(SERVER_BENCH) $(RUN)
 
-shared.test.w:
+shared_test_w:
 	$(DENO_WATCH) $(SHARED_TEST) $(RUN)
 
-shared.test:
+shared_test:
 	$(DENO_RUN) $(SHARED_TEST) $(RUN)
 
-shared.bench.w:
+shared_bench_w:
 	$(DENO_WATCH) $(SHARED_BENCH) $(RUN)
 
-shared.bench:
+shared_bench:
 	$(DENO_RUN) $(SHARED_BENCH) $(RUN)
 
-mig.samples:
+mig_samples:
 	$(DENO_RUN) server/mig_samples.mjs
 
 repl:
@@ -110,72 +110,72 @@ repl:
 duck:
 	duckdb $(DB_FILE) $(args)
 
-duck.script:
+duck_script:
 	duckdb $(DB_FILE) < $(file)
 
-duck.script.mem:
+duck_script_mem:
 	duckdb < $(file)
 
-duck.attach.dev:
+duck_attach_dev:
 	duckdb -cmd "attach 'http://localhost:$(SRV_PORT)/api/db' as db; use db;"
 
-duck.attach.prod:
+duck_attach_prod:
 	duckdb -cmd "attach 'https://tabularius.mitranim.com/api/db' as db; use db;"
 
-lint.w:
-	$(MAKE_CONC) lint.deno.w lint.eslint.w
+lint_w:
+	$(MAKE_CONC) lint_deno.w lint_eslint_w
 
-lint: lint.deno lint.eslint
+lint: lint_deno lint_eslint
 
-lint.deno.w:
-	$(WATCH_SRC) -- $(MAKE) lint.deno
+lint_deno_w:
+	$(WATCH_JS) -- $(MAKE) lint_deno
 
-lint.deno:
+lint_deno:
 	deno lint
 
-lint.eslint.w:
-	$(WATCH_SRC) -- $(MAKE) lint.eslint
+lint_eslint_w:
+	$(WATCH_JS) -- $(MAKE) lint_eslint
 
-lint.eslint:
+lint_eslint:
 	$(DENO_RUN) npm:eslint@9.29.0 --ignore-pattern=local .
 	$(OK)
 
-docker.build.dev:
+docker_build_dev:
 	$(DOCKER_BUILD) -t=$(DOCKER_TAG_LATEST_DEV) -f=dockerfile_dev
 
-docker.build:
+docker_build:
 	$(DOCKER_BUILD) -t=$(DOCKER_TAG_LATEST) -f=dockerfile
 
 # The `--init` flag seems required for killing this with Ctrl+C.
 # FS watching and change detection doesn't seem to work here.
 # Restarting the server requires restarting the container.
-docker.srv.dev:
+docker_srv_dev:
 	$(DOCKER_RUN) $(DOCKER_PORTS) $(DOCKER_VOL_PWD) $(DOCKER_TAG_LATEST_DEV) run -A $(SRV)
 
 # The `--init` flag seems required for killing this with Ctrl+C.
-docker.srv:
+docker_srv:
 	$(DOCKER_RUN) $(DOCKER_PORTS) $(DOCKER_VOL_DATA) $(DOCKER_TAG_LATEST) run -A $(SRV)
 
-docker.sh:
+docker_sh:
 	docker run --init -it $(DOCKER_ENV) $(DOCKER_VOL_DATA) --entrypoint=/bin/ash $(DOCKER_TAG_LATEST)
 
-docker.clean:
+docker_clean:
 	docker image prune -f --filter $(DOCKER_LABEL)
 
-docker.ls:
+docker_ls:
 	docker images --filter $(DOCKER_LABEL)
 
-fly.deploy:
+fly_deploy:
 	fly deploy --yes
 
-fly.repl:
+fly_repl:
 	fly ssh console -a tabularius
 
-fly.file:
+fly_file:
 	fly ssh sftp get -a tabularius /app/data/$(src_path) local/$(out_path)
 
 # Must provide `out_path=...`.
-fly.db.dump:
+fly_db_dump:
 	curl https://tabularius.mitranim.com/api/db > local/$(out_path)
 
 define HOOK_PRE_COMMIT_CODE
