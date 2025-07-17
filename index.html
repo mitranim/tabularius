@@ -122,6 +122,10 @@
 
   <div id="loading_msg">Loading...</div>
 
-  <script>navigator.serviceWorker.register(`./sw.mjs`)</script>
+  <script type="module">
+    const query = new URLSearchParams(location.href.split(`?`).join(`&`))
+    const dev = query.get(`dev`) === `true`
+    if (dev) navigator.serviceWorker.register(`./sw.mjs`)
+  </script>
 </body>
 </html>
