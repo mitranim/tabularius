@@ -17,6 +17,7 @@ export const UPLOAD_MAX_ERRS = 3
 
 export async function uploadStartOpt() {
   if (!await shouldStartUpload()) return
+  if (!await fs.hasRoundFile(u.sig)) return
   os.runCmd(`upload -p latest`).catch(ui.logErr)
 }
 
@@ -103,7 +104,7 @@ export async function cmdUpload(proc) {
       continue
     }
     if (key === `-u`) {
-      opt.unlocked = ui.cliBool(cmd, key, val)
+      opt.uncoordinated = ui.cliBool(cmd, key, val)
       continue
     }
 
@@ -124,29 +125,35 @@ export async function cmdUpload(proc) {
     path = val
   }
 
-  if (isUploadingLocal()) return `[upload] already running`
+  if (!opt.uncoordinated && isUploadingLocal()) {
+    return `[upload] already running`
+  }
 
   opt.lazy = opt.path === `latest`
 
   const {sig} = proc
-  proc.desc = `acquiring lock`
-  let unlock = await u.lockOpt(UPLOAD_LOCK_NAME)
+  let unlock
 
-  if (!unlock) {
-    if (!opt.persistent) return `[upload] another process has a lock on uploading`
+  if (!opt.uncoordinated) {
+    proc.desc = `acquiring lock`
+    unlock = opt.uncoordinated ? undefined : await u.lockOpt(UPLOAD_LOCK_NAME)
 
-    const start = Date.now()
-    ui.LOG.verb(`[upload] another process has a lock on uploading, waiting until it stops`)
-    proc.desc = `waiting for another "upload" process`
-    unlock = await u.lock(sig, UPLOAD_LOCK_NAME)
-    const end = Date.now()
+    if (!unlock) {
+      if (!opt.persistent) return `[upload] another process has a lock on uploading`
 
-    ui.LOG.verb(`[upload] acquired lock from another process after ${end - start}ms, proceeding to upload`)
+      const start = Date.now()
+      ui.LOG.verb(`[upload] another process has a lock on uploading, waiting until it stops`)
+      proc.desc = `waiting for another "upload" process`
+      unlock = await u.lock(sig, UPLOAD_LOCK_NAME)
+      const end = Date.now()
+
+      ui.LOG.verb(`[upload] acquired lock from another process after ${end - start}ms, proceeding to upload`)
+    }
   }
 
   proc.desc = `uploading backups to the cloud`
   try {return await cmdUploadUnsync({sig, path, opt})}
-  finally {unlock()}
+  finally {unlock?.()}
 }
 
 export async function cmdUploadUnsync({sig, path: srcPath, opt}) {
