@@ -193,7 +193,7 @@ async function watchStep(sig, state) {
   }
 
   const prevTime = prevFile?.lastModified
-  if (prevTime >= nextTime) {
+  if (!(nextTime > prevTime)) {
     // ui.LOG.verb(`[watch] skipping: ${fs.PROGRESS_FILE_CONF.desc} unmodified`)
     return
   }

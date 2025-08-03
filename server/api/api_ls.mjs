@@ -12,7 +12,7 @@ That's fine.
 export async function apiLs(ctx, path) {
   const id = ++TIMER_ID
   console.time(`[ls_${id}]`)
-  try {return new u.Res(a.jsonEncode(await apiLsEntry(ctx, path)))}
+  try {return u.jsonRes(await apiLsEntry(ctx, path))}
   finally {console.timeEnd(`[ls_${id}]`)}
 }
 

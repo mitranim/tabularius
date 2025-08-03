@@ -17,7 +17,7 @@ cmdShowRoundSplit.help = function cmdShowRoundCombinedHelp() {
 }
 
 export function cmdShowRoundSplit({sig, args}) {
-  return sr.cmdShowRound({sig, cmd: cmdShowRoundSplit, args, View: ShowRound})
+  return sr.cmdShowRound({sig, cmd: cmdShowRoundSplit, args, View: ShowRoundSplit})
 }
 
 export const TABLE_TYPE = u.storageObs(`tabularius.round_table.type`)
@@ -80,7 +80,7 @@ const DIALOG_BUI = ColumnToggleDialog(BUI_COLS)
 const DIALOG_CHI = ColumnToggleDialog(CHI_COLS)
 const DIALOG_WEP = ColumnToggleDialog(WEP_COLS)
 
-class ShowRound extends sr.ShowRound {
+class ShowRoundSplit extends sr.ShowRoundCombined {
   tableType = undefined
 
   constructor(opt) {

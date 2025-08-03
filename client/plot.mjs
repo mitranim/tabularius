@@ -314,9 +314,9 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
     plugins: [tooltip.opts()],
 
     title,
+    axes: axes({nameX: opt.X, nameY: opt.Y, formatY: format}),
     series: [{label: opt.X}, ...Z_rows],
     data: [X_vals, ...a.arr(Z_X_Y)],
-    axes: axes({nameX: opt.X, nameY: opt.Y, formatY: format}),
 
     // For our own usage.
     plotOpt: opt,
@@ -984,7 +984,7 @@ export const LINE_PLOT_OPTS = {
   },
 }
 
-export function axes({nameX, nameY, formatX, formatY} = {}) {
+export function axes({nameX, nameY, formatX, formatY, denseX} = {}) {
   return [
     // This one doesn't have a label, not even an empty string, because that
     // causes the plot library to waste space.
@@ -993,6 +993,8 @@ export function axes({nameX, nameY, formatX, formatY} = {}) {
       stroke: axisStroke,
       secretName: nameX,
       values: axisValuesFormat(formatX),
+      space: a.vac(denseX) && 1,
+      incrs: a.vac(denseX) && [1],
     },
     // This one does have an empty label to prevent the numbers from clipping
     // through the left side of the container.
@@ -1207,7 +1209,8 @@ export class TooltipPlugin extends a.Emp {
     const axisNameY = preY + (plot.axes?.[1]?.secretName || `Y`)
     const nameSuf = `: `
     const nameLen = nameSuf.length + Math.max(axisNameX.length, axisNameY.length)
-    const label = u.ellMid(a.render(series.label), LEGEND_LEN_MAX)
+    const showLabel = a.laxBool(opt.label)
+    const label = a.vac(showLabel) && u.ellMid(a.render(series.label), LEGEND_LEN_MAX)
     const elem = this.tooltip ??= this.makeTooltip()
 
     elem.textContent = u.joinLines(

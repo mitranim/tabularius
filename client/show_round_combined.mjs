@@ -148,7 +148,7 @@ export function cmdShowRoundHelp({cmd, desc}) {
 }
 
 export function cmdShowRoundCombined({sig, args}) {
-  return cmdShowRound({sig, cmd: cmdShowRoundCombined, args, View: ShowRound})
+  return cmdShowRound({sig, cmd: cmdShowRoundCombined, args, View: ShowRoundCombined})
 }
 
 export async function cmdShowRound({sig, cmd: cmdFun, args, View}) {
@@ -262,7 +262,7 @@ export const LONG = u.storageObsBool(`tabularius.show_round.long`)
 export const SETTINGS_OPEN = u.storageObsBool(`tabularius.show_round.settings_open`)
 export const LONG_ROW_BREAKPOINT = 12
 
-export class ShowRound extends ui.Elem {
+export class ShowRoundCombined extends ui.Elem {
   closeBtn = a.obsRef()
   opt = undefined
 
@@ -815,9 +815,9 @@ function CellInner({type, val, perc}) {
 
 class BuiRow extends MixSortable(TableRow) {
   buiInd = a.obsRef()
-  showRow = a.calc(this, calcShowRow)
+  showRow = a.calc(calcShowRow, this)
   expandChi = a.calc(SHOW_CHI, a.deref)
-  showChi = a.calc(this, calcShowChi)
+  showChi = a.calc(calcShowChi, this)
 
   constructor({buiInd, sortInd, data, total, chiDatas, hasAssoc}) {
     super({data, sortInd, sortObs: BUI_SORT})
@@ -871,15 +871,15 @@ class BuiRow extends MixSortable(TableRow) {
   }
 }
 
-function calcShowRow() {
+function calcShowRow(row) {
   const long = a.laxBool(a.deref(LONG))
-  const ind = a.reqNat(a.deref(this.buiInd))
+  const ind = a.reqNat(a.deref(row.buiInd))
   return long || (ind <= LONG_ROW_BREAKPOINT)
 }
 
-function calcShowChi() {
-  const showRow = a.deref(this.showRow)
-  const expandChi = a.deref(this.expandChi)
+function calcShowChi(row) {
+  const showRow = a.deref(row.showRow)
+  const expandChi = a.deref(row.expandChi)
   return a.laxBool(showRow && expandChi)
 }
 

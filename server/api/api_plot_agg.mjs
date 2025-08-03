@@ -3,8 +3,7 @@ import * as s from '../../shared/schema.mjs'
 import * as u from '../util.mjs'
 
 export async function apiPlotAgg(ctx, req) {
-  const data = await plotAgg(ctx, req)
-  return new u.Res(a.jsonEncode(data))
+  return u.jsonRes(await plotAgg(ctx, req))
 }
 
 /*

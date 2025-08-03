@@ -24,6 +24,5 @@ export async function apiLatestRun(ctx, userId) {
   */
   const out = await conn.queryDoc(text, args)
   if (out) out.run_ms = Number(out.run_ms)
-
-  return new u.Res(a.jsonEncode(out))
+  return u.jsonRes(out)
 }
