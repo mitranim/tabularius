@@ -1,52 +1,36 @@
 /*
-Live-reload tool for development. Serves its own client script, watches
-client-specific files, and broadcasts notifications about file changes.
-The main server uses this to broadcast a signal about its own restart.
+Live-reload tool for development. Serves its client script, maintains client
+connections, and re-broadcasts notifications about file changes from the main
+server. The latter sends signals about its own restart or file changes.
 */
 
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
-import * as hd from '@mitranim/js/http_deno.mjs'
-import * as ld from '@mitranim/js/live_deno.mjs'
+import * as h from '@mitranim/js/http'
 import * as uc from './util_conf.mjs'
 
-const BRO = new ld.LiveBroad()
-const DIRS = ld.LiveDirs.of(hd.dirRel(`.`, isPathLive))
-
-if (import.meta.main) await main()
+const BRO = uc.LIVE_BRO
 
 function main() {
-  const LIVE_PORT = a.int(uc.getEnv(`LIVE_PORT`))
-  Deno.serve({
-    port: LIVE_PORT,
-    handler: respond,
-    onListen({port, hostname}) {
-      if (hostname === `0.0.0.0`) hostname = `localhost`
-      console.log(`[live] listening on http://${hostname}:${port}`)
-    },
+  if (!BRO) return
+
+  h.serve({
+    port: uc.LIVE_PORT,
+    onRequest,
+    onListen: a.nop,
+    // onListen,
   })
-  return watch()
 }
 
-async function respond(req) {
+// function onListen(srv) {
+//   console.log(`[live] listening on`, h.srvUrl(srv).href)
+// }
+
+async function onRequest(req) {
+  const path = new URL(req.url).pathname
   return (
-    await BRO.res(req) ||
-    new Response(`not found`, {status: 404})
+    await BRO.response(req, path) ??
+    h.notFound(req.method, path)
   )
 }
 
-async function watch() {
-  for await (const val of DIRS.watchLive()) {
-    BRO.writeEventJson(val)
-  }
-}
-
-// Should include exactly all client-only files and no other files.
-function isPathLive(val) {
-  return (
-    /^\w+[.]html$/.test(val) ||
-    val.startsWith(`client/`)
-    // /^local[/]\w+[.]mjs$/.test(val)
-  )
-}
+if (import.meta.main) main()

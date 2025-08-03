@@ -1,7 +1,6 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
+import * as io from '@mitranim/js/io'
 import * as tu from '../test_util.mjs'
 import * as s from '../../shared/schema.mjs'
 import * as u from '../util.mjs'
@@ -31,7 +30,7 @@ TODO:
 */
 await t.test(async function test_plotAgg() {
   const srcUrl = new URL(`../../samples/example_runs.gd`, import.meta.url)
-  const srcText = await Deno.readTextFile(srcUrl)
+  const srcText = await io.readFileText(srcUrl)
   const rounds = await u.decodeGdStr(srcText)
   const dat = datFromRounds(rounds)
   const ctx = new tu.TestCtx()
@@ -71,7 +70,7 @@ await t.test(async function test_plotAgg() {
 
   const conn = await ctx.conn()
   await db.initSchema(conn)
-  await loadFixtureFromRounds(conn, rounds)
+  await loadFixtureFromRounds({ctx, rounds})
 
   {
     const FACT_COUNT = 27369
@@ -724,9 +723,9 @@ await t.test(async function test_plotAgg() {
   )
 })
 
-async function loadFixtureFromRounds(conn, src) {
-  const dat = datFromRounds(src)
-  await db.insertBatch(conn, `facts`, dat.facts)
+async function loadFixtureFromRounds({ctx, rounds}) {
+  const dat = datFromRounds(rounds)
+  await db.insertBatch({ctx, table: `facts`, rows: dat.facts})
 }
 
 function datFromRounds(src) {

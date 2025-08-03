@@ -1,8 +1,6 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as pt from '@mitranim/js/path.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as io from '@mitranim/js/io'
 import * as s from '../../shared/schema.mjs'
 import * as u from '../util.mjs'
 import * as db from '../db.mjs'
@@ -77,11 +75,11 @@ export async function uploadRound(ctx, req) {
   const outDir = pt.join(ctx.userRunsDir, user_id, runName)
   const roundName = s.makeRoundFileNameBase(round.RoundIndex)
   const outPath = pt.join(outDir, roundName + u.GAME_FILE_EXT_REAL)
-  const info = await io.FileInfo.statOpt(outPath)
+  const stat = await io.statOpt(outPath)
 
-  if (info) {
+  if (stat) {
     const round_id = s.makeRoundId(user_id, run_num, run_ms, round_num)
-    if (!info.isFile) {
+    if (!stat.isFile) {
       throw new u.ErrHttp(`round upload: internal error: existing round ${a.show(round_id)} is not a file`, {status: 400})
     }
     return {redundant: true}
@@ -99,10 +97,10 @@ export async function uploadRound(ctx, req) {
 
   // Prepare everything we can before inserting and writing.
   const outBin = await u.data_to_json_to_gzipByteArr(round)
-  await Deno.mkdir(outDir, {recursive: true})
+  await io.mkdir(outDir, {recursive: true})
   await io.writeFile(outPath, outBin)
 
   const conn = await ctx.conn()
-  await db.insertBatch(conn, `facts`, dat.facts)
+  await db.insertBatch({ctx, conn, table: `facts`, rows: dat.facts})
   return {factCount}
 }

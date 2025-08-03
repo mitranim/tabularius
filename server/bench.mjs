@@ -25,6 +25,7 @@ await import(`../shared/bench.mjs`)
 
 if (import.meta.main) {
   console.log(`[bench] starting`)
-  t.deopt(), t.benches()
+  t.deopt()
+  t.benches()
   console.log(`[bench] done`)
 }

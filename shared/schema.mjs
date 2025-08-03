@@ -765,7 +765,7 @@ export function validPlotAggOpt(src) {
 
   // SYNC[plot_group_stat_type_z_versus_y].
   if (Z === `stat_type`) {
-    if (a.isNil(Y) || Y === ``) {}
+    if (a.isNil(Y) || Y === ``); // All good.
     else if (!u.isIdent(Y)) errs.push(msgYInvalid)
     else if (!ALLOWED_STAT_TYPE_FILTERS.has(Y)) errs.push(msgYUnknown)
   }
@@ -1275,11 +1275,13 @@ export function roundMigrated({round, userId, runNum, runMs}) {
 }
 
 export function changed(tar, key, val) {
-  a.reqRec(tar), a.reqStr(key)
+  a.reqRec(tar)
+  a.reqStr(key)
   return !a.is(tar[key], (tar[key] = val))
 }
 
 export function deleted(tar, key) {
-  a.reqRec(tar), a.reqStr(key)
+  a.reqRec(tar)
+  a.reqStr(key)
   return key in tar && delete tar[key]
 }

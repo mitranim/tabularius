@@ -40,6 +40,7 @@ t.bench(function bench_byteArr_to_binStr() {
 
 if (import.meta?.main) {
   console.log(`[bench] starting`)
-  t.deopt(), t.benches()
+  t.deopt()
+  t.benches()
   console.log(`[bench] done`)
 }

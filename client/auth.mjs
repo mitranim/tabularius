@@ -141,9 +141,9 @@ function authInstructions(suggs) {
 
 function readPassFromPrompt(sig) {
   const input = ui.PROMPT_INPUT
-  const unlisten0 = u.listen(sig, `abort`, onAbort, {once: true})
-  const unlisten1 = u.listen(input, `submit_pass`, onSubmit)
-  const unlisten2 = u.listen(input, `disable_pass_mode`, onDisable, {once: true})
+  const unlisten0 = a.eventListen({src: sig,   type: `abort`,             han: onAbort, opt: {once: true}})
+  const unlisten1 = a.eventListen({src: input, type: `submit_pass`,       han: onSubmit})
+  const unlisten2 = a.eventListen({src: input, type: `disable_pass_mode`, han: onDisable, opt: {once: true}})
   const {promise, resolve} = Promise.withResolvers()
   let count = 0
   let prev = ``
@@ -157,7 +157,10 @@ function readPassFromPrompt(sig) {
     resolve()
   }
 
-  function onDisable() {unlisten(), resolve()}
+  function onDisable() {
+    unlisten()
+    resolve()
+  }
 
   function onSubmit() {
     const text = a.reqStr(input.value)
@@ -201,7 +204,11 @@ function readPassFromPrompt(sig) {
     input.value = ``
   }
 
-  function unlisten() {unlisten0(), unlisten1(), unlisten2()}
+  function unlisten() {
+    unlisten0()
+    unlisten1()
+    unlisten2()
+  }
 }
 
 export function reqUserId() {

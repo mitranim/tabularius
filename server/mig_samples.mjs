@@ -1,7 +1,5 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as io from '@mitranim/js/io'
 import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
 
@@ -13,7 +11,7 @@ async function migSamples() {await migExampleRuns()}
 
 async function migExampleRuns() {
   const url = new URL(`../samples/example_runs.gd`, import.meta.url)
-  const rounds = await u.decodeGdStr(await Deno.readTextFile(url))
+  const rounds = await u.decodeGdStr(await io.readFileText(url))
   let changed = false
 
   const runId_to_runMs = a.Emp()

@@ -26,7 +26,7 @@ const CLS_PROMPT_INPUT = a.spaced(
 )
 
 export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputElement) {
-  listener = new u.Listener(document, `keydown`, this, this.onKeydown)
+  listener = new a.ListenRef({self: this, src: document, type: `keydown`, fun: this.onKeydown})
 
   constructor() {
     super()
@@ -95,7 +95,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     return this.submitCmd()
   }
 
-  submitPass() {u.dispatch(this, `submit_pass`)}
+  submitPass() {a.eventDispatch({src: this, type: `submit_pass`})}
 
   // Command submission (on Enter).
   submitCmd() {
@@ -138,7 +138,7 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
     this.onBlur()
 
     this.listener.deinit()
-    u.dispatch(this, `disable_pass_mode`)
+    a.eventDispatch({src: this, type: `disable_pass_mode`})
   }
 
   hist = a.laxArr(histDecode(u.storagesGet(PROMPT_HIST_KEY)))

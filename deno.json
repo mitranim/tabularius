@@ -1,24 +1,17 @@
 {
-  "imports": {
-    "@mitranim/js/": "https://cdn.jsdelivr.net/npm/@mitranim/js@0.1.77/",
-    "@duckdb/node-api": "npm:@duckdb/node-api@1.2.2-alpha.18",
-    "@duckdb/node-bindings": "npm:@duckdb/node-bindings@1.2.2-alpha.18",
-    "tweetnacl": "https://cdn.skypack.dev/tweetnacl@1.0.3"
-  },
   "lint": {
     "rules": {
       "include": [
         "no-node-globals",
-        "no-process-global",
-        // "no-undef",
+        "no-process-global"
       ],
       "exclude": [
         "no-window",
         "no-window-prefix",
         "constructor-super",
         "no-empty",
-        "no-this-alias",
-      ],
-    },
+        "no-this-alias"
+      ]
+    }
   }
 }

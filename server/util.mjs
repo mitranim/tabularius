@@ -1,8 +1,6 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as pt from '@mitranim/js/path.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as io from '@mitranim/js/io'
 import * as su from '../shared/util.mjs'
 import * as us from './util_srv.mjs'
 export * from '../shared/util.mjs'
@@ -13,7 +11,7 @@ export * from './util_db.mjs'
 export * from './util_srv.mjs'
 
 export function cwdUrl() {
-  return new URL(pt.dirLike(Deno.cwd()), `file:`)
+  return new URL(pt.dirLike(io.cwd()), `file:`)
 }
 
 export function dirUrl(src) {
@@ -47,8 +45,8 @@ export function pathToName(src) {
 
 /*
 Most HTTP clients and many HTTP-related libraries auto-collapse `..` in request
-paths, but it's perfectly possible to send such a path in HTTP and to receive
-one in Deno. Tested with:
+paths, but it's perfectly possible to send such a path in HTTP, and to receive
+one in our HTTP stack. Tested in Deno with:
 
   curl --path-as-is http://localhost:9834/api/ls/../../../..
 
@@ -75,7 +73,7 @@ export const GAME_FILE_EXT_REAL = `.json.gz`
 export const GAME_FILE_EXT_FAKE = `.gd`
 
 export function gameFilePathRealToFake(val) {
-  a.reqStr(val)
+  val = a.render(val)
   if (val.endsWith(GAME_FILE_EXT_REAL)) {
     return a.stripSuf(val, GAME_FILE_EXT_REAL) + GAME_FILE_EXT_FAKE
   }
@@ -83,7 +81,7 @@ export function gameFilePathRealToFake(val) {
 }
 
 export function gameFilePathFakeToReal(val) {
-  a.reqStr(val)
+  val = a.render(val)
   if (val.endsWith(GAME_FILE_EXT_FAKE)) {
     return a.stripSuf(val, GAME_FILE_EXT_FAKE) + GAME_FILE_EXT_REAL
   }
@@ -96,10 +94,12 @@ export async function readDecodeGameFile(path, name) {
 
   if (name.endsWith(GAME_FILE_EXT_REAL)) {
     validGameFileGzName(name)
-    return a.jsonDecode(await su.textData_to_ungzip_to_str(await Deno.readFile(path)))
+    return a.jsonDecode(await su.textData_to_ungzip_to_str(
+      await io.readFileBytes(path)
+    ))
   }
 
-  return su.decodeGdStr(await Deno.readTextFile(path))
+  return su.decodeGdStr(await io.readFileText(path))
 }
 
 export async function writeEncodeGameFile(path, src) {
@@ -113,38 +113,25 @@ function validGameFileGzName(name) {
 }
 
 export async function readRunDirs(src) {
-  return a.map(await readDirAll(src, isEntryRunDir), getName).sort(su.compareAsc)
+  return a.map(await readDirFilter(src, isEntryRunDir), getName).sort(su.compareAsc)
 }
 
 export async function readRoundFiles(src) {
-  return a.map(await readDirAll(src, isEntryRoundFile), getName).sort(su.compareAsc)
+  return a.map(await readDirFilter(src, isEntryRoundFile), getName).sort(su.compareAsc)
 }
 
 export async function readDirs(src) {
-  return a.map(await readDirAll(src, isEntryDir), getName)
+  return a.map(await readDirFilter(src, isEntryDir), getName)
 }
 
 export async function readFiles(src) {
-  return a.map(await readDirAll(src, isEntryFile), getName)
+  return a.map(await readDirFilter(src, isEntryFile), getName)
 }
 
 function getName(src) {return src.name}
 
-/*
-The insulting thing about this function is that internally, `Deno.readDir`
-gets an array of entries from an underlying Rust call, then artificially
-makes an async iterator, and then we have to build the array back...
-Twice as much memory is used, not counting the async iteration overhead,
-and a lot of CPU is wasted.
-*/
-export async function readDirAll(src, fun) {
-  a.optFun(fun)
-  const out = []
-  for await (const entry of Deno.readDir(src)) {
-    if (fun && !fun(entry)) continue
-    out.push(entry)
-  }
-  return out
+export async function readDirFilter(src, fun) {
+  return (await io.readDir(src)).filter(a.reqFun(fun))
 }
 
 export function isEntryDir(val) {return val?.isDirectory}
@@ -172,7 +159,7 @@ export function compareDirEntriesDesc(one, two) {
 }
 
 export function compareDirEntries(one, two, fun) {
-  return fun(a.reqStr(one.name), a.reqStr(two.name))
+  return fun(a.render(one.name), a.render(two.name))
 }
 
 export function jsonLines(src) {

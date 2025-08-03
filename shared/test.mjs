@@ -171,9 +171,14 @@ t.test(function test_Semver() {
   }
 
   fail(`...`, `too many parts in semver "..."`)
-  fail(`str`, `Cannot convert str to a BigInt`)
-  fail(`10.str`, `Cannot convert str to a BigInt`)
-  fail(`10.20.str`, `Cannot convert str to a BigInt`)
+
+  const msg = globalThis.Bun
+    ? `Failed to parse String to BigInt`
+    : `Cannot convert str to a BigInt`
+
+  fail(`str`, msg)
+  fail(`10.str`, msg)
+  fail(`10.20.str`, msg)
 })
 
 console.log(`[test_shared] ok`)

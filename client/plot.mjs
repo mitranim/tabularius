@@ -810,7 +810,7 @@ export class Plotter extends ui.Elem {
     super()
     E(this, {class: `flex col-sta-str`})
     this.setOpts(opts)
-    u.listenWeak(ui.MEDIA_QUERY_DARK, `change`, this, this.plotInit)
+    new a.ListenRef({self: this, src: ui.MEDIA_QUERY_DARK, type: `change`, fun: this.plotInit}).init()
     this.resObs.observe(this)
   }
 
@@ -1140,11 +1140,7 @@ export class TooltipPlugin extends a.Emp {
   overHei = undefined
   resObs = new ResizeObserver(this.onResize.bind(this))
 
-
-  constructor(opt) {
-    super()
-    this.opt = a.optRec(opt)
-  }
+  constructor(opt) {super().opt = a.optRec(opt)}
 
   opts() {
     return {

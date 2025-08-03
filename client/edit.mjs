@@ -1441,8 +1441,8 @@ function arrAdded(tar, val) {
 }
 
 function exclude(one, two) {
-  one = a.setFrom(one)
-  two = a.setFrom(two)
+  one = a.toSet(one)
+  two = a.toSet(two)
   const out = []
   for (const val of one) if (!two.has(val)) out.push(val)
   return out

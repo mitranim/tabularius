@@ -4,11 +4,9 @@ DuckDB docs:
   https://duckdb.org/docs/stable/index
 */
 
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as pt from '@mitranim/js/path.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as io from '@mitranim/js/io'
 import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
 import * as ud from './util_db.mjs'
@@ -62,7 +60,7 @@ async function dropTables(conn) {
 }
 
 export async function initSchema(conn) {
-  const sql = await Deno.readTextFile(new URL(`schema.sql`, import.meta.url))
+  const sql = await io.readFileText(new URL(`schema.sql`, import.meta.url))
   await conn.run(sql)
   dbSetSchemaVersion(conn)
 }
@@ -99,7 +97,7 @@ If there's a mismatch, log it without throwing.
 export async function initDataFromRounds(ctx, conn) {
   const rootDirPath = a.reqValidStr(ctx.userRunsDir)
 
-  if (!await io.FileInfo.statOpt(rootDirPath)) {
+  if (!await io.exists(rootDirPath)) {
     console.log(`[mig] runs dir not found, no rounds loaded`)
     return
   }
@@ -107,8 +105,11 @@ export async function initDataFromRounds(ctx, conn) {
   const BATCH_SIZE = 262_144 // 2 ** 18
   let dat
 
-  for await (const {name: user_id, isDirectory} of Deno.readDir(rootDirPath)) {
-    if (!isDirectory) continue
+  for (const name of await io.readDir(rootDirPath)) {
+    const isDir = name.isDir ?? (await io.stat(pt.join(rootDirPath, name))).isDir
+    if (!isDir) continue
+
+    const user_id = a.render(name)
     const userDir = pt.join(rootDirPath, user_id)
 
     for (const runName of await u.readRunDirs(userDir)) {
@@ -131,7 +132,7 @@ export async function initDataFromRounds(ctx, conn) {
         if (!(len >= BATCH_SIZE)) continue
 
         console.log(`[mig] batch-inserting ${len} facts`)
-        await insertBatch(conn, `facts`, dat.facts)
+        await insertBatch({ctx, conn, table: `facts`, rows: dat.facts})
         dat = undefined
       }
     }
@@ -140,7 +141,7 @@ export async function initDataFromRounds(ctx, conn) {
   const len = a.len(dat?.facts)
   if (len) {
     console.log(`[mig] batch-inserting ${len} facts`)
-    await insertBatch(conn, `facts`, dat.facts)
+    await insertBatch({ctx, conn, table: `facts`, rows: dat.facts})
   }
 }
 
@@ -174,17 +175,18 @@ The newline-separated version seems to perform significantly better, to the
 point where it's worth a bit of encoding overhead, given that the JS JSON
 encoders don't properly support it.
 */
-export async function insertBatch(conn, coll, src) {
+export async function insertBatch({ctx, conn, table, rows}) {
+  conn ??= await ctx.conn()
   a.reqInst(conn, ud.DuckConn)
-  u.reqIdent(coll)
-  a.optArr(src)
-  if (!src?.length) return
+  u.reqIdent(table)
+  a.optArr(rows)
+  if (!rows?.length) return
 
-  await Deno.mkdir(u.TMP_DIR, {recursive: true})
-  const path = await Deno.makeTempFile({dir: u.TMP_DIR, suffix: `.json`})
+  await io.mkdir(ctx.tmpDir, {recursive: true})
+  const path = pt.join(ctx.tmpDir, (a.uuid() + `.json`))
   try {
-    await io.writeFile(path, u.jsonLines(src))
-    await conn.run(`copy ${coll} from ${ud.sqlStr(path)}`)
+    await io.writeFile(path, u.jsonLines(rows))
+    await conn.run(`copy ${table} from ${ud.sqlStr(path)}`)
   }
-  finally {await Deno.remove(path)}
+  finally {await io.remove(path)}
 }

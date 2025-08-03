@@ -1,19 +1,25 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
-import * as hd from '@mitranim/js/http_deno.mjs'
+import * as h from '@mitranim/js/http'
+import * as io from '@mitranim/js/io'
 import * as u from './util.mjs'
 import * as c from './ctx.mjs'
 import * as db from './db.mjs'
 import * as api from './api.mjs'
 
-const DIR_ABS = a.vac(u.DEV) && hd.dirAbs()
+const CACHING = !u.DEV
 
-const DIRS = hd.Dirs.of(
-  new u.DirRel(`.`, /^client[/]|^shared[/]|^samples[/]|^index[.]html$|^sw[.]mjs$/),
-)
+const COMP = new h.HttpCompressor({Res: u.Res})
 
-if (import.meta.main) await main()
+const DIRS = h.HttpDirs.of(
+  new u.HttpDir({
+    fsPath: `.`,
+    filter: /^client[/]|^shared[/]|^samples[/]|^index[.]html$|^sw[.]mjs$/
+  }),
+  a.vac(u.DEV) && new u.HttpDir({
+    fsPath: `/`,
+    filter: /^[/]Users[/]/,
+  }),
+).setOpt({caching: CACHING})
 
 async function main() {
   const dataDir = u.getEnv(`DATA_DIR`)
@@ -23,34 +29,24 @@ async function main() {
 
   await db.migrate(ctx)
   serve(ctx)
-  u.liveSend({type: `change`})
+  watch()
+  u.LIVE_CLI?.sendJson({type: `change`}).catch(console.error)
 }
 
 function serve(ctx) {
   const hostname = u.getEnv(`SRV_HOST`)
   const port = a.int(u.getEnv(`SRV_PORT`))
-
-  Deno.serve({
-    hostname,
-    port,
-    handler: a.bind(respond, ctx),
-    onListen,
-    onError,
-  })
+  const onRequest = a.bind(respond, ctx)
+  h.serve({hostname, port, onRequest, onListen, onError})
 }
 
-function onListen({port, hostname}) {
-  if (hostname === `0.0.0.0`) hostname = `localhost`
-
-  const url = new URL(`http://` + hostname)
-  url.port = a.renderLax(port)
-
+function onListen(srv) {
+  const url = h.srvUrl(srv)
   if (u.DEV) {
     url.searchParams.set(`dev`, `true`)
     url.searchParams.set(`local`, `true`)
   }
-
-  console.log(`[srv] listening on ${url}`)
+  console.log(`[srv] listening on`, url.href)
 }
 
 function onError(err) {
@@ -63,24 +59,40 @@ function onError(err) {
 
 async function respond(ctx, req) {
   const rou = a.toReqRou(req)
+  const path = rou.url.pathname
 
   return await (
     (rou.preflight() && new u.Res()) ||
     (rou.get(`/robots.txt`) && new u.Res(ROBOTS_TXT)) ||
     (rou.pre(`/api`) && api.apiRes(ctx, rou)) ||
-    (
-      a.vac(DIR_ABS) &&
-      rou.url.pathname.startsWith(`/Users/`) &&
-      (await DIR_ABS.resolveFile(rou.url.pathname))?.res()
-    ) ||
-    u.withLiveClient(
-      await ((await DIRS.resolveSiteFileWithNotFound(rou.url))?.res())
-    ) ||
+    (await h.fileResponse({
+      req,
+      file: await DIRS.resolveSiteFile(path),
+      compressor: COMP,
+      liveClient: u.LIVE_CLI,
+    })) ||
     rou.notFound()
   )
 }
 
+/*
+The production app is served via GitHub Pages, and we do want it indexed.
+The API server is on a different (sub)domain, and we don't want crawlers
+to try to index its API endpoints or even try to invent non-existent URLs
+by combining the API domain with some arbitrary paths (Google tried).
+*/
 const ROBOTS_TXT = `
 User-agent: *
 Disallow: /
 `.trim()
+
+async function watch() {
+  if (!u.LIVE_CLI) return
+  for await (let {type, path} of io.watchCwd()) {
+    path = u.LIVE_CLI.fsPathToUrlPath(path)
+    if (!path) continue
+    u.LIVE_CLI.sendJson({type, path}).catch(console.error)
+  }
+}
+
+if (import.meta.main) main()

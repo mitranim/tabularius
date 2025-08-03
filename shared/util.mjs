@@ -198,7 +198,7 @@ export function uniqBy(src, fun) {
   return out
 }
 
-export function uniqArr(src) {return a.arr(a.setFrom(src))}
+export function uniqArr(src) {return a.arr(a.toSet(src))}
 
 export function arrOfUniqValidStr(src) {
   const out = new Set()
@@ -333,7 +333,10 @@ conversion are always ok.
 export async function resOkByteArr(src) {
   a.reqInst(src, Response)
   await a.resOk(src)
-  return src.bytes?.() ?? new Uint8Array(await src.arrayBuffer())
+  return (
+    a.toByteArr(await src.bytes?.()) ??
+    a.toByteArr(await src.arrayBuffer())
+  )
 }
 
 export async function resOkText(src) {return (await a.resOk(src)).text()}
@@ -361,7 +364,7 @@ Could use a `TextDecoder`, but a benchmark (in Deno) seems to massively favor
 this implementation. In any case, this is only for testing.
 */
 export function byteArr_to_binStr(src) {
-  a.reqInst(src, Uint8Array)
+  src = a.toByteArr(src)
   let out = ``
   let ind = -1
   while (++ind < src.length) out += String.fromCharCode(src[ind])
@@ -374,13 +377,13 @@ export function base64Str_to_byteArr(src) {
 }
 
 export function byteArr_to_base64Str(src) {
-  a.reqInst(src, Uint8Array)
+  src = a.toByteArr(src)
   let out = ``
   for (src of src) out += String.fromCharCode(src)
   return btoa(out)
 }
 
-export function byteArr_to_hexStr(src) {return a.arrHex(src)}
+export function byteArr_to_hexStr(src) {return a.byteArrHex(src)}
 
 // Like `Uint8Array.fromHex`, which is not yet widely available.
 export function hexStr_to_byteArr(src) {

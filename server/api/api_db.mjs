@@ -1,10 +1,18 @@
 import * as u from '../util.mjs'
 
 /*
+Usage:
+
+  make duck_attach_prod
+  make duck_attach_dev
+  make db_dump_prod out_path=<some_path>
+
 Usage in DuckDB SQL:
 
   attach 'https://tabularius.mitranim.com/api/db' as db;
   select * from db.facts limit 1;
+
+Unqualified usage:
 
   attach 'https://tabularius.mitranim.com/api/db' as db;
   use db;
@@ -27,5 +35,5 @@ export async function apiDb(ctx) {
   try {await (await ctx.conn()).run(`checkpoint`)}
   catch (err) {console.error(`[api_db] unable to checkpoint:`, err)}
 
-  return u.HttpFileStream.res(path)
+  return (u.HttpFile.resolve(path)).response()
 }

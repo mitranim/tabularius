@@ -151,16 +151,17 @@ function datOnBroadcast(src) {
   s.datAddRound({
     dat: DAT, round, user_id: USER_ID, run_num, run_ms, composite: true,
   })
-  u.dispatch(DAT, u.EVENT_MSG, src)
+  a.eventDispatch({src: DAT, type: u.EVENT_MSG, data: src})
 }
 
-export function listenNewRound(ctx, fun) {
+export function listenNewRound(self, fun) {
   a.reqFun(fun)
 
+  // Caution: for `ListenRef` auto-cleanup to work, we must NOT closure `self`.
   function onDatEvent(src) {
     src = u.eventData(src)
     if (src?.type === `new_round`) fun.call(this, src)
   }
 
-  return u.listenWeak(DAT, u.EVENT_MSG, ctx, onDatEvent)
+  return new a.ListenRef({self, src: DAT, type: u.EVENT_MSG, fun: onDatEvent}).init()
 }

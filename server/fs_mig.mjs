@@ -1,7 +1,6 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as pt from '@mitranim/js/path.mjs'
+import * as io from '@mitranim/js/io'
 import * as s from '../shared/schema.mjs'
 import * as u from './util.mjs'
 
@@ -97,7 +96,7 @@ export async function migrateUserRuns(ctx) {
 
       if (!runRoundsChecked) {
         verb(`[fs_mig] deleting empty run dir:`, a.show(runDir))
-        await Deno.remove(runDir)
+        await io.remove(runDir)
         userRunsMigrated++
         out.runMig++
         continue
@@ -119,7 +118,7 @@ export async function migrateUserRuns(ctx) {
       const runNameNext = s.makeRunName(runNum, runMs)
       const runDirNext = pt.join(userDir, runNameNext)
 
-      await Deno.rename(runDir, runDirNext)
+      await io.rename(runDir, runDirNext)
       verb(`[fs_mig] renamed run dir`, a.show(runDir), `to`, a.show(runDirNext))
       userRunsMigrated++
       out.runMig++

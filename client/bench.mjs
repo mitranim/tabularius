@@ -91,5 +91,6 @@ t.bench(function bench_whereFields_interpreted_dynamic() {
 
 await import(`../shared/bench.mjs`)
 console.log(`[bench] starting`)
-t.deopt(), t.benches()
+t.deopt()
+t.benches()
 console.log(`[bench] done`)

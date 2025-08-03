@@ -1,9 +1,7 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
 import * as pt from '@mitranim/js/path.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as io from '@mitranim/js/io'
 import * as tu from '../test_util.mjs'
 import * as als from './api_ls.mjs'
 
@@ -14,7 +12,7 @@ await t.test(async function test_apiLs() {
   const fileText = `mock_text`
   const filePath = pt.join(dirPath, fileName)
 
-  await Deno.mkdirSync(dirPath, {recursive: true})
+  await io.mkdirSync(dirPath, {recursive: true})
   await io.writeFile(filePath, fileText)
 
   tu.testFailInsecurePaths(a.bind(als.apiLsEntry, ctx))

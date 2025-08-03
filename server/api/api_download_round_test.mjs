@@ -1,7 +1,6 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
+import * as io from '@mitranim/js/io'
 import * as tu from '../test_util.mjs'
 import * as u from '../util.mjs'
 import * as db from '../db.mjs'
@@ -11,7 +10,7 @@ import * as adr from './api_download_round.mjs'
 await t.test(async function test_downloadRound() {
   const ctx = new tu.TestCtx()
   const srcUrl = new URL(`../../samples/example_runs.gd`, import.meta.url)
-  const srcText = await Deno.readTextFile(srcUrl)
+  const srcText = await io.readFileText(srcUrl)
   const rounds = await u.decodeGdStr(srcText)
   const auth = u.authHeadersOpt(tu.TEST_PUBLIC_KEY, tu.TEST_SECRET_KEY)
   const conn = await ctx.conn()

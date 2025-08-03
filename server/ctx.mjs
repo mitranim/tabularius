@@ -1,7 +1,6 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as pt from '@mitranim/js/path.mjs'
+import * as io from '@mitranim/js/io'
 import * as ud from './util_db.mjs'
 import * as us from './util_srv.mjs'
 
@@ -17,7 +16,7 @@ export class Ctx extends a.Emp {
     this.dbFile = a.reqValidStr(dbFile)
     this.dataDir = a.reqValidStr(dataDir)
     this.tmpDir = a.reqValidStr(tmpDir)
-    this.httpDirUserRuns = new us.DirRel(this.userRunsDir)
+    this.httpDirUserRuns = new us.HttpDir({fsPath: this.userRunsDir})
   }
 
   get userRunsDir() {return pt.join(this.dataDir, `user_runs`)}
@@ -34,7 +33,7 @@ export class Ctx extends a.Emp {
   async #dbInit() {
     const path = this.dbFile
     if (path === `:memory:`) return ud.DuckDb.create(path)
-    await Deno.mkdir(pt.dir(path), {recursive: true})
+    await io.mkdir(pt.dir(path), {recursive: true})
     return ud.DuckDb.create(path)
   }
 

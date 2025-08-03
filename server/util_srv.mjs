@@ -1,10 +1,9 @@
 import * as a from '@mitranim/js/all.mjs'
-import * as pt from '@mitranim/js/path.mjs'
-import * as hd from '@mitranim/js/http_deno.mjs'
-import * as ld from '@mitranim/js/live_deno.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as h from '@mitranim/js/http'
 import * as su from '../shared/util.mjs'
-import * as uc from './util_conf.mjs'
+
+globalThis.CompressionStream ??= h.CompressionStreamPolyfill
+globalThis.DecompressionStream ??= h.DecompressionStreamPolyfill
 
 export class ErrHttp extends su.Err {
   constructor(msg, opt) {
@@ -27,21 +26,24 @@ export class Res extends Response {
     this.headers.append(`access-control-allow-headers`, `cache-control`)
     this.headers.append(`access-control-allow-headers`, `content-type`)
     this.headers.append(`access-control-allow-headers`, `content-encoding`)
+    this.headers.append(`access-control-allow-headers`, `accept-encoding`)
     this.headers.append(`x-robots-tag`, `noindex, follow`)
+    return this
+  }
+
+  withTypeOpt(val) {
+    if (!a.optStr(val)) return this
+    const key = `content-type`
+    if (!this.headers.get(key)) this.headers.set(key, val)
     return this
   }
 }
 
-export class HttpFileStream extends hd.HttpFileStream {
-  get Res() {return Res}
-}
+export class HttpFile extends h.HttpFile {get Res() {return Res}}
+export class HttpDir extends h.HttpDir {get HttpFile() {return HttpFile}}
 
-export class HttpFileInfo extends hd.HttpFileInfo {
-  get HttpFileStream() {return HttpFileStream}
-}
-
-export class DirRel extends hd.DirRel {
-  get FileInfo() {return HttpFileInfo}
+export function jsonRes(body, opt) {
+  return new Res(a.jsonEncode(body), opt).withTypeOpt(`application/json`)
 }
 
 export async function reqResBodyJson(src) {
@@ -50,59 +52,17 @@ export async function reqResBodyJson(src) {
 }
 
 /*
-According to our testing and multiple bots, Deno's HTTP server stack does not
-automatically decompress / inflate gzipped bodies. Our client uploads rounds
-in gzipped format for efficiency, and we have to decompress them manually.
+Our client code uploads rounds gzipped, since they're large but very
+compressible. The HTTP stack doesn't automatically inflate request
+bodies, so we have to this ourselves.
 */
 export function reqResBodyText(src) {
   if (!su.headHasGzip(src.headers)) return src.text()
+  return ungzipReq(src)
+}
+
+function ungzipReq(src) {
   return new Response(
     src.body.pipeThrough(new DecompressionStream(`gzip`)),
-    {signal: src.signal},
   ).text()
-}
-
-/*
-Development tool. Tells each connected "live client" to reload the page.
-Requires `make live`.
-*/
-export function liveSend(val) {
-  if (!uc.LIVE_PORT) return undefined
-
-  const url = new URL(`http://localhost`)
-  url.port = uc.LIVE_PORT
-  url.pathname = pt.join(ld.LIVE_PATH, `send`)
-
-  return fetch(url, {
-    method: a.POST,
-    headers: [a.HEADER_JSON],
-    body: a.jsonEncode(val),
-  }).then(a.resOk).catch(console.error)
-}
-
-export function withLiveClient(res) {
-  if (!a.optInst(res, Response)) return res
-  if (!uc.LIVE_PORT) return res
-  if (!isResHtml(res)) return res
-
-  const path = `:${uc.LIVE_PORT}${ld.LIVE_PATH}/live_client.mjs`
-
-  return new Res(
-    io.ConcatStreamSource.stream(res.body, `
-<script type="module">
-  const tar = document.createElement("script")
-  tar.src = window.location.protocol + "//" + window.location.hostname + ${a.show(path)}
-  tar.type = "module"
-  document.body.appendChild(tar)
-</script>
-`),
-    res,
-  )
-}
-
-export function isResHtml(res) {
-  return (
-    a.isInst(res, Response) &&
-    res.headers.get(a.HEADER_NAME_CONTENT_TYPE) === a.MIME_TYPE_HTML
-  )
 }

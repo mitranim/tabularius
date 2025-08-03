@@ -1,10 +1,9 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
 import * as cl from '@mitranim/js/cli.mjs'
 import * as pt from '@mitranim/js/path.mjs'
-import * as hd from '@mitranim/js/http_deno.mjs'
+import * as h from '@mitranim/js/http'
+import * as io from '@mitranim/js/io'
 import * as u from '../shared/util.mjs'
 import * as us from './util_srv.mjs'
 import * as ud from './util_db.mjs'
@@ -42,14 +41,12 @@ export class TestCtx extends a.Emp {
   get dataDir() {return this.tmpDir}
 
   get tmpDir() {
-    return (
-      Deno.mkdirSync(TEST_TMP_DIR, {recursive: true}),
-      Deno.makeTempDirSync({dir: TEST_TMP_DIR, prefix: `test_data_`})
-    )
+    io.mkdirSync(TEST_TMP_DIR, {recursive: true})
+    return io.mkdirTempSync({dir: TEST_TMP_DIR, prefix: `test_data_`})
   }
 
   get userRunsDir() {return pt.join(this.dataDir, `user_runs`)}
-  get httpDirUserRuns() {return hd.dirRel(this.userRunsDir)}
+  get httpDirUserRuns() {return new h.HttpDir({fsPath: this.userRunsDir})}
 
   #db
   async db() {return this.#db ??= (await ud.DuckDb.create(this.dbFile))}

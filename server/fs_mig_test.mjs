@@ -1,7 +1,7 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
 import * as pt from '@mitranim/js/path.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as io from '@mitranim/js/io'
 import * as tu from './test_util.mjs'
 import * as u from './util.mjs'
 import * as fm from './fs_mig.mjs'
@@ -88,7 +88,7 @@ function testNewRunRoundFormat(round, runMs) {
 }
 
 async function testNotExists(path) {
-  const info = await io.FileInfo.statOpt(path)
+  const info = await io.statOpt(path)
   if (!info) return
   throw Error(`unexpected file or dir at ${a.show(path)}: ${a.show(info)}`)
 }

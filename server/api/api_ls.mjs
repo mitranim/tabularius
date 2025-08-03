@@ -1,8 +1,6 @@
-/* global Deno */
-
-import * as a from '@mitranim/js/all.mjs'
+// import * as a from '@mitranim/js/all.mjs'
 import * as pt from '@mitranim/js/path.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as io from '@mitranim/js/io'
 import * as u from '../util.mjs'
 
 export function apiLsOpt(ctx, rou) {
@@ -34,11 +32,11 @@ export async function apiLsEntry(ctx, path) {
   path = u.gameFilePathFakeToReal(path)
   path = pt.join(ctx.userRunsDir, path)
 
-  const info = await io.FileInfo.statOpt(path)
+  const info = await io.statOpt(path)
   if (!info) return undefined
 
   const name = pt.name(path)
-  if (info.isFile()) {
+  if (info.isFile) {
     return {kind: `file`, name: u.gameFilePathRealToFake(name)}
   }
   return {kind: `directory`, name, entries: await apiLsEntries(path)}
@@ -46,7 +44,8 @@ export async function apiLsEntry(ctx, path) {
 
 async function apiLsEntries(path) {
   const out = []
-  for await (const {name, isFile} of Deno.readDir(path)) {
+  for (const name of await io.readDir(path)) {
+    const isFile = name.isFile ?? (await io.stat(pt.join(path, name))).isFile
     out.push(
       isFile
       ? {kind: `file`, name: u.gameFilePathRealToFake(name)}

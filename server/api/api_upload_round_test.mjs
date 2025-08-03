@@ -1,16 +1,14 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
 import * as pt from '@mitranim/js/path.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as io from '@mitranim/js/io'
 import * as s from '../../shared/schema.mjs'
 import * as tu from '../test_util.mjs'
 import * as u from '../util.mjs'
 import * as db from '../db.mjs'
 import * as aur from './api_upload_round.mjs'
 
-const TEST_PROGRESS_BIG = await Deno.readTextFile(new URL(`../../samples/example_progress_big.json`, import.meta.url))
+const TEST_PROGRESS_BIG = await io.readFileText(new URL(`../../samples/example_progress_big.json`, import.meta.url))
 
 await t.test(async function test_duckdb_import_json_gz() {
   const ctx = new tu.TestCtx()

@@ -1155,7 +1155,10 @@ export function wepDetailData(wep) {
 
 // TODO simplify, add explanatory comments.
 function compareRowsDeep(one, two) {
-  if (u.DEV) reqRow(one), reqRow(two)
+  if (u.DEV) {
+    reqRow(one)
+    reqRow(two)
+  }
 
   const oneAncs = one.ancestors()
   const twoAncs = two.ancestors()

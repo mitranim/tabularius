@@ -1,9 +1,7 @@
-/* global Deno */
-
 import * as a from '@mitranim/js/all.mjs'
 import * as t from '@mitranim/js/test.mjs'
 import * as pt from '@mitranim/js/path.mjs'
-import * as io from '@mitranim/js/io_deno.mjs'
+import * as io from '@mitranim/js/io'
 import * as tu from '../test_util.mjs'
 import * as u from '../util.mjs'
 import * as adf from './api_download_file.mjs'
@@ -13,7 +11,7 @@ const FILE_TEXT = `mock_text`
 await t.test(async function test_fileDownload() {
   const ctx = new tu.TestCtx()
   const dirPath = ctx.userRunsDir
-  await Deno.mkdirSync(dirPath, {recursive: true})
+  await io.mkdirSync(dirPath, {recursive: true})
 
   /*
   Needless to say, one should not bother with compression for files so small.
@@ -41,7 +39,7 @@ await t.test(async function test_fileDownload() {
   fail(ctx, `missing_dir`)
   fail(ctx, dirPath)
 
-  for (const file of files) testFileDownload(ctx, dirPath, file)
+  for (const file of files) await testFileDownload(ctx, dirPath, file)
 })
 
 async function testFileDownload(ctx, dirPath, {name: fileName, body: fileBody}) {
@@ -51,7 +49,7 @@ async function testFileDownload(ctx, dirPath, {name: fileName, body: fileBody}) 
   fail(ctx, filePath)
 
   t.is(
-    await u.reqResBodyText(await adf.downloadFile(ctx, fileName)),
+    (await u.reqResBodyText(await adf.downloadFile(ctx, fileName))),
     FILE_TEXT,
   )
 }
