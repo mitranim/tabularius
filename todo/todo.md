@@ -711,3 +711,24 @@ Consider if the Web Authentication API and/or Web Credentials API could be relev
 ---
 
 `plot`: when `-a` is not `count`, count the data points anyway, and display the resulting counts in labels and tooltips.
+
+---
+
+Support Ctrl+V for game files. Something like:
+- If a JSON file is pasted:
+  - Rename to `.gd`. (No need to encode.)
+  - If name matches one of game files:
+    - Backup original file.
+    - Write new file.
+  - Otherwise, show a file save dialog.
+- If a JSON file is dragged-in: same as above.
+- If JSON is pasted without a file name:
+  - Show a file save dialog as `.gd`.
+- If `.gd` is pasted: convert to JSON and show file save dialog.
+- Consider adding a command:
+  - Reads from clipboard.
+  - Stores a file to a specified path, or shows a save dialog.
+
+---
+
+Support in-place decoding for `.gd` files, without renaming. Add as an option to the `show` command.

@@ -159,11 +159,16 @@ Main watch functionality, periodically executed by `cmdWatch`.
 
 TODO: when a fork is detected, delete all rounds after the fork.
 
-TODO: when file deletion is detected, don't assume a new run, continue backups
-in the current dir.
+TODO: when file deletion is detected, don't assume a new run,
+continue backups in the current dir.
 
 TODO: handle corrupted files: show the same recommendation as `edit`.
 Maybe show this only once, then keep checking until corruption is fixed.
+
+TODO: check additional fields (other than `.RoundIndex`) for differences,
+to detect new runs in an edge case where a user stops our app in one run,
+and starts it in another run, where the round number is exactly the same.
+Currently we end up merging two runs in such a case.
 */
 async function watchStep(sig, state) {
   const progressFile = await fs.getFile(sig, state.progressFileHandle)
