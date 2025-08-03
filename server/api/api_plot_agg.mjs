@@ -2,10 +2,6 @@ import * as a from '@mitranim/js/all.mjs'
 import * as s from '../../shared/schema.mjs'
 import * as u from '../util.mjs'
 
-export function apiPlotAggOpt(ctx, rou) {
-  return rou.post(`/api/plot_agg`) && apiPlotAgg(ctx, rou.req)
-}
-
 export async function apiPlotAgg(ctx, req) {
   const data = await plotAgg(ctx, req)
   return new u.Res(a.jsonEncode(data))

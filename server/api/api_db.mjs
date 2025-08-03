@@ -20,10 +20,6 @@ Unqualified usage:
 
 Note that the download may take a while.
 */
-export function apiDbOpt(ctx, rou) {
-  return rou.get(`/api/db`) && apiDb(ctx)
-}
-
 export async function apiDb(ctx) {
   const path = ctx.dbFile
   if (path === `:memory:`) throw Error(`unable to serve memory DB file`)

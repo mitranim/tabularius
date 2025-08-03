@@ -4,14 +4,6 @@ import * as s from '../../shared/schema.mjs'
 import * as u from '../util.mjs'
 import * as adf from './api_download_file.mjs'
 
-export function apiDownloadRoundOpt(ctx, rou) {
-  return (
-    // Tentative path. May revise later.
-    rou.get(/^[/]api[/]download_round(?:[/](?<path>.*))?$/) &&
-    apiDownloadRound(ctx, rou)
-  )
-}
-
 let TIMER_ID = 0
 
 export async function apiDownloadRound(ctx, rou) {

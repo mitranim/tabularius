@@ -4,7 +4,13 @@ import * as io from '@mitranim/js/io'
 import * as u from './util.mjs'
 import * as c from './ctx.mjs'
 import * as db from './db.mjs'
-import * as api from './api.mjs'
+import {apiDb} from './api/api_db.mjs'
+import {apiUploadRound} from './api/api_upload_round.mjs'
+import {apiDownloadFile} from './api/api_download_file.mjs'
+import {apiDownloadRound} from './api/api_download_round.mjs'
+import {apiPlotAgg} from './api/api_plot_agg.mjs'
+import {apiLs} from './api/api_ls.mjs'
+import {apiLatestRun} from './api/api_latest_run.mjs'
 
 const CACHING = !u.DEV
 
@@ -64,7 +70,37 @@ async function respond(ctx, req) {
   return await (
     (rou.preflight() && new u.Res()) ||
     (rou.get(`/robots.txt`) && new u.Res(ROBOTS_TXT)) ||
-    (rou.pre(`/api`) && api.apiRes(ctx, rou)) ||
+    (rou.pre(`/api`) && (
+      (
+        rou.get(`/api/db`) &&
+        apiDb(ctx)
+      ) ||
+      (
+        rou.post(`/api/upload_round`) &&
+        apiUploadRound(ctx, rou.req)
+      ) ||
+      (
+        rou.get(/^[/]api[/]download_file(?<path>[/].*)?$/) &&
+        apiDownloadFile(ctx, a.laxStr(rou.groups?.path))
+      ) ||
+      (
+        rou.post(`/api/plot_agg`) &&
+        apiPlotAgg(ctx, rou.req)
+      ) ||
+      (
+        rou.get(/^[/]api[/]download_round(?:[/](?<path>.*))?$/) &&
+        apiDownloadRound(ctx, rou)
+      ) ||
+      (
+        rou.get(/^[/]api[/]ls(?:[/](?<path>.*))?$/) &&
+        apiLs(ctx, a.laxStr(rou.groups?.path))
+      ) ||
+      (
+        rou.get(/^[/]api[/]latest_run(?:[/](?<userId>\w+))?$/) &&
+        apiLatestRun(ctx, rou.groups?.userId)
+      ) ||
+      rou.notFound()
+    )) ||
     (await h.fileResponse({
       req,
       file: await DIRS.resolveSiteFile(path),

@@ -1,13 +1,6 @@
 import * as a from '@mitranim/js/all.mjs'
 import * as u from '../util.mjs'
 
-export function apiLatestRunOpt(ctx, rou) {
-  return (
-    rou.get(/^[/]api[/]latest_run(?:[/](?<userId>\w+))?$/) &&
-    apiLatestRun(ctx, rou.groups?.userId)
-  )
-}
-
 export async function apiLatestRun(ctx, userId) {
   a.optStr(userId)
   const conn = await ctx.conn()

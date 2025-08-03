@@ -3,13 +3,6 @@ import * as pt from '@mitranim/js/path.mjs'
 import * as io from '@mitranim/js/io'
 import * as u from '../util.mjs'
 
-export function apiLsOpt(ctx, rou) {
-  return (
-    rou.get(/^[/]api[/]ls(?:[/](?<path>.*))?$/) &&
-    apiLs(ctx, a.laxStr(rou.groups?.path))
-  )
-}
-
 let TIMER_ID = 0
 
 /*

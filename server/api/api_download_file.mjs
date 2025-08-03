@@ -2,14 +2,6 @@ import * as a from '@mitranim/js/all.mjs'
 import * as hd from '@mitranim/js/http'
 import * as u from '../util.mjs'
 
-export function apiDownloadFileOpt(ctx, rou) {
-  return (
-    // Tentative path. May revise later.
-    rou.get(/^[/]api[/]download_file(?<path>[/].*)?$/) &&
-    apiDownloadFile(ctx, a.laxStr(rou.groups?.path))
-  )
-}
-
 let TIMER_ID = 0
 
 export async function apiDownloadFile(ctx, path) {

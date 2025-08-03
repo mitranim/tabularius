@@ -5,10 +5,6 @@ import * as s from '../../shared/schema.mjs'
 import * as u from '../util.mjs'
 import * as db from '../db.mjs'
 
-export function apiUploadRoundOpt(ctx, rou) {
-  return rou.post(`/api/upload_round`) && apiUploadRound(ctx, rou.req)
-}
-
 let TIMER_ID = 0
 
 export async function apiUploadRound(ctx, req) {
