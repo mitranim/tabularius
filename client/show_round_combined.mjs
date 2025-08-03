@@ -1123,16 +1123,19 @@ export function wepDetailData(wep) {
   const rel = out.rel = reify(wep.ReloadTime)
   out.det = wep.IsDetection
 
+  const antiAir = out.has_aa = a.optBool(bul.IsAntiAircraft)
+  const antiShield = out.has_as = isWepAntiShield(wep)
+
   out.perc_dmg = a.laxFin(aoe.Damage.pctModifier) / 100
 
   const percAir = out.perc_air = (
-    bul.IsAntiAircraft
+    antiAir
     ? a.laxFin(bul.AntiAircraftModifier) / 100
     : a.laxFin(bul.AircraftModifier) / 100
   )
 
   const percShld = out.perc_shld = (
-    isWepAntiShield(wep)
+    antiShield
     ? a.laxFin(bul.AntiShieldModifier) / 100
     : a.laxFin(bul.ShieldModifier) / 100
   )
@@ -1246,6 +1249,8 @@ export const STAT_GLOSSARY = u.dict({
   dmg: `calculated damage`,
   dmg_air: `calculated anti-air damage`,
   dmg_shld: `calculated anti-shield damage`,
+  has_aa: `has anti-air`,
+  has_as: `has anti-shield`,
   perc_dmg: `damage ±%`,
   perc_air: `anti-air damage ±%`,
   perc_shld: `anti-shield damage ±%`,

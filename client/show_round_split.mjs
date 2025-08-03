@@ -69,6 +69,8 @@ export const WEP_COLS = [
   withHideObs({sortObs: sr.WEP_SORT, key: `dps_est`,      type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `dps_air_est`,  type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `dps_shld_est`, type: sr.TYPE_NUM}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `has_aa`,       type: sr.TYPE_BOOL}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `has_as`,       type: sr.TYPE_BOOL}),
   withHideObs({sortObs: sr.WEP_SORT, key: `aoe`,          type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `targ`,         type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `prio`,         type: sr.TYPE_PRIO}),
