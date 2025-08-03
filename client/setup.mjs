@@ -233,11 +233,11 @@ function NextStepSaves() {
   const path = `%UserProfile%\\${fs.SAVE_DIR_PATH}`
 
   return ui.LogParagraphs(
-    [
+    Recom(
       ui.Bold(`recommended next step:`),
       ` click `, os.BtnCmdWithHelp(`saves`),
       ` and pick the game's save directory (read-only and safe)`,
-    ],
+    ),
     fs.SaveDirLocation(),
     [ui.Bold(`option 1:`), ` copy-paste into the Explorer address bar:`],
     [`  `, ui.Bold(path), `\u00a0`, ui.BtnClip(path)],
@@ -253,7 +253,7 @@ function NextStepSaves() {
 }
 
 function NextStepHist() {
-  return ui.LogParagraphs(
+  return Recom(ui.LogParagraphs(
     ui.Bold(`recommended next steps:`),
 
     [
@@ -269,22 +269,30 @@ function NextStepHist() {
     ],
 
     // AfterSavesAndHistory(),
-  )
+  ))
 }
 
 function NextStepAuth() {
   return ui.LogParagraphs(
-    [
+    Recom(
       ui.Bold(`recommended next step:`),
       ` click `, os.BtnCmdWithHelp(`auth`),
       ` and enter a password or passphrase to authenticate;`,
       ` easy and completely anonymous`,
-    ],
+    ),
     [
       `the app will automatically backup your run history to the cloud;`,
       ` this lets you contribute to the global statistics and share your`,
       ` runs with others via `, os.BtnCmdWithHelp(`plot_link -c`),
     ],
+  )
+}
+
+function Recom(...chi) {
+  return ui.LogLines(
+    `⬇️ ⬇️ ⬇️`,
+    [`👉 `, ...chi, ` 👈`],
+    `⬆️ ⬆️ ⬆️`,
   )
 }
 
