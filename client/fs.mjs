@@ -4,6 +4,7 @@ import * as u from './util.mjs'
 import * as i from './idb.mjs'
 import * as os from './os.mjs'
 import * as ui from './ui.mjs'
+import {E} from './ui.mjs'
 import * as ls from './ls.mjs'
 
 import * as self from './fs.mjs'
@@ -1485,7 +1486,18 @@ export function reqFs(fun) {
 }
 
 export function errFsApi() {
-  return Error(`the current environment seems to be lacking the File System API; at the time of writing, it's supported in Chromium-based browsers, such as Chrome, Edge, Opera, Arc, and more, and in very recent versions of other browsers; please consider updating your browser or using a recent Chromium-based browser`)
+  return new ui.ErrLog(
+    `this action requires the `,
+    E(`a`, {
+      href: `https://developer.mozilla.org/en-US/docs/Web/API/File_System_API`,
+      class: ui.CLS_BTN_INLINE,
+      ...ui.TARBLAN,
+      chi: [`File System API `, ui.External()],
+    }),
+    `, which seems to be missing in the current browser; at the time of writing, it's supported in Chromium-based browsers, such as Chrome, Edge, Opera, Arc, and more, and in very recent versions of other browsers, but `,
+    ui.Bold(`not`),
+    ` in Firefox; please consider updating your browser or using a recent Chromium-based browser`,
+  )
 }
 
 export function errHandleKind(val) {
