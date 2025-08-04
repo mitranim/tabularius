@@ -252,7 +252,7 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
   if (!segs.length) {
     if (state) state.status = `checking runs`
 
-    const runHandles = await fs.readRunsAsc(sig, hist)
+    const runHandles = await fs.readRunsAsc({sig, dir: hist})
     if (state) state.status = `uploading all runs`
     for (const dir of runHandles) {
       await uploadRun({sig, dir, userId, state, force})
@@ -261,7 +261,7 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
     return undefined
   }
 
-  const dir = await fs.getDirectoryHandle(sig, hist, segs.shift())
+  const dir = await fs.getDirectoryHandle({sig, dir: hist, name: segs.shift()})
 
   if (!segs.length) {
     await uploadRun({sig, dir, userId, state, force})
@@ -274,7 +274,7 @@ async function cmdUploadStep({sig, hist, path, opt, userId, state}) {
     return os.cmdHelpDetailed(cmdUpload)
   }
 
-  const file = await fs.getFileHandle(sig, dir, segs.shift())
+  const file = await fs.getFileHandle({sig, dir, name: segs.shift()})
   await uploadRound({sig, file, runName: dir.name, userId, state, force})
   uploadDone({state, opt})
   return undefined
@@ -294,7 +294,7 @@ export async function uploadRun({sig, dir, userId, state, force}) {
     state.runsChecked++
   }
 
-  const handles = await fs.readRunRoundHandlesAsc(sig, dir)
+  const handles = await fs.readRoundHandlesAsc({sig, dir})
   for (const file of handles) {
     await uploadRound({sig, file, runName, userId, state, force})
   }
@@ -328,7 +328,7 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
   }
 
   // if (a.deref(u.VERBOSE)) console.time(`read_file_${id}`)
-  const round = await fs.readDecodeGameFile(sig, file)
+  const round = await fs.readDecodeGameFile({sig, file})
   // if (a.deref(u.VERBOSE)) console.timeEnd(`read_file_${id}`)
 
   const roundNumFromData = a.reqInt(round.RoundIndex)
@@ -392,7 +392,7 @@ export async function uploadRound({sig, file, runName, userId, state, force}) {
     possible if the browser tab is killed at this point.
     */
     // if (a.deref(u.VERBOSE)) console.time(`write_file_${id}`)
-    await fs.writeFile(u.sig, file, fileContentGdStr, path)
+    await fs.writeFile({sig: u.sig, file, body: fileContentGdStr, path})
     // if (a.deref(u.VERBOSE)) console.timeEnd(`write_file_${id}`)
   }
   else if (a.deref(u.VERBOSE)) {

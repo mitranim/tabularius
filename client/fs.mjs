@@ -138,22 +138,22 @@ export const CONFS = [
 ]
 
 export async function loadedProgressFile(sig) {
-  return !!await fileConfLoadedWithPermIdemp(sig, PROGRESS_FILE_CONF)
+  return !!await fileConfLoadedWithPermIdemp({sig, conf: PROGRESS_FILE_CONF})
 }
 
 export async function loadedSaveDir(sig) {
-  return !!await fileConfLoadedWithPermIdemp(sig, SAVE_DIR_CONF)
+  return !!await fileConfLoadedWithPermIdemp({sig, conf: SAVE_DIR_CONF})
 }
 
 export async function loadedHistoryDir(sig) {
-  return !!await fileConfLoadedWithPermIdemp(sig, HISTORY_DIR_CONF)
+  return !!await fileConfLoadedWithPermIdemp({sig, conf: HISTORY_DIR_CONF})
 }
 
-export async function fileConfLoadedWithPermIdemp(sig, conf, req) {
+export async function fileConfLoadedWithPermIdemp({sig, conf, req}) {
   a.optBool(req)
   return (
-    (await fileConfWithPermission(sig, conf)) ||
-    (await fileConfLoadedWithPerm(sig, conf, req))
+    (await fileConfWithPermission({sig, conf})) ||
+    (await fileConfLoadedWithPerm({sig, conf, req}))
   )
 }
 
@@ -161,7 +161,7 @@ export async function fileConfLoadedWithPermIdemp(sig, conf, req) {
 Try to load a handle and check its permission.
 SYNC[file_conf_status].
 */
-export async function fileConfLoadedWithPerm(sig, conf, req) {
+export async function fileConfLoadedWithPerm({sig, conf, req}) {
   u.reqSig(sig)
   a.optBool(req)
 
@@ -173,7 +173,7 @@ export async function fileConfLoadedWithPerm(sig, conf, req) {
     return undefined
   }
 
-  conf.perm = await queryPermission(sig, conf.handle, {mode})
+  conf.perm = await queryPermission({sig, handle: conf.handle, opt: {mode}})
   if (conf.perm === `granted`) return conf.handle
 
   const err = new ui.ErrLog(...msgNotGranted(conf))
@@ -182,10 +182,10 @@ export async function fileConfLoadedWithPerm(sig, conf, req) {
   return undefined
 }
 
-export async function fileConfLoadIdemp(sig, conf) {
+export async function fileConfLoadIdemp({sig, conf}) {
   u.reqSig(sig)
   const {handle} = a.reqInst(conf, FileConf)
-  if (handle) await fileConfRequirePermission(sig, conf)
+  if (handle) await fileConfRequirePermission({sig, conf})
   else await fileConfLoad(conf)
 }
 
@@ -216,30 +216,30 @@ export async function fileConfLoad(conf) {
 
 export async function initedProgressFile(sig) {
   const conf = PROGRESS_FILE_CONF
-  return await fileConfInitedIdemp(sig, conf)
+  return await fileConfInitedIdemp({sig, conf})
 }
 
 export async function initedSaveDir(sig) {
   const conf = SAVE_DIR_CONF
-  return await fileConfInitedIdemp(sig, conf)
+  return await fileConfInitedIdemp({sig, conf})
 }
 
 export async function initedHistoryDir(sig) {
   const conf = HISTORY_DIR_CONF
-  return await fileConfInitedIdemp(sig, conf)
+  return await fileConfInitedIdemp({sig, conf})
 }
 
-export function fileConfInitedIdemp(sig, conf) {
+export function fileConfInitedIdemp({sig, conf}) {
   const {handle} = a.reqInst(conf, FileConf)
-  if (!handle) return fileConfInited(sig, conf)
-  return fileConfRequireOrRequestPermission(sig, conf)
+  if (!handle) return fileConfInited({sig, conf})
+  return fileConfRequireOrRequestPermission({sig, conf})
 }
 
 /*
 See the comment on `fileConfRequireOrRequestPermission`. This must be used only
 on a user action, such as prompt input submission or a click.
 */
-export async function fileConfInited(sig, conf) {
+export async function fileConfInited({sig, conf}) {
   u.reqSig(sig)
   const {desc, help, key, pick, validate} = a.reqInst(conf, FileConf)
 
@@ -251,14 +251,14 @@ export async function fileConfInited(sig, conf) {
   }
 
   if (validate) {
-    try {await validate(sig, conf.handle)}
+    try {await validate({sig, handle: conf.handle})}
     catch (err) {
       conf.clear()
       throw err
     }
   }
 
-  await fileConfRequireOrRequestPermission(sig, conf)
+  await fileConfRequireOrRequestPermission({sig, conf})
 
   try {
     await u.wait(sig, i.dbPut(i.IDB_STORE_HANDLES, key, conf.handle))
@@ -270,11 +270,11 @@ export async function fileConfInited(sig, conf) {
   return conf.handle
 }
 
-export async function validateSaveDir(sig, handle) {
+export async function validateSaveDir({sig, handle}) {
   a.reqInst(handle, FileSystemDirectoryHandle)
   const cmd = SAVE_DIR_CONF.cmd
 
-  if (await dirHasProgressFile(sig, handle)) {
+  if (await dirHasProgressFile({sig, dir: handle})) {
     if (handle.name !== SAVE_BACKUP_DIR_NAME) return
 
     throw new ui.ErrLog(...ui.LogParagraphs(
@@ -284,8 +284,8 @@ export async function validateSaveDir(sig, handle) {
     ))
   }
 
-  const subDir = await getDirectoryHandle(sig, handle, SAVE_DIR_NAME).catch(a.nop)
-  if (subDir && await dirHasProgressFile(sig, subDir)) {
+  const subDir = await getDirectoryHandle({sig, dir: handle, name: SAVE_DIR_NAME}).catch(a.nop)
+  if (subDir && await dirHasProgressFile({sig, dir: subDir})) {
     throw new ui.ErrLog(...ui.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's data directory; please pick the save directory inside`,
       msgRerun(cmd),
@@ -307,12 +307,12 @@ function msgRerun(cmd) {
   return [`rerun `, os.BtnCmdWithHelp(cmd), ` to try again`]
 }
 
-export async function validateHistoryDir(sig, handle) {
+export async function validateHistoryDir({sig, handle}) {
   a.reqInst(handle, FileSystemDirectoryHandle)
   const cmd = HISTORY_DIR_CONF.cmd
 
-  const subDir = await getDirectoryHandle(sig, handle, SAVE_DIR_NAME).catch(a.nop)
-  if (subDir && await dirHasProgressFile(sig, subDir)) {
+  const subDir = await getDirectoryHandle({sig, dir: handle, name: SAVE_DIR_NAME}).catch(a.nop)
+  if (subDir && await dirHasProgressFile({sig, dir: subDir})) {
     throw new ui.ErrLog(...ui.LogParagraphs(
       `${a.show(handle.name)} appears to be the game's data directory; your run history directory must be located outside of game directories`,
       msgRerun(cmd),
@@ -320,7 +320,7 @@ export async function validateHistoryDir(sig, handle) {
     ))
   }
 
-  if (!await dirHasProgressFile(sig, handle)) return
+  if (!await dirHasProgressFile({sig, dir: handle})) return
 
   const desc = (
     handle.name === SAVE_DIR_NAME
@@ -337,12 +337,12 @@ export async function validateHistoryDir(sig, handle) {
   ))
 }
 
-export async function dirHasProgressFile(sig, dir) {
+export async function dirHasProgressFile({sig, dir}) {
   a.reqInst(dir, FileSystemDirectoryHandle)
-  return !!await getFileHandle(sig, dir, PROG_FILE_NAME).catch(a.nop)
+  return !!await getFileHandle({sig, dir, name: PROG_FILE_NAME}).catch(a.nop)
 }
 
-export async function fileConfDeinit(sig, conf) {
+export async function fileConfDeinit({sig, conf}) {
   u.reqSig(sig)
   const {key, desc} = a.reqInst(conf, FileConf)
 
@@ -367,12 +367,12 @@ export function fileConfStatusMsg(conf) {
 }
 
 // SYNC[file_conf_status].
-export async function fileConfStatusProblem(sig, conf) {
+export async function fileConfStatusProblem({sig, conf}) {
   u.reqSig(sig)
   const {handle, mode} = a.reqInst(conf, FileConf)
   if (!handle) return msgNotInited(conf)
 
-  conf.perm = await queryPermission(sig, handle, {mode})
+  conf.perm = await queryPermission({sig, handle, opt: {mode}})
   if (conf.perm !== `granted`) return msgNotGranted(conf)
   return undefined
 }
@@ -385,15 +385,15 @@ the UI, etc.
 
 SYNC[file_conf_status].
 */
-export async function fileConfRequireOrRequestPermission(sig, conf) {
+export async function fileConfRequireOrRequestPermission({sig, conf}) {
   const {handle, desc, mode} = a.reqInst(conf, FileConf)
   if (!handle) throw new ui.ErrLog(...msgNotInited(conf))
 
-  conf.perm = await queryPermission(sig, handle, {mode})
+  conf.perm = await queryPermission({sig, handle, opt: {mode}})
   if (conf.perm === `granted`) return handle
 
   ui.LOG.info(desc, `: permission: `, a.show(conf.perm), `, requesting permission`)
-  conf.perm = await requestPermission(sig, handle, {mode})
+  conf.perm = await requestPermission({sig, handle, opt: {mode}})
   if (conf.perm === `granted`) return handle
 
   throw new ui.ErrLog(...msgNotGranted(conf))
@@ -401,7 +401,7 @@ export async function fileConfRequireOrRequestPermission(sig, conf) {
 
 function msgNotInited(conf) {
   const {desc, cmd} = a.reqInst(conf, FileConf)
-  return [desc, `: access not granted, run `, os.BtnCmdWithHelp(cmd), ` to grant access`]
+  return [desc, `: access not granted, run `, os.BtnCmdWithHelp(cmd), ` to provide access`]
 }
 
 function msgNotGranted(conf) {
@@ -409,30 +409,30 @@ function msgNotGranted(conf) {
   return [desc, `: permission needed, run `, os.BtnCmdWithHelp(cmd), ` to grant`]
 }
 
-export async function fileConfRequirePermission(sig, conf) {
-  const msg = await fileConfStatusProblem(sig, conf)
+export async function fileConfRequirePermission({sig, conf}) {
+  const msg = await fileConfStatusProblem({sig, conf})
   if (msg) throw new ui.ErrLog(...msg)
   return conf.handle
 }
 
-export function fileHandleStatStr(sig, handle) {
+export function fileHandleStatStr({sig, handle}) {
   a.reqInst(handle, FileSystemHandle)
-  if (isDir(handle)) return dirStatStr(sig, handle)
-  if (isFile(handle)) return fileStatStr(sig, handle)
+  if (isDir(handle)) return dirStatStr({sig, dir: handle})
+  if (isFile(handle)) return fileStatStr({sig, file: handle})
   ui.LOG.err(errHandleKind(handle.kind))
   return undefined
 }
 
-export async function fileStatStr(sig, handle) {
-  return formatSize(await fileSize(sig, handle))
+export async function fileStatStr({sig, file}) {
+  return formatSize(await fileSize({sig, file}))
 }
 
-export async function fileSize(sig, handle) {
-  return (await getFile(sig, handle)).size
+export async function fileSize({sig, file}) {
+  return (await getFileBlob({sig, file})).size
 }
 
-export async function dirStatStr(sig, handle) {
-  const {fileCount, dirCount, byteCount} = await dirStat(sig, handle)
+export async function dirStatStr({sig, dir}) {
+  const {fileCount, dirCount, byteCount} = await dirStat({sig, dir})
   return a.joinOpt([
     fileCount ? `${fileCount} files` : ``,
     dirCount ? `${dirCount} dirs` : ``,
@@ -441,21 +441,21 @@ export async function dirStatStr(sig, handle) {
 }
 
 // Get statistics about a directory (file count, dir count, total size).
-export async function dirStat(sig, dir, out) {
+export async function dirStat({sig, dir, out}) {
   out ??= a.Emp()
   out.fileCount = a.laxInt(out.fileCount)
   out.dirCount = a.laxInt(out.dirCount)
   out.byteCount = a.laxInt(out.byteCount)
 
-  for await (const val of readDir(sig, dir)) {
+  for await (const val of readDir({sig, dir})) {
     if (isDir(val)) {
-      await dirStat(sig, val, out)
+      await dirStat({sig, dir: val, out})
       out.dirCount++
       continue
     }
 
     if (isFile(val)) {
-      out.byteCount += await fileSize(sig, val)
+      out.byteCount += await fileSize({sig, file: val})
       out.fileCount++
     }
   }
@@ -483,36 +483,36 @@ export async function pickHistoryDir() {
 }
 
 export async function progressFileOpt(sig) {
-  const file = await fileConfWithPermission(sig, PROGRESS_FILE_CONF).catch(ui.logErr)
+  const file = await fileConfWithPermission({sig, conf: PROGRESS_FILE_CONF}).catch(ui.logErr)
   if (file) return file
 
   const dir = await saveDirOpt(sig).catch(ui.logErr)
   if (!dir) return undefined
 
-  return getFileHandle(sig, dir, PROG_FILE_NAME).catch(ui.logErr)
+  return getFileHandle({sig, dir, name: PROG_FILE_NAME}).catch(ui.logErr)
 }
 
 export async function progressFileReq(sig) {
-  const file = await fileConfWithPermission(sig, PROGRESS_FILE_CONF).catch(ui.logErr)
+  const file = await fileConfWithPermission({sig, conf: PROGRESS_FILE_CONF}).catch(ui.logErr)
   if (file) return file
   const dir = await saveDirReq(sig)
-  return getFileHandle(sig, dir, PROG_FILE_NAME)
+  return getFileHandle({sig, dir, name: PROG_FILE_NAME})
 }
 
 export function saveDirOpt(sig) {
-  return fileConfWithPermission(sig, SAVE_DIR_CONF)
+  return fileConfWithPermission({sig, conf: SAVE_DIR_CONF})
 }
 
 export function saveDirReq(sig) {
-  return fileConfLoadedWithPermIdemp(sig, SAVE_DIR_CONF, true)
+  return fileConfLoadedWithPermIdemp({sig, conf: SAVE_DIR_CONF, req: true})
 }
 
 export function historyDirOpt(sig) {
-  return fileConfWithPermission(sig, HISTORY_DIR_CONF)
+  return fileConfWithPermission({sig, conf: HISTORY_DIR_CONF})
 }
 
 export function historyDirReq(sig) {
-  return fileConfLoadedWithPermIdemp(sig, HISTORY_DIR_CONF, true)
+  return fileConfLoadedWithPermIdemp({sig, conf: HISTORY_DIR_CONF, req: true})
 }
 
 export async function listDirsFiles({sig, path, stat}) {
@@ -524,11 +524,10 @@ export async function listDirsFiles({sig, path, stat}) {
   if (!path) {
     return ui.LogLines(
       [`top-level FS entries`, a.vac(!stat) && [` `, ...StatTip(path)], `:`],
-      ...u.alignCol(
-        await Promise.all(a.map(CONFS, val => (
-          FileConfLine(sig, val, stat)
-        ))),
-      ),
+      ...u.alignCol(await Promise.all(a.map(
+        CONFS,
+        conf => FileConfLine({sig, conf, stat}),
+      ))),
     )
   }
 
@@ -538,24 +537,24 @@ export async function listDirsFiles({sig, path, stat}) {
   if (isFile(handle)) {
     return ls.LsEntry({
       kind, name, path, stat,
-      statStr: a.vac(stat) && await fileStatStr(sig, handle),
+      statStr: a.vac(stat) && await fileStatStr({sig, file: handle}),
     })
   }
 
   return ls.LsEntry({
     kind, name, path, stat,
-    entries: await dirEntries(sig, handle, stat),
+    entries: await dirEntries({sig, dir: handle, stat}),
   })
 }
 
-export async function FileConfLine(sig, conf, stat) {
+export async function FileConfLine({sig, conf, stat}) {
   u.reqSig(sig)
   a.optBool(stat)
   const {desc, handle, deprecated} = a.reqInst(conf, FileConf)
 
   if (handle) {
     const cmd = a.spaced(`ls`, (stat ? `-s` : ``))
-    const statStr = a.vac(stat) && await fileHandleStatStr(sig, handle)
+    const statStr = a.vac(stat) && await fileHandleStatStr({sig, handle})
     return ls.EntryLine({entry: handle, desc, cmd, statStr})
   }
 
@@ -563,14 +562,14 @@ export async function FileConfLine(sig, conf, stat) {
   return [desc + `: `, `access not granted, run `, os.BtnCmdWithHelp(conf.cmd)]
 }
 
-async function dirEntries(sig, dir, stat) {
+async function dirEntries({sig, dir, stat}) {
   a.optBool(stat)
   const out = []
-  for (const val of await readDirAsc(sig, dir)) {
+  for (const val of await readDirAsc({sig, dir})) {
     out.push({
       kind: val.kind,
       name: val.name,
-      statStr: a.vac(stat) && await fileHandleStatStr(sig, val),
+      statStr: a.vac(stat) && await fileHandleStatStr({sig, handle: val}),
     })
   }
   return out
@@ -758,11 +757,11 @@ export async function showData({sig, path, data, opt}) {
 
     const hist = await historyDirReq(sig)
     const outDirName = SHOW_DIR_NAME
-    const outDir = await getDirectoryHandle(sig, hist, outDirName, {create: true})
+    const outDir = await getDirectoryHandle({sig, dir: hist, name: outDirName, opt: {create: true}})
 
     let outName = u.paths.name(path)
     if (!outName.endsWith(`.json`)) outName += `.json`
-    await writeDirFile(sig, outDir, outName, json)
+    await writeDirFile({sig, dir: outDir, name: outName, body: json})
 
     const outPath = u.paths.join(hist.name, outDirName, outName)
     ui.LOG.info(`wrote decoded content of ${a.show(path)} to ${a.show(outPath)}`)
@@ -800,13 +799,13 @@ export async function cmdRollback({sig, args}) {
   }
 
   const histDir = await historyDirReq(sig)
-  const runDir = await findLatestRunDir(sig, histDir)
-  const roundFile = await findLatestRoundFile(sig, runDir)
+  const runDir = await findLatestRunDir({sig, dir: histDir})
+  const roundFile = await findLatestRoundFile({sig, dir: runDir})
   const targetFile = await progressFileReq(sig)
 
-  await requireOrRequestReadwrite(sig, targetFile)
+  await requireOrRequestReadwrite({sig, handle: targetFile})
 
-  const body = await readFileByteArr(sig, roundFile)
+  const body = await readFileByteArr({sig, file: roundFile})
   const srcPath = u.paths.join(histDir.name, runDir.name, roundFile.name)
 
   const tarPath = u.paths.join(
@@ -814,12 +813,8 @@ export async function cmdRollback({sig, args}) {
     targetFile.name,
   )
 
-  const backPath = u.paths.join(
-    histDir.name,
-    await backupFile({sig, file: targetFile, dir: histDir, uniq: true}),
-  )
-  ui.LOG.info(...msgBackedUp(tarPath, backPath))
-  await writeFile(sig, targetFile, body)
+  await backupFile({sig, file: targetFile, dir: histDir, srcPath: tarPath, uniq: true})
+  await writeFile({sig, file: targetFile, body})
 
   return ui.LogParagraphs(
     ui.LogLines(
@@ -832,22 +827,32 @@ export async function cmdRollback({sig, args}) {
   )
 }
 
-export async function getBackupDir(sig, dir) {
+export async function getBackupDir({sig, dir}) {
   a.optInst(dir, FileSystemDirectoryHandle)
   dir ??= await historyDirReq(sig)
-  return getDirectoryHandle(sig, dir, BACKUP_DIR_NAME, {create: true})
+  const out = await getDirectoryHandle({sig, dir, name: BACKUP_DIR_NAME, opt: {create: true}})
+  return {
+    dir: out,
+    path: u.paths.join(dir.name, out.name),
+  }
 }
 
-export async function backupFile({sig, file, dir, uniq}) {
-  const sub = await getBackupDir(sig, dir)
-  const body = await readFileByteArr(sig, file)
+export async function backupFile({sig, file, dir, srcPath, uniq}) {
+  a.optStr(srcPath)
+  a.optBool(uniq)
+
+  const {dir: subDir, path} = await getBackupDir({sig, dir})
+  const body = await readFileByteArr({sig, file})
   const name = (
-    a.optBool(uniq)
+    uniq
     ? u.paths.withNameSuffix(file.name, `_` + Date.now())
     : file.name
   )
-  await writeDirFile(sig, sub, name, body)
-  return u.paths.join(dir.name, sub.name, name)
+  await writeDirFile({sig, dir: subDir, name, body})
+
+  const outPath = u.paths.join(path, name)
+  if (srcPath) ui.LOG.info(...msgBackedUp(srcPath, outPath))
+  return outPath
 }
 
 export function msgBackedUp(src, out) {
@@ -856,16 +861,16 @@ export function msgBackedUp(src, out) {
   return [`backed up `, a.show(src), ` to `, a.show(out)]
 }
 
-export async function findLatestDirEntryReq(sig, dir, fun) {
-  const out = await findLatestDirEntryOpt(sig, dir, fun)
+export async function findLatestDirEntryReq({sig, dir, filter}) {
+  const out = await findLatestDirEntryOpt({sig, dir, filter})
   if (out) return out
   throw new ErrFs(`unable to find latest entry in ${a.show(dir.name)}`)
 }
 
-export async function findLatestDirEntryOpt(sig, dir, fun) {
+export async function findLatestDirEntryOpt({sig, dir, filter}) {
   let max = -Infinity
   let out
-  for await (const han of readDir(sig, dir, fun)) {
+  for await (const han of readDir({sig, dir, filter})) {
     const ord = u.toNatOpt(han.name)
     if (!(ord > max)) continue
     max = ord
@@ -877,21 +882,21 @@ export async function findLatestDirEntryOpt(sig, dir, fun) {
 export async function hasRoundFile(sig) {
   const histDir = await historyDirOpt(sig)
   if (!histDir) return false
-  for await (const runDir of readDir(sig, histDir, isHandleRunDir)) {
-    for await (const _ of readDir(sig, runDir, isHandleRoundFile)) {
+  for await (const runDir of readDir({sig, dir: histDir, filter: isHandleRunDir})) {
+    for await (const _ of readRoundHandles({sig, dir: runDir})) {
       return true
     }
   }
   return false
 }
 
-export function findLatestRoundFile(sig, runDir) {
-  return findLatestDirEntryOpt(sig, runDir, isHandleGameFile)
+export function findLatestRoundFile({sig, dir}) {
+  return findLatestDirEntryOpt({sig, dir, filter: isHandleGameFile})
 }
 
-export function findRoundFileAny(sig, path) {
+export function findRoundFileAny({sig, path}) {
   if (!path) return findRoundFileAnywhere(sig)
-  return findRoundFileAtPath(sig, path)
+  return findRoundFileAtPath({sig, path})
 }
 
 // May return a nil handle, callers must be prepared.
@@ -900,7 +905,7 @@ export async function findRoundFileAnywhere(sig) {
   let progRound
 
   if (progFile) {
-    progRound = await readDecodeGameFile(sig, progFile)
+    progRound = await readDecodeGameFile({sig, file: progFile})
 
     /*
     Having a round index means having some data to show. If the round index
@@ -914,8 +919,8 @@ export async function findRoundFileAnywhere(sig) {
   const histDir = await historyDirOpt(sig)
 
   if (histDir) {
-    const runDir = await findLatestRunDir(sig, histDir)
-    const roundFile = await findLatestRoundFile(sig, runDir)
+    const runDir = await findLatestRunDir({sig, dir: histDir})
+    const roundFile = await findLatestRoundFile({sig, dir: runDir})
     if (roundFile) return {handle: roundFile, live: true}
   }
 
@@ -951,7 +956,7 @@ export async function findRoundFileAnywhere(sig) {
   )
 }
 
-export async function findRoundFileAtPath(sig, srcPath) {
+export async function findRoundFileAtPath({sig, path: srcPath}) {
   u.reqSig(sig)
   a.reqValidStr(srcPath)
 
@@ -961,7 +966,7 @@ export async function findRoundFileAtPath(sig, srcPath) {
   let latest = false
 
   if (handle === HISTORY_DIR_CONF.handle) {
-    const dir = await findLatestRunDir(sig, handle)
+    const dir = await findLatestRunDir({sig, dir: handle})
     if (!dir) {
       throw new ErrFs(`no runs in the history directory; build your history by playing!`)
     }
@@ -971,7 +976,7 @@ export async function findRoundFileAtPath(sig, srcPath) {
   }
 
   if (!isFile(handle)) {
-    handle = await findLatestRoundFile(sig, handle)
+    handle = await findLatestRoundFile({sig, dir: handle})
     if (!handle) {
       throw new ErrFs(`found no rounds in ${a.show(outPath)}; build your history by playing!`)
     }
@@ -994,90 +999,60 @@ export async function findRoundFileAtPath(sig, srcPath) {
   return {handle, path: outPath, live}
 }
 
-export async function findHandleByIntPrefixReq(sig, dir, int) {
-  const out = await findHandleByIntPrefixOpt(sig, dir, int)
+export async function findHandleByIntPrefixReq({sig, dir, int}) {
+  const out = await findHandleByIntPrefixOpt({sig, dir, int})
   if (out) return out
   throw new ErrFs(`unable to find ${a.show(u.paths.join(dir.name, String(int)))} by integer prefix`)
 }
 
-export async function findHandleByIntPrefixOpt(sig, dir, int) {
+export async function findHandleByIntPrefixOpt({sig, dir, int}) {
   u.reqSig(sig)
   a.reqInst(dir, FileSystemDirectoryHandle)
   a.reqInt(int)
 
-  for await (const val of readDir(sig, dir)) {
+  for await (const val of readDir({sig, dir})) {
     if (u.toNatOpt(val.name) === int) return val
   }
   return undefined
 }
 
-// Caution: the iteration order is unstable.
-export function readRuns(sig, hist) {
-  return readDir(sig, hist, isHandleRunDir)
+export function readRunsAsc({sig, dir}) {
+  return readDirAsc({sig, dir, filter: isHandleRunDir})
 }
 
-export async function readRunsAsc(sig, hist) {
-  return (await readDirAsc(sig, hist)).filter(isHandleRunDir)
-}
-
-export async function readRunsByNamesAscOpt(sig, hist, names) {
+export async function readRunsByNamesAscOpt({sig, dir, names}) {
   u.reqSig(sig)
-  a.reqInst(hist, FileSystemDirectoryHandle)
+  a.reqInst(dir, FileSystemDirectoryHandle)
   const out = []
 
   for (const name of a.values(names)) {
-    let dir
+    let sub
     try {
-      dir = await getDirectoryHandle(sig, hist, name)
+      sub = await getDirectoryHandle({sig, dir, name})
     }
     catch (err) {
       if (err?.cause?.name === `NotFoundError`) continue
       throw err
     }
-    out.push(dir)
+    out.push(sub)
   }
   return out
 }
 
-// TODO add file names.
-export async function collectGameFilesAsc(sig, dir) {
-  const iter = readDir(sig, dir, isHandleGameFile)
-  const handles = await u.asyncIterCollect(sig, iter)
-  handles.sort(u.compareHandlesAsc)
-  return Promise.all(a.map(handles, a.bind(readDecodeGameFile, sig)))
+export function readRoundHandlesAsc({sig, dir}) {
+  return u.asyncIterSort({sig, src: readRoundHandles({sig, dir}), fun: compareHandlesAsc})
 }
 
-export async function* readRunRoundsAsc(sig, dir) {
-  for (const file of await readRunRoundHandlesAsc(sig, dir)) {
-    yield await readDecodeGameFile(sig, file)
-  }
+export function readRoundHandlesDesc({sig, dir}) {
+  return u.asyncIterSort({sig, src: readRoundHandles({sig, dir}), fun: compareHandlesDesc})
 }
 
-// The iteration order is undefined and unstable.
-export async function* readRunRounds(sig, dir) {
-  for await (const file of readRunRoundHandles(sig, dir)) {
-    yield await readDecodeGameFile(sig, file)
-  }
+export function readRoundHandles({sig, dir}) {
+  return readDir({sig, dir, filter: isHandleRoundFile})
 }
 
-export async function readRunRoundHandlesAsc(sig, dir) {
-  return (await u.asyncIterCollect(sig, readRunRoundHandles(sig, dir))).sort(compareHandlesAsc)
-}
-
-export async function readRunRoundHandlesDesc(sig, dir) {
-  return (await u.asyncIterCollect(sig, readRunRoundHandles(sig, dir))).sort(compareHandlesDesc)
-}
-
-// The iteration order is undefined and unstable.
-export async function* readRunRoundHandles(sig, dir) {
-  for await (const file of readDir(sig, dir)) {
-    if (isHandleRoundFile(file)) yield file
-  }
-}
-
-export async function findLatestRunDir(sig, hist) {
-  a.reqInst(hist, FileSystemDirectoryHandle)
-  return a.head((await readDirDesc(sig, hist)).filter(isHandleRunDir))
+export async function findLatestRunDir({sig, dir}) {
+  return a.head((await readDirDesc({sig, dir, filter: isHandleRunDir})))
 }
 
 export function isHandleRunDir(val) {
@@ -1103,15 +1078,15 @@ export function isHandleGameFile(handle) {
 }
 
 // SYNC[decode_game_file].
-export async function readDecodeGameFile(sig, file) {
+export async function readDecodeGameFile({sig, file}) {
   a.reqInst(file, FileSystemFileHandle)
 
   try {
     if (file.name.endsWith(`.json.gz`)) {
-      const src = await readFileStream(sig, file)
+      const src = await readFileStream({sig, file})
       return await u.textDataStream_to_ungzip_to_unjsonData(src)
     }
-    return await u.decodeGdStr(await readFileText(sig, file))
+    return await u.decodeGdStr(await readFileText({sig, file}))
   }
   catch (err) {throw errDecodeFile(err, file.name)}
 }
@@ -1133,8 +1108,8 @@ function errDecodeFile(err, path) {
   return new u.ErrDecoding(`unable to decode file ${a.show(path)}: ${err}`, {cause: err})
 }
 
-export async function writeEncodeGameFile(sig, tar, src) {
-  await writeFile(sig, tar, await u.data_to_json_to_gzip_to_base64Str(src))
+export async function writeEncodeGameFile({sig, file, data}) {
+  await writeFile({sig, file, body: await u.data_to_json_to_gzip_to_base64Str(data)})
 }
 
 export function compareRoundsAsc(one, two) {
@@ -1155,21 +1130,20 @@ export function compareHandles(one, two, fun) {
   return fun(one.name, two.name)
 }
 
-export async function readFileText(sig, src) {
-  src = await getFile(sig, src)
-  src = await u.wait(sig, src.text())
-  return src
+export async function readFileText({sig, file}) {
+  const blob = await getFileBlob({sig, file})
+  return u.wait(sig, blob.text())
 }
 
-export async function readFileByteArr(sig, src) {
-  src = await getFile(sig, src)
-  src = await u.wait(sig, await src.arrayBuffer())
-  return new Uint8Array(src)
+export async function readFileByteArr({sig, file}) {
+  const blob = await getFileBlob({sig, file})
+  return new Uint8Array(
+    await u.wait(sig, await blob.arrayBuffer()),
+  )
 }
 
-export async function readFileStream(sig, src) {
-  src = await getFile(sig, src)
-  return src.stream()
+export async function readFileStream({sig, file}) {
+  return (await getFileBlob({sig, file})).stream()
 }
 
 export async function handleAtPathFromTop({sig, path, magic}) {
@@ -1272,58 +1246,58 @@ export async function handleAtPathResolved({sig, handle, path, magic}) {
     parent = handle
     handle = await (
       magic
-      ? getSubHandleMagic(sig, handle, name)
-      : getSubHandle(sig, handle, name)
+      ? getSubHandleMagic({sig, dir: handle, name})
+      : getSubHandle({sig, dir: handle, name})
     )
     seg.push(handle.name)
   }
   return {parent, handle, path: u.paths.join(...seg)}
 }
 
-export function fileConfWithPermission(sig, conf) {
+export function fileConfWithPermission({sig, conf}) {
   const {handle, mode} = a.reqInst(conf, FileConf)
-  return withPermission(sig, handle, {mode})
+  return withPermission({sig, handle, opt: {mode}})
 }
 
-export async function withPermission(sig, handle, opt) {
-  const perm = await queryPermission(sig, handle, opt)
+export async function withPermission({sig, handle, opt}) {
+  const perm = await queryPermission({sig, handle, opt})
   if (perm === `granted`) return handle
   return undefined
 }
 
 // Too specialized, TODO generalize if needed.
-export async function getSubFile(sig, dir, subDirName, fileName) {
+export async function getSubFile({sig, dir, dirName, fileName}) {
   u.reqSig(sig)
   a.reqInst(dir, FileSystemDirectoryHandle)
-  a.optValidStr(subDirName)
+  a.optValidStr(dirName)
   a.optValidStr(fileName)
 
-  if (!subDirName) return undefined
+  if (!dirName) return undefined
   if (!fileName) return undefined
 
-  const subDir = await getDirectoryHandle(sig, dir, subDirName)
+  const subDir = await getDirectoryHandle({sig, dir, name: dirName})
   if (!subDir) return undefined
 
-  return await getFileHandle(sig, subDir, fileName)
+  return await getFileHandle({sig, dir: subDir, name: fileName})
 }
 
-export async function copyFileTo(sig, file, dir) {
-  const body = await readFileByteArr(sig, file)
-  await writeDirFile(sig, dir, file.name, body)
+export async function copyFileTo({sig, file, dir}) {
+  const body = await readFileByteArr({sig, file})
+  await writeDirFile({sig, dir, name: file.name, body})
 }
 
-export async function copyFileBetween(sig, srcDir, outDir, name) {
-  const file = await getFileHandle(sig, srcDir, name)
-  return copyFileTo(sig, file, outDir)
+export async function copyFileBetween({sig, src, out, name}) {
+  const file = await getFileHandle({sig, dir: src, name})
+  return copyFileTo({sig, file, dir: out})
 }
 
-export async function writeDirFile(sig, dir, name, body) {
-  const file = await getFileHandle(sig, dir, name, {create: true})
-  await writeFile(sig, file, body, u.paths.join(dir.name, name))
+export async function writeDirFile({sig, dir, name, body}) {
+  const file = await getFileHandle({sig, dir, name, opt: {create: true}})
+  await writeFile({sig, file, body, path: u.paths.join(dir.name, name)})
   return file
 }
 
-export async function writeFile(sig, file, body, path) {
+export async function writeFile({sig, file, body, path}) {
   u.reqSig(sig)
   a.reqInst(file, FileSystemFileHandle)
   u.reqValidTextData(body)
@@ -1343,51 +1317,51 @@ export async function writeFile(sig, file, body, path) {
 export function isDir(val) {return a.optRec(val)?.kind === `directory`}
 export function isFile(val) {return a.optRec(val)?.kind === `file`}
 
-export function readDirAsc(sig, dir) {
-  return readDirSorted(sig, dir, compareHandlesAsc)
+export function readDirAsc({sig, dir, filter}) {
+  return readDirSorted({sig, dir, filter, compare: compareHandlesAsc})
 }
 
-export function readDirDesc(sig, dir) {
-  return readDirSorted(sig, dir, compareHandlesDesc)
+export function readDirDesc({sig, dir, filter}) {
+  return readDirSorted({sig, dir, filter, compare: compareHandlesDesc})
 }
 
 /*
-The comparator function must be able to compare handles.
+The sort function must be able to compare handles.
 Recommended: `compareHandlesAsc`, `compareHandlesDesc`.
 */
-export async function readDirSorted(sig, dir, fun) {
-  a.reqFun(fun)
-  return (await u.asyncIterCollect(sig, readDir(sig, dir))).sort(fun)
+export function readDirSorted({sig, dir, filter, compare}) {
+  return u.asyncIterSort({sig, src: readDir({sig, dir, filter}), fun: compare})
 }
 
 /*
 Iterates all file handles in the directory.
 Order is arbitrary and unstable; browsers don't bother sorting.
 */
-export async function* readDir(sig, src, fun) {
-  a.optInst(src, FileSystemDirectoryHandle)
-  a.optFun(fun)
-  if (!src) return
+export async function* readDir({sig, dir, filter}) {
+  u.reqSig(sig)
+  a.optInst(dir, FileSystemDirectoryHandle)
+  a.optFun(filter)
+  if (!dir) return
 
-  for await (const val of src.values()) {
+  for await (const val of dir.values()) {
     if (sig.aborted) break
-    if (fun && !fun(val)) continue
+    if (filter && !filter(val)) continue
     yield val
   }
 }
 
-export async function queryPermission(sig, src, opt) {
+export async function queryPermission({sig, handle, opt}) {
   u.reqSig(sig)
-  if (!a.optInst(src, FileSystemHandle)) return undefined
+  if (!a.optInst(handle, FileSystemHandle)) return undefined
   try {
-    return await u.wait(sig, src.queryPermission(opt))
+    return await u.wait(sig, handle.queryPermission(opt))
   }
   catch (err) {
-    throw new ErrFsPerm(`unable to query permission for ${src.name}: ${err}`, {cause: err})
+    throw new ErrFsPerm(`unable to query permission for ${handle.name}: ${err}`, {cause: err})
   }
 }
 
-export async function requestPermission(sig, handle, opt) {
+export async function requestPermission({sig, handle, opt}) {
   u.reqSig(sig)
   a.reqInst(handle, FileSystemHandle)
   const mode = a.laxStr(a.optRec(opt)?.mode)
@@ -1400,35 +1374,28 @@ export async function requestPermission(sig, handle, opt) {
   }
 }
 
-export async function requireOrRequestReadwrite(sig, handle) {
+export async function requireOrRequestReadwrite({sig, handle}) {
   const mode = `readwrite`
-  const perm0 = await queryPermission(sig, handle, {mode})
+  const perm0 = await queryPermission({sig, handle, opt: {mode}})
   if (perm0 === `granted`) return handle
 
   ui.LOG.info(`requesting `, mode, ` permission for `, a.show(handle.name))
 
-  const perm1 = await requestPermission(sig, handle, {mode})
+  const perm1 = await requestPermission({sig, handle, opt: {mode}})
   if (perm1 !== `granted`) {
     throw new ErrFsPerm(`needed ${mode} permission "granted", got permission ${a.show(perm1 || perm0)}`)
   }
   return handle
 }
 
-/*
-Also see `getFileHandle` which is more specialized.
-This one can be invoked on directory entries.
-*/
-export async function getFile(sig, src, opt) {
+export async function getFileBlob({sig, file, opt}) {
   u.reqSig(sig)
-  a.reqInst(src, FileSystemHandle)
+  a.reqInst(file, FileSystemFileHandle)
   try {
-    if (!a.hasMeth(src, `getFile`)) {
-      throw new ErrFs(`missing ".getFile" on object ${a.show(src)}`)
-    }
-    return await u.wait(sig, src.getFile(opt))
+    return await u.wait(sig, file.getFile(opt))
   }
   catch (err) {
-    throw new ErrFs(`unable to get file for handle ${src.name}: ${err}`, {cause: err})
+    throw new ErrFs(`unable to get file for handle ${file.name}: ${err}`, {cause: err})
   }
 }
 
@@ -1441,23 +1408,23 @@ Rules:
 - Any path segment which looks like an integer, optionally zero-padded, can
   match any directory or file with a matching integer prefix in its name.
 */
-export async function getSubHandleMagic(sig, dir, name) {
+export async function getSubHandleMagic({sig, dir, name}) {
   u.reqSig(sig)
   a.reqInst(dir, FileSystemDirectoryHandle)
   a.reqValidStr(name)
 
-  if (name === `latest`) return findLatestDirEntryReq(sig, dir)
+  if (name === `latest`) return findLatestDirEntryReq({sig, dir})
 
   const int = u.toNatOpt(name)
-  if (a.isNil(int)) return getSubHandle(sig, dir, name)
+  if (a.isNil(int)) return getSubHandle({sig, dir, name})
 
   try {
-    return await getSubHandle(sig, dir, name)
+    return await getSubHandle({sig, dir, name})
   }
   catch {
     let out
     try {
-      out = await findHandleByIntPrefixOpt(sig, dir, int)
+      out = await findHandleByIntPrefixOpt({sig, dir, int})
     }
     catch (err) {
       throw new ErrFs(`unable to find ${a.show(u.paths.join(dir.name, name))} by integer prefix: ${err}`, {cause: err})
@@ -1467,19 +1434,19 @@ export async function getSubHandleMagic(sig, dir, name) {
   }
 }
 
-export async function getSubHandle(sig, dir, name, opt) {
+export async function getSubHandle({sig, dir, name, opt}) {
   u.reqSig(sig)
   a.reqInst(dir, FileSystemDirectoryHandle)
   a.reqValidStr(name)
 
-  try {return await getFileHandle(sig, dir, name, opt)}
+  try {return await getFileHandle({sig, dir, name, opt})}
   catch (err) {
     if (err?.cause?.name !== `TypeMismatchError`) throw err
   }
-  return await getDirectoryHandle(sig, dir, name, opt)
+  return await getDirectoryHandle({sig, dir, name, opt})
 }
 
-export async function getFileHandle(sig, dir, name, opt) {
+export async function getFileHandle({sig, dir, name, opt}) {
   u.reqSig(sig)
   a.reqInst(dir, FileSystemDirectoryHandle)
   a.reqValidStr(name)
@@ -1492,9 +1459,10 @@ export async function getFileHandle(sig, dir, name, opt) {
   }
 }
 
-export async function getDirectoryHandle(sig, dir, name, opt) {
+export async function getDirectoryHandle({sig, dir, name, opt}) {
   u.reqSig(sig)
   a.reqValidStr(name)
+  a.reqInst(dir, FileSystemHandle)
 
   if (!a.isInst(dir, FileSystemDirectoryHandle)) {
     throw new ErrFs(`unable to get directory handle ${a.show(u.paths.join(dir.name, name))} because ${a.show(dir.name)} is not a directory`)

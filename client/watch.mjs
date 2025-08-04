@@ -141,10 +141,14 @@ async function watchInit(sig, state) {
   a.final(state, `progressFileHandle`, await fs.progressFileReq(sig))
   a.final(state, `historyDirHandle`, await fs.historyDirReq(sig))
 
-  const runDir = await fs.findLatestDirEntryOpt(sig, state.historyDirHandle, fs.isHandleRunDir)
+  const runDir = await fs.findLatestDirEntryOpt({
+    sig,
+    dir: state.historyDirHandle,
+    filter: fs.isHandleRunDir,
+  })
   state.setRunDir(runDir?.name)
 
-  const roundFile = runDir && await fs.findLatestRoundFile(sig, runDir)
+  const roundFile = runDir && await fs.findLatestRoundFile({sig, dir: runDir})
   await state.setRoundFile(roundFile?.name)
 
   ui.LOG.info(ui.LogLines(
@@ -171,8 +175,8 @@ and starts it in another run, where the round number is exactly the same.
 Currently we end up merging two runs in such a case.
 */
 async function watchStep(sig, state) {
-  const progressFile = await fs.getFile(sig, state.progressFileHandle)
-  const content = await u.wait(sig, progressFile.text())
+  const blob = await fs.getFileBlob({sig, file: state.progressFileHandle})
+  const content = await u.wait(sig, blob.text())
   const roundData = await u.wait(sig, u.decodeGdStr(content))
   const nextRoundNum = roundData?.RoundIndex
 
@@ -185,12 +189,17 @@ async function watchStep(sig, state) {
     return
   }
 
-  const nextTime = progressFile.lastModified
+  const nextTime = blob.lastModified
   const runDirName = state.runDirName
   let roundFileName = state.roundFileName
   let prevFile
   try {
-    prevFile = await fs.getSubFile(sig, state.historyDirHandle, runDirName, roundFileName)
+    prevFile = await fs.getSubFile({
+      sig,
+      dir: state.historyDirHandle,
+      dirName: runDirName,
+      fileName: roundFileName,
+    })
   }
   catch (err) {
     ui.LOG.err(`[watch] unable to get latest backup file; assuming it was deleted and continuing; error:`, err)
@@ -232,7 +241,7 @@ async function watchStep(sig, state) {
       {create: true},
     ))
 
-    await fs.writeDirFile(sig, dir, nextFileName, content)
+    await fs.writeDirFile({sig, dir, name: nextFileName, body: content})
     await state.setRoundFile(nextFileName)
     afterRoundBackup(event)
     return
@@ -252,9 +261,9 @@ async function watchStep(sig, state) {
   }
 
   const nextRunDirName = s.makeRunName(nextRunNum, nextRunMs)
-  const dir = await fs.getDirectoryHandle(sig, state.historyDirHandle, nextRunDirName, {create: true})
+  const dir = await fs.getDirectoryHandle({sig, dir: state.historyDirHandle, name: nextRunDirName, opt: {create: true}})
   state.setRunDir(nextRunDirName)
-  await fs.writeDirFile(sig, dir, nextFileName, content)
+  await fs.writeDirFile({sig, dir, name: nextFileName, body: content})
   state.setRoundFile(nextFileName)
   ui.LOG.info(`[watch] backed up ${a.show(u.paths.join(dir.name, nextFileName))}`)
 

@@ -108,6 +108,6 @@ await t.test(async function test_uploadRound() {
   const runName = s.makeRunName(run_num, run_ms)
   const roundName = s.makeRoundFileNameBase(round.RoundIndex)
   const path = pt.join(ctx.userRunsDir, user_id, runName, roundName + `.json.gz`)
-  const roundRead = await u.readDecodeGameFile(path)
+  const roundRead = await u.readDecodeGameFile({path})
   t.eq(roundRead, round)
 })

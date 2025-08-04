@@ -384,8 +384,7 @@ async function onFileDrop(file) {
     }],
   })
 
-  await fs.writeFile(u.sig, handle, text, outName)
-
+  await fs.writeFile({sig: u.sig, file: handle, body: text, path: outName})
   ui.LOG.info(`saved decoded content of `, a.show(name), ` to `, a.show(outName))
 }
 

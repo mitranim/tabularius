@@ -89,8 +89,9 @@ export function gameFilePathFakeToReal(val) {
 }
 
 // SYNC[decode_game_file].
-export async function readDecodeGameFile(path, name) {
-  name = a.optStr(name) || pathToName(path)
+export async function readDecodeGameFile({path, name}) {
+  a.optStr(name)
+  name ||= pathToName(path)
 
   if (name.endsWith(GAME_FILE_EXT_REAL)) {
     validGameFileGzName(name)
@@ -102,9 +103,9 @@ export async function readDecodeGameFile(path, name) {
   return su.decodeGdStr(await io.readFileText(path))
 }
 
-export async function writeEncodeGameFile(path, src) {
+export async function writeEncodeGameFile({path, data}) {
   validGameFileGzName(pathToName(path))
-  await io.writeFile(path, await su.data_to_json_to_gzipByteArr(src))
+  await io.writeFile(path, await su.data_to_json_to_gzipByteArr(data))
 }
 
 function validGameFileGzName(name) {

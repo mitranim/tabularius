@@ -229,7 +229,7 @@ export function errIs(err, fun) {
   return false
 }
 
-// Workaround for our cyclic dependency between modules.
+// The async import is a workaround for our cyclic dependency between modules.
 async function logErr(...src) {
   const ui = await import(`./ui_log.mjs`)
   ui.LOG.err(...src)
@@ -263,6 +263,14 @@ export async function copyToClipboard(src, report) {
   return true
 }
 
+/*
+Similar to:
+
+  (await iter?.toArray()) ?? []
+
+But `AsyncIterator..toArray` doesn't support `AbortSignal`.
+It's also not widely supported at the time of writing.
+*/
 export async function asyncIterCollect(sig, src) {
   reqSig(sig)
   const out = []
@@ -273,6 +281,10 @@ export async function asyncIterCollect(sig, src) {
     }
   }
   return out
+}
+
+export async function asyncIterSort({sig, src, fun}) {
+  return (await asyncIterCollect(sig, src)).sort(a.reqFun(fun))
 }
 
 export function isHelpFlag(val) {return val === `-h` || val === `--help`}

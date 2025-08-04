@@ -26,11 +26,11 @@ await t.test(async function test_migrateUserRuns() {
   const file1 = `0034.json.gz`
 
   testOldRunRoundFormat(
-    await u.readDecodeGameFile(pt.join(dir0, file0))
+    await u.readDecodeGameFile({path: pt.join(dir0, file0)})
   )
 
   testOldRunRoundFormat(
-    await u.readDecodeGameFile(pt.join(dir1, file1))
+    await u.readDecodeGameFile({path: pt.join(dir1, file1)})
   )
 
   t.eq(
@@ -52,12 +52,16 @@ await t.test(async function test_migrateUserRuns() {
   const runMs1 = 1744498279426
 
   testNewRunRoundFormat(
-    await u.readDecodeGameFile(pt.join(ctx.userRunsDir, user, `0000_` + runMs0, file0)),
+    await u.readDecodeGameFile({
+      path: pt.join(ctx.userRunsDir, user, `0000_` + runMs0, file0),
+    }),
     runMs0,
   )
 
   testNewRunRoundFormat(
-    await u.readDecodeGameFile(pt.join(ctx.userRunsDir, user, `0015_` + runMs1, file1)),
+    await u.readDecodeGameFile({
+      path: pt.join(ctx.userRunsDir, user, `0015_` + runMs1, file1),
+    }),
     runMs1,
   )
 

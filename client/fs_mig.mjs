@@ -40,11 +40,11 @@ export async function migrateRuns() {
     return state
   }
 
-  if (!await fs.withPermission(sig, hist, {mode: `readwrite`})) {
+  if (!await fs.withPermission({sig, hist, opt: {mode: `readwrite`}})) {
     ui.LOG.info(`[fs_mig] skipping migration: insufficient permissions on history dir`)
     return state
   }
-  const runDirs = await fs.readRunsAsc(sig, hist)
+  const runDirs = await fs.readRunsAsc({sig, dir: hist})
   if (!runDirs.length) return state
 
   /*
@@ -57,11 +57,11 @@ export async function migrateRuns() {
     const runName = runHandle.name
 
     if (!isRunOld(runName)) {
-      const roundFiles = await fs.readRunRoundHandlesDesc(sig, runHandle)
+      const roundFiles = await fs.readRoundHandlesDesc({sig, dir: runHandle})
       const roundHandle = a.head(roundFiles)
 
       if (roundHandle) {
-        const round = await fs.readDecodeGameFile(sig, roundHandle)
+        const round = await fs.readDecodeGameFile({sig, file: roundHandle})
 
         if (!isRoundOld(round)) {
           ui.LOG.verb(`[fs_mig] skipping migration: latest run and round up to date`)
@@ -90,9 +90,9 @@ export async function migrateRuns() {
       logged = true
     }
 
-    for (const roundHandle of await fs.readRunRoundHandlesAsc(sig, runHandle)) {
+    for (const roundHandle of await fs.readRoundHandlesAsc({sig, dir: runHandle})) {
       const roundPath = u.paths.join(runDirName, roundHandle.name)
-      const round = await fs.readDecodeGameFile(sig, roundHandle)
+      const round = await fs.readDecodeGameFile({sig, file: roundHandle})
 
       runMs ??= a.reqInt(Date.parse(round.LastUpdated))
       runRoundsChecked++
@@ -106,7 +106,7 @@ export async function migrateRuns() {
       round.tabularius_fields_schema_version = SCHEMA_NEXT
       round.tabularius_run_ms = runMs
 
-      await fs.writeEncodeGameFile(sig, roundHandle, round)
+      await fs.writeEncodeGameFile({sig, file: roundHandle, data: round})
       ui.LOG.verb(`[fs_mig] migrated round: ${a.show(roundPath)}`)
 
       runRoundsMigrated++
@@ -158,17 +158,17 @@ async function migrateRunDir({
   const dirPathNext = u.paths.join(dirHandleParent.name, dirNameNext)
 
   state.status = `creating new run directory ` + dirNameNext
-  const dirHandleNext = await fs.getDirectoryHandle(sig, dirHandleParent, dirNameNext, {create: true})
+  const dirHandleNext = await fs.getDirectoryHandle({sig, dir: dirHandleParent, name: dirNameNext, opt: {create: true}})
 
   try {
     state.status = `inspecting contents of directory ` + dirNamePrev
-    const handles = await fs.readRunRoundHandlesAsc(sig, dirHandlePrev)
+    const handles = await fs.readRoundHandlesAsc({sig, dir: dirHandlePrev})
 
     for (const file of handles) {
       state.status = `writing file ` + a.show(u.paths.join(dirHandleNext.name, file.name))
 
       if (a.deref(u.VERBOSE)) console.time(`writing_file`)
-      await fs.copyFileTo(sig, file, dirHandleNext)
+      await fs.copyFileTo({sig, file, dir: dirHandleNext})
       if (a.deref(u.VERBOSE)) console.timeEnd(`writing_file`)
     }
 

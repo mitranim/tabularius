@@ -48,7 +48,7 @@ export async function migrateUserRuns(ctx) {
 
         if (roundName) {
           const roundFile = pt.join(runDir, roundName)
-          const round = await u.readDecodeGameFile(roundFile)
+          const round = await u.readDecodeGameFile({path: roundFile})
 
           if (!isRoundOld(round)) {
             verb(`[fs_mig] skipping run: latest round up to date:`, a.show(roundFile))
@@ -72,7 +72,7 @@ export async function migrateUserRuns(ctx) {
 
       for (const roundName of await u.readRoundFiles(runDir)) {
         const roundFile = pt.join(runDir, roundName)
-        const round = await u.readDecodeGameFile(roundFile)
+        const round = await u.readDecodeGameFile({path: roundFile})
         runMs ??= a.reqInt(Date.parse(round.LastUpdated))
 
         runRoundsChecked++
@@ -87,7 +87,7 @@ export async function migrateUserRuns(ctx) {
         round.tabularius_fields_schema_version = SCHEMA_NEXT
         round.tabularius_run_ms = runMs
 
-        await u.writeEncodeGameFile(roundFile, round)
+        await u.writeEncodeGameFile({path: roundFile, data: round})
         verb(`[fs_mig] migrated round:`, a.show(roundFile))
 
         runRoundsMigrated++

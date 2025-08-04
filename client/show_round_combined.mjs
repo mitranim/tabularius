@@ -208,7 +208,7 @@ export async function cmdShowRound({sig, cmd: cmdFun, args, View}) {
 }
 
 export async function showRoundLocal({sig, args, path, View}) {
-  const {handle, round, live} = await fs.findRoundFileAny(sig, path)
+  const {handle, round, live} = await fs.findRoundFileAny({sig, path})
   return showRoundFile({sig, args, handle, round, live, View})
 }
 
@@ -225,7 +225,7 @@ export async function showRoundFile({sig, args, handle, round, live, View}) {
   a.optBool(live)
   a.reqCls(View)
 
-  round ??= await fs.readDecodeGameFile(sig, handle)
+  round ??= await fs.readDecodeGameFile({sig, file: handle})
 
   const user_id = round.tabularius_user_id || d.USER_ID
   const run_num = round.tabularius_run_num ?? 0

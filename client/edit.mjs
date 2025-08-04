@@ -958,14 +958,17 @@ export async function editCommit(sig, state) {
   const histDir = await loadHistDir(sig, state)
 
   for (const file of changedFiles) {
-    const path = await fs.backupFile({
-      sig, file: file.handle, dir: histDir, uniq: true,
+    await fs.backupFile({
+      sig,
+      file: file.handle,
+      dir: histDir,
+      srcPath: file.path,
+      uniq: true,
     })
-    ui.LOG.info(fs.msgBackedUp(file.path, path))
   }
 
   for (const file of changedFiles) {
-    await fs.writeEncodeGameFile(sig, file.handle, file.data)
+    await fs.writeEncodeGameFile({sig, file: file.handle, data: file.data})
     ui.LOG.info([`modified `, a.show(file.path)])
   }
 
@@ -1225,7 +1228,7 @@ export async function loadData(sig, file) {
   if (a.isSome(file.data)) return file.data
 
   try {
-    return file.data = await fs.readDecodeGameFile(sig, file.handle)
+    return file.data = await fs.readDecodeGameFile({sig, file: file.handle})
   }
   catch (err) {
     ui.LOG.info(ui.LogParagraphs(
@@ -1255,7 +1258,7 @@ export async function loadSaveFile(sig, state, name) {
   const dir = await loadSaveDir(sig, state)
   const path = u.paths.join(dir.name, name)
   return state.editFiles[path] ??= new EditFile({
-    handle: (await fs.getFileHandle(sig, dir, name)),
+    handle: (await fs.getFileHandle({sig, dir, name})),
     path,
   })
 }

@@ -99,21 +99,21 @@ export async function datLoad({sig, dat, opt, tables}) {
   const roundNums = new Set(a.optArr(where.round_num))
 
   if (opt.runLatest) {
-    const name = (await fs.findLatestRunDir(sig, hist))?.name
+    const name = (await fs.findLatestRunDir({sig, dir: hist}))?.name
     if (name) runNames.add(name)
   }
 
   const runHandles = await (
     runNames.size
-    ? fs.readRunsByNamesAscOpt(sig, hist, runNames)
-    : fs.readRunsAsc(sig, hist)
+    ? fs.readRunsByNamesAscOpt({sig, dir: hist, names: runNames})
+    : fs.readRunsAsc({sig, dir: hist})
   )
 
   for (const dir of runHandles) {
     const [run_num, run_ms] = s.splitRunName(dir.name)
     if (runNums.size && !runNums.has(run_num)) continue
 
-    for (const file of await fs.readRunRoundHandlesAsc(sig, dir)) {
+    for (const file of await fs.readRoundHandlesAsc({sig, dir})) {
       const round_num = u.toNatReq(file.name)
       if (roundNums.size && !roundNums.has(round_num)) continue
       await datLoadRoundFromHandle({sig, dat, file, run_num, run_ms, tables})
@@ -136,7 +136,7 @@ export async function datLoadRoundFromHandle({sig, dat, file, run_num, run_ms, t
     */
     if (round_id in a.laxDict(dat.run_rounds)) return
 
-    const round = await fs.readDecodeGameFile(sig, file)
+    const round = await fs.readDecodeGameFile({sig, file})
     s.datAddRound({dat, round, user_id: USER_ID, run_num, run_ms, composite: true, tables})
   }
   finally {unlock()}

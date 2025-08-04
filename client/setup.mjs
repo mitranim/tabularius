@@ -109,7 +109,7 @@ export async function historyRevoke(sig) {
 export async function confGranted({sig, conf, args}) {
   a.reqInst(conf, fs.FileConf)
 
-  const handle = await fs.fileConfLoadedWithPermIdemp(sig, conf)
+  const handle = await fs.fileConfLoadedWithPermIdemp({sig, conf})
   if (handle) {
     const {name} = handle
     ui.LOG.info(
@@ -124,7 +124,7 @@ export async function confGranted({sig, conf, args}) {
     return false
   }
 
-  if (!await fs.fileConfInitedIdemp(sig, conf)) {
+  if (!await fs.fileConfInitedIdemp({sig, conf})) {
     ui.LOG.info(conf.desc, `: access not granted; rerun `, os.BtnCmd(args))
     return false
   }
@@ -141,7 +141,7 @@ export async function confRevoked({sig, conf}) {
     return false
   }
 
-  await fs.fileConfDeinit(sig, conf)
+  await fs.fileConfDeinit({sig, conf})
   ui.LOG.info(conf.desc, `: access revoked`)
   return true
 }

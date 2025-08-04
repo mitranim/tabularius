@@ -118,7 +118,7 @@ export async function initDataFromRounds(ctx, conn) {
 
       for (const roundName of await u.readRoundFiles(runDir)) {
         const roundFile = pt.join(runDir, roundName)
-        const round = await u.readDecodeGameFile(roundFile, roundName)
+        const round = await u.readDecodeGameFile({path: roundFile, name: roundName})
 
         dat ??= a.Emp()
 

@@ -38,13 +38,13 @@ await t.test(async function test_edit() {
   }
 
   const sig = u.sig
-  const testDir = await fs.getDirectoryHandle(sig, histDir, `edit_test`, {create: true})
-  const testSaveDir = await fs.getDirectoryHandle(sig, testDir, `saves`, {create: true})
-  const testHistDir = await fs.getDirectoryHandle(sig, testDir, `history`, {create: true})
+  const testDir = await fs.getDirectoryHandle({sig, dir: histDir, name: `edit_test`, opt: {create: true}})
+  const testSaveDir = await fs.getDirectoryHandle({sig, dir: testDir, name: `saves`, opt: {create: true}})
+  const testHistDir = await fs.getDirectoryHandle({sig, dir: testDir, name: `history`, opt: {create: true}})
 
-  await fs.copyFileBetween(sig, saveDir, testSaveDir, `Settings.gd`)
-  await fs.copyFileBetween(sig, saveDir, testSaveDir, `Unlockables.gd`)
-  await fs.copyFileBetween(sig, saveDir, testSaveDir, `Progress.gd`)
+  await fs.copyFileBetween({sig, src: saveDir, out: testSaveDir, name: `Settings.gd`})
+  await fs.copyFileBetween({sig, src: saveDir, out: testSaveDir, name: `Unlockables.gd`})
+  await fs.copyFileBetween({sig, src: saveDir, out: testSaveDir, name: `Progress.gd`})
 
   const state = new e.EditState()
   state.args = `edit`

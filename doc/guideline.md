@@ -21,7 +21,7 @@
 - Apply new reusable code to existing code to reduce duplication
 
 ## Function Design
-- Small, focused functions (3 or fewer arguments)
+- Small, focused functions with few parameters
 - Each function does one thing well
 - Named functions over anonymous inline closures
 - Move functions as close to root scope as possible
@@ -29,6 +29,8 @@
 - Avoid parameter destructuring and complex default values
 - Validate inputs immediately
 - Fail early and loudly
+- Maximum arity is 2; beyond that, convert to arity 1 and take an object with named parameters
+  - Even at arity 2, consider if named parameters are preferred for future expansion
 
 ## State Management
 - Minimize state and state changes
