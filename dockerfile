@@ -5,9 +5,8 @@ label project=$PROJECT
 # `libstdc++` seems to be required by DuckDB dylibs.
 run apk add --no-cache make libstdc++
 
-workdir $DENO_DIR
+workdir /app
 copy package.json deno.json .
 run deno install
-workdir /app
 copy . .
 entrypoint ["deno"]
