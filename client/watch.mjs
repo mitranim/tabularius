@@ -207,14 +207,14 @@ async function watchStep(sig, state) {
   }
 
   const prevTime = prevFile?.lastModified
-  if (!(nextTime > prevTime)) {
-    // ui.LOG.verb(`[watch] skipping: ${fs.PROGRESS_FILE_CONF.desc} unmodified`)
+  if (prevTime < nextTime) {
+    ui.LOG.verb(`[watch] skipping: ${fs.PROGRESS_FILE_CONF.desc} unmodified`)
     return
   }
 
   const prevRoundNum = u.toNatOpt(roundFileName)
   if (prevRoundNum === nextRoundNum) {
-    // ui.LOG.verb(`[watch] skipping: round is still ${prevRoundNum}`)
+    ui.LOG.verb(`[watch] skipping: round is still ${prevRoundNum}`)
     return
   }
 
