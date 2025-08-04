@@ -3,9 +3,6 @@ import {E} from './ui_util.mjs'
 import * as ui from './ui_util.mjs'
 import * as u from './util.mjs'
 
-// Cleanup outdated storage property.
-u.storagesSet(`tabularius.log_width`)
-
 export const SPLIT_OBS = u.storageObsFin(`tabularius.ui_split`)
 export const SPLIT_DEFAULT = 0.5
 export const SPLIT_MIN = 0

@@ -65,7 +65,7 @@ async function main() {
   Attempt to load the FS handles before running anything else. Needed for FS
   migrations, and convenient for URL query "run" commands which rely on FS.
   */
-  const [_loadedProg, _loadedSave, loadedHist] = await Promise.all([
+  const [_loadedProg, _loadedSave, _loadedHist] = await Promise.all([
     fs.loadedProgressFile(u.sig).catch(ui.logErr),
     fs.loadedSaveDir(u.sig).catch(ui.logErr),
     fs.loadedHistoryDir(u.sig).catch(ui.logErr),
@@ -76,8 +76,12 @@ async function main() {
     await os.runCmd(`help`).catch(ui.logErr)
   }
 
-  // Other code relies on up-to-date FS state, so FS migrations run first.
-  if (loadedHist) await fs.migOpt().catch(ui.logErr)
+  /*
+  Other code relies on up-to-date FS state, so FS migrations run first.
+  Re-enable when needed.
+
+    if (loadedHist) await fs.migOpt().catch(ui.logErr)
+  */
 
   let imported = 0
   let ranPlots = 0
