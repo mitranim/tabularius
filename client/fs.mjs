@@ -584,6 +584,7 @@ export function StatTip(path) {
 cmdShow.cmd = `show`
 cmdShow.desc = `decode and show game files / runs / rounds, with flexible output options`
 cmdShow.help = function cmdShowHelp() {
+  const {cmd} = cmdShow
   const saveDir = a.laxStr(SAVE_DIR_CONF.handle?.name)
   const histDir = a.laxStr(HISTORY_DIR_CONF.handle?.name)
 
@@ -594,29 +595,30 @@ cmdShow.help = function cmdShowHelp() {
       `usage:`,
       [
         `  `,
-        ui.BtnPrompt({full: true, cmd: `show`, eph: `<flags> <path>`}),
+        ui.BtnPrompt({full: true, cmd, eph: `<flags> <path>`}),
         `            -- one dir or file`,
       ],
       [
         `  `,
-        ui.BtnPrompt({full: true, cmd: `show`, eph: `<flags> <path> ... <path>`}),
+        ui.BtnPrompt({full: true, cmd, eph: `<flags> <path> ... <path>`}),
         ` -- any dirs or files`,
       ],
     ),
 
     ui.LogLines(
       `flags:`,
-      [`  `, ui.BtnPrompt({cmd: `show`, suf: `-c`}), ` -- copy decoded JSON to clipboard`],
-      [`  `, ui.BtnPrompt({cmd: `show`, suf: `-l`}), ` -- log decoded data to browser console`],
-      [`  `, ui.BtnPrompt({cmd: `show`, suf: `-w`}), ` -- write JSON file to "`, (histDir || `<run_history>`), `/show/"`],
+      [`  `, ui.BtnPrompt({cmd, suf: `-c`}), ` -- copy decoded JSON to clipboard`],
+      [`  `, ui.BtnPrompt({cmd, suf: `-l`}), ` -- log decoded data to browser console`],
+      [`  `, ui.BtnPrompt({cmd, suf: `-w`}), ` -- write JSON file to "`, (histDir || `<run_history>`), `/show/"`],
+      [`  `, ui.BtnPrompt({cmd, suf: `-o`}), ` -- `, ui.Bold(`overwrite`), ` each file with decoded JSON`],
     ),
 
     ui.LogLines(
       `path segments can be magic:`,
-      [`  `, ui.BtnPrompt({cmd: `show`, eph: u.paths.join(histDir, `<num>`)}), `         -- run num`],
-      [`  `, ui.BtnPrompt({cmd: `show`, suf: u.paths.join(histDir, `latest`)}), `        -- latest run`],
-      [`  `, ui.BtnPrompt({cmd: `show`, suf: u.paths.join(histDir, `latest/`), eph: `<num>`}), `  -- round num in latest run`],
-      [`  `, ui.BtnPrompt({cmd: `show`, suf: u.paths.join(histDir, `latest/latest`)}), ` -- latest round`],
+      [`  `, ui.BtnPrompt({cmd, suf: histDir + `/`, eph: `<num>`}), `         -- specific run`],
+      [`  `, ui.BtnPrompt({cmd, suf: u.paths.join(histDir, `latest`)}), `        -- latest run`],
+      [`  `, ui.BtnPrompt({cmd, suf: u.paths.join(histDir, `latest`) + `/`, eph: `<num>`}), `  -- latest run, specific round`],
+      [`  `, ui.BtnPrompt({cmd, suf: u.paths.join(histDir, `latest/latest`)}), ` -- latest round`],
     ),
 
     (
@@ -627,10 +629,10 @@ cmdShow.help = function cmdShowHelp() {
       ]
       : ui.LogLines(
         `examples for game files:`,
-        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, saveDir)}), ` -- log all game files`],
-        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l -c -w`, saveDir)}), ` -- log, clipboard, write decoded content of all game files`],
-        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, u.paths.join(saveDir, `Progress.gd`))}), ` -- log current progress`],
-        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-w`, u.paths.join(saveDir, `Unlockables.gd`))}), ` -- write decoded unlockables file`],
+        [`  `, ui.BtnPrompt({cmd, suf: a.spaced(`-l`, saveDir)}), ` -- log all game files`],
+        [`  `, ui.BtnPrompt({cmd, suf: a.spaced(`-l -c -w`, saveDir)}), ` -- log, clipboard, write decoded content of all game files`],
+        [`  `, ui.BtnPrompt({cmd, suf: a.spaced(`-l`, u.paths.join(saveDir, PROG_FILE_NAME))}), ` -- log current progress`],
+        [`  `, ui.BtnPrompt({cmd, suf: a.spaced(`-o`, u.paths.join(saveDir, PROG_FILE_NAME))}), ` -- decode the progress file in-place, making it editable`],
       )
     ),
 
@@ -644,14 +646,15 @@ cmdShow.help = function cmdShowHelp() {
       ]
       : ui.LogLines(
         `examples for run history:`,
-        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, u.paths.join(histDir, `latest`))}), ` -- log all rounds in latest run`],
-        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l`, u.paths.join(histDir, `latest/latest`))}), ` -- log latest round in latest run`],
-        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l -c -w`, u.paths.join(histDir, `latest`))}), ` -- log, clipboard, write all rounds in latest run`],
-        [`  `, ui.BtnPrompt({cmd: `show`, suf: a.spaced(`-l -c -w`, u.paths.join(histDir, `latest/latest`))}), ` -- log, clipboard, write latest round in latest run`],
+        [`  `, ui.BtnPrompt({cmd, suf: a.spaced(`-l`, u.paths.join(histDir, `latest`))}), ` -- log all rounds in latest run`],
+        [`  `, ui.BtnPrompt({cmd, suf: a.spaced(`-l`, u.paths.join(histDir, `latest/latest`))}), ` -- log latest round in latest run`],
+        [`  `, ui.BtnPrompt({cmd, suf: a.spaced(`-l -c -w`, u.paths.join(histDir, `latest`))}), ` -- log, clipboard, write all rounds in latest run`],
+        [`  `, ui.BtnPrompt({cmd, suf: a.spaced(`-l -c -w`, u.paths.join(histDir, `latest/latest`))}), ` -- log, clipboard, write latest round in latest run`],
       )
     ),
 
     `if no flags are provided, nothing is done`,
+
     [`tip: use `, os.BtnCmdWithHelp(`ls /`), ` to browse local files`],
   )
 }
@@ -666,6 +669,7 @@ export async function cmdShow({sig, args}) {
     if (key === `-c`) opt.copy = ui.cliBool(cmd, key, val)
     else if (key === `-l`) opt.log = ui.cliBool(cmd, key, val)
     else if (key === `-w`) opt.write = ui.cliBool(cmd, key, val)
+    else if (key === `-o`) opt.over = ui.cliBool(cmd, key, val)
     else if (!key) paths.push(val)
     else {
       ui.LOG.err(ui.msgUnrecInput(pair, args))
@@ -678,67 +682,83 @@ export async function cmdShow({sig, args}) {
     return os.cmdHelpDetailed(cmdShow)
   }
 
-  if (!(opt.copy || opt.log || opt.write)) {
+  if (!(opt.copy || opt.log || opt.write || opt.over)) {
     return `no action flags provided, nothing done`
   }
 
+  const state = a.Emp()
+  state.over = 0
+
   for (const path of paths) {
     try {
-      await showPath({sig, path, opt})
+      await showPath({sig, path, state, opt})
     }
     catch (err) {
       ui.LOG.err(`[show] unable to show ${a.show(path)}: `, err)
     }
   }
 
+  if (state.over) {
+    ui.LOG.info(
+      `tip: the JSON content of overwritten files can be edited manually with any text editor; after saving those files, just launch the game; it's able to read JSON as-is`,
+    )
+  }
+
   return undefined
 }
 
-export async function showPath({sig, path, opt}) {
+export async function showPath({sig, path, state, opt}) {
   u.reqSig(sig)
   const {handle, path: resolved} = await handleAtPathFromTop({
     sig, path, magic: true,
   })
-  return showDirOrFile({sig, handle, path: resolved, opt})
+  return showDirOrFile({sig, handle, path: resolved, state, opt})
 }
 
-export function showDirOrFile({sig, handle, path, opt}) {
+export function showDirOrFile({sig, handle, path, state, opt}) {
   a.reqInst(handle, FileSystemHandle)
   if (isDir(handle)) {
-    return showDir({sig, handle, path, opt})
+    return showDir({sig, dir: handle, path, state, opt})
   }
   if (isFile(handle)) {
-    return showFile({sig, handle, path, opt})
+    return showFile({sig, file: handle, path, state, opt})
   }
   throw errHandleKind(handle.kind)
 }
 
-export async function showDir({sig, handle, path, opt}) {
-  const data = await collectGameFilesAsc(sig, handle)
-  if (!data.length) {
+export async function showDir({sig, dir, path, state, opt}) {
+  const out = []
+
+  for await (const file of readDir({sig, dir, filter: isHandleGameFile})) {
+    out.push(showFile({
+      sig,
+      file,
+      path: u.paths.join(path, file.name),
+      state,
+      opt,
+    }).catch(ui.logErr))
+  }
+
+  if (!out.length) {
     ui.LOG.info(`no game files found in ${a.show(path)}`)
     return
   }
-  await showData({sig, path, data, opt})
+
+  await Promise.all(out)
 }
 
-export async function showFile({sig, handle, path, opt}) {
-  if (!isHandleGameFile(handle)) {
-    ui.LOG.info(`unable to show file ${a.show(path || handle.name)}: unknown format`)
-    return
-  }
-  const data = await readDecodeGameFile(sig, handle)
-  await showData({sig, path, data, opt})
-}
-
-export async function showData({sig, path, data, opt}) {
+export async function showFile({sig, file, path, state, opt}) {
   u.reqSig(sig)
   a.reqValidStr(path)
-  a.optRec(opt)
+  a.optRec(state)
 
-  const copy = a.optBool(opt?.copy)
-  const log = a.optBool(opt?.log)
-  const write = a.optBool(opt?.write)
+  if (!isHandleGameFile(file)) {
+    ui.LOG.err(`unable to show file ${a.show(path)}: unknown format`)
+    return
+  }
+
+  const data = await readDecodeGameFile({sig, file})
+  const {copy, log, write, over} = a.laxRec(opt)
   let json
 
   if (copy) {
@@ -765,7 +785,23 @@ export async function showData({sig, path, data, opt}) {
     await writeDirFile({sig, dir: outDir, name: outName, body: json})
 
     const outPath = u.paths.join(hist.name, outDirName, outName)
-    ui.LOG.info(`wrote decoded content of ${a.show(path)} to ${a.show(outPath)}`)
+
+    ui.LOG.info(ui.LogParagraphs(
+      `wrote decoded content of ${a.show(path)} to ${a.show(outPath)}`,
+      a.vac(!over) && [
+        `tip: for editing game files in-place, use the `,
+        ui.BtnPrompt({cmd: `show`, suf: `-o`}),
+        ` option`,
+      ],
+    ))
+  }
+
+  if (over) {
+    json ??= a.jsonEncode(data, undefined, 2)
+    await backupFile({sig, file, srcPath: path, uniq: true})
+    await writeFile({sig, file, body: json, path})
+    ui.LOG.info(`overwrote ${a.show(path)} with decoded JSON`)
+    if (state) state.over = a.laxNat(state.over) + 1
   }
 }
 
