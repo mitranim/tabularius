@@ -66,6 +66,7 @@ dev: # Dev with auto-reload but without auto-restart.
 	$(MAKE_CONC) live srv
 
 dev_w dev srv_w srv: export DEV := $(DEV)
+dev_w dev srv_w srv: export LOCAL := $(LOCAL)
 srv_w srv: export SRV_HOST := $(SRV_HOST)
 srv_w srv: export SRV_PORT := $(SRV_PORT)
 dev_w dev live: export LIVE_PORT := $(LIVE_PORT)

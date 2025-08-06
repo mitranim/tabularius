@@ -4,7 +4,8 @@ import * as hl from '@mitranim/js/http_live.mjs'
 
 export const DEV = a.boolOpt(getEnv(`DEV`, `false`))
 export const TEST = a.boolOpt(getEnv(`TEST`, `false`))
-export const LIVE_PORT = a.vac(DEV) && a.intOpt(getEnv(`LIVE_PORT`, ``))
+export const LOCAL = a.boolOpt(getEnv(`LOCAL`, `false`))
+export const LIVE_PORT = a.intOpt(getEnv(`LIVE_PORT`, ``))
 export const LIVE = !!LIVE_PORT
 export const LOG_DEBUG = a.boolOpt(getEnv(`LOG_DEBUG`, `false`))
 

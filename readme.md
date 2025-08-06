@@ -92,17 +92,11 @@ And more!
 
 ## Development
 
-When hacking on this repo, you might need some setup.
+Install dependencies:
+- MacOS: `brew install make deno`.
+- Windows: `scoop install make deno`.
 
-Make sure your system has `make` and `deno`.
-
-On app launch, `deno` will auto-fetch some JS libs as needed, as well as DuckDB dylibs. No manual installation needed.
-
-Create the data directory; default location:
-
-```sh
-mkdir data
-```
+When running the server or tests, `deno` will auto-fetch JS libs as needed, as well as DuckDB dylibs.
 
 Running in development mode:
 
@@ -113,5 +107,5 @@ make dev_w
 Running in production mode:
 
 ```sh
-make srv
+make srv DEV=false
 ```
