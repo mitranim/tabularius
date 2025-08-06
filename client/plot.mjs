@@ -985,27 +985,33 @@ export const LINE_PLOT_OPTS = {
 }
 
 export function axes({nameX, nameY, formatX, formatY, denseX} = {}) {
-  return [
-    // This one doesn't have a label, not even an empty string, because that
-    // causes the plot library to waste space.
-    {
-      scale: `x`,
-      stroke: axisStroke,
-      secretName: nameX,
-      values: axisValuesFormat(formatX),
-      space: a.vac(denseX) && 1,
-      incrs: a.vac(denseX) && [1],
-    },
-    // This one does have an empty label to prevent the numbers from clipping
-    // through the left side of the container.
-    {
-      scale: `y`,
-      label: ``,
-      stroke: axisStroke,
-      secretName: nameY,
-      values: axisValuesFormat(formatY),
-    },
-  ]
+  // This one doesn't have a label, not even an empty string, because that
+  // causes the plot library to waste space.
+  const X = {
+    scale: `x`,
+    stroke: axisStroke,
+    secretName: nameX,
+    values: axisValuesFormat(formatX),
+  }
+
+  // Providing `.space` as `undefined` breaks the X values.
+  // Instead, we have to omit unused options.
+  if (a.optBool(denseX)) {
+    X.space = 1
+    X.incrs = [1]
+  }
+
+  // This one does have an empty label to prevent the numbers from clipping
+  // through the left side of the container.
+  const Y = {
+    scale: `y`,
+    label: ``,
+    stroke: axisStroke,
+    secretName: nameY,
+    values: axisValuesFormat(formatY),
+  }
+
+  return [X, Y]
 }
 
 export function axisValuesFormat(fun) {
