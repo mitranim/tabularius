@@ -17,9 +17,13 @@ from completely overlaying the prompt text. When hovering links, some browsers
 show a preview of the href in the bottom left corner, which can visually
 interfere with our prompt. We have links in abundance; see `FakeBtnInline`
 which is used all over the place.
+
+The left padding must compensate for the prefix.
+
+The right padding must compensate for the submit button.
 */
 const CLS_PROMPT_INPUT = a.spaced(
-  `w-full pl-8 pr-4 py-4 bg-transparent resize-none overflow-clip`,
+  `w-full pl-8 pr-16 py-4 bg-transparent resize-none overflow-clip`,
   // SYNC[bord-color].
   `shadow-[inset_0_1px_0_0_#d1d5db] dark:shadow-[inset_0_1px_0_0_#404040]`,
   `outline-none focus:outline-none focus:shadow-none focus:ring-2 focus:ring-inset focus:rounded`,
@@ -178,6 +182,35 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
   }
 }()
 
+const PROMPT_PRE = E(`span`, {
+  class: a.spaced(
+    `absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none`,
+    `flex row-cen-cen text-green-600 dark:text-green-400`,
+  ),
+  chi: ui.PROMPT_PREFIX,
+})
+
+const PROMPT_BTN = ui.withTooltip({
+  chi: `submit command`,
+  help: false,
+  under: false,
+  inheritSize: false,
+  elem: E(`button`, {
+    class: a.spaced(
+      `absolute right-0 top-1/2 transform -translate-y-1/2`,
+      `h-full w-auto aspect-square`,
+      `text-center align-middle leading-none text-2xl`,
+      ui.CLS_BUSY_BTN_NEUT,
+    ),
+    type: `button`,
+    onclick() {
+      PROMPT_INPUT.onSubmit()
+      PROMPT_INPUT.focus()
+    },
+    chi: `⏎`,
+  }),
+})
+
 export const PROMPT = E(`div`, {
   class: a.spaced(
     ui.CLS_BG_1,
@@ -185,14 +218,9 @@ export const PROMPT = E(`div`, {
     `flex row-bet-str relative`,
   ),
   chi: [
-    E(`span`, {
-      class: a.spaced(
-        `flex row-cen-cen text-green-600 dark:text-green-400`,
-        `absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none`
-      ),
-      chi: ui.PROMPT_PREFIX,
-    }),
+    PROMPT_PRE,
     PROMPT_INPUT,
+    PROMPT_BTN,
   ],
 })
 
