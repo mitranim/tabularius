@@ -169,16 +169,18 @@ function tooltipReinitFor(elem, chi, inheritSize, eve) {
 
   /*
   TODO: snap to the element rather than the cursor, and remove the `pointermove`
-  listener. In plots, we snap tooltips to data points, which are, well, points.
-  For sized elements such as buttons, we'd have to figure out where in relation
-  to the element to position the tooltip. And elements can be partially outside
-  of the viewport.
+  listener. In plots, we snap tooltips to data points, which are point-like.
+  For non-point elements such as buttons, we'd have to figure out where to
+  position the tooltip in relation to the element. An element can be partially
+  outside of the viewport.
 
-  TODO: after implementing the above, show the tooltip when the target element
-  is focused and hide when blurred, positioning the tooltip just outside the
-  element.
+  TODO: after implementing the above, also show the tooltip when the given
+  element is focused, and hide when blurred, positioning the tooltip just
+  outside the element to avoid impeding its visibility.
   */
-  tooltipOrient(TOOLTIP, {posX: eve.clientX, posY: eve.clientY, off: `0.5rem`})
+  tooltipOrient({
+    elem: TOOLTIP, posX: eve.clientX, posY: eve.clientY, off: `0.5rem`,
+  })
 
   if (!TOOLTIP.isConnected) {
     document.body.appendChild(TOOLTIP)
@@ -217,8 +219,8 @@ function onMutationForTooltip(src) {
   }
 }
 
-export function tooltipOrient(elem, {
-  posX, posY, off,
+export function tooltipOrient({
+  elem, posX, posY, off,
   wid = globalThis.innerWidth,
   hei = globalThis.innerHeight,
 }) {

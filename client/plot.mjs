@@ -1227,7 +1227,7 @@ export class TooltipPlugin extends a.Emp {
 
     const wid = this.overWid ??= plot.over.offsetWidth
     const hei = this.overHei ??= plot.over.offsetHeight
-    ui.tooltipOrient(elem, {posX, posY, wid, hei})
+    ui.tooltipOrient({elem, posX, posY, wid, hei})
     plot.over.appendChild(elem)
   }
 
@@ -1727,14 +1727,14 @@ function Sample({key, val, pre, preLen}) {
 
 export const PLOT_GLOSSARY = u.dict({
   ...s.GLOSSARY,
-  '-p': `preset`,
-  '-c': `cloud data rather than local data`,
-  '-x': `X axis: progression`,
-  '-y': `Y axis: stat type`,
-  '-z': `Z axis: plot series`,
-  '-a': `aggregation mode`,
-  '-t': `print totals in the log`,
-  '-f': `fetch a specific run file`,
+  [`-p`]: `preset`,
+  [`-c`]: `cloud data rather than local data`,
+  [`-x`]: `X axis: progression`,
+  [`-y`]: `Y axis: stat type`,
+  [`-z`]: `Z axis: plot series`,
+  [`-a`]: `aggregation mode`,
+  [`-t`]: `print totals in the log`,
+  [`-f`]: `fetch a specific run file`,
   ...a.map(PLOT_PRESETS, val => val.help),
 })
 
