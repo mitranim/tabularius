@@ -650,6 +650,7 @@ export const FOES = dict({
 })
 
 // Courtesy of Shmafoo on Discord.
+// Only generic zones are listed. HQ zones are missing.
 export const ZONES = new Set([
   `ZoneC1_001`, `ZoneC1_002`, `ZoneC1_003`, `ZoneC1_004`, `ZoneC1_005`, `ZoneC1_006`, `ZoneC1_007`, `ZoneC1_008`, `ZoneC1_009`, `ZoneC1_010`, `ZoneC1_011`,
   `ZoneC2_001`, `ZoneC2_002`, `ZoneC2_003`, `ZoneC2_004`, `ZoneC2_005`, `ZoneC2_006`, `ZoneC2_007`, `ZoneC2_008`, `ZoneC2_009`, `ZoneC2_010`, `ZoneC2_011`,

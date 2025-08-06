@@ -16,18 +16,13 @@ export class ErrHttp extends su.Err {
 export class Res extends Response {
   constructor(...src) {
     super(...src)
-    this.headers.append(`access-control-allow-origin`, `*`)
-    this.headers.append(`access-control-allow-methods`, a.OPTIONS)
-    this.headers.append(`access-control-allow-methods`, a.HEAD)
-    this.headers.append(`access-control-allow-methods`, a.GET)
-    this.headers.append(`access-control-allow-methods`, a.POST)
-    this.headers.append(`access-control-allow-headers`, `*`)
-    this.headers.append(`access-control-allow-headers`, `authorization`)
-    this.headers.append(`access-control-allow-headers`, `cache-control`)
-    this.headers.append(`access-control-allow-headers`, `content-type`)
-    this.headers.append(`access-control-allow-headers`, `content-encoding`)
-    this.headers.append(`access-control-allow-headers`, `accept-encoding`)
-    this.headers.append(`x-robots-tag`, `noindex, follow`)
+    const head = this.headers
+    for (const [key, val] of h.HEADERS_CORS_PROMISCUOUS) head.append(key, val)
+    head.append(h.HEADER_NAME_CORS_HEADERS, `*`)
+    head.append(h.HEADER_NAME_CORS_HEADERS, `authorization`)
+    head.append(h.HEADER_NAME_CORS_HEADERS, `content-encoding`)
+    head.append(h.HEADER_NAME_CORS_HEADERS, `accept-encoding`)
+    head.append(`x-robots-tag`, `noindex, follow`)
     return this
   }
 

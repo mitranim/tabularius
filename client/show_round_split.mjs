@@ -155,8 +155,9 @@ function TabBtn({obs, val, chi}) {
 }
 
 function ColumnToggler(dialog) {
-  return ui.withTooltip(
-    E(`button`, {
+  return ui.withTooltip({
+    chi: `toggle columns`,
+    elem: E(`button`, {
       type: `button`,
       class: a.spaced(
         `inline-flex cen px-2 py-1 cursor-pointer relative`,
@@ -168,8 +169,7 @@ function ColumnToggler(dialog) {
       },
       chi: ui.Svg(`table`, {class: `w-6 h-6`}),
     }),
-    {chi: `toggle columns`},
-  )
+  })
 }
 
 function ColToggler(obs) {
@@ -195,7 +195,8 @@ function ColToggle(cols, {key, props: {hidden}}) {
   return E(ui.ObsCheckbox, {
     obs: hidden,
     invert: true,
-    label: ui.withTooltip(ui.Span(key), {
+    label: ui.withTooltip({
+      elem: ui.Span(key),
       chi: sr.STAT_GLOSSARY[key], under: true, help: false,
     }),
     cls: a.spaced(`gap-x-4 px-3 py-2`, ui.CLS_BUSY_BG),
@@ -278,10 +279,10 @@ function StatCellInner({cols, total: __, type, rowInd, colInd}) {
   const {val, label} = a.deref(cols[colInd].sorted)[rowInd]
 
   return [
-    ui.withTooltip(
-      E(`span`, {class: a.spaced(ui.CLS_TEXT_MUTED, `trunc`), chi: label}),
-      {chi: label},
-    ),
+    ui.withTooltip({
+      chi: label,
+      elem: E(`span`, {class: a.spaced(ui.CLS_TEXT_MUTED, `trunc`), chi: label}),
+    }),
     E(`span`, {class: `whitespace-pre`, chi: sr.fmtVal(type, val)}),
   ]
 }

@@ -172,23 +172,24 @@ some browsers.
 */
 export function abortController() {
   const out = new AbortController()
-  const sig = out.signal
-  const {promise, reject} = Promise.withResolvers()
-  function onAbort() {reject(sig.reason)}
-
-  sig.addEventListener(`abort`, onAbort, {once: true})
-  sig.promise = promise
-
-  // No unhandled rejection on cancelation, even if no other code ever tries to
-  // `await` on the signal.
-  promise.catch(a.nop)
-
-  // Make the signal await-able.
-  sig.then = abortSignalThen
+  promisifySignal(out.signal)
   return out
 }
 
-function abortSignalThen(...src) {return this.promise.then(...src)}
+const PROMISE = Symbol.for(`promise`)
+const REJECT = Symbol.for(`reject`)
+
+function promisifySignal(sig) {
+  const {promise, reject} = Promise.withResolvers()
+  sig.addEventListener(`abort`, abortSignalPromiseReject, {once: true})
+  promise.catch(a.nop)
+  sig[PROMISE] = promise
+  sig[REJECT] = reject
+  sig.then = abortSignalPromiseThen // Make it promise-like and `await`-able.
+}
+
+function abortSignalPromiseReject() {this[REJECT](this.reason)}
+function abortSignalPromiseThen(...src) {return this[PROMISE].then(...src)}
 
 /*
 Unkillable background signal, for browser REPL convenience and for rare cases

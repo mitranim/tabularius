@@ -202,7 +202,7 @@ async function watchStep(sig, state) {
     })
   }
   catch (err) {
-    ui.LOG.err(`[watch] unable to get latest backup file; assuming it was deleted and continuing; error:`, err)
+    ui.LOG.err(`[watch] unable to get latest backup file; assuming it was deleted and continuing; error: `, err)
     roundFileName = undefined
   }
 

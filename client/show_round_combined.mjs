@@ -495,7 +495,8 @@ export function TableControlNumMode() {
 export function TableControlShowChi() {
   return E(ui.ObsCheckbox, {
     obs: SHOW_CHI,
-    label: ui.withTooltip(ui.Muted(`show children`), {
+    label: ui.withTooltip({
+      elem: ui.Muted(`show children`),
       chi: `same as ctrl+click on any building row`,
     }),
   })
@@ -504,7 +505,8 @@ export function TableControlShowChi() {
 export function TableControlMissingLast() {
   return E(ui.ObsCheckbox, {
     obs: MISSING_LAST,
-    label: ui.withTooltip(ui.Muted(`missing last`), {
+    label: ui.withTooltip({
+      elem: ui.Muted(`missing last`),
       chi: `prefer to sort missing values to the bottom`
     }),
   })
@@ -513,7 +515,8 @@ export function TableControlMissingLast() {
 export function TableControlWide() {
   return E(ui.ObsCheckbox, {
     obs: WIDE,
-    label: ui.withTooltip(ui.Muted(`wide`), {
+    label: ui.withTooltip({
+      elem: ui.Muted(`wide`),
       chi: `take the entire width of the media panel`
     }),
   })
@@ -522,7 +525,10 @@ export function TableControlWide() {
 export function TableControlLong(desc) {
   return E(ui.ObsCheckbox, {
     obs: LONG,
-    label: ui.withTooltip(ui.Muted(`long`), {chi: [`show every `, desc]}),
+    label: ui.withTooltip({
+      elem: ui.Muted(`long`),
+      chi: [`show every `, desc],
+    }),
   })
 }
 
@@ -784,10 +790,10 @@ function TableCell(opt) {
   })
 
   if (type === TYPE_HELP) {
-    ui.withTooltip(cell, {chi: val})
+    ui.withTooltip({elem: cell, chi: val})
   }
   else if (type === TYPE_PRIO) {
-    ui.withTooltip(cell, {chi: a.joinLines(val)})
+    ui.withTooltip({elem: cell, chi: a.joinLines(val)})
   }
   return cell
 }

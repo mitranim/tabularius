@@ -66,8 +66,9 @@ export function BtnClip(val) {
   val = a.renderLax(val)
   if (!val) return undefined
 
-  return withTooltip(
-    E(`button`, {
+  return withTooltip({
+    chi: `clipboard`,
+    elem: E(`button`, {
       type: `button`,
       class: a.spaced(
         ui.CLS_INLINE_ICON,
@@ -76,8 +77,7 @@ export function BtnClip(val) {
       onclick() {u.copyToClipboard(val, true).catch(ui.logErr)},
       chi: SvgClipboard(),
     }),
-    {chi: `clipboard`},
-  )
+  })
 }
 
 function SvgClipboard() {return Svg(`clipboard`, {class: ui.CLS_INLINE_ICON})}
@@ -121,11 +121,11 @@ export function withGlossary(elem, {key, val, glos, under, suffixLine}) {
   const chi = glos[val] || glos[key]
   if (!chi) return elem
 
-  return withTooltip(elem, {chi, under, suffixLine})
+  return withTooltip({elem, chi, under, suffixLine})
 }
 
-export function withTooltip(elem, {
-  chi, under, help = true, suffixLine, inheritSize = true,
+export function withTooltip({
+  elem, chi, under, help = true, suffixLine, inheritSize = true,
 }) {
   a.reqElement(elem)
 

@@ -1276,7 +1276,7 @@ function BtnAppendEq({key, val, eph, tooltip}) {
   })
 
   if (!a.vac(tooltip)) return withGlossary(elem, {key, val})
-  return ui.withTooltip(elem, {chi: tooltip})
+  return ui.withTooltip({elem, chi: tooltip})
 }
 
 function BtnAppendTrunc({key, val, width}) {

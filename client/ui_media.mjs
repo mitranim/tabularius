@@ -172,7 +172,10 @@ function Process(src) {
       E(`pre`, {
         class: `flex-1 basis-auto trunc font-medium flex-1`,
         chi: [
-          ui.withTooltip(E(`span`, {chi: src.id}), {chi: `process id`}),
+          ui.withTooltip({
+            elem: E(`span`, {chi: src.id}),
+            chi: `process id`,
+          }),
           ui.Muted(`: `),
           ui.BtnPromptReplace(src.args),
         ],
@@ -181,10 +184,10 @@ function Process(src) {
         class: cls,
         chi: [`(`, u.callOpt(src.desc), `)`],
       }),
-      a.vac(src.startAt) && ui.withTooltip(
-        E(`pre`, {class: cls, chi: ui.timeFormat.format(src.startAt)}),
-        {chi: `started at: ` + ui.dateFormat.format(src.startAt)},
-      ),
+      a.vac(src.startAt) && ui.withTooltip({
+        elem: E(`pre`, {class: cls, chi: ui.timeFormat.format(src.startAt)}),
+        chi: `started at: ` + ui.dateFormat.format(src.startAt),
+      }),
       a.vac(src.id) && BtnKill({
         onclick() {os.runCmd(`kill ` + src.id).catch(ui.logErr)},
       }),

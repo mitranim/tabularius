@@ -187,11 +187,11 @@ export class LogMsg extends dr.MixReg(HTMLPreElement) {
 export const PROMPT_PREFIX = `>`
 
 function LogPrefix(inp) {
-  return ui.withTooltip(
-    E(`span`, {
+  return ui.withTooltip({
+    chi: ui.timeFormat.format(Date.now()),
+    elem: E(`span`, {
       class: ui.CLS_TEXT_MUTED,
       chi: inp ? PROMPT_PREFIX + ` ` : `< `,
     }),
-    {chi: ui.timeFormat.format(Date.now())},
-  )
+  })
 }

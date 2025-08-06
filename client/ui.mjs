@@ -144,15 +144,18 @@ export const NAV = E(`nav`, {
     E(`div`, {
       class: `flex row-end-cen pr-4`,
       chi: [
-        ui.withTooltip(
-          E(`span`, {
+        ui.withTooltip({
+          chi: `Tabularius version`,
+          elem: E(`span`, {
             class: a.spaced(NAV_LINK_CLS, ui.CLS_TEXT_MUTED),
             chi: [`v` + ui.VERSION],
           }),
-          {chi: `Tabularius version`},
-        ),
-        ui.withTooltip(
-          E(`a`, {
+        }),
+        ui.withTooltip({
+          chi: `author's personal website`,
+          help: false,
+          inheritSize: false,
+          elem: E(`a`, {
             href: `https://mitranim.com`,
             ...ui.TARBLAN,
             class: a.spaced(
@@ -161,35 +164,33 @@ export const NAV = E(`nav`, {
             ),
             chi: `@me`,
           }),
-          {
-            chi: `author's personal website`,
-            help: false,
-            inheritSize: false,
-          },
-        ),
-        ui.withTooltip(
-          E(`a`, {
+        }),
+        ui.withTooltip({
+          chi: `Tabularius source code`,
+          help: false,
+          elem: E(`a`, {
             href: GITHUB_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS,
             chi: ui.Svg(`github`, {class: a.spaced(NAV_ICON_CLS, `text-[#1f2328] dark:text-[#f0f6fc]`)}),
           }),
-          {chi: `Tabularius source code`, help: false},
-        ),
-        ui.withTooltip(
-          E(`a`, {
+        }),
+        ui.withTooltip({
+          chi: `Tower Dominion on Steam`,
+          help: false,
+          elem: E(`a`, {
             href: STEAM_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS,
             chi: ui.Svg(`steam`, {class: NAV_ICON_CLS}),
           }),
-          {chi: `Tower Dominion on Steam`, help: false},
-        ),
-        ui.withTooltip(
-          E(`a`, {
+        }),
+        ui.withTooltip({
+          chi: `Tower Dominion's official Discord`,
+          help: false,
+          elem: E(`a`, {
             ...ui.TARBLAN,
             href: DISCORD_LINK,
             class: NAV_LINK_CLS,
             chi: ui.Svg(`discord`, {class: NAV_ICON_CLS}),
           }),
-          {chi: `Tower Dominion's official Discord`, help: false},
-        ),
+        }),
       ],
     }),
   ],
