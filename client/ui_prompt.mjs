@@ -19,14 +19,12 @@ interfere with our prompt. We have links in abundance; see `FakeBtnInline`
 which is used all over the place.
 
 The left padding must compensate for the prefix.
-
-The right padding must compensate for the submit button.
 */
 const CLS_PROMPT_INPUT = a.spaced(
-  `w-full pl-8 pr-16 py-4 bg-transparent resize-none overflow-clip`,
+  `w-full pl-8 pr-3 py-4 bg-transparent resize-none overflow-clip`,
   // SYNC[bord-color].
   `shadow-[inset_0_1px_0_0_#d1d5db] dark:shadow-[inset_0_1px_0_0_#404040]`,
-  `outline-none focus:outline-none focus:shadow-none focus:ring-2 focus:ring-inset focus:rounded`,
+  `outline-none focus:outline-none focus:shadow-none focus:ring-2 focus:ring-inset`,
 )
 
 export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputElement) {
@@ -197,7 +195,6 @@ const PROMPT_BTN = ui.withTooltip({
   inheritSize: false,
   elem: E(`button`, {
     class: a.spaced(
-      `absolute right-0 top-1/2 transform -translate-y-1/2`,
       `h-full w-auto aspect-square`,
       `text-center align-middle leading-none text-2xl`,
       ui.CLS_BUSY_BTN_NEUT,
