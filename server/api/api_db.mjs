@@ -31,5 +31,7 @@ export async function apiDb(ctx) {
   try {await (await ctx.conn()).run(`checkpoint`)}
   catch (err) {console.error(`[api_db] unable to checkpoint:`, err)}
 
-  return (u.HttpFile.resolve(path)).response()
+  const file = await u.HttpFile.resolve(path)
+  if (!file) throw Error(`internal: missing DB file`)
+  return file.response()
 }
