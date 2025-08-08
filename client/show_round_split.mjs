@@ -373,8 +373,6 @@ function chiData({cols, round, roundBuis}) {
   let rowInd = -1
 
   for (const [buiInst, bui] of a.entries(round.Buildings)) {
-    rowInd++
-
     const {wepTypes, dumBulTypes, bui_type_upg} = a.reqDict(roundBuis[buiInst])
     const buiLabel = s.codedToNamed(`bui_type_upg`, bui_type_upg)
 
@@ -385,6 +383,7 @@ function chiData({cols, round, roundBuis}) {
 
       const data = sr.chiStatData({type, stats, total})
       const label = [buiLabel, `: `, data.chi_type]
+      rowInd++
 
       for (const [colInd, {key}] of cols.entries()) {
         const val = a.laxFin(data?.[key])

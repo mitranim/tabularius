@@ -732,3 +732,7 @@ Consider if the Web Authentication API and/or Web Credentials API could be relev
 ---
 
 * [x] Support in-place decoding for `.gd` files, without renaming. Add as an option to the `show` command.
+
+---
+
+* [ ] Schema and `plot`: HQ HP stat.
