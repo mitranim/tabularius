@@ -40,7 +40,6 @@ else
 	ESLINT ?= $(DENO_RUN) npm:eslint@$(ESLINT_VER) $(ESLINT_OPT)
 endif
 
-
 ifeq ($(engine),bun)
 	JS_WATCH ?= $(JS_RUN) --watch $(JS_WATCH_OPT)
 	JS_WATCH_HOT ?= $(JS_RUN) --hot $(JS_WATCH_OPT)

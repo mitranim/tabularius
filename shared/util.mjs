@@ -432,7 +432,7 @@ export async function pass_to_seedArrBuf(src) {
   {
     const MIN_LEN = 8
     const len = strLenUni(src)
-    if (!(len > MIN_LEN)) {
+    if (!(len >= MIN_LEN)) {
       throw SyntaxError(`a password or passphrase must have at least ${MIN_LEN} chars, got ${len} chars`)
     }
   }
