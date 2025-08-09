@@ -97,7 +97,6 @@
         // SYNC[discord_link].
         const DISCORD_LINK = `https://discord.gg/upPxCEVxgD`
 
-        // SYNC[discord_link].
         document.body.innerHTML = `
 <p>Sorry! Something went wrong.</p>
 <pre style="color: red; padding: 1rem; white-space: break-spaces">${err?.stack || err}</pre>
@@ -123,11 +122,5 @@
   </noscript>
 
   <div id="loading_msg">Loading...</div>
-
-  <script type="module">
-    const query = new URLSearchParams(location.href.split(`?`).join(`&`))
-    const dev = query.get(`dev`) === `true`
-    if (dev) navigator.serviceWorker.register(`./sw.mjs`)
-  </script>
 </body>
 </html>

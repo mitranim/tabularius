@@ -99,14 +99,30 @@ async function respond(ctx, req) {
       ) ||
       rou.notFound()
     )) ||
-    (await h.fileResponse({
-      req,
-      file: await DIRS.resolveSiteFile(path),
-      compressor: COMP,
-      liveClient: u.LIVE_CLI,
-    })) ||
+    (await serveFile(req, path)) ||
     rou.notFound()
   )
+}
+
+async function serveFile(req, path) {
+  const file = await DIRS.resolveSiteFile(path)
+  if (!file) return undefined
+
+  if (u.DEV && file.fsPath === `index.html`) {
+    file.setOpt({
+      text: a.joinLines([
+        await file.getText(),
+        `<script type="module">navigator.serviceWorker.register("./sw.mjs")</script>`,
+      ]),
+    })
+  }
+
+  return h.fileResponse({
+    req,
+    file,
+    compressor: COMP,
+    liveClient: u.LIVE_CLI,
+  })
 }
 
 /*
