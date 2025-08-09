@@ -1215,7 +1215,7 @@ export class TooltipPlugin extends a.Emp {
     const axisNameY = preY + (plot.axes?.[1]?.secretName || `Y`)
     const nameSuf = `: `
     const nameLen = nameSuf.length + Math.max(axisNameX.length, axisNameY.length)
-    const showLabel = a.laxBool(opt.label)
+    const showLabel = a.optBool(opt.label) ?? true
     const label = a.vac(showLabel) && u.ellMid(a.render(series.label), LEGEND_LEN_MAX)
     const elem = this.tooltip ??= this.makeTooltip()
 
