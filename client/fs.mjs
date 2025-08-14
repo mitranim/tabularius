@@ -1538,10 +1538,34 @@ export function errFsApi() {
       ...ui.TARBLAN,
       chi: [`File System API `, ui.External()],
     }),
-    `, which seems to be missing in the current browser; at the time of writing, it's supported in Chromium-based browsers, such as Chrome, Edge, Opera, Arc, and more, and in very recent versions of other browsers, but `,
-    ui.Bold(`not`),
-    ` in Firefox; please consider updating your browser or using a recent Chromium-based browser`,
+    `, `,
+    msgMissingFeature(),
   )
+}
+
+export function reqFileSystemObserver() {
+  const {FileSystemObserver} = globalThis
+  if (a.isFun(FileSystemObserver)) return FileSystemObserver
+
+  throw new ui.ErrLog(
+    `watching the file system requires the `,
+    E(`a`, {
+      href: `https://developer.mozilla.org/en-US/docs/Web/API/FileSystemObserver`,
+      class: ui.CLS_BTN_INLINE,
+      ...ui.TARBLAN,
+      chi: [`FileSystemObserver API `, ui.External()],
+    }),
+    `, `,
+    msgMissingFeature(),
+  )
+}
+
+function msgMissingFeature() {
+  return [
+    `which seems to be missing in the current browser; at the time of writing, it's supported in Chromium-based browsers, such as Chrome, Edge, Opera, Arc, and more, but `,
+    ui.Bold(`not`),
+    ` in Firefox or Safari; please consider updating your browser or using a recent Chromium-based browser`,
+  ]
 }
 
 export function errHandleKind(val) {

@@ -34,6 +34,7 @@ export const WATCH_STATE = new class WatchState extends a.Emp {
   historyDirHandle = a.optInst(undefined, FileSystemDirectoryHandle)
   runDirName = undefined
   roundFileName = undefined
+  task = undefined
 
   setRunDir(val) {
     this.runDirName = a.optValidStr(val)
@@ -41,6 +42,14 @@ export const WATCH_STATE = new class WatchState extends a.Emp {
   }
 
   setRoundFile(val) {this.roundFileName = a.optValidStr(val)}
+
+  idle() {return this.task ? undefined : this}
+
+  async run(val) {
+    this.task = val
+    try {await val}
+    finally {if (this.task === val) this.task = undefined}
+  }
 }()
 
 export const WATCH_LOCK_NAME = `tabularius.watch`
@@ -77,6 +86,8 @@ export async function cmdWatch(proc) {
   */
   if (isWatchingLocal()) return `already running`
 
+  fs.reqFileSystemObserver()
+
   proc.desc = `acquiring lock`
   let unlock = await u.lockOpt(WATCH_LOCK_NAME)
   const {sig} = proc
@@ -98,45 +109,23 @@ export async function cmdWatch(proc) {
   finally {unlock()}
 }
 
+function isFsEventModified(val) {return val?.type === `modified`}
+
 export async function cmdWatchUnsync(sig) {
-  let sleep = WATCH_INTERVAL_MS
-  let errs = 0
+  const Obs = fs.reqFileSystemObserver()
   const state = WATCH_STATE
   await watchInit(sig, state)
 
-  while (!sig.aborted) {
-    try {
-      await watchStep(sig, state)
-      errs = 0
-      sleep = WATCH_INTERVAL_MS
-    }
-    catch (err) {
-      if (u.errIs(err, u.isErrAbort)) return
-      errs++
-      if (u.errIs(err, fs.isErrFs)) {
-        ui.LOG.err(
-          `[watch] filesystem error, may need to revoke FS access and grant it again;`,
-          ` see `, os.BtnCmd(`help saves`), ` and `, os.BtnCmd(`help history`), `; error: `,
-          err,
-        )
-      }
-      if (errs >= WATCH_MAX_ERRS) {
-        throw Error(`unexpected error; reached max error count ${errs}, exiting: ${err}`, {cause: err})
-      }
-      if (u.errIs(err, u.isErrDecoding)) {
-        sleep = WATCH_INTERVAL_MS_SHORT
-        ui.LOG.err(`[watch] file decoding error, retrying after ${sleep}ms: `, err)
-      }
-      else {
-        sleep = WATCH_INTERVAL_MS_LONG
-        ui.LOG.err(`[watch] unexpected error (${errs} in a row), retrying after ${sleep}ms: `, err)
-      }
-    }
-    if (!await a.after(sleep, sig)) return
-  }
+  const obs = new Obs(function onFsChange(events) {
+    if (!a.some(events, isFsEventModified)) return
+    state.idle()?.run(watchStep(sig, state).catch(onWatchErr))
+  })
+
+  await obs.observe(state.progressFileHandle)
+  try {await sig}
+  finally {obs.disconnect()}
 }
 
-// Initialize backup state by inspecting history directory.
 async function watchInit(sig, state) {
   a.final(state, `progressFileHandle`, await fs.progressFileReq(sig))
   a.final(state, `historyDirHandle`, await fs.historyDirReq(sig))
@@ -279,4 +268,24 @@ function afterRoundBackup(eve) {
   if (!hadPrev) p.plotDefaultLocalOpt({quiet: true}).catch(ui.logErr)
   if (!au.isAuthed()) return
   os.runCmd(`upload -p -u ${u.paths.join(runDirName, roundFileName)}`).catch(ui.logErr)
+}
+
+function onWatchErr(err) {
+  if (u.errIs(err, u.isErrAbort)) return
+
+  if (u.errIs(err, fs.isErrFs)) {
+    ui.LOG.err(
+      `[watch] filesystem error, may need to revoke FS access and grant it again;`,
+      ` see `, os.BtnCmd(`help saves`), ` and `, os.BtnCmd(`help history`), `; error: `,
+      err,
+    )
+    return
+  }
+
+  if (u.errIs(err, u.isErrDecoding)) {
+    ui.LOG.err(`[watch] file decoding error: `, err)
+    return
+  }
+
+  ui.LOG.err(`[watch] `, err)
 }

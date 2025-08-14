@@ -5,7 +5,7 @@ import * as ui from './ui.mjs'
 import * as fs from './fs.mjs'
 
 // Increment by 1 when publishing an update.
-export const VERSION = 155
+export const VERSION = 156
 
 export function BtnUrlAppend(val) {
   const href = globalThis.location.href + a.reqValidStr(val)
