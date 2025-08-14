@@ -26,10 +26,11 @@ function main() {
 // }
 
 async function onRequest(req) {
-  const path = new URL(req.url).pathname
+  const {method} = req
+  const {pathname} = new URL(req.url)
   return (
-    await BRO.response(req, path) ??
-    h.notFound(req.method, path)
+    (await BRO.response({req, pathname})) ??
+    h.notFound({method, pathname})
   )
 }
 

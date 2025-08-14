@@ -39,5 +39,5 @@ export async function resolveUserFile(ctx, srcPath, outPath) {
     if (typ) headers.push([`content-type`, typ])
   }
 
-  return file.response({headers})
+  return file.response({resOpt: {headers}})
 }
