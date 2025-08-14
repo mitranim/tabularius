@@ -354,9 +354,11 @@ export async function fileConfDeinit({sig, conf}) {
     ui.LOG.err(desc, `: error deleting from DB:`, err)
   }
 
-  if (!conf.handle) return `${desc}: access not granted`
+  if (!conf.handle) {
+    return {done: false, msg: `${desc}: access not granted`}
+  }
   conf.clear()
-  return `${desc}: access revoked`
+  return {done: true, msg: `${desc}: access revoked`}
 }
 
 // SYNC[file_conf_status].

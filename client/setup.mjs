@@ -52,9 +52,14 @@ export async function savesGrant({sig, args}) {
 }
 
 export async function savesRevoke(sig) {
-  const conf = fs.SAVE_DIR_CONF
-  if (!await confRevoked({sig, conf})) return
-  os.procKillOpt(`watch`)
+  let done
+  if (await confRevoked({sig, conf: fs.SAVE_DIR_CONF})) {
+    done = true
+  }
+  if (await confRevoked({sig, conf: fs.PROGRESS_FILE_CONF, quiet: true})) {
+    done = true
+  }
+  if (done) os.procKillOpt(`watch`)
 }
 
 cmdHistory.cmd = `history`
@@ -133,17 +138,10 @@ export async function confGranted({sig, conf, args}) {
   return true
 }
 
-export async function confRevoked({sig, conf}) {
-  a.reqInst(conf, fs.FileConf)
-
-  if (!conf.handle) {
-    ui.LOG.info(conf.desc, `: access not granted`)
-    return false
-  }
-
-  await fs.fileConfDeinit({sig, conf})
-  ui.LOG.info(conf.desc, `: access revoked`)
-  return true
+async function confRevoked({sig, conf, quiet}) {
+  const {done, msg} = await fs.fileConfDeinit({sig, conf})
+  if (!quiet) ui.LOG.info(msg)
+  return done
 }
 
 function tipEnablesFeatures() {
