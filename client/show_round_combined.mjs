@@ -793,7 +793,7 @@ function TableCell(opt) {
     return ui.withTooltip({elem: cell, chi: val})
   }
   if (type === TYPE_PRIO) {
-    return ui.withTooltip({elem: cell, chi: a.joinLines(val)})
+    return ui.withTooltip({elem: cell, chi: u.intersperseOpt(val, `\n`)})
   }
   return cell
 }
@@ -1157,7 +1157,7 @@ export function wepDetailData(wep) {
 
   out.aoe = reify(aoe.SizeValue)
   out.targ = aoe.MaxTarget
-  out.prio = wep.TargetingPriorities
+  out.prio = a.map(wep.TargetingPriorities, gc.targPrioCodeToName)
   out.enab = wep.Enabled
   return out
 }
@@ -1325,7 +1325,7 @@ export function fmtVal(type, val) {
   if (type === TYPE_NUM_MOD) return fmtNumMod(val)
   if (type === TYPE_PERC) return fmtNumPerc(val)
   if (type === TYPE_PERC_MOD) return fmtNumPercMod(val)
-  if (type === TYPE_PRIO) return abbrs(val)
+  if (type === TYPE_PRIO) return fmtTargPrios(val)
 
   if (!FMT_WARNED) {
     FMT_WARNED = true
@@ -1358,6 +1358,15 @@ function fmtCentPerc(src) {
 
 function fmtNumPercMod(src) {
   return finOpt(src) && (numFormatSign.format(src * 100) + `%`)
+}
+
+function fmtTargPrios(src) {
+  return u.intersperseOpt(a.map(src, fmtTargPrio), ` `)
+}
+
+function fmtTargPrio(src) {
+  if (a.isStr(src)) return a.words(src).mapMut(first).upper().solid()
+  return src
 }
 
 /*
@@ -1457,9 +1466,6 @@ function sumColspans(cols) {
   return {all, wide, narrow}
 }
 
-class Words extends a.Words {abbr() {return this.mapMut(first).join(``)}}
-function abbrs(src) {return a.spaced(...a.map(src, abbr))}
-function abbr(src) {return Words.from(src).abbr()}
 function first(src) {return src[0]}
 function getKey(src) {return src.key}
 function isEnabled(val) {return val.isEnabled()}

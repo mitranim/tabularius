@@ -768,6 +768,33 @@ export function findGameReleaseForMs(ms) {
 }
 
 /*
+Older game versions use strings.
+Newer game versions use integers. We map them to "old" strings.
+*/
+const TARG_PRIO = new Map()
+  .set(0, `FullHealth`)
+  .set(1, `LowestHealth`)
+  .set(2, `MostHealth`)
+  .set(3, `Slowest`)
+  .set(4, `Fastest`)
+  .set(5, `Armored`)
+  .set(6, `LowestArmor`)
+  .set(7, `ClosestToHQ`)
+  .set(8, `ExitPoints`)
+  .set(9, `MostFar`)
+  .set(10, `OnPath`)
+  .set(11, `FreeTileAsideOfPath`)
+  .set(12, `Air`)
+  .set(13, `MostShield`)
+  .set(14, `PreviousTarget`)
+  .set(15, `Self`)
+
+export function targPrioCodeToName(src) {
+  if (a.isInt(src)) return TARG_PRIO.get(src) ?? src
+  return src
+}
+
+/*
 We treat SmokSig as having the cost of an AirCom added to it.
 But Trevia's one is different and requires special handling.
 See `buiCost`.
