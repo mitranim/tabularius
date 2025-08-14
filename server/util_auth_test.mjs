@@ -4,7 +4,7 @@ import * as tu from './test_util.mjs'
 import * as u from './util.mjs'
 
 t.test(function test_auth() {
-  function fail(src, ts, msg) {t.throws(() => u.auth(src, ts), Error, msg)}
+  function fail(src, ts, msg) {t.throws(() => u.auth(src, ts), u.ErrHttp, msg)}
 
   fail(`one`, 0, `auth token must be <pub>.<ts>.<sig>, got "one"`)
   fail(`one.two`, 0, `auth token must be <pub>.<ts>.<sig>, got "one.two"`)

@@ -43,8 +43,15 @@ export function init() {
 
   document.getElementById(`loading_style`)?.remove()
   document.getElementById(`loading_msg`)?.remove()
-  document.addEventListener(`keydown`, onKeydownClear)
-  document.addEventListener(`keydown`, ui.onKeydownFocusPrompt)
+  document.addEventListener(`keydown`, onKeydownClear, {capture: true})
+
+  /*
+  Uses `capture` to increase the likelihood that we focus the prompt input
+  before the actual character-typing functionality is considered by the
+  browser. In practice, this seems to work without `capture`, but we're not
+  sure if that's consistent between browsers.
+  */
+  document.addEventListener(`keydown`, ui.onKeydownFocusPrompt, {capture: true})
 
   document.addEventListener(`dragover`, a.eventKill)
   document.addEventListener(`dragenter`, ui.onDragEnter)

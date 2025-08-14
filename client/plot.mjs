@@ -1148,7 +1148,7 @@ export class TooltipPlugin extends a.Emp {
   overHei = undefined
   resObs = new ResizeObserver(this.onResize.bind(this))
 
-  constructor(opt) {super().opt = a.optRec(opt)}
+  constructor(opt) {super().opt = a.laxRec(opt)}
 
   opts() {
     return {
@@ -1206,17 +1206,16 @@ export class TooltipPlugin extends a.Emp {
       return
     }
 
-    const opt = this.opt
-    const formatX = opt?.formatX ?? formatVal
-    const formatY = opt?.formatY ?? formatVal
+    const {opt} = this
+    const formatX = a.optFun(opt?.formatX) ?? formatVal
+    const formatY = a.optFun(opt?.formatY) ?? formatVal
     const preX = a.laxStr(opt?.preX)
     const preY = a.laxStr(opt?.preY)
     const axisNameX = preX + (plot.axes?.[0]?.secretName || `X`)
     const axisNameY = preY + (plot.axes?.[1]?.secretName || `Y`)
     const nameSuf = `: `
     const nameLen = nameSuf.length + Math.max(axisNameX.length, axisNameY.length)
-    const showLabel = a.optBool(opt.label) ?? true
-    const label = a.vac(showLabel) && u.ellMid(a.render(series.label), LEGEND_LEN_MAX)
+    const label = a.vac(!opt.noLabel) && u.ellMid(a.render(series.label), LEGEND_LEN_MAX)
     const elem = this.tooltip ??= this.makeTooltip()
 
     elem.textContent = u.joinLines(

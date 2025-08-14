@@ -473,23 +473,23 @@ export function seedToKeyPair(seed) {
   return nc.sign.keyPair.fromSeed(req_Ed25519_seed(seed))
 }
 
-export function authToken(publicKey, secretKey, ts = Date.now()) {
-  a.reqInt(ts)
-  const msg = byteArr_to_hexStr(publicKey) + `.` + ts
+export function authToken(publicKey, secretKey, nonce = Date.now()) {
+  a.reqInt(nonce)
+  const msg = byteArr_to_hexStr(publicKey) + `.` + nonce
   const msgBytes = new TextEncoder().encode(msg)
   const sigBytes = nc.sign.detached(msgBytes, secretKey)
   return msg + `.` + byteArr_to_hexStr(sigBytes)
 }
 
-export function authHeaderOpt(publicKey, secretKey, ts) {
+export function authHeaderOpt(publicKey, secretKey, nonce) {
   a.optInst(publicKey, Uint8Array)
   a.optInst(secretKey, Uint8Array)
   if (!(publicKey && secretKey)) return undefined
-  return [`authorization`, `Bearer ` + authToken(publicKey, secretKey, ts)]
+  return [`authorization`, `Bearer ` + authToken(publicKey, secretKey, nonce)]
 }
 
-export function authHeadersOpt(publicKey, secretKey, ts) {
-  const head = authHeaderOpt(publicKey, secretKey, ts)
+export function authHeadersOpt(publicKey, secretKey, nonce) {
+  const head = authHeaderOpt(publicKey, secretKey, nonce)
   return head ? [head] : []
 }
 

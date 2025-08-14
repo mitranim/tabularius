@@ -11,10 +11,16 @@ namespace.au = self
 a.patch(globalThis, namespace)
 
 export const USER_ID = a.obsRef()
-let PUB_KEY_BYTE_ARR = undefined
-let SEC_KEY_BYTE_ARR = undefined
 const STORAGE_KEY_PUB_KEY = `tabularius.pub_key`
 const STORAGE_KEY_SEC_KEY = `tabularius.sec_key`
+
+/*
+Kept in RAM for generating auth headers for some API requests. The secret key
+never leaves the client, and is used for creating signatures which prove
+ownership of the public key. See the functions `authToken` and `auth`.
+*/
+let PUB_KEY_BYTE_ARR = undefined
+let SEC_KEY_BYTE_ARR = undefined
 
 loadedAuthKeys()
 

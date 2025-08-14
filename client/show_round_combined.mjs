@@ -790,10 +790,10 @@ function TableCell(opt) {
   })
 
   if (type === TYPE_HELP) {
-    ui.withTooltip({elem: cell, chi: val})
+    return ui.withTooltip({elem: cell, chi: val})
   }
-  else if (type === TYPE_PRIO) {
-    ui.withTooltip({elem: cell, chi: a.joinLines(val)})
+  if (type === TYPE_PRIO) {
+    return ui.withTooltip({elem: cell, chi: a.joinLines(val)})
   }
   return cell
 }

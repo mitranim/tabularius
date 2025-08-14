@@ -131,7 +131,11 @@ export default [{
     [`no-unsafe-negation`]: `error`,
     [`no-unused-expressions`]: `error`,
     [`no-unused-labels`]: `error`,
-    [`no-unused-vars`]: [`error`, {argsIgnorePattern: `^_`, varsIgnorePattern: `^_`}],
+    [`no-unused-vars`]: [`error`, {
+        args: `all`,
+        argsIgnorePattern: `^_`,
+        varsIgnorePattern: `^_`,
+      }],
     [`no-useless-catch`]: `error`,
     [`no-useless-escape`]: `error`,
     [`no-warning-comments`]: [`error`, {location: `anywhere`, terms: [`F`+`I`+`X`+`M`+`E`]}],

@@ -210,7 +210,8 @@ cancelation. Usage:
 
   await u.wait(sig, someAsyncFun())
 
-When cancelation is undesirable, use `u.sig`.
+When cancelation is undesirable but you're calling a function which internally
+uses `wait`, pass `u.sig`.
 */
 export function wait(sig, ...src) {
   reqSig(sig)
@@ -647,6 +648,7 @@ export function ellMid(src, max) {
   return chars.slice(0, lenPre).concat(inf).concat(chars.slice(-lenSuf)).join(``)
 }
 
+/*
 export function entrios(src) {
   const out = []
   const keys = a.structKeys(src)
@@ -657,7 +659,9 @@ export function entrios(src) {
   }
   return out
 }
+*/
 
+/*
 // Counterpart to `a.ancestor`. The library doesn't provide "last ancestor".
 export function lastAncestor(tar, cls) {
   a.reqElement(tar)
@@ -670,6 +674,7 @@ export function lastAncestor(tar, cls) {
   }
   return out
 }
+*/
 
 export function isEventModifiedPrimary(eve) {
   return (

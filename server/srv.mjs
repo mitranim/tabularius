@@ -111,7 +111,7 @@ async function serveFile(req, path) {
   if (u.DEV && file.fsPath === `index.html`) {
     file.setOpt({
       text: a.joinLines([
-        await file.getText(),
+        (await file.getText()),
         `<script type="module">navigator.serviceWorker.register("./sw.mjs")</script>`,
       ]),
     })

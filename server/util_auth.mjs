@@ -6,12 +6,9 @@ import * as us from './util_srv.mjs'
 
 export const AUTH_TS_EXP = a.hourToMs(24)
 
-export function reqAuthReq(req) {
-  a.reqInst(req, Request)
-  try {return auth(reqBearer(req))}
-  catch (err) {throw new us.ErrHttp(err, {cause: err, status: 401})}
-}
+export function reqAuthReq(req) {return auth(reqBearer(req))}
 
+/*
 export function reqAuthOpt(req) {
   a.reqInst(req, Request)
   try {
@@ -22,6 +19,7 @@ export function reqAuthOpt(req) {
     return undefined
   }
 }
+*/
 
 export function auth(src, now) {
   a.optStr(src)
@@ -35,17 +33,26 @@ export function auth(src, now) {
 
   const parts = src.split(`.`)
   if (parts.length !== 3) {
-    throw SyntaxError(`auth token must be <pub>.<ts>.<sig>, got ${a.show(src)}`)
+    throw new us.ErrHttp(
+      `auth token must be <pub>.<ts>.<sig>, got ${a.show(src)}`,
+      {status: 401},
+    )
   }
 
   const [pubHex, tsStr, sigHex] = parts
   if (pubHex.length !== 64) {
-    throw SyntaxError(`auth token: malformed pub key: ${a.show(pubHex)}, expected a 64-char hex string`)
+    throw new us.ErrHttp(
+      `auth token: malformed pub key: ${a.show(pubHex)}, expected a 64-char hex string`,
+      {status: 401},
+    )
   }
 
   const ts = a.intOpt(tsStr)
   if (!a.isFin(ts)) {
-    throw SyntaxError(`auth token: malformed timestamp: ${a.show(tsStr)}`)
+    throw new us.ErrHttp(
+      `auth token: malformed timestamp: ${a.show(tsStr)}`,
+      {status: 401},
+    )
   }
 
   /*
@@ -55,26 +62,38 @@ export function auth(src, now) {
   now ??= Date.now()
   const diff = now - ts
   if (diff > AUTH_TS_EXP) {
-    throw Error(`auth token: timestamp too far in the past`)
+    throw new us.ErrHttp(
+      `auth token: timestamp too far in the past`,
+      {status: 401},
+    )
   }
-  else if (diff < -AUTH_TS_EXP) {
-    throw Error(`auth token: timestamp too far in the future`)
+  if (diff < -AUTH_TS_EXP) {
+    throw new us.ErrHttp(
+      `auth token: timestamp too far in the future`,
+      {status: 401},
+    )
   }
 
   const pub = su.hexStr_to_byteArr(pubHex)
   if (pub.length !== 32) {
-    throw SyntaxError(`auth token: malformed pub key ${a.show(pubHex)}, expected a 64-char hex string`)
+    throw new us.ErrHttp(
+      `auth token: malformed pub key ${a.show(pubHex)}, expected a 64-char hex string`,
+      {status: 401},
+    )
   }
 
   const msg = new TextEncoder().encode(pubHex + `.` + tsStr)
   const sig = su.hexStr_to_byteArr(sigHex)
   if (!nc.sign.detached.verify(msg, sig, pub)) {
-    throw Error(`auth token: signature doesn't match claims`)
+    throw new us.ErrHttp(
+      `auth token: signature doesn't match claims`,
+      {status: 401},
+    )
   }
   return pubHex
 }
 
-export function reqBearer(req) {
+function reqBearer(req) {
   a.reqInst(req, Request)
   return a.stripPre(req.headers.get(`authorization`), `Bearer `).trim()
 }
