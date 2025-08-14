@@ -154,12 +154,11 @@ function BtnReplace(suf, eph) {
 
 function BtnReplaceEph(eph) {return BtnReplace(undefined, eph)}
 
-export function LsEntry({kind, name, path, entries, stat, statStr, cloud}) {
+export function LsEntry({kind, name, path, entries, stat, stats, cloud}) {
   a.reqStr(kind)
   a.reqStr(name)
   a.reqStr(path)
   a.optBool(stat)
-  a.optStr(statStr)
   a.optBool(cloud)
   entries = a.laxArr(entries)
 
@@ -169,7 +168,7 @@ export function LsEntry({kind, name, path, entries, stat, statStr, cloud}) {
 
   if (kind === `file`) {
     const base = locPre + kind + inf + path
-    if (statStr) return base + inf + statStr
+    if (a.vac(stats)) return [base, Stat(stats)]
     return [base, statSuf]
   }
 
@@ -179,8 +178,8 @@ export function LsEntry({kind, name, path, entries, stat, statStr, cloud}) {
   const buf = []
 
   for (const entry of a.values(entries)) {
-    const {kind, statStr} = entry
-    buf.push(EntryLine({entry, desc: kind, cmd, path, statStr}))
+    const {kind, stats} = entry
+    buf.push(EntryLine({entry, desc: kind, cmd, path, stats}))
   }
 
   return ui.LogLines(
@@ -189,11 +188,10 @@ export function LsEntry({kind, name, path, entries, stat, statStr, cloud}) {
   )
 }
 
-export function EntryLine({entry, desc, cmd, path, statStr}) {
+export function EntryLine({entry, desc, cmd, path, stats}) {
   a.reqRec(entry)
   a.optStr(desc)
   a.optStr(cmd)
-  a.optStr(statStr)
 
   const name = a.reqValidStr(entry.name)
   path = u.paths.join(a.laxStr(path), name)
@@ -208,11 +206,20 @@ export function EntryLine({entry, desc, cmd, path, statStr}) {
       ),
       `\u00a0`, // Regular space is ignored here. Why?
       ui.BtnClip(path),
-      a.vac(statStr) && ` (${statStr})`,
+      Stat(stats),
     ]),
   ])
 }
 
 function TruncLine(chi) {
   return E(`span`, {class: `w-full inline-flex trunc-base whitespace-pre`, chi})
+}
+
+function Stat(src) {
+  return a.vac(src) && [
+    `\u00a0`, // Regular space is ignored here. Why?
+    ui.Muted(`(`),
+    src,
+    ui.Muted(`)`),
+  ]
 }

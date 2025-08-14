@@ -420,26 +420,31 @@ export async function fileConfRequirePermission({sig, conf}) {
 
 export function fileHandleStatStr({sig, handle}) {
   a.reqInst(handle, FileSystemHandle)
-  if (isDir(handle)) return dirStatStr({sig, dir: handle})
-  if (isFile(handle)) return fileStatStr({sig, file: handle})
+  if (isDir(handle)) return dirStats({sig, dir: handle})
+  if (isFile(handle)) return fileStats({sig, file: handle})
   ui.LOG.err(errHandleKind(handle.kind))
   return undefined
 }
 
-export async function fileStatStr({sig, file}) {
-  return formatSize(await fileSize({sig, file}))
+export async function fileStats({sig, file}) {
+  const blob = await getFileBlob({sig, file})
+
+  return ui.withTooltip({
+    elem: ui.Span(formatSize(blob.size)),
+    chi: [`modified at: `, ui.dateFormat.format(blob.lastModified)],
+  })
 }
 
 export async function fileSize({sig, file}) {
   return (await getFileBlob({sig, file})).size
 }
 
-export async function dirStatStr({sig, dir}) {
+export async function dirStats({sig, dir}) {
   const {fileCount, dirCount, byteCount} = await dirStat({sig, dir})
-  return a.joinOpt([
-    fileCount ? `${fileCount} files` : ``,
-    dirCount ? `${dirCount} dirs` : ``,
-    byteCount ? `${formatSize(byteCount)}` : ``,
+  return u.intersperseOpt([
+    a.vac(fileCount) && [fileCount, ` `, ui.Muted(`files`)],
+    a.vac(dirCount) && [dirCount, ` `, ui.Muted(`dirs`)],
+    a.vac(byteCount) && formatSize(byteCount),
   ], `, `)
 }
 
@@ -518,6 +523,7 @@ export function historyDirReq(sig) {
   return fileConfLoadedWithPermIdemp({sig, conf: HISTORY_DIR_CONF, req: true})
 }
 
+// TODO move to `ls.mjs`.
 export async function listDirsFiles({sig, path, stat}) {
   a.optStr(path)
   a.optBool(stat)
@@ -540,7 +546,7 @@ export async function listDirsFiles({sig, path, stat}) {
   if (isFile(handle)) {
     return ls.LsEntry({
       kind, name, path, stat,
-      statStr: a.vac(stat) && await fileStatStr({sig, file: handle}),
+      stats: a.vac(stat) && await fileStats({sig, file: handle}),
     })
   }
 
@@ -557,8 +563,8 @@ export async function FileConfLine({sig, conf, stat}) {
 
   if (handle) {
     const cmd = a.spaced(`ls`, (stat ? `-s` : ``))
-    const statStr = a.vac(stat) && await fileHandleStatStr({sig, handle})
-    return ls.EntryLine({entry: handle, desc, cmd, statStr})
+    const stats = a.vac(stat) && await fileHandleStatStr({sig, handle})
+    return ls.EntryLine({entry: handle, desc, cmd, stats})
   }
 
   if (deprecated) return undefined
@@ -572,7 +578,7 @@ async function dirEntries({sig, dir, stat}) {
     out.push({
       kind: val.kind,
       name: val.name,
-      statStr: a.vac(stat) && await fileHandleStatStr({sig, handle: val}),
+      stats: a.vac(stat) && await fileHandleStatStr({sig, handle: val}),
     })
   }
   return out
@@ -1543,9 +1549,13 @@ export function errHandleKind(val) {
 }
 
 export function formatSize(bytes) {
-  if (bytes < 1024) return `${bytes} bytes`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KiB`
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MiB`
+  if (bytes < 1024) {
+    return [bytes, ` `, ui.Muted(`bytes`)]
+  }
+  if (bytes < 1024 * 1024) {
+    return [ui.formatNumCompact(bytes / 1024), ` `, ui.Muted(`KiB`)]
+  }
+  return [ui.formatNumCompact(bytes / (1024 * 1024)), ` `, ui.Muted(`MiB`)]
 }
 
 export const STORAGE_KEY_FS_SCHEMA_VERSION = `tabularius.fs_schema_version`

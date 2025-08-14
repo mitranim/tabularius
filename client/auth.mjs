@@ -322,6 +322,7 @@ function roundTripErrMsg(type) {
   return `internal: a roundtrip encoding-decoding of the ${a.reqValidStr(type)} produced a different result, which breaks authentication; please report this error on GitHub or Discord`
 }
 
+// TODO move to `ls.mjs`.
 export async function listDirsFiles(sig, path) {
   u.reqSig(sig)
   a.optStr(path)
