@@ -141,15 +141,6 @@ cmdEdit.help = function cmdEditHelp() {
       ui.Bold(`safe to run`),
       ` because no files will be modified; you can safely preview changes`,
     ],
-
-    /*
-    Pending feature, not yet implemented.
-
-      `-t: target file path; if provided, only this file be written; the path may be magic, such as "<history>/latest/latest"`,
-      `-s: source file path; requires -t`,
-      `if -t is not provided, the command automatically determines which files to read and write in the game's [saves] directory`,
-      `regardless of which files are targeted, when -w is used, the command always makes backups in the [history] directory`,
-    */
   )
 }
 
@@ -210,30 +201,6 @@ export function editDecodeCliArgs(state) {
       continue
     }
 
-    /*
-    Not currently useful. Meta progression editing usually involves editing
-    multiple correlated files, and fails when targeting a specific file.
-
-    This is mostly intended for a not-yet-implemented feature of specifying
-    arbitrary keys and values, which is handy for cheating or editing something
-    that our tool has no special support for.
-    */
-    if (key === `-t`) {
-      if (val) {
-        state.tarPath = val
-        continue
-      }
-      errs.push([`option `, BtnAppend(`-t`), ` requires a file path`])
-    }
-
-    if (key === `-s`) {
-      if (val) {
-        state.srcPath = val
-        continue
-      }
-      errs.push([`option `, BtnAppend(`-s`), ` requires a file path`])
-    }
-
     if (key === `diff`) {
       try {state.diff = ui.cliNat(cmd, key, val)}
       catch (err) {errs.push(err)}
@@ -282,19 +249,6 @@ export function editDecodeCliArgs(state) {
     }
 
     errs.push([`unrecognized option `, BtnAppend(pair)])
-  }
-
-  const {tarPath, srcPath} = state
-  if (srcPath && !tarPath) {
-    errs.push([
-      `when source path `, BtnAppendEq(`-s`, srcPath), ` is provided, `,
-      `target path `, BtnAppendEq(`-t`), ` must also be provided; `,
-      `to read and write the same file, simply specify `,
-      `target path `, BtnAppendEq(`-t`, srcPath),
-    ])
-  }
-  else if (!srcPath && tarPath) {
-    state.srcPath = tarPath
   }
 
   if (state.all && a.isNil(state.diff) && a.isNil(state.frontier)) {
@@ -1265,8 +1219,6 @@ export async function loadSaveFile(sig, state, name) {
 
 export async function loadSrcOrSaveFile(sig, state, name) {
   a.reqValidStr(name)
-  const {srcPath} = state
-  if (srcPath) return {file: (await loadPath(sig, state, srcPath)), custom: true}
   return {file: (await loadSaveFile(sig, state, name)), custom: false}
 }
 
