@@ -164,7 +164,10 @@ export function foldSome(src, acc, fun) {
 export function isPlainDict(val) {return a.isNil(Object.getPrototypeOf(val))}
 export function reqPlainDict(val) {return a.req(val, isPlainDict)}
 
-// TODO add to `@mitranim/js`.
+/*
+TODO add to `@mitranim/js`. Similar to `{__proto__: null, <...val>}`,
+but syntactically cleaner.
+*/
 export function dict(val) {return a.assign(a.Emp(), val)}
 
 export function dictPop(tar, key) {

@@ -6,15 +6,6 @@ import * as a from '@mitranim/js/all.mjs'
 import * as u from './util.mjs'
 import * as gc from './game_const.mjs'
 
-/*
-The game doesn't seem to provide its version in the game files. For now, we
-attempt to match the latest version and just hope that most of our users update
-both the game and our app together, which of course won't happen all the time.
-We need the game version actually specified in the game files!
-*/
-export const GAME_SEMVER = Object.freeze(new u.Semver(1, 11))
-export const GAME_VER = GAME_SEMVER.toString()
-
 export const DATA_SCHEMA_VERSION = 7
 export const ROUND_FIELDS_SCHEMA_VERSION = 2
 export const DATA_DEBUG = false
@@ -1252,20 +1243,12 @@ export function roundMigrated({round, userId, runNum, runMs}) {
   let out = false
   if (changed(round, `tabularius_fields_schema_version`, ROUND_FIELDS_SCHEMA_VERSION)) out = true
 
-  /*
-  TODO avoid setting this field, remove it from existing data, and modify other
-  code to ignore it. We should derive game versions from timestamps only.
-  */
-  if (
-    !a.isValidStr(round.tabularius_game_ver) &&
-    changed(round, `tabularius_game_ver`, GAME_VER)
-  ) out = true
-
   if (changed(round, `tabularius_user_id`, userId)) out = true
   if (changed(round, `tabularius_run_num`, runNum)) out = true
   if (changed(round, `tabularius_run_ms`, runMs)) out = true
 
   // Drop deprecated fields.
+  if (deleted(round, `tabularius_game_ver`)) out = true
   if (deleted(round, `tabularius_userId`)) out = true
   if (deleted(round, `tabularius_runId`)) out = true
   if (deleted(round, `tabularius_runNum`)) out = true

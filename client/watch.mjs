@@ -118,7 +118,7 @@ export async function cmdWatchUnsync(sig) {
 
   const obs = new Obs(function onFsChange(events) {
     if (!a.some(events, isFsEventModified)) return
-    state.idle()?.run(watchStep(sig, state).catch(onWatchErr))
+    state.idle()?.run(onWatchFsEvent(sig, state).catch(onWatchErr))
   })
 
   await obs.observe(state.progressFileHandle)
@@ -148,7 +148,7 @@ async function watchInit(sig, state) {
 }
 
 /*
-Main watch functionality, periodically executed by `cmdWatch`.
+Main watch functionality, executed by `cmdWatch` on FS changes.
 
 TODO: when a fork is detected, delete all rounds after the fork.
 
@@ -162,8 +162,20 @@ TODO: check additional fields (other than `.RoundIndex`) for differences,
 to detect new runs in an edge case where a user stops our app in one run,
 and starts it in another run, where the round number is exactly the same.
 Currently we end up merging two runs in such a case.
+
+TODO:
+- Check `.MarkAsExpired` and back up with an incremented `.RoundIndex`.
+- Whenever file is modified but round is unchanged:
+  - Check if the latest backup had `.MarkAsExpired`.
+  - If true, prefer the new version of the file.
+- Whenever round index is decreased by one:
+  - Check if the latest backup had `.MarkAsExpired`.
+  - If true, instead of assuming new run, delete the latest backup under the
+    assumption that `rollback` was performed.
+- All of the above may require additional support in `/api/upload_round`,
+  since we do want to immediately upload such files.
 */
-async function watchStep(sig, state) {
+async function onWatchFsEvent(sig, state) {
   const blob = await fs.getFileBlob({sig, file: state.progressFileHandle})
   const content = await u.wait(sig, blob.text())
   const roundData = await u.wait(sig, u.decodeGdStr(content))
