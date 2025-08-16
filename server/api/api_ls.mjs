@@ -39,6 +39,7 @@ async function apiLsEntries(path) {
   const out = []
   for (const name of await io.readDir(path)) {
     const isFile = name.isFile ?? (await io.stat(pt.join(path, name))).isFile
+
     out.push(
       isFile
       ? {kind: `file`, name: u.gameFilePathRealToFake(name)}
