@@ -111,7 +111,7 @@ export const TOOLTIP = E(`span`, {
   ontoggle(eve) {if (eve.newState === `closed`) tooltipDeinit()},
 })
 
-export function withGlossary(elem, {key, val, glos, under, suffixLine}) {
+export function withGlossary(elem, {key, val, glos, under}) {
   a.reqElement(elem)
   key = a.laxStr(key)
   val = a.laxStr(val)
@@ -121,26 +121,22 @@ export function withGlossary(elem, {key, val, glos, under, suffixLine}) {
   const chi = glos[val] || glos[key]
   if (!chi) return elem
 
-  return withTooltip({elem, chi, under, suffixLine})
+  return withTooltip({elem, chi, under})
 }
 
 export function withTooltip({
-  elem, chi, under, help = true, suffixLine, inheritSize = true,
+  elem, chi, under, help = true, inheritSize = true,
 }) {
   a.reqElement(elem)
-
   if (!a.vac(chi)) return elem
-  if (a.vac(suffixLine)) chi = ui.LogLines(chi, suffixLine)
 
   if (under) ui.clsAdd(elem, ui.CLS_HELP_UNDER)
   else if (help) ui.clsAdd(elem, `cursor-help`)
 
   elem.onpointermove = function reinit(eve) {
-    tooltipReinitFor(elem, chi, inheritSize, eve)
+    tooltipOnPointerMove.call(this, chi, inheritSize, eve)
   }
-  elem.onpointerleave = function deinit() {
-    tooltipDeinitFor(elem)
-  }
+  elem.onpointerleave = tooltipOnPointerLeave
   return elem
 }
 
@@ -148,16 +144,14 @@ const TOOLTIP_MUT_OBS = new MutationObserver(onMutationForTooltip)
 let TOOLTIP_OBSERVING = false
 let TOOLTIP_LAST_ELEM
 
-function tooltipReinitFor(elem, chi, inheritSize, eve) {
-  a.reqElement(elem)
-
-  if (elem !== TOOLTIP_LAST_ELEM) {
-    TOOLTIP_LAST_ELEM = elem
+function tooltipOnPointerMove(chi, inheritSize, eve) {
+  if (this !== TOOLTIP_LAST_ELEM) {
+    TOOLTIP_LAST_ELEM = this
 
     E(TOOLTIP, {chi})
 
     if (inheritSize) {
-      const val = elem.computedStyleMap()?.get(`font-size`)
+      const val = this.computedStyleMap()?.get(`font-size`)
       if (val) TOOLTIP.style.fontSize = val
     }
   }
@@ -187,14 +181,14 @@ function tooltipReinitFor(elem, chi, inheritSize, eve) {
 
     // In supporting browsers, this allows the tooltip to appear in a higher
     // stacking context than a `<dialog>`.
-    TOOLTIP.showPopover?.({source: elem})
+    TOOLTIP.showPopover?.({source: this})
 
     document.addEventListener(`scroll`, tooltipDeinit, SCROLL_LISTEN_OPT)
   }
 }
 
-function tooltipDeinitFor(elem) {
-  if (elem === TOOLTIP_LAST_ELEM) tooltipDeinit()
+function tooltipOnPointerLeave() {
+  if (this === TOOLTIP_LAST_ELEM) tooltipDeinit()
 }
 
 function tooltipDeinit() {

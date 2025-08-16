@@ -257,9 +257,14 @@ export function datAddRound({
     const bui_dmgOver_run = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisGame)
     const bui_dmgOver_round = a.laxFin(bui.LiveStats?.stats?.DamageOverkill?.valueThisWave)
 
+    // Currently unused.
     // let bui_dmgDone_run_fromWep = 0
+
     let bui_dmgDone_round_fromWep = 0
+
+    // Currently unused.
     // let bui_dmgOver_run_fromWep = 0
+
     let bui_dmgOver_round_fromWep = 0
 
     // let bui_dmgDone_run_fromWepChi = 0

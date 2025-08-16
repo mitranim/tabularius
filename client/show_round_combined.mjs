@@ -1284,7 +1284,7 @@ assumes one target and no overkill
 })
 
 // All values in the game are supposed to be calculated like this.
-function reify(src) {
+export function reify(src) {
   if (!a.optRec(src)) return undefined
   const base = a.laxFin(src.baseValue)
   const flatMod = a.laxFin(src.rawModifier)
@@ -1292,7 +1292,7 @@ function reify(src) {
   return (base + flatMod) * (100 + percMod) / 100
 }
 
-function dpsEstimate(dmg, mag, rof, rel) {
+export function dpsEstimate(dmg, mag, rof, rel) {
   a.reqFin(dmg)
   a.reqFin(mag)
   a.reqFin(rof)
