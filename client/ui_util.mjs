@@ -142,7 +142,7 @@ export function formatNumCompact(val) {
   return numFormat.format(val) + `k`.repeat(scale)
 }
 
-const numFormat = new Intl.NumberFormat(`en-US`, {
+export const numFormat = new Intl.NumberFormat(`en-US`, {
   maximumFractionDigits: 1,
   roundingMode: `halfExpand`,
   useGrouping: false,

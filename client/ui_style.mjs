@@ -154,6 +154,7 @@ dialog[open] {
 }
 
 .u-title {
+  white-space: pre-wrap;
   text-align: center;
   line-height: 1.5;
   padding: 0.5rem;

@@ -828,10 +828,22 @@ export function validPlotAggOpt(src) {
     }
   }
 
+  const scale = u.dictPop(inp, `scale`)
+  if (a.isSome(scale)) {
+    if (!a.isStr(scale)) errs.push(`opt "-s" must be a string`)
+    else out.scale = scale
+  }
+
   const fetch = u.dictPop(inp, `fetch`)
   if (a.isSome(fetch)) {
     if (!a.isStr(fetch)) errs.push(`opt "-f" must be a string`)
     else out.fetch = fetch
+  }
+
+  const mode = u.dictPop(inp, `mode`)
+  if (a.isSome(mode)) {
+    if (!a.isStr(mode)) errs.push(`opt "-m" must be a string`)
+    else out.mode = mode
   }
 
   const userCurrent = u.dictPop(inp, `userCurrent`)
@@ -844,12 +856,6 @@ export function validPlotAggOpt(src) {
   if (a.isSome(runLatest)) {
     if (!a.isBool(runLatest)) errs.push(`opt "runLatest" must be a boolean`)
     else out.runLatest = runLatest
-  }
-
-  const mode = u.dictPop(inp, `mode`)
-  if (a.isSome(mode)) {
-    if (!a.isStr(mode)) errs.push(`opt "-m" must be a string`)
-    else out.mode = mode
   }
 
   // SYNC[plot_group_ent_type_no_mixing].

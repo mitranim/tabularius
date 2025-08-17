@@ -93,6 +93,13 @@ cmdPlot.help = function cmdPlotHelp() {
 
     ui.LogLines(
       [
+        BtnAppend({val: `-s=log`, glos: `-s`}),
+        ` -- scale the Y axis by logarithm of 10; this changes only the Y coordinates of data points, without affecting their values`,
+      ],
+    ),
+
+    ui.LogLines(
+      [
         BtnAppendEq({key: `-f`}),
         ` -- fetch a run file / rounds file from the given URL; overrides `,
         BtnAppend({val: `-c`, glos: `-c`}), `; examples:`
@@ -267,23 +274,24 @@ function plotReqUserId() {
 const EXAMPLE_TITLE_PRE = `example run analysis: `
 
 /*
-TODO: use `argument[0].totals`, when provided.
+TODO: use `inp.totals`, when provided.
 Some could be usefully rendered under the plot.
 */
-export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
+export function plotOptsWith(inp) {
+  let {X_vals, Z_vals, Z_X_Y, opt, args, example} = a.reqRec(inp)
   a.reqArr(X_vals)
   a.reqArr(Z_vals)
   a.reqArr(Z_X_Y)
-  a.reqDict(opt)
 
-  const {agg, totalFun} = opt
+  const {X, Z, Y, scale, agg, totalFun} = a.reqRec(opt)
   ;[{X_vals, Z_vals, Z_X_Y}] = [s.plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, totalFun})]
 
-  const format = a.vac(s.STAT_TYPE_PERC.has(opt.Y) && agg !== `count`) && formatPerc
+  const logarithmic = scale === `log`
+  const format = a.vac(s.STAT_TYPE_PERC.has(Y) && agg !== `count`) && formatPerc
   const serieOpt = {total: totalFun, format}
 
   const Z_rows = Z_vals
-    .map(Z => s.codedToNamed(opt.Z, Z))
+    .map(Z_val => s.codedToNamed(Z, Z_val))
     .map((val, ind) => serie(val, ind, serieOpt))
 
   // Hide the total serie by default.
@@ -304,6 +312,7 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
 
   return {
     ...LINE_PLOT_OPTS,
+    scales: logarithmic ? SCALES_LOG : SCALES,
 
     /*
     Minor note on plot plugins: we used to have one for sorting series by values
@@ -314,8 +323,12 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
     plugins: [tooltip.opts()],
 
     title,
-    axes: axes({nameX: opt.X, nameY: opt.Y, formatY: format}),
-    series: [{label: opt.X}, ...Z_rows],
+    axes: axes({
+      nameX: X,
+      nameY: Y,
+      formatY: format ?? (logarithmic ? formatPow10 : formatVal),
+    }),
+    series: [{label: X}, ...Z_rows],
     data: [X_vals, ...a.arr(Z_X_Y)],
 
     // For our own usage.
@@ -328,25 +341,30 @@ export function plotOptsWith({X_vals, Z_vals, Z_X_Y, opt, args, example}) {
 
 // SYNC[plot_title_text].
 // SYNC[plot_group_stat_type_z_versus_y].
-function plotTitleText({X, Y, Z, agg}) {
+function plotTitleText({X, Y, Z, scale, agg}) {
   a.reqValidStr(X)
   a.optStr(Y)
   a.reqValidStr(Z)
   a.reqValidStr(agg)
 
-  if (Z === `stat_type`) return agg + ` of ` + Z + ` per ` + X
+  const suf = scale === `log` ? ` scale log(10)` : ``
+
+  if (Z === `stat_type`) {
+    return agg + ` of ` + Z + ` per ` + X + suf
+  }
+
   a.reqValidStr(Y)
-  return agg + ` of ` + Y + ` per ` + Z + ` per ` + X
+  return agg + ` of ` + Y + ` per ` + Z + ` per ` + X + suf
 }
 
 // SYNC[plot_title_text].
 // SYNC[plot_group_stat_type_z_versus_y].
 export function PlotTitle({elem, opt, args, pre, close}) {
   a.reqElement(elem)
-  a.reqDict(opt)
+  a.reqRec(opt)
   args = u.stripPreSpaced(args, cmdPlot.cmd)
 
-  const {X, Y, Z, agg} = opt
+  const {X, Y, Z, scale, agg} = opt
   const btn = a.vac(args) && BtnReplace(args, args)
 
   if (btn) {
@@ -377,6 +395,14 @@ export function PlotTitle({elem, opt, args, pre, close}) {
                   ui.Muted(` per `), Glos(Z), ui.Muted(` per `), Glos(X),
                 ]
               ),
+              a.vac(scale === `log`) && [
+                ui.Muted(` scale `),
+                ui.withTooltip({
+                  elem: ui.Span(`log(10)`),
+                  chi: `Y axis is scaled by logarithm of 10`,
+                  under: true,
+                }),
+              ],
             ],
           }),
           btn,
@@ -454,6 +480,11 @@ export function decodePlotAggOpt(src) {
       // TODO this error message should mention `true` and `false` as valid.
       try {out.totals.push(ui.cliEnum({cmd, key, val, coll: s.SUPPORTED_TOTAL_KEYS}))}
       catch (err) {errs.push(err)}
+      continue
+    }
+
+    if (key === `-s`) {
+      out.scale = ui.cliEnum({cmd, key, val, coll: PLOT_SCALES})
       continue
     }
 
@@ -815,7 +846,7 @@ export class Plotter extends ui.Elem {
     this.resObs.observe(this)
   }
 
-  setOpts(opts) {this.opts = a.reqDict(opts)}
+  setOpts(opts) {this.opts = a.reqRec(opts)}
 
   plotInit() {
     this.plotDeinit()
@@ -937,12 +968,13 @@ export class LivePlotter extends Plotter {
 }
 
 export const SCALE_X = {time: false}
-export const SCALE_Y = SCALE_X
+export const SCALE_Y = {...SCALE_X}
+export const SCALE_Y_LOG = {...SCALE_Y, distr: 3}
 export const SCALES = {x: SCALE_X, y: SCALE_Y}
+export const SCALES_LOG = {x: SCALE_X, y: SCALE_Y_LOG}
 
 export const LINE_PLOT_OPTS = {
   axes: axes(),
-  scales: SCALES,
   legend: {
     // Apply colors directly to serie labels instead of showing dedicated icons.
     markers: {show: false},
@@ -1053,6 +1085,43 @@ export function formatPerc(val) {
   if (a.isNil(val)) return ``
   return ui.formatNumCompact(a.reqFin(val) * 100) + `%`
 }
+
+export function formatPow10(val) {
+  if (a.isNil(val)) return ``
+  if (!a.isNum(val)) return val
+  if (!val) return `0`
+
+  const exp = Math.log10(val)
+
+  // Skip non-powers-of-10.
+  if (!a.isInt(exp)) return ``
+
+  return `10^` + exp
+
+  // Alternative: use superscript. Under consideration.
+  // return `10` + numToSuper(exp.toString())
+}
+
+// -123.456 → ⁻¹²³·⁴⁵⁶
+// Unused, TODO drop probably.
+function _numToSuper(src) {return src.replace(/[\d.-]/g, numCharSuper)}
+
+const NUM_SUP = {
+  [`0`]: `⁰`,
+  [`1`]: `¹`,
+  [`2`]: `²`,
+  [`3`]: `³`,
+  [`4`]: `⁴`,
+  [`5`]: `⁵`,
+  [`6`]: `⁶`,
+  [`7`]: `⁷`,
+  [`8`]: `⁸`,
+  [`9`]: `⁹`,
+  [`-`]: `⁻`,
+  [`.`]: `·`
+}
+
+function numCharSuper(val) {return NUM_SUP[val] || val}
 
 let COLOR_INDEX = -1
 
@@ -1652,9 +1721,9 @@ export class PlotTotals extends ui.Elem {
 }
 
 function PlotTotalBody({totals}) {
-  a.reqDict(totals)
-  const counts = a.reqDict(totals.counts)
-  const values = a.reqDict(totals.values)
+  a.reqRec(totals)
+  const counts = a.reqRec(totals.counts)
+  const values = a.reqRec(totals.values)
   return ui.LogLines(
     ...a.map(a.keys(counts), a.bind(PlotTotalEntry, counts, values))
   )
@@ -1736,6 +1805,7 @@ export const PLOT_GLOSSARY = u.dict({
   [`-z`]: `Z axis: plot series`,
   [`-a`]: `aggregation mode`,
   [`-t`]: `print totals in the log`,
+  [`-s`]: `Y scale (linear vs logarithmic)`,
   [`-f`]: `fetch a specific run file`,
   ...a.map(PLOT_PRESETS, val => val.help),
 })
@@ -1746,5 +1816,7 @@ function Glos(key) {
 }
 
 function withGlossary(elem, opt) {
-  return ui.withGlossary(elem, {glos: PLOT_GLOSSARY, ...a.reqDict(opt)})
+  return ui.withGlossary(elem, {glos: PLOT_GLOSSARY, ...a.reqRec(opt)})
 }
+
+export const PLOT_SCALES = new Set([``, `lin`, `log`])
