@@ -770,7 +770,7 @@ export async function showFile({sig, file, path, state, opt}) {
   let json
 
   if (copy) {
-    json ??= a.jsonEncode(data, undefined, 2)
+    json ??= u.jsonEncodeIndent(data)
     await u.copyToClipboard(json)
     ui.LOG.info(`copied decoded content of ${a.show(path)} to clipboard`)
   }
@@ -782,7 +782,7 @@ export async function showFile({sig, file, path, state, opt}) {
   }
 
   if (write) {
-    json ??= a.jsonEncode(data, undefined, 2)
+    json ??= u.jsonEncodeIndent(data)
 
     const hist = await historyDirReq(sig)
     const outDirName = SHOW_DIR_NAME
@@ -805,7 +805,7 @@ export async function showFile({sig, file, path, state, opt}) {
   }
 
   if (over) {
-    json ??= a.jsonEncode(data, undefined, 2)
+    json ??= u.jsonEncodeIndent(data)
     await backupFile({sig, file, srcPath: path, uniq: true})
     await writeFile({sig, file, body: json, path})
     ui.LOG.info(`overwrote ${a.show(path)} with decoded JSON`)

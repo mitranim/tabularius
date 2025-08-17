@@ -922,7 +922,12 @@ export async function editCommit(sig, state) {
   }
 
   for (const file of changedFiles) {
-    await fs.writeEncodeGameFile({sig, file: file.handle, data: file.data})
+    /*
+    We could encode back to the `.gd` format, but it's not necessary since the
+    game can read JSON. Storing as JSON makes it easier for the user to make
+    follow-up edits of their own.
+    */
+    await fs.writeFile({sig, file: file.handle, body: u.jsonEncodeIndent(file.data)})
     ui.LOG.info([`modified `, a.show(file.path)])
   }
 

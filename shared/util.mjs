@@ -214,6 +214,8 @@ export function jsonDecodeOpt(src, fun) {
   return isStrJsonLike(src) ? a.jsonDecode(src, fun) : undefined
 }
 
+export function jsonEncodeIndent(src, enc) {return a.jsonEncode(src, enc, 2)}
+
 /*
 Should be used when there's a possibility of dictionary keys in JSON data
 conflicting with properties of `Object.prototype`, which shouldn't be possible
