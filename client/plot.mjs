@@ -409,37 +409,37 @@ export function decodePlotAggOpt(src) {
 
   for (let [key, val, pair] of outPairs) {
     if (u.isHelpFlag(key)) {
-      out.help = ui.cliBool(cmd, key, val)
+      out.help = ui.cliBool({cmd, key, val})
       return out
     }
 
     keys.add(key)
 
     if (key === `-c`) {
-      out.cloud = ui.cliBool(cmd, key, val)
+      out.cloud = ui.cliBool({cmd, key, val})
       continue
     }
 
     if (key === `-x`) {
-      try {out.X = ui.cliEnum(cmd, key, val, s.ALLOWED_X_KEYS)}
+      try {out.X = ui.cliEnum({cmd, key, val, coll: s.ALLOWED_X_KEYS})}
       catch (err) {errs.push(err)}
       continue
     }
 
     if (key === `-y`) {
-      try {out.Y = ui.cliEnum(cmd, key, val, s.ALLOWED_STAT_TYPE_FILTERS)}
+      try {out.Y = ui.cliEnum({cmd, key, val, coll: s.ALLOWED_STAT_TYPE_FILTERS})}
       catch (err) {errs.push(err)}
       continue
     }
 
     if (key === `-z`) {
-      try {out.Z = ui.cliEnum(cmd, key, val, s.ALLOWED_Z_KEYS)}
+      try {out.Z = ui.cliEnum({cmd, key, val, coll: s.ALLOWED_Z_KEYS})}
       catch (err) {errs.push(err)}
       continue
     }
 
     if (key === `-a`) {
-      try {out.agg = ui.cliEnum(cmd, key, val, s.AGGS)}
+      try {out.agg = ui.cliEnum({cmd, key, val, coll: s.AGGS})}
       catch (err) {errs.push(err)}
       continue
     }
@@ -452,7 +452,7 @@ export function decodePlotAggOpt(src) {
       if (!val || val === `true`) continue
 
       // TODO this error message should mention `true` and `false` as valid.
-      try {out.totals.push(ui.cliEnum(cmd, key, val, s.SUPPORTED_TOTAL_KEYS))}
+      try {out.totals.push(ui.cliEnum({cmd, key, val, coll: s.SUPPORTED_TOTAL_KEYS}))}
       catch (err) {errs.push(err)}
       continue
     }
@@ -720,6 +720,7 @@ per run
 })
 
 function plotAggOptExpandPresets(src) {
+  const {cmd} = cmdPlot
   const out = []
   const over = new Set()
 
@@ -732,7 +733,7 @@ function plotAggOptExpandPresets(src) {
       continue
     }
 
-    ui.cliEnum(cmdPlot.cmd, `-p`, val, PLOT_PRESETS)
+    ui.cliEnum({cmd, key, val, coll: PLOT_PRESETS})
     const {args} = PLOT_PRESETS[val]
 
     for (const prePair of u.cliDecode(args)) {
@@ -1501,7 +1502,7 @@ export async function cmdPlotLink({sig, args}) {
     if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdPlotLink)
 
     if (key === `-c`) {
-      cloud = ui.cliBool(cmd, key, val)
+      cloud = ui.cliBool({cmd, key, val})
       continue
     }
 
@@ -1583,14 +1584,16 @@ async function msgPlotLink(url) {
 export const PLOT_LINK_PRESETS = [`dmg_over`, `chi_dmg`, `eff`, `dmg`]
 
 function plotCmdLocal(preset, opt) {
-  const quiet = a.optBool(a.optDict(opt)?.quiet)
-  ui.cliEnum(cmdPlot.cmd, `-p`, preset, PLOT_PRESETS)
+  const quiet = a.optBool(a.optRec(opt)?.quiet)
+  const {cmd} = cmdPlot
+  ui.cliEnum({cmd, key: `-p`, val: preset, coll: PLOT_PRESETS})
   return a.spaced(`plot -p=${preset}`, a.vac(quiet) && `-t=false`)
 }
 
 function plotCmdCloud(preset, runId) {
   a.reqValidStr(runId)
-  ui.cliEnum(cmdPlot.cmd, `-p`, preset, PLOT_PRESETS)
+  const {cmd} = cmdPlot
+  ui.cliEnum({cmd, key: `-p`, val: preset, coll: PLOT_PRESETS})
   return `plot -p=${preset} -c run_id=${runId}`
 }
 

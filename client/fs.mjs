@@ -674,10 +674,10 @@ export async function cmdShow({sig, args}) {
 
   for (const [key, val, pair] of a.tail(u.cliDecode(args))) {
     if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdShow)
-    if (key === `-c`) opt.copy = ui.cliBool(cmd, key, val)
-    else if (key === `-l`) opt.log = ui.cliBool(cmd, key, val)
-    else if (key === `-w`) opt.write = ui.cliBool(cmd, key, val)
-    else if (key === `-o`) opt.over = ui.cliBool(cmd, key, val)
+    if (key === `-c`) opt.copy = ui.cliBool({cmd, key, val})
+    else if (key === `-l`) opt.log = ui.cliBool({cmd, key, val})
+    else if (key === `-w`) opt.write = ui.cliBool({cmd, key, val})
+    else if (key === `-o`) opt.over = ui.cliBool({cmd, key, val})
     else if (!key) paths.push(val)
     else {
       ui.LOG.err(ui.msgUnrecInput(pair, args))

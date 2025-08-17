@@ -165,11 +165,11 @@ export async function cmdShowRound({sig, cmd: cmdFun, args, View}) {
   for (const [key, val, pair] of u.cliDecode(u.cliArgTail(args))) {
     if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdFun)
     if (key === `-c`) {
-      cloud = ui.cliBool(cmd, key, val)
+      cloud = ui.cliBool({cmd, key, val})
       continue
     }
     if (key === `-u`) {
-      user = ui.cliBool(cmd, key, val)
+      user = ui.cliBool({cmd, key, val})
       continue
     }
     if (key) {

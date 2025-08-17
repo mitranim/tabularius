@@ -150,31 +150,31 @@ const numFormat = new Intl.NumberFormat(`en-US`, {
 
 const CLI_BOOL = new Set([``, `true`, `false`])
 
-export function cliBool(cmd, flag, val) {
+export function cliBool({cmd, key, val}) {
   a.reqValidStr(cmd)
-  a.reqValidStr(flag)
-  cliEnum(cmd, flag, val, CLI_BOOL)
+  a.reqValidStr(key)
+  cliEnum({cmd, key, val, coll: CLI_BOOL})
   return !val || val === `true`
 }
 
-export function cliEnum(cmd, flag, val, coll) {
+export function cliEnum({cmd, key, val, coll}) {
   a.reqValidStr(cmd)
-  a.reqValidStr(flag)
+  a.reqValidStr(key)
   a.reqStr(val)
 
   const has = a.hasMeth(coll, `has`) ? coll.has(val) : val in u.reqPlainDict(coll)
   if (has) return val
 
   throw new ui.ErrLog(...ui.LogLines(
-    [`unrecognized `, ui.BtnPrompt({cmd, suf: u.cliEq(flag, val)}), `, must be one of:`],
+    [`unrecognized `, ui.BtnPrompt({cmd, suf: u.cliEq(key, val)}), `, must be one of:`],
     ...a.map(
       a.keys(coll),
-      key => ui.BtnPrompt({cmd, suf: u.cliEq(flag, key)}),
+      val => ui.BtnPrompt({cmd, suf: u.cliEq(key, val)}),
     ).map(u.indentNode),
   ))
 }
 
-export function cliNat(cmd, key, val) {
+export function cliNat({cmd, key, val}) {
   a.reqValidStr(cmd)
   a.reqValidStr(key)
   a.reqStr(val)

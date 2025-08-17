@@ -92,19 +92,19 @@ export async function cmdUpload(proc) {
   for (const [key, val, pair] of u.cliDecode(u.stripPreSpaced(args, cmd))) {
     if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdUpload)
     if (key === `-p`) {
-      opt.persistent = ui.cliBool(cmd, key, val)
+      opt.persistent = ui.cliBool({cmd, key, val})
       continue
     }
     if (key === `-q`) {
-      opt.quiet = ui.cliBool(cmd, key, val)
+      opt.quiet = ui.cliBool({cmd, key, val})
       continue
     }
     if (key === `-f`) {
-      opt.force = ui.cliBool(cmd, key, val)
+      opt.force = ui.cliBool({cmd, key, val})
       continue
     }
     if (key === `-u`) {
-      opt.uncoordinated = ui.cliBool(cmd, key, val)
+      opt.uncoordinated = ui.cliBool({cmd, key, val})
       continue
     }
 

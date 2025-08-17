@@ -184,25 +184,25 @@ export function editDecodeCliArgs(state) {
     if (u.isHelpFlag(key)) return `help`
 
     if (key === `-w`) {
-      try {state.write = ui.cliBool(cmd, key, val)}
+      try {state.write = ui.cliBool({cmd, key, val})}
       catch (err) {errs.push(err)}
       continue
     }
 
     if (key === `-l`) {
-      try {state.lock = ui.cliBool(cmd, key, val)}
+      try {state.lock = ui.cliBool({cmd, key, val})}
       catch (err) {errs.push(err)}
       continue
     }
 
     if (key === `-a`) {
-      try {state.all = ui.cliBool(cmd, key, val)}
+      try {state.all = ui.cliBool({cmd, key, val})}
       catch (err) {errs.push(err)}
       continue
     }
 
     if (key === `diff`) {
-      try {state.diff = ui.cliNat(cmd, key, val)}
+      try {state.diff = ui.cliNat({cmd, key, val})}
       catch (err) {errs.push(err)}
       if (state.diff) {
         const msg = msgEnumWarn(`diff`, state.diff, gc.DIFFS)
@@ -212,7 +212,7 @@ export function editDecodeCliArgs(state) {
     }
 
     if (key === `frontier`) {
-      try {state.frontier = ui.cliNat(cmd, key, val)}
+      try {state.frontier = ui.cliNat({cmd, key, val})}
       catch (err) {errs.push(err)}
       if (state.frontier) {
         const msg = msgEnumWarn(`frontier`, state.frontier, gc.FRONTIERS)

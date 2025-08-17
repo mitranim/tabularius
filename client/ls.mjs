@@ -99,17 +99,17 @@ export function cmdLs({sig, args}) {
     if (u.isHelpFlag(key)) return os.cmdHelpDetailed(cmdLs)
 
     if (key === `-c`) {
-      cloud = ui.cliBool(cmd, key, val)
+      cloud = ui.cliBool({cmd, key, val})
       continue
     }
 
     if (key === `-s`) {
-      stat = ui.cliBool(cmd, key, val)
+      stat = ui.cliBool({cmd, key, val})
       continue
     }
 
     if (key === `-u`) {
-      user = ui.cliBool(cmd, key, val)
+      user = ui.cliBool({cmd, key, val})
       continue
     }
 
