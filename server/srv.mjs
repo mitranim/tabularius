@@ -48,8 +48,8 @@ function serve(ctx) {
 
 function onListen(srv) {
   const url = h.srvUrl(srv)
-  if (u.DEV) url.searchParams.set(`dev`, `true`)
-  if (u.LOCAL) url.searchParams.set(`local`, `true`)
+  if (u.DEV) url.searchParams.set(`DEV`, `true`)
+  if (u.LOCAL) url.searchParams.set(`LOCAL`, `true`)
   console.log(`[srv] listening on`, url.href)
 }
 

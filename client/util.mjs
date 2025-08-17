@@ -8,14 +8,16 @@ namespace.lib ??= a.Emp()
 namespace.lib.a = a
 a.patch(globalThis, namespace)
 
-export const URL_CLEAN = new URL(globalThis.location)
+export let URL_CLEAN = new URL(globalThis.location)
 URL_CLEAN.search = ``
 URL_CLEAN.hash = ``
+URL_CLEAN = URL_CLEAN.href
 
-export const QUERY = urlQuery(globalThis.location.search)
-export const DEV = a.boolOpt(QUERY.get(`dev`))
-export const API_LOCAL = a.boolOpt(QUERY.get(`local`))
-export const API_URL = API_LOCAL ? `/api/` : `https://tabularius.mitranim.com/api/`
+export const QUERY = cleanUrlQuery(globalThis.location.search)
+export const ENV = queryEnv(QUERY)
+export const DEV = a.boolOpt(ENV.DEV)
+export const LOCAL = a.boolOpt(ENV.LOCAL)
+export const API_URL = LOCAL ? `/api/` : `https://tabularius.mitranim.com/api/`
 
 /*
 export function storageGetJson(store, key) {
@@ -563,8 +565,18 @@ then you must append with `&` rather than `?`. And it's a pain even
 if you know it. Frankly, whoever designed the format made a mistake.
 So we rectify it.
 */
-export function urlQuery(src) {
+export function cleanUrlQuery(src) {
   return new URLSearchParams(a.split(src, `?`).join(`&`))
+}
+
+// UPPER_SNAKE query keys are considered env vars.
+function queryEnv(src) {
+  const out = a.Emp()
+  for (const [key, val] of src) {
+    if (!/^[A-Z][A-Z_\d]*$/.test(key)) continue
+    out[key] = val
+  }
+  return out
 }
 
 // Each row must begin with a string. We align on that string by padding it.

@@ -169,6 +169,7 @@ TODO add to `@mitranim/js`. Similar to `{__proto__: null, <...val>}`,
 but syntactically cleaner.
 */
 export function dict(val) {return a.assign(a.Emp(), val)}
+export function dictOpt(val) {return a.isNil(val) ? val : dict(val)}
 
 export function dictPop(tar, key) {
   try {return tar[key]} finally {delete tar[key]}
