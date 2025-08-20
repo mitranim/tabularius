@@ -738,3 +738,22 @@ Consider if the Web Authentication API and/or Web Credentials API could be relev
 * [ ] Schema and `plot`: HQ HP stat.
 
 ---
+
+* [ ] `plot`: when zoomed-in, make it possible to move the window by dragging the axis.
+  * The feature can be viewed in Plotly (flashbang): https://plotly.com/javascript/log-plot/.
+  * Check if Uplot has support.
+  * Consider if dragging Y should only move the maximum, instead of a window.
+
+---
+
+* [ ] Schema / `plot`: more stat types:
+  * [ ] `hq_hp`
+  * [ ] `hq_hp_max`
+  * [ ] `supply`
+  * [ ] `recon`
+  * [ ] `tech`
+* [ ] A preset that plots all the stats above (with `-z=stat`).
+
+---
+
+* [ ] Consider using a `SharedWorker` to deduplicate work between tabs. For example, the `DAT` cache and its querying could be moved there to reduce its RAM cost in cases where multiple tabs query the same data. Similarly, `watch` could be moved there; the backup messages would be broadcasted and seen in all tabs. This is probably silly overkill.
