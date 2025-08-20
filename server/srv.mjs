@@ -105,6 +105,34 @@ async function respond(ctx, req) {
 }
 
 async function serveFile(req, path) {
+  /*
+  Why this server doesn't serve static assets in production: because they're
+  served via GitHub Pages on `https://mitranim.com/tabularius/`, which is the
+  canonical domain for the app. This server is needed only for API requests.
+
+  We don't want anyone getting confused about which domain is canonical.
+  Users don't look at HTML metadata or HTTP headers. We could use an HTTP
+  redirect, but there's not much point. It's simpler and more reliable to
+  clearly indicate that you're not supposed to be making the request at all.
+
+  What REALLY triggered this was Google's crawler. For some strange reason,
+  it keeps trying to index thousands of strange links that have no business
+  existing at all. Here's one example:
+
+    https://tabularius.mitranim.com/?run=plot%20round_id=local_user_0001_1747526400151_0012?run=plot%20-c%20-p=dmg%20user_id=all%20run_id=latest
+
+  Then, Google sends me emails complaining how these URLs, likely hallucinated,
+  not necessarily but possibly by Google, are supposedly "duplicate without a
+  user-selected canonical", which seems bullshit given that the `index.html`
+  file we serve explicitly includes not only a `<link rel=canonical ...>`
+  but also a `<meta name=robots ...>`, which is supposed to forbid crawlers
+  from indexing any of our pages which has a URL query or fragment. Admittedly
+  the latter is set via inline JS, which is not guaranteed.
+
+  So much for the crawler directives, and/or crawler JS support.
+  */
+  if (!u.DEV) return undefined
+
   const file = await DIRS.resolveSiteFile(path)
   if (!file) return undefined
 
