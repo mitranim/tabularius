@@ -238,6 +238,7 @@ export function tooltipOrient({
 
 export function Span(...chi) {return E(`span`, {chi})}
 export function Bold(...chi) {return E(`b`, {chi})}
+export function Italic(...chi) {return E(`em`, {chi})}
 export function Muted(...chi) {return E(`span`, {class: ui.CLS_TEXT_MUTED, chi})}
 export function Pale(...chi) {return E(`span`, {class: ui.CLS_TEXT_PALE, chi})}
 export function ErrSpan(...chi) {return E(`span`, {class: ui.CLS_ERR, chi})}

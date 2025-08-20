@@ -329,6 +329,7 @@ export function cmdHelp({args}) {
       [`  ctrl+k                 -- clear log (same as `, BtnCmd(`clear -l`), `)`],
       [`  shift+ctrl+k           -- clear log and media (same as `, BtnCmd(`clear`), `)`],
       [`  ctrl+click drag handle -- reset UI split`],
+      [`  ctrl+/ or shift+/      -- print help`],
       [`  drag and drop file     -- save decoded file`],
       [`  almost any key         -- focus prompt`],
     ),

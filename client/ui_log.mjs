@@ -86,7 +86,6 @@ export const LOG = new class Log extends ui.Elem {
   clear() {
     LOG_REMOVED_MSG_COUNT = 0
     E(this, {chi: E(REMOVED_MSG_NOTICE, {hidden: false, chi: `log cleared`})})
-    ui.PROMPT_INPUT.focus()
   }
 
   addMsg(props, ...chi) {

@@ -32,6 +32,8 @@ during the call are automatically monitored, causing an update on change.
 export function init() {
   if (INITED) return
 
+  ui.setSplitWidths(ui.LOG, ui.MEDIA)
+
   E(document.body, {
     class: a.spaced(
       ui.CLS_FG,
@@ -43,15 +45,12 @@ export function init() {
 
   document.getElementById(`loading_style`)?.remove()
   document.getElementById(`loading_msg`)?.remove()
-  document.addEventListener(`keydown`, onKeydownClear, {capture: true})
 
   /*
-  Uses `capture` to increase the likelihood that we focus the prompt input
-  before the actual character-typing functionality is considered by the
-  browser. In practice, this seems to work without `capture`, but we're not
-  sure if that's consistent between browsers.
+  Uses `capture` for better compatibility with the prompt-focusing feature,
+  even though this seems to work fine without capture.
   */
-  document.addEventListener(`keydown`, ui.onKeydownFocusPrompt, {capture: true})
+  document.addEventListener(`keydown`, onGlobalKeydown, {capture: true})
 
   document.addEventListener(`dragover`, a.eventKill)
   document.addEventListener(`dragenter`, ui.onDragEnter)
@@ -92,23 +91,6 @@ export function cmdClear({args}) {
   if (log || !media) ui.LOG.clear()
   if (media || !log) ui.MEDIA.clear()
   return undefined
-}
-
-/*
-Shortcut for clearing the log. Mimics the MacOS convention (Cmd+K). On other
-systems, Ctrl+L would be more correct, but it would conflict with the hotkey
-for focusing the browser URL.
-
-We also support Shift+Ctrl+K for clearing both the log and the media.
-*/
-function onKeydownClear(eve) {
-  if (eve.key !== `k` && eve.key !== `K`) return
-  if (eve.altKey) return
-  if (!eve.ctrlKey && !eve.metaKey) return
-
-  a.eventKill()
-  ui.LOG.clear()
-  if (eve.shiftKey) ui.MEDIA.clear()
 }
 
 /*
@@ -159,7 +141,7 @@ export const NAV = E(`nav`, {
           }),
         }),
         ui.withTooltip({
-          chi: `author's personal website`,
+          chi: `Author's personal website`,
           help: false,
           inheritSize: false,
           elem: E(`a`, {
@@ -189,7 +171,11 @@ export const NAV = E(`nav`, {
           }),
         }),
         ui.withTooltip({
-          chi: `Tower Dominion's official Discord`,
+          chi: [
+            `The official Discord of Tower Dominion.`,
+            ``,
+            `Ping @Mitranim for help with Tabularius.`,
+          ].join(`\n`),
           help: false,
           elem: E(`a`, {
             ...ui.TARBLAN,
@@ -203,9 +189,57 @@ export const NAV = E(`nav`, {
   ],
 })
 
-ui.setSplitWidths(ui.LOG, ui.MEDIA)
 
 export const MIDDLE = E(`div`, {
   class: `flex flex-1 min-h-0`,
   chi: [ui.LOG, ui.DRAG_HANDLE, ui.MEDIA],
 })
+
+export function onGlobalKeydown(eve) {
+  const {key, altKey, ctrlKey, metaKey, shiftKey} = eve
+
+  /*
+  Shortcut for clearing the log. Mimics the MacOS convention (Cmd+K). On other
+  systems, Ctrl+L would be more correct, but it would conflict with the hotkey
+  for focusing the browser URL.
+
+  We also support Shift+Ctrl+K for clearing both the log and the media.
+
+  Unfortunately, after we added this feature, Chrome on Windows made Ctrl+K
+  ALSO focus the URL, in addition to Ctrl+L.
+  */
+  if ((key === `k` || key === `K`) && !altKey && (ctrlKey || metaKey)) {
+    a.eventKill(eve)
+    ui.LOG.clear()
+    if (shiftKey) ui.MEDIA.clear()
+    return
+  }
+
+  if (document.activeElement === ui.PROMPT_INPUT) return
+
+  /*
+  Help on `cmd+?` | `ctrl+?` | `shift+?` seems to have become a standard
+  across many websites, although they don't all agree on modifier keys.
+  */
+  if (
+    (key === `?`) ||
+    (key === `/` && (ctrlKey || metaKey))
+  ) {
+    os.runCmd(`help`)
+    return
+  }
+
+  if (altKey || ctrlKey || metaKey) return
+  if (
+    (key === `Tab`) ||
+    (key === `Shift`) ||
+    (key === `Meta`) ||
+    (key === `Alt`) ||
+    (key !== `Escape` && a.findAncestor(eve.target, ui.isElemEditable)) ||
+    ((key === `Enter` || key === ` `) && a.findAncestor(eve.target, ui.isElemClickable)) ||
+    (key === `Escape` && a.findAncestor(eve.target, ui.isElemEscapable))
+  ) {
+    return
+  }
+  ui.PROMPT_INPUT.focus()
+}

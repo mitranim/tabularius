@@ -284,27 +284,6 @@ export const MODIFIER_KEYS = new Set([
   `Meta`, `NumLock`, `ScrollLock`, `Shift`, `Super`, `Symbol`, `SymbolLock`,
 ])
 
-// Shortcut for focusing the prompt input.
-export function onKeydownFocusPrompt(eve) {
-  if (document.activeElement === PROMPT_INPUT) return
-  if (eve.ctrlKey) return
-  if (eve.metaKey) return
-  if (eve.altKey) return
-
-  const {key} = eve
-
-  if (
-    (key === `Tab`) ||
-    (key !== `Escape` && a.findAncestor(eve.target, ui.isElemEditable)) ||
-    ((key === `Enter` || key === ` `) && a.findAncestor(eve.target, ui.isElemClickable)) ||
-    (key === `Escape` && a.findAncestor(eve.target, ui.isElemEscapable))
-  ) {
-    return
-  }
-
-  PROMPT_INPUT.focus()
-}
-
 function histStore(store, hist, val) {
   a.reqValidStr(val)
   if (val === a.last(hist)) return

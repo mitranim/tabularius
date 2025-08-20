@@ -1151,9 +1151,9 @@ export function wepDetailData(wep) {
   const dmgAir = out.dmg_air = dmg * (1 + percAir)
   const dmgShld = out.dmg_shld = dmg * (1 + percShld)
 
-  out.dps_est = dpsEstimate(dmg, mag, rof, rel)
-  out.dps_air_est = dpsEstimate(dmgAir, mag, rof, rel)
-  out.dps_shld_est = dpsEstimate(dmgShld, mag, rof, rel)
+  out.dps_est = dpsEstimate({dmg: dmg, mag, rof, rel})
+  out.dps_air_est = dpsEstimate({dmg: dmgAir, mag, rof, rel})
+  out.dps_shld_est = dpsEstimate({dmg: dmgShld, mag, rof, rel})
 
   out.aoe = reify(aoe.SizeValue)
   out.targ = aoe.MaxTarget
@@ -1292,7 +1292,7 @@ export function reify(src) {
   return (base + flatMod) * (100 + percMod) / 100
 }
 
-export function dpsEstimate(dmg, mag, rof, rel) {
+export function dpsEstimate({dmg, mag, rof, rel}) {
   a.reqFin(dmg)
   a.reqFin(mag)
   a.reqFin(rof)
