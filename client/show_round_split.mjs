@@ -78,10 +78,6 @@ export const WEP_COLS = [
   withHideObs({sortObs: sr.WEP_SORT, key: `enab`,         type: sr.TYPE_BOOL}),
 ]
 
-const DIALOG_BUI = ColumnToggleDialog(BUI_COLS)
-const DIALOG_CHI = ColumnToggleDialog(CHI_COLS)
-const DIALOG_WEP = ColumnToggleDialog(WEP_COLS)
-
 class ShowRoundSplit extends sr.ShowRoundCombined {
   tableType = undefined
 
@@ -122,7 +118,7 @@ function Tabs(obs) {
       E(Tab, {obs, val: TABLE_TYPE_BUI, chi: `bui_stats`}),
       E(Tab, {obs, val: TABLE_TYPE_CHI, chi: `chi_stats`}),
       E(Tab, {obs, val: TABLE_TYPE_WEP, chi: `wep_details`}),
-      a.bind(ColToggler, obs),
+      E(ColumnToggler, obs),
     ],
   })
 }
@@ -154,7 +150,7 @@ function TabBtn({obs, val, chi}) {
   })
 }
 
-function ColumnToggler(dialog) {
+function ColumnToggler(obs) {
   return ui.withTooltip({
     chi: `toggle columns`,
     elem: E(`button`, {
@@ -164,6 +160,7 @@ function ColumnToggler(dialog) {
         ui.CLS_BUSY_BG,
       ),
       onclick() {
+        const dialog = ColumnToggleDialog(obs)
         document.body.appendChild(dialog)
         dialog.showModal()
       },
@@ -172,20 +169,28 @@ function ColumnToggler(dialog) {
   })
 }
 
-function ColToggler(obs) {
-  const type = a.deref(obs)
-  if (type === TABLE_TYPE_BUI) return E(ColumnToggler, DIALOG_BUI)
-  if (type === TABLE_TYPE_CHI) return E(ColumnToggler, DIALOG_CHI)
-  if (type === TABLE_TYPE_WEP) return E(ColumnToggler, DIALOG_WEP)
-  return undefined
-}
-
-function ColumnToggleDialog(cols) {
+function ColumnToggleDialog(obs) {
   return E(`dialog`, {
     class: a.spaced(`flex col-sta-str p-0 rounded`, ui.CLS_FG, ui.CLS_BG_1),
     closedby: `any`,
-    chi: a.map(cols, a.bind(ColToggle, cols)),
+    chi: a.bind(ColToggles, obs),
   })
+}
+
+function ColToggles(type) {
+  type = a.deref(type)
+
+  const cols = (
+    type === TABLE_TYPE_BUI ? BUI_COLS :
+    type === TABLE_TYPE_CHI ? CHI_COLS :
+    type === TABLE_TYPE_WEP ? WEP_COLS :
+    (
+      ui.LOG.err(`unrecognized table type `, a.show(type), `, defaulting to `, a.show(TABLE_TYPE_BUI)),
+      BUI_COLS
+    )
+  )
+
+  return a.map(cols, a.bind(ColToggle, cols))
 }
 
 function ColToggle(cols, {key, props: {hidden}}) {
