@@ -1158,6 +1158,7 @@ export function wepDetailData(wep) {
   out.aoe = reify(aoe.SizeValue)
   out.targ = aoe.MaxTarget
   out.prio = a.map(wep.TargetingPriorities, gc.targPrioCodeToName)
+  out.slow = bul.IsPinnedTrigger
   out.enab = wep.Enabled
   return out
 }
@@ -1276,6 +1277,7 @@ assumes one target and no overkill
   targ: `maximum targets in AoE`,
   prio: `targeting priorities`,
   det: `has detection or not`,
+  slow: `slows foes or not`,
   enab: `enabled or not`,
   seed: `initial state of random number generator`,
   neutral_odds: `chance of neutral building on next zone`,

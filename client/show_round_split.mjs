@@ -75,6 +75,7 @@ export const WEP_COLS = [
   withHideObs({sortObs: sr.WEP_SORT, key: `targ`,         type: sr.TYPE_NUM}),
   withHideObs({sortObs: sr.WEP_SORT, key: `prio`,         type: sr.TYPE_PRIO}),
   withHideObs({sortObs: sr.WEP_SORT, key: `det`,          type: sr.TYPE_BOOL}),
+  withHideObs({sortObs: sr.WEP_SORT, key: `slow`,         type: sr.TYPE_BOOL}),
   withHideObs({sortObs: sr.WEP_SORT, key: `enab`,         type: sr.TYPE_BOOL}),
 ]
 
