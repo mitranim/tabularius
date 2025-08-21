@@ -409,6 +409,7 @@ export const CLS_BUSY_BG_SELECTED = `bg-neutral-200 dark:bg-neutral-800 underlin
 export const CLS_HELP_UNDER = a.spaced(CLS_UNDER_TWEAKS, `cursor-help underline decoration-dotted`)
 export const CLS_BUSY_BTN = a.spaced(CLS_FG, `bg-neutral-200 dark:bg-stone-700 hover:bg-gray-300 dark:hover:bg-stone-600`)
 export const CLS_BUSY_BTN_NEUT = a.spaced(CLS_FG, `bg-neutral-200 dark:bg-neutral-700 hover:bg-gray-300 dark:hover:bg-neutral-600`)
+export const CLS_FG_GREEN = `text-green-500 dark:text-green-400`
 
 // Used for hiding and showing parts of media items, such as table columns.
 // Should be slightly wider than `MEDIA_ITEM_WID`.

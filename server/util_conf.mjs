@@ -9,6 +9,12 @@ export const LIVE_PORT = a.intOpt(getEnv(`LIVE_PORT`, ``))
 export const LIVE = !!LIVE_PORT
 export const LOG_DEBUG = a.boolOpt(getEnv(`LOG_DEBUG`, `false`))
 
+/*
+In production, our app is served at `https://mitranim.com/tabularius/`.
+In development, we prefer the same path to ensure consistent behavior.
+*/
+export const PATH_BASE = `/tabularius/`
+
 export const LIVE_BRO = a.vac(LIVE) && new hl.LiveBroad()
 export const LIVE_CLI = a.vac(LIVE) && new hl.LiveClient({port: LIVE_PORT})
 

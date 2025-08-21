@@ -8,6 +8,9 @@ namespace.lib ??= a.Emp()
 namespace.lib.a = a
 a.patch(globalThis, namespace)
 
+// The version is set in `index.html`.
+export const VERSION = a.reqScalar(namespace.VERSION)
+
 export let URL_CLEAN = new URL(globalThis.location)
 URL_CLEAN.search = ``
 URL_CLEAN.hash = ``

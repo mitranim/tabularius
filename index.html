@@ -15,12 +15,17 @@
   -->
   <link rel="canonical" href="https://mitranim.com/tabularius/">
 
-  <!--
-  Instruct robots to avoid indexing pages with non-default content.
-  See above. Affects only robots which run JS.
-  -->
-  <script id="meta_script">
-    document.getElementById(`meta_script`)?.remove()
+  <script id="init">
+    document.getElementById(`init`)?.remove()
+
+    // The version is used by the UI and the service worker.
+    globalThis.tabularius ??= Object.create(null)
+    tabularius.VERSION = 159
+
+    /*
+    Instruct robots to avoid indexing pages with non-default content.
+    See the canonical link above. Affects only JS-supporting robots.
+    */
     const {search, hash} = window.location
     if (search || hash) {
       const tar = document.createElement(`meta`)
@@ -122,5 +127,14 @@
   </noscript>
 
   <div id="loading_msg">Loading...</div>
+
+  <script type="module">
+    const query = new URLSearchParams()
+    const ver = tabularius.VERSION
+    const dev = new URLSearchParams(location.search).get(`DEV`)
+    if (ver) query.set(`VERSION`, ver)
+    if (dev) query.set(`DEV`, dev)
+    navigator.serviceWorker?.register(`./sw.mjs?` + query)
+  </script>
 </body>
 </html>

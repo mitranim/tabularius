@@ -54,6 +54,7 @@ export function cmdStatus({args}) {
     a.bind(fs.fileConfStatusMsg, fs.SAVE_DIR_CONF),
     a.bind(fs.fileConfStatusMsg, fs.HISTORY_DIR_CONF),
     [`auth: `, au.authStatusMsg],
+    ui.offlineSupport,
     os.showProcs,
   )
 }

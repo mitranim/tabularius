@@ -183,7 +183,8 @@ export const PROMPT_INPUT = new class PromptInput extends dr.MixReg(HTMLInputEle
 const PROMPT_PRE = E(`span`, {
   class: a.spaced(
     `absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none`,
-    `flex row-cen-cen text-green-600 dark:text-green-400`,
+    `flex row-cen-cen`,
+    ui.CLS_FG_GREEN,
   ),
   chi: ui.PROMPT_PREFIX,
 })

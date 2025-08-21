@@ -48,6 +48,7 @@ function serve(ctx) {
 
 function onListen(srv) {
   const url = h.srvUrl(srv)
+  url.pathname = u.PATH_BASE
   if (u.DEV) url.searchParams.set(`DEV`, `true`)
   if (u.LOCAL) url.searchParams.set(`LOCAL`, `true`)
   console.log(`[srv] listening on`, url.href)
@@ -63,7 +64,12 @@ function onError(err) {
 
 async function respond(ctx, req) {
   const rou = a.toReqRou(req)
-  const path = rou.url.pathname
+  let path = rou.url.pathname
+
+  if (u.DEV && path.startsWith(u.PATH_BASE)) {
+    path = `/` + path.slice(u.PATH_BASE.length)
+    rou.url.pathname = path
+  }
 
   return await (
     (rou.preflight() && new u.Res()) ||
@@ -135,15 +141,6 @@ async function serveFile(req, path) {
 
   const file = await DIRS.resolveSiteFile(path)
   if (!file) return undefined
-
-  if (u.DEV && file.fsPath === `index.html`) {
-    file.setOpt({
-      text: a.joinLines([
-        (await file.getText()),
-        `<script type="module">navigator.serviceWorker.register("./sw.mjs")</script>`,
-      ]),
-    })
-  }
 
   return h.fileResponse({
     req,

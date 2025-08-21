@@ -104,6 +104,7 @@ cmdPlot.help = function cmdPlotHelp() {
         ` -- fetch a run file / rounds file from the given URL; overrides `,
         BtnAppend({val: `-c`, glos: `-c`}), `; examples:`
       ],
+      // SYNC[example_run_paths].
       [`  `, BtnAppend({val: `-f=samples/example_run.gd run_id=all -p=dmg`})],
       [`  `, BtnAppend({val: `-f=samples/example_runs.gd run_id=all -p=dmg`})],
     ),
@@ -808,6 +809,7 @@ export async function plotDefaultLocal(opt) {
 }
 
 export async function plotDefaultExample(sig) {
+  // SYNC[example_run_paths].
   const args = `plot -f=samples/example_run.gd -p=dmg -t=false run_id=all`
   const out = await cmdPlotFetch({sig, args, opt: decodePlotAggOpt(args), example: true})
   a.reqInst(out, os.Combo)

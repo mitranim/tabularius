@@ -322,6 +322,11 @@ export function cmdHelp({args}) {
     `available commands:`,
     ...a.map(CMDS, cmdHelpShort),
 
+    // TODO: may consider making this reactive. Could cause scroll issues.
+    a.vac(ui.isOfflineAvailable()) && (
+      `tip: Tabularius also works offline; cloud features are optional`
+    ),
+
     `tip: command buttons and question marks are clickable!`,
 
     ui.LogLines(

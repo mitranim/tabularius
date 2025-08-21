@@ -18,6 +18,7 @@ namespace.ui = ui
 a.patch(globalThis, namespace)
 
 let INITED
+export const OFFLINE_AVAILABLE = a.obsRef()
 
 /*
 Should be called exactly once.
@@ -56,6 +57,8 @@ export function init() {
   document.addEventListener(`dragenter`, ui.onDragEnter)
   document.addEventListener(`dragleave`, ui.onDragLeave)
   document.addEventListener(`drop`, ui.onDrop)
+
+  initOfflineSupport().catch(ui.logErr)
 
   INITED = true
 }
@@ -133,13 +136,7 @@ export const NAV = E(`nav`, {
     E(`div`, {
       class: `flex row-end-cen pr-4`,
       chi: [
-        ui.withTooltip({
-          chi: `Tabularius version`,
-          elem: E(`span`, {
-            class: a.spaced(NAV_LINK_CLS, ui.CLS_TEXT_MUTED),
-            chi: [`v` + ui.VERSION],
-          }),
-        }),
+        Version,
         ui.withTooltip({
           chi: `Author's personal website`,
           help: false,
@@ -178,9 +175,7 @@ export const NAV = E(`nav`, {
           ].join(`\n`),
           help: false,
           elem: E(`a`, {
-            ...ui.TARBLAN,
-            href: DISCORD_LINK,
-            class: NAV_LINK_CLS,
+            href: DISCORD_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS,
             chi: ui.Svg(`discord`, {class: NAV_ICON_CLS}),
           }),
         }),
@@ -189,6 +184,31 @@ export const NAV = E(`nav`, {
   ],
 })
 
+export function Version() {
+  const ready = isOfflineAvailable()
+  const tip = [`Tabularius version `, u.VERSION]
+
+  return ui.withTooltip({
+    chi: [tip, a.vac(ready) && [
+      `.\n\n`,
+      u.joinLines(
+        `The app is locally cached`,
+        `and can be used offline.`
+      ),
+    ]],
+    elem: E(`span`, {
+      class: a.spaced(NAV_LINK_CLS, `whitespace-pre`),
+      chi: [
+        ui.Muted(`v`, u.VERSION),
+        a.vac(ready) && [
+          ui.Muted(` (+offline `),
+          E(`span`, {class: ui.CLS_FG_GREEN, chi: `✓`}),
+          ui.Muted(`)`),
+        ],
+      ],
+    }),
+  })
+}
 
 export const MIDDLE = E(`div`, {
   class: `flex flex-1 min-h-0`,
@@ -242,4 +262,30 @@ export function onGlobalKeydown(eve) {
     return
   }
   ui.PROMPT_INPUT.focus()
+}
+
+export function isOfflineAvailable() {return a.deref(OFFLINE_AVAILABLE)}
+
+export function offlineSupport() {
+  if (isOfflineAvailable()) {
+    return `offline mode: currently available`
+  }
+  return `offline mode: currently not available`
+}
+
+export async function initOfflineSupport() {
+  const con = globalThis.navigator.serviceWorker
+  if (!con) return
+
+  // Without an active SW, this simply hangs forever, which is okay.
+  await con.ready
+
+  if (!con.controller) return
+
+  /*
+  If the controller is present, this means the SW has successfully fetched all
+  assets, then claimed this client. When asset fetching fails, the SW does not
+  become active or claim clients.
+  */
+  a.reset(OFFLINE_AVAILABLE, true)
 }

@@ -38,9 +38,10 @@
 !/client
 /client/*
 !/client/*.mjs
+!/client/*.json
 !/client/*.svg
 !/client/*.md
-!/client/wordlist.txt
+!/client/*.txt
 
 !/todo
 /todo/*

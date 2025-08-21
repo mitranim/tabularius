@@ -4,9 +4,6 @@ import {E, S} from './ui.mjs'
 import * as ui from './ui.mjs'
 import * as fs from './fs.mjs'
 
-// Increment by 1 when publishing an update.
-export const VERSION = 158
-
 export function BtnUrlAppend(val) {
   const href = globalThis.location.href + a.reqValidStr(val)
   return FakeBtnInline({href, chi: val})
@@ -82,7 +79,7 @@ export function BtnClip(val) {
 
 function SvgClipboard() {return Svg(`clipboard`, {class: ui.CLS_INLINE_ICON})}
 
-const SPRITE_PATH = `./client/svg.svg?` + (u.DEV ? Date.now() : VERSION)
+const SPRITE_PATH = `./client/svg.svg?` + (u.DEV ? Date.now() : u.VERSION)
 
 export function Svg(key, props) {
   return S(`svg`, {
