@@ -22,7 +22,7 @@ export class Res extends Response {
     head.append(h.HEADER_NAME_CORS_HEADERS, `authorization`)
     head.append(h.HEADER_NAME_CORS_HEADERS, `content-encoding`)
     head.append(h.HEADER_NAME_CORS_HEADERS, `accept-encoding`)
-    head.append(`x-robots-tag`, `noindex, follow`)
+    head.append(`x-robots-tag`, `noindex, nofollow`)
     return this
   }
 
