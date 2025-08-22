@@ -405,6 +405,7 @@ export function BtnHelp(cmd, {cls} = {}) {
     class: a.spaced(cls, ui.CLS_BTN_INLINE),
     onclick() {runCmd(`help ${cmd}`).catch(ui.logErr)},
     chi: `?`,
+    [`aria-label`]: `help for ${cmd}`,
   })
 }
 

@@ -61,9 +61,10 @@ export function LinkBtnInline({onclick, href, chi, trunc, width}) {
 export function BtnClip(val) {
   val = a.renderLax(val)
   if (!val) return undefined
+  const text = `clipboard`
 
   return withTooltip({
-    chi: `clipboard`,
+    chi: text,
     elem: E(`button`, {
       type: `button`,
       class: a.spaced(
@@ -72,6 +73,7 @@ export function BtnClip(val) {
       ),
       onclick() {u.copyToClipboard(val, true).catch(ui.logErr)},
       chi: SvgClipboard(),
+      [`aria-label`]: text,
     }),
   })
 }

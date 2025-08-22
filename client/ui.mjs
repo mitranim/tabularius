@@ -112,6 +112,14 @@ const STEAM_LINK = `https://store.steampowered.com/app/3226530`
 // SYNC[discord_link].
 const DISCORD_LINK = `https://discord.gg/upPxCEVxgD`
 
+const GITHUB_LINK_TEXT = `Tabularius source code`
+const STEAM_LINK_TEXT = `Tower Dominion on Steam`
+const DISCORD_LINK_TEXT = (
+  `The official Discord of Tower Dominion.\n\n` +
+  `Ping @Mitranim for help with Tabularius.`
+)
+const AUTHOR_LINK_TEXT = `Author's personal website`
+
 export const NAV = E(`nav`, {
   class: a.spaced(
     ui.CLS_BG_1,
@@ -138,35 +146,34 @@ export const NAV = E(`nav`, {
       chi: [
         Version,
         ui.withTooltip({
-          chi: `Tabularius source code`,
+          chi: GITHUB_LINK_TEXT,
           help: false,
           elem: E(`a`, {
             href: GITHUB_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS,
             chi: ui.Svg(`github`, {class: a.spaced(NAV_ICON_CLS, `text-[#1f2328] dark:text-[#f0f6fc]`)}),
+            [`aria-label`]: GITHUB_LINK_TEXT,
           }),
         }),
         ui.withTooltip({
-          chi: `Tower Dominion on Steam`,
+          chi: STEAM_LINK_TEXT,
           help: false,
           elem: E(`a`, {
             href: STEAM_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS,
             chi: ui.Svg(`steam`, {class: NAV_ICON_CLS}),
+            [`aria-label`]: STEAM_LINK_TEXT,
           }),
         }),
         ui.withTooltip({
-          chi: [
-            `The official Discord of Tower Dominion.`,
-            ``,
-            `Ping @Mitranim for help with Tabularius.`,
-          ].join(`\n`),
+          chi: DISCORD_LINK_TEXT,
           help: false,
           elem: E(`a`, {
             href: DISCORD_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS,
             chi: ui.Svg(`discord`, {class: NAV_ICON_CLS}),
+            [`aria-label`]: DISCORD_LINK_TEXT,
           }),
         }),
         ui.withTooltip({
-          chi: `Author's personal website`,
+          chi: AUTHOR_LINK_TEXT,
           help: false,
           inheritSize: false,
           elem: E(`a`, {
@@ -177,6 +184,7 @@ export const NAV = E(`nav`, {
               `text-lg leading-none`,
             ),
             chi: `@me`,
+            [`aria-label`]: AUTHOR_LINK_TEXT,
           }),
         }),
       ],
