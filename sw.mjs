@@ -209,6 +209,7 @@ const ASSETS = new Set([
   `/tabularius/client/auth.mjs`,
   `/tabularius/client/dat.mjs`,
   `/tabularius/client/edit.mjs`,
+  `/tabularius/client/favicon.svg`,
   `/tabularius/client/fs.mjs`,
   `/tabularius/client/idb.mjs`,
   `/tabularius/client/ls.mjs`,
