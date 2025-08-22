@@ -1136,33 +1136,38 @@ export function nextFgColor(ind) {
 }
 
 /*
-Copy-paste, reordered, of `*-500` color variants from:
+Copy-paste, reordered, of color variants from:
 
+  https://tailwindcss.com/docs/colors
   https://tailwindcss.com/docs/colors#default-color-palette-reference
+
+TODO:
+- Use different colors between light and dark modes.
+- Tweak the color choices for better contrast.
 */
 const FG_COLORS = [
-  `oklch(0.637 0.237 25.331)`,  // red
-  `oklch(0.623 0.214 259.815)`, // blue
-  `oklch(0.723 0.219 149.579)`, // green
-  `oklch(0.705 0.213 47.604)`,  // orange
-  `oklch(0.715 0.143 215.221)`, // cyan
-  `oklch(0.769 0.188 70.08)`,   // amber
-  `oklch(0.585 0.233 277.117)`, // indigo
-  `oklch(0.795 0.184 86.047)`,  // yellow
-  `oklch(0.768 0.233 130.85)`,  // lime
-  `oklch(0.696 0.17 162.48)`,   // emerald
-  `oklch(0.704 0.14 182.503)`,  // teal
-  `oklch(0.685 0.169 237.323)`, // sky
-  `oklch(0.606 0.25 292.717)`,  // violet
-  `oklch(0.627 0.265 303.9)`,   // purple
-  `oklch(0.667 0.295 322.15)`,  // fuchsia
-  `oklch(0.656 0.241 354.308)`, // pink
-  `oklch(0.645 0.246 16.439)`,  // rose
-  `oklch(0.554 0.046 257.417)`, // slate
-  `oklch(0.551 0.027 264.364)`, // gray
-  `oklch(0.552 0.016 285.938)`, // zinc
-  `oklch(0.556 0 0)`,           // neutral
-  `oklch(0.553 0.013 58.071)`,  // stone
+  `#737373`, // neutral-500
+  `#3b82f6`, // blue-500
+  `#22c55e`, // green-500
+  `#ef4444`, // red-500
+  `#06b6d4`, // cyan-500
+  `#f97316`, // orange-500
+  `#78716c`, // stone-500
+  `#6366f1`, // indigo-500
+  `#f59e0b`, // amber-500
+  `#0ea5e9`, // sky-500
+  `#64748b`, // slate-500
+  `#84cc16`, // lime-500
+  `#a855f7`, // purple-500
+  `#71717a`, // zinc-500
+  `#eab308`, // yellow-500
+  `#10b981`, // emerald-500
+  `#14b8a6`, // teal-500
+  `#8b5cf6`, // violet-500
+  `#6b7280`, // gray-500
+  `#d946ef`, // fuchsia-500
+  `#ec4899`, // pink-500
+  `#f43f5e`, // rose-500
 ]
 
 /*

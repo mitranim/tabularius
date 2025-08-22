@@ -15,7 +15,7 @@ const PROMPT_INPUT_CLS_PASSWORD = `focus:ring-green-500 dark:focus:ring-green-40
 The vertical padding should be large enough to prevent browser href previews
 from completely overlaying the prompt text. When hovering links, some browsers
 show a preview of the href in the bottom left corner, which can visually
-interfere with our prompt. We have links in abundance; see `FakeBtnInline`
+interfere with our prompt. We have links in abundance; see `LinkBtnInline`
 which is used all over the place.
 
 The left padding must compensate for the prefix.
@@ -248,7 +248,7 @@ export function BtnPrompt({cmd, suf, eph, chi, full, replace, ...opt}) {
   const ephSpace = (full && !suf && eph) ? ` ` : ``
   const args = a.spaced(cmd, suf) + ephSpace
 
-  return ui.FakeBtnInline({
+  return ui.LinkBtnInline({
     ...opt,
     onclick(eve) {
       a.eventKill(eve)

@@ -6,7 +6,7 @@ import * as fs from './fs.mjs'
 
 export function BtnUrlAppend(val) {
   const href = globalThis.location.href + a.reqValidStr(val)
-  return FakeBtnInline({href, chi: val})
+  return LinkBtnInline({href, chi: val})
 }
 
 /*
@@ -15,10 +15,9 @@ Using `<a>` for pseudo-buttons should generally be avoided.
 If you're reading this code, remember:
 - Use `<a>` for ALL links, and for almost nothing else (with this one exception
   explained below).
-- Use `<button>` for all programmatic click actions and form submissions,
-  and for NOTHING ELSE.
-  - But mind `<input>`, `<select><option>`, `<details><summary>`, `<dialog>`,
-    and more...
+- Use `<button>` for almost all programmatic click actions and form submissions
+  and for nothing else.
+  - But mind `<input>`, `<option>`, `<summary>`, `<dialog>`, and more...
 - More generally: use built-in semantically-appropriate elements, which tend to
   have proper keyboard support and good accessibility support.
 
@@ -28,7 +27,7 @@ that the native `<button>` cannot be made actually properly inline. Even with
 native buttons don't play well with text. When internal text is too long, a
 button doesn't wrap like a normal inline element; first it breaks out of its
 line, then it wraps, and then it forces subsequent text to be placed on a new
-line. Madness, which is very inconvenient in our app, where very long text in
+line. Madness, and very inconvenient in our app, where very long text in
 buttons is common. The same problem applies to `<input type="button">` which
 seems equivalent to `<button>` in current engines.
 
@@ -36,7 +35,7 @@ Using `<a>` for pseudo-buttons also comes with a bonus: the user can
 middle-click / ctrl-click / cmd-click to open the link in another tab.
 Which is why we require the `href` to be provided.
 */
-export function FakeBtnInline({onclick, href, chi, trunc, width}) {
+export function LinkBtnInline({onclick, href, chi, trunc, width}) {
   a.optFun(onclick)
   a.optStr(width)
   href = a.reqValidStr(a.render(href))
