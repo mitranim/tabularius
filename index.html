@@ -10,30 +10,32 @@
   <meta name="og:description" content="Book-keeper for Tower Dominion: run history, data analysis with plots, save editing, and more! Pure web app, no installation required.">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
+  <link rel="modulepreload" href="./client/main.mjs">
+
+  <!--
+  We'd like to also hit `https://cdn.skypack.dev`, but limiting preconnects
+  to 2 seems to be generally recommended.
+
+  The use of `crossorigin` here should match Chrome's Lighthouse audit.
+  Don't change without testing.
+  -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://esm.sh">
+
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://esm.sh">
+  <link rel="dns-prefetch" href="https://cdn.skypack.dev">
+
   <!--
   Instruct robots that only the origin + pathname URL is valid,
   without query or hash.
   -->
   <link rel="canonical" href="https://mitranim.com/tabularius/">
 
+  <!-- Version is used by UI and SW. -->
   <script id="init">
-    document.getElementById(`init`)?.remove()
-
-    // The version is used by the UI and the service worker.
-    globalThis.tabularius ??= Object.create(null)
+    window.tabularius ??= Object.create(null)
     tabularius.VERSION = 159
-
-    /*
-    Instruct robots to avoid indexing pages with non-default content.
-    See the canonical link above. Affects only JS-supporting robots.
-    */
-    const {search, hash} = window.location
-    if (search || hash) {
-      const tar = document.createElement(`meta`)
-      tar.name = `robots`
-      tar.content = `noindex,follow`
-      document.head.append(tar)
-    }
   </script>
 
   <style>
@@ -82,13 +84,18 @@
       "@twind/preset-autoprefix": "https://esm.sh/@twind/preset-autoprefix@1.0.7",
       "@twind/preset-tailwind": "https://esm.sh/@twind/preset-tailwind@1.1.4",
       "@twind/preset-tailwind/": "https://esm.sh/@twind/preset-tailwind@1.1.4/",
-      "idb": "https://esm.sh/idb@7.1.1",
-      "uplot": "https://esm.sh/uplot@1.6.27",
+      "idb": "https://esm.sh/idb@7.1.1/es2022/idb.mjs",
+      "uplot": "https://esm.sh/uplot@1.6.27/es2022/uplot.mjs",
       "tweetnacl": "https://cdn.skypack.dev/tweetnacl@1.0.3?min"
     }}
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@ungap/custom-elements@1.3.0/es.js"></script>
+  <!--
+  Must be deferred to avoid blocking rendering. Without this, some browsers
+  flashbang the user while this script is loading, despite our dark mode
+  styles above.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/@ungap/custom-elements@1.3.0/es.js" defer></script>
 
   <script type="module">
     try {
