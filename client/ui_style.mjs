@@ -138,6 +138,8 @@ dialog[open] {
   }
 }
 
+:link:hover .link-hover-scale {transform: scale(1.2)}
+
 .uplot, .u-wrap, .u-wrap *, .u-legend, .u-legend * {
   all: unset;
   box-sizing: border-box;

@@ -103,7 +103,7 @@ with other UI elements. The nav should be around as tall as the prompt, etc.
 const NAV_PAD = `px-2 py-3`
 const NAV_ICON_SIZE = `w-6 h-6`
 const NAV_LINK_CLS = a.spaced(`flex row-cen-cen`, NAV_PAD)
-const NAV_ICON_BUSY = `hover:scale-[1.2]`
+const NAV_ICON_BUSY = `link-hover-scale`
 const NAV_ICON_CLS = a.spaced(NAV_ICON_SIZE, NAV_ICON_BUSY)
 
 const GITHUB_LINK = `https://github.com/mitranim/tabularius`
@@ -138,20 +138,6 @@ export const NAV = E(`nav`, {
       chi: [
         Version,
         ui.withTooltip({
-          chi: `Author's personal website`,
-          help: false,
-          inheritSize: false,
-          elem: E(`a`, {
-            href: `https://mitranim.com`,
-            ...ui.TARBLAN,
-            class: a.spaced(
-              NAV_LINK_CLS, NAV_ICON_BUSY, ui.CLS_TEXT_MUTED_BUSY,
-              `text-lg leading-none`,
-            ),
-            chi: `@me`,
-          }),
-        }),
-        ui.withTooltip({
           chi: `Tabularius source code`,
           help: false,
           elem: E(`a`, {
@@ -177,6 +163,20 @@ export const NAV = E(`nav`, {
           elem: E(`a`, {
             href: DISCORD_LINK, ...ui.TARBLAN, class: NAV_LINK_CLS,
             chi: ui.Svg(`discord`, {class: NAV_ICON_CLS}),
+          }),
+        }),
+        ui.withTooltip({
+          chi: `Author's personal website`,
+          help: false,
+          inheritSize: false,
+          elem: E(`a`, {
+            href: `https://mitranim.com`,
+            ...ui.TARBLAN,
+            class: a.spaced(
+              NAV_LINK_CLS, NAV_ICON_BUSY, ui.CLS_TEXT_MUTED_BUSY,
+              `text-lg leading-none`,
+            ),
+            chi: `@me`,
           }),
         }),
       ],
