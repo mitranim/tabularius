@@ -151,6 +151,12 @@ function TabBtn({obs, val, chi}) {
   })
 }
 
+const COL_TOG_DIA = E(`dialog`, {
+  class: a.spaced(`flex col-sta-str p-0 rounded`, ui.CLS_FG, ui.CLS_BG_1),
+  closedby: `any`,
+  onclose() {this.remove()},
+})
+
 function ColumnToggler(obs) {
   return ui.withTooltip({
     chi: `toggle columns`,
@@ -161,20 +167,14 @@ function ColumnToggler(obs) {
         ui.CLS_BUSY_BG,
       ),
       onclick() {
-        const dialog = ColumnToggleDialog(obs)
+        const dialog = E(COL_TOG_DIA, {
+          chi: a.bind(ColToggles, obs),
+        })
         document.body.appendChild(dialog)
         dialog.showModal()
       },
       chi: ui.Svg(`table`, {class: `w-6 h-6`}),
     }),
-  })
-}
-
-function ColumnToggleDialog(obs) {
-  return E(`dialog`, {
-    class: a.spaced(`flex col-sta-str p-0 rounded`, ui.CLS_FG, ui.CLS_BG_1),
-    closedby: `any`,
-    chi: a.bind(ColToggles, obs),
   })
 }
 
