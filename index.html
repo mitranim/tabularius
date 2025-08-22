@@ -13,13 +13,20 @@
   <link rel="modulepreload" href="./client/main.mjs">
 
   <!--
-  We'd like to also hit `https://cdn.skypack.dev`, but limiting preconnects
-  to 2 seems to be generally recommended.
+  Chrome's Lighthouse audit complains about this no matter what. When not
+  using preconnect, it recommends adding it for these domains. When using
+  preconnect, it complains that it was unused (possibly because of HTTP
+  protocol mismatch). In local testing, it wants us to use `crossorigin`
+  for `cdn.jsdelivr.net`, but not for `esm.sh`. In production, it complains
+  about both. This is out of our hands and up to Chrome to fix.
 
-  The use of `crossorigin` here should match Chrome's Lighthouse audit.
-  Don't change without testing.
+  Meanwhile, Safari prints messages that preconnect was successful, although
+  it's unclear if this means it was actually used.
+
+  We'd like to also hit `https://cdn.skypack.dev`, but Lighthouse also
+  complains about more than 2 preconnects.
   -->
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://esm.sh">
 
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
