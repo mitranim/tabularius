@@ -200,8 +200,8 @@ export function Version() {
     chi: [tip, a.vac(ready) && [
       `.\n\n`,
       u.joinLines(
-        `The app is locally cached`,
-        `and can be used offline.`
+        `The site is now locally cached`,
+        `and can be accessed offline.`
       ),
     ]],
     elem: E(`span`, {

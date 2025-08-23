@@ -45,7 +45,7 @@ export const WATCH_STATE = new class WatchState extends a.Emp {
 
   idle() {return this.task ? undefined : this}
 
-  async run(val) {
+  async setTask(val) {
     this.task = val
     try {await val}
     finally {if (this.task === val) this.task = undefined}
@@ -118,7 +118,7 @@ export async function cmdWatchUnsync(sig) {
 
   const obs = new Obs(function onFsChange(events) {
     if (!a.some(events, isFsEventModified)) return
-    state.idle()?.run(onWatchFsEvent(sig, state).catch(onWatchErr))
+    state.idle()?.setTask(onWatchFsEvent(sig, state).catch(onWatchErr))
   })
 
   await obs.observe(state.progressFileHandle)

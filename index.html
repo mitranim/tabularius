@@ -10,8 +10,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="./client/favicon.svg" type="image/svg+xml">
 
-  <link rel="modulepreload" href="./client/main.mjs">
-
   <!--
   Chrome's Lighthouse audit complains about this no matter what. When not
   using preconnect, it recommends adding it for these domains. When using
@@ -42,7 +40,7 @@
   <!-- Version is used by UI and SW. -->
   <script id="init">
     window.tabularius ??= Object.create(null)
-    tabularius.VERSION = 161
+    tabularius.VERSION = 162
   </script>
 
   <style>
@@ -83,6 +81,14 @@
     }
   </style>
 
+  <!--
+  The importmap must precede every import that relies on it.
+  It must also precede any `<link rel="modulepreload">` of our scripts
+  If `<link rel="modulepreload">` is placed before the importmap, it's
+  possible to have a race condition where a module is retrieved from
+  a local cache and processed "too soon", before the browser processes
+  the importmap, and the whole app fails due to unresolved imports.
+  -->
   <script type="importmap">
     {"imports": {
       "tabularius/": "./",
