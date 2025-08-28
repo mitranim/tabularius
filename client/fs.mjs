@@ -533,7 +533,7 @@ export async function listDirsFiles({sig, path, stat}) {
   if (!path) {
     return ui.LogLines(
       [`top-level FS entries`, a.vac(!stat) && [` `, ...StatTip(path)], `:`],
-      ...u.alignCol(await Promise.all(a.map(
+      ...u.alignRows(await Promise.all(a.map(
         CONFS,
         conf => FileConfLine({sig, conf, stat}),
       ))),

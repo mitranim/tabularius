@@ -583,14 +583,19 @@ function queryEnv(src) {
 }
 
 // Each row must begin with a string. We align on that string by padding it.
-export function alignCol(rows) {
+export function alignRows(rows) {
   rows = a.compact(rows)
-  const max = maxBy(rows, rowPreLen) | 0
-  const alignRow = ([head, ...tail]) => [head.padEnd(max, ` `), ...tail]
-  return a.map(rows, alignRow)
+  const max = maxBy(rows, rowHeadLen) | 0
+  return rows.map(alignRow, max)
 }
 
-function rowPreLen(src) {return a.reqStr(a.reqArr(src)[0]).length}
+function rowHeadLen(src) {return a.reqStr(a.head(src)).length}
+
+function alignRow(src) {
+  src = a.valuesCopy(src)
+  src[0] = src[0].padEnd(a.reqFin(this), ` `)
+  return src
+}
 
 export function randInt(min, max) {
   const buf = crypto.getRandomValues(new Uint32Array(1))
@@ -628,11 +633,12 @@ export function randomSamples(src, count) {
   return out
 }
 
+// Can compare numbers _or_ strings.
 export function maxBy(src, fun) {
   a.reqFun(fun)
   let out
   for (src of a.values(src)) {
-    src = fun(src)
+    src = a.onlyPrim(fun(src))
     if (a.isNil(out) || src > out) out = src
   }
   return out

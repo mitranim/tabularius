@@ -101,7 +101,7 @@ export function isElemEscapable(val) {
 /*
 Usage:
 
-  ui.MEDIA_QUERY_DARK.matches
+  console.log(ui.MEDIA_QUERY_DARK.matches)
   ui.MEDIA_QUERY_DARK.addEventListener(`change`, someListener)
   function someListener(eve) {console.log(eve.matches)}
 */

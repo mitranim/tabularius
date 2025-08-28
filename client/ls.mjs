@@ -184,7 +184,7 @@ export function LsEntry({kind, name, path, entries, stat, stats, cloud}) {
 
   return ui.LogLines(
     [`contents of `, locPre, `directory ${a.show(path || name)}`, statSuf, `:`],
-    ...a.map(u.alignCol(buf), TruncLine),
+    ...a.map(u.alignRows(buf), TruncLine),
   )
 }
 

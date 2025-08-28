@@ -152,6 +152,8 @@ Main watch functionality, executed by `cmdWatch` on FS changes.
 
 TODO: when a fork is detected, delete all rounds after the fork.
 
+TODO: check `.EncodedSeed` to detect a deep rollback in the current run.
+
 TODO: when file deletion is detected, don't assume a new run,
 continue backups in the current dir.
 
