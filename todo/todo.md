@@ -753,7 +753,31 @@ Consider if the Web Authentication API and/or Web Credentials API could be relev
   * [ ] `recon`
   * [ ] `tech`
 * [ ] A preset that plots all the stats above (with `-z=stat`).
+* [ ] Another possible stat: `uptime`?
 
 ---
 
 * [ ] Consider using a `SharedWorker` to deduplicate work between tabs. For example, the `DAT` cache and its querying could be moved there to reduce its RAM cost in cases where multiple tabs query the same data. Similarly, `watch` could be moved there; the backup messages would be broadcasted and seen in all tabs. This is probably silly overkill.
+
+---
+
+`plot`: on Shift+click of legend labels, prevent text selection.
+
+---
+
+`sw.mjs`: when fetching a non-semver asset:
+- Respond immediately from cache, hit the network in the background.
+- If the responses differ (or more precisely: if the new app version is different; we'd have to parse it out of HTML), cache the new version and notify the app.
+- In the UI: notify the user that an update has arrived and they should reload.
+
+When offline on Windows, this would remove the initial delay on reload when the OS tries to work out if it's really offline.
+
+The downside is that actual updates would require 2 reloads.
+
+---
+
+`edit`: it seems that locking a difficulty by editing can sometimes break its ingame UI tooltip on the commander + difficilty selection screen. Needs investigation.
+
+---
+
+`plot`: it seems that sometimes totals in `plot -p=dmg -z=bui_type` don't match `dmg_done_acc` values, even when no rounds were skipped. Need a repro.
