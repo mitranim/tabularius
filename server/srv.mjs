@@ -14,8 +14,6 @@ import {apiLatestRun} from './api/api_latest_run.mjs'
 
 const CACHING = !u.DEV
 
-const COMP = new h.HttpCompressor({Res: u.Res})
-
 const DIRS = h.HttpDirs.of(
   new u.HttpDir({
     fsPath: `.`,
@@ -145,7 +143,6 @@ async function serveFile(req, path) {
   return h.fileResponse({
     req,
     file,
-    compressor: COMP,
     liveClient: u.LIVE_CLI,
   })
 }
