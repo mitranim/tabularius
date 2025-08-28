@@ -127,6 +127,12 @@ export const CODES_TO_BUIS_SHORT = dict({
   F3H10SB01: `CampAlph`,
   DBBAN01: `Attenuator`,
   DBBOOST01: `Amplifier`,
+  SC01: `CuzeFort`,
+  SC02: `UrsaCalc`,
+  SC03: `SirioArt`,
+  SC04: `DualAsro`,
+  SC05: `EsnoDurend`,
+  SC06: `LiegoDomin`,
   SB01: `AmmoDep`,
   SB02: `DivRel`,
   SB02A: `AntRel`,
@@ -154,6 +160,17 @@ export const CODES_TO_BUIS_SHORT = dict({
   NB17: `ClassSite`,
   NB18: `MonoDiss`,
   NB19: `DeciAmpl`,
+  FB01: `DistortPit`,
+  FB02: `ReactPit`,
+  FB03: `HarrowTit`,
+  FB04: `PheroEnh`,
+  FB05: `SlumbPit`,
+  FB06: `XenoExtr`,
+  FB07: `EvoPit`,
+  FB08: `PendorSpire`,
+  FB09: `SurveyPit`,
+  FB10: `BrainRelay`,
+  FB11: `ExpXenoAmp`,
 })
 
 export const BUIS_TO_CODES_SHORT = invert(CODES_TO_BUIS_SHORT)
@@ -924,6 +941,14 @@ export const BUI_COSTS_1_47 = dict({
   ...BUI_COSTS_1_37,
   DBBAN01: {base: 200, upg: [[25, 50], [800, 800], [300, 800]]},
   DBBOOST01: {base: 200, upg: [[25, 200], [250, 30], [700, 0]]},
+  SC01: {base: 1000},
+  SC02: {base: 50},
+  SC03: {base: 150},
+  SC04: {base: 50},
+  SC05: {base: 50},
+  SC06: {base: 1200},
+  FB11: {base: 0, upg: [[200, 0], [300, 0], [200, 100]]},
+  FB09: {base: 0, upg: [[5, 10], [10, 20], [15, 30]]},
 })
 
 // https://steamdb.info/app/3226530/patchnotes/
