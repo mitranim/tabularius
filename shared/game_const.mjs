@@ -125,6 +125,8 @@ export const CODES_TO_BUIS_SHORT = dict({
   F3H10CB01: `Scarlett`,
   F3H10CB01A: `ScarTig`,
   F3H10SB01: `CampAlph`,
+  DBBAN01: `Attenuator`,
+  DBBOOST01: `Amplifier`,
   SB01: `AmmoDep`,
   SB02: `DivRel`,
   SB02A: `AntRel`,
@@ -918,6 +920,12 @@ export const BUI_COSTS_1_37 = dict({
   CB13: {base: 1600, upg: [[400, 300], [350, 550], [0, 1250]]},
 })
 
+export const BUI_COSTS_1_47 = dict({
+  ...BUI_COSTS_1_37,
+  DBBAN01: {base: 200, upg: [[25, 50], [800, 800], [300, 800]]},
+  DBBOOST01: {base: 200, upg: [[25, 200], [250, 30], [700, 0]]},
+})
+
 // https://steamdb.info/app/3226530/patchnotes/
 export const GAME_RELEASES = [
   {ver: `1.9.0`, ms: a.reqFin(Date.parse(`2025-05-15T16:00:00Z`)), costs: BUI_COSTS_1_9},
@@ -931,4 +939,5 @@ export const GAME_RELEASES = [
   {ver: `1.32.0`, ms: a.reqFin(Date.parse(`2025-06-23T11:25:00Z`)), costs: BUI_COSTS_1_20},
   {ver: `1.37.0`, ms: a.reqFin(Date.parse(`2025-07-15T15:40:00Z`)), costs: BUI_COSTS_1_37},
   {ver: `1.39.0`, ms: a.reqFin(Date.parse(`2025-07-17T17:30:00Z`)), costs: BUI_COSTS_1_37},
+  {ver: `1.47.0`, ms: a.reqFin(Date.parse(`2025-08-28T18:30:00Z`)), costs: BUI_COSTS_1_47},
 ]
