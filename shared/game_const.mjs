@@ -788,9 +788,10 @@ export function findGameReleaseForMs(ms) {
 
 /*
 Older game versions use strings.
-Newer game versions use integers. We map them to "old" strings.
+Version 1.47 (and higher, presumably) uses integers.
+We map them to "old" strings.
 */
-const TARG_PRIO = new Map()
+export const TARG_PRIO = new Map()
   .set(0, `FullHealth`)
   .set(1, `LowestHealth`)
   .set(2, `MostHealth`)
@@ -947,8 +948,17 @@ export const BUI_COSTS_1_47 = dict({
   SC04: {base: 50},
   SC05: {base: 50},
   SC06: {base: 1200},
-  FB11: {base: 0, upg: [[200, 0], [300, 0], [200, 100]]},
+  FB01: {base: 0},
+  FB02: {base: 0},
+  FB03: {base: 0},
+  FB04: {base: 0},
+  FB05: {base: 0},
+  FB06: {base: 0},
+  FB07: {base: 0},
+  FB08: {base: 0},
   FB09: {base: 0, upg: [[5, 10], [10, 20], [15, 30]]},
+  FB10: {base: 0},
+  FB11: {base: 0, upg: [[200, 0], [300, 0], [200, 100]]},
 })
 
 // https://steamdb.info/app/3226530/patchnotes/

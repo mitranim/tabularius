@@ -781,3 +781,7 @@ The downside is that actual updates would require 2 reloads.
 ---
 
 `plot`: it seems that sometimes totals in `plot -p=dmg -z=bui_type` don't match `dmg_done_acc` values, even when no rounds were skipped. Need a repro.
+
+---
+
+`schema.mjs`: consider excluding non-weapon building upgrades from cost efficiency analysis.
