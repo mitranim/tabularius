@@ -42,12 +42,17 @@ export async function plotAgg(ctx, req) {
     ${where}
   `
 
+  /*
+  The additional count aggregate is redundant when `agg` is `count`.
+  TODO: skip it in that scenario.
+  */
   const queryAggs = u.sql`
     with src as (${queryFacts})
     select
-      ${u.sqlRaw(Z)} as Z,
-      ${u.sqlRaw(X)} as X,
-      ${u.sqlRaw(opt.agg)}(stat_val) as Y
+      ${u.sqlRaw(Z)}                 as Z,
+      ${u.sqlRaw(X)}                 as X,
+      ${u.sqlRaw(opt.agg)}(stat_val) as Y,
+      count(stat_val)                as C
     from src
     group by
       ${u.sqlRaw(Z)},
@@ -63,12 +68,14 @@ export async function plotAgg(ctx, req) {
   const out = await queryPlotAgg(conn, queryAggs, aggMode)
   const totals = await queryPlotTotals(conn, queryFacts, opt)
 
-  // Not faster.
-  //
-  // const [out, totals] = await Promise.all([
-  //   queryPlotAgg(conn, queryAggs, aggMode),
-  //   queryPlotTotals(conn, queryFacts, opt.totals),
-  // ])
+  /*
+  Not faster.
+
+    const [out, totals] = await Promise.all([
+      queryPlotAgg(conn, queryAggs, aggMode),
+      queryPlotTotals(conn, queryFacts, opt.totals),
+    ])
+  */
 
   out.totals = totals
   return out
@@ -83,10 +90,18 @@ async function queryPlotAgg(conn, queryAggs, aggMode) {
 
   At the time of writing, on a local system with an in-RAM DuckDB, it seems
   faster to run just this query, and then iterate the resulting triplets in JS,
-  building the `{X_vals, Z_vals, Z_X_Y}` that our plotting code needs. However,
-  the difference is more proportional than absolute; single digit milliseconds
-  and only tested in-RAM on a small dataset. Both approaches need production
-  testing.
+  building the `{X_vals, Z_vals, Z_X_Y, Z_X_C}` that our plotting code needs.
+  However, the difference is more proportional than absolute; single digit
+  milliseconds and only tested in-RAM on a small dataset. Both approaches need
+  production testing.
+
+  Values from production:
+
+    `plot -c -p=eff user_id=all run_id=all -m=js` -> ≈100ms
+    `plot -c -p=eff user_id=all run_id=all -m=db` -> ≈70ms
+
+  So eventually the pure DB version becomes slightly faster.
+  TODO drop the JS hybrid version.
   */
   if (aggMode === `js`) {
     const id = ++PLOT_AGG_TIMER_ID
@@ -94,7 +109,7 @@ async function queryPlotAgg(conn, queryAggs, aggMode) {
     const {text, args} = queryAggs
     const rows = await conn.queryRows(text, args)
     try {
-      return tripletsToPlotAgg(rows)
+      return flatAggToPlotAgg(rows)
     }
     finally {
       if (u.LOG_DEBUG) console.timeEnd(`[plot_agg_${id}] [mode=js]`)
@@ -108,45 +123,45 @@ async function queryPlotAgg(conn, queryAggs, aggMode) {
   if (aggMode === `db`) {
     const query = u.sql`
       with
-        incomplete_groups as (${queryAggs}),
-        X_vals as (select distinct X from incomplete_groups order by X),
-        Z_vals as (select distinct Z from incomplete_groups order by Z),
-        Z_X as (select Z, X from Z_vals cross join X_vals),
-        complete_groups as (
+        flat_agg as (${queryAggs}),
+        Z_vals as (select distinct Z from flat_agg order by Z),
+        X_vals as (select distinct X from flat_agg order by X),
+        Z_X_combinations as (select Z, X from Z_vals cross join X_vals),
+        Z_X_aggs as (
           select *
           from
-            Z_X
-            left join incomplete_groups using (Z, X)
+            Z_X_combinations
+            left join flat_agg using (Z, X)
         ),
-        X_Y_arr as (
+        arrs as (
           select
             Z,
-            array_agg(Y order by X) as Y_arr
+            array_agg(Y order by X) as Y_arr,
+            array_agg(C order by X) as C_arr
           from
-            complete_groups
+            Z_X_aggs
           group by Z
-        ),
-        Z_X_Y_arr as (
-          select array_agg(Y_arr order by Z)
-          from X_Y_arr
         )
       select
-        (select array_agg(X order by X) from X_vals) as X_vals,
-        (select array_agg(Z order by Z) from Z_vals) as Z_vals,
-        (table Z_X_Y_arr)                            as Z_X_Y
+        (select array_agg(X order by X) from X_vals)   as X_vals,
+        (select array_agg(Z order by Z) from Z_vals)   as Z_vals,
+        (select array_agg(Y_arr order by Z) from arrs) as Z_X_Y,
+        (select array_agg(C_arr order by Z) from arrs) as Z_X_C
     `
 
     const id = ++PLOT_AGG_TIMER_ID
     if (u.LOG_DEBUG) console.time(`[plot_agg_${id}] [mode=db]`)
     try {
       const {text, args} = query
-      let [X_vals, Z_vals, Z_X_Y] = await conn.queryRow(text, args)
+      let [X_vals, Z_vals, Z_X_Y, Z_X_C] = await conn.queryRow(text, args)
+
       X_vals = a.laxArr(X_vals)
       Z_vals = a.laxArr(Z_vals)
       Z_X_Y = a.laxArr(Z_X_Y)
+      Z_X_C = a.laxArr(Z_X_C)
 
-      s.dropEmptySeries(Z_vals, Z_X_Y)
-      return {X_vals, Z_vals, Z_X_Y}
+      s.dropEmptySeries({Z_vals, Z_X_Y, Z_X_C})
+      return {X_vals, Z_vals, Z_X_Y, Z_X_C}
     }
     finally {
       if (u.LOG_DEBUG) console.timeEnd(`[plot_agg_${id}] [mode=db]`)
@@ -173,25 +188,21 @@ async function queryPlotTotals(conn, queryFacts, opt) {
   }
 }
 
-export function tripletsToPlotAgg(src) {
+export function flatAggToPlotAgg(src) {
   const state = a.Emp()
   s.plotAggStateInit(state)
-  const {Z_X_Y, X_set} = state
+  const {Z_X_Y, Z_X_C, X_set} = state
 
   // SYNC[plot_agg_add_data_point].
-  for (const [Z, X, Y] of src) {
-    const X_Y = Z_X_Y[Z] ??= a.Emp()
+  for (const [Z, X, Y, C] of src) {
+    const X_Y = Z_X_Y[Z] ??= []
+    const X_C = Z_X_C[Z] ??= []
 
     // Our DB query must produce unique aggregations for each Z_X_Y.
     if (X in X_Y) throw Error(`redundant Z = ${Z}, X = ${X}`)
 
-    /*
-    The `[Y]` wrapping makes the result compatible with `plotAggStateToPlotAgg`,
-    which is shared with client-side code. A minor inefficiency, which
-    shouldn't matter because the dataset is small at this point. Makes it
-    easier to produce consistent results.
-    */
-    X_Y[X] = [Y]
+    X_Y[X] = Y
+    X_C[X] = C
     X_set.add(X)
   }
 

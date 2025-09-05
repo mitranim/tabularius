@@ -245,7 +245,6 @@ export async function cmdPlotCloud({sig, args, opt, user}) {
 
   const agg = u.normNil(await apiPlotAgg(sig, opt))
   if (isPlotAggEmpty(agg)) return msgPlotDataEmpty(args, opt)
-
   return showPlot({opts: plotOptsWith({...agg, opt, args}), totals: agg.totals, args, user})
 }
 
@@ -279,16 +278,20 @@ TODO: use `inp.totals`, when provided.
 Some could be usefully rendered under the plot.
 */
 export function plotOptsWith(inp) {
-  let {X_vals, Z_vals, Z_X_Y, opt, args, example} = a.reqRec(inp)
+  let {X_vals, Z_vals, Z_X_Y, Z_X_C, opt, args, example} = a.reqRec(inp)
   a.reqArr(X_vals)
   a.reqArr(Z_vals)
   a.reqArr(Z_X_Y)
+  a.reqArr(Z_X_C)
 
   const {X, Z, Y, scale, agg, totalFun} = a.reqRec(opt)
-  ;[{X_vals, Z_vals, Z_X_Y}] = [s.plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, totalFun})]
+  ;[{X_vals, Z_vals, Z_X_Y, Z_X_C}] = [
+    s.plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, Z_X_C, totalFun})
+  ]
 
+  const isCount = agg === `count`
   const logarithmic = scale === `log`
-  const format = a.vac(s.STAT_TYPE_PERC.has(Y) && agg !== `count`) && formatPerc
+  const format = a.vac(s.STAT_TYPE_PERC.has(Y) && !isCount) && formatPerc
   const serieOpt = {total: totalFun, format}
 
   const Z_rows = Z_vals
@@ -299,10 +302,12 @@ export function plotOptsWith(inp) {
   // TODO: when updating a live plot, preserve series show/hide state.
   if (Z_rows[0]) Z_rows[0].show = false
 
-  const tooltipOpt = {
+  const tooltipOpt = new TooltipOpt({
+    X_label: X,
+    Y_label: Y,
     formatY: format,
-    preY: a.vac(agg === `count`) && `count of `,
-  }
+    Z_X_C: a.vac(!isCount) && Z_X_C,
+  })
 
   const tooltip = new TooltipPlugin(tooltipOpt)
 
@@ -325,8 +330,6 @@ export function plotOptsWith(inp) {
 
     title,
     axes: axes({
-      nameX: X,
-      nameY: Y,
       formatY: format ?? (logarithmic ? formatPow10 : formatVal),
     }),
     series: [{label: X}, ...Z_rows],
@@ -1019,13 +1022,12 @@ export const LINE_PLOT_OPTS = {
   },
 }
 
-export function axes({nameX, nameY, formatX, formatY, denseX} = {}) {
+export function axes({formatX, formatY, denseX} = {}) {
   // This one doesn't have a label, not even an empty string, because that
   // causes the plot library to waste space.
   const X = {
     scale: `x`,
     stroke: axisStroke,
-    secretName: nameX,
     values: axisValuesFormat(formatX),
   }
 
@@ -1042,7 +1044,6 @@ export function axes({nameX, nameY, formatX, formatY, denseX} = {}) {
     scale: `y`,
     label: ``,
     stroke: axisStroke,
-    secretName: nameY,
     values: axisValuesFormat(formatY),
   }
 
@@ -1066,11 +1067,18 @@ export function serie(label, ind, opt) {
     label,
     stroke: nextFgColor(ind),
     width: 2,
-    value(plot, val, indZ) {
-      const indX = plot.cursor.idx
-      if (!a.isInt(indX) && a.isInt(indZ)) {
-        val = u.foldSome(plot.data[indZ], 0, total)
+    value(plot, val, Z_ind) {
+      const X_ind = plot.cursor.idx
+
+      if (!a.isInt(X_ind) && a.isInt(Z_ind)) {
+        /*
+        Known issue: when a serie becomes un-selected, such as when the cursor
+        leaves the plot, this iterates over the data of every serie, computing
+        its total. TODO: cache the results.
+        */
+        val = u.foldSome(plot.data[Z_ind], 0, total)
       }
+
       return format(val)
     },
   }
@@ -1078,17 +1086,20 @@ export function serie(label, ind, opt) {
 
 // Our default formatter for plot values.
 export function formatVal(val) {
+  if (a.isArr(val)) val = val[0]
   if (a.isNil(val)) return ``
   if (!a.isNum(val)) return val
   return ui.formatNumCompact(val)
 }
 
 export function formatPerc(val) {
+  if (a.isArr(val)) val = val[0]
   if (a.isNil(val)) return ``
   return ui.formatNumCompact(a.reqFin(val) * 100) + `%`
 }
 
 export function formatPow10(val) {
+  if (a.isArr(val)) val = val[0]
   if (a.isNil(val)) return ``
   if (!a.isNum(val)) return val
   if (!val) return `0`
@@ -1225,7 +1236,7 @@ export class TooltipPlugin extends a.Emp {
   overHei = undefined
   resObs = new ResizeObserver(this.onResize.bind(this))
 
-  constructor(opt) {super().opt = a.laxRec(opt)}
+  constructor(opt) {super().opt = a.reqInst(opt, TooltipOpt)}
 
   opts() {
     return {
@@ -1266,45 +1277,34 @@ export class TooltipPlugin extends a.Emp {
 
   draw(plot) {
     const {indS} = this
-    const indX = plot.cursor.idx
-    if (a.isNil(indS) || a.isNil(indX)) {
+    const X_ind = plot.cursor.idx
+    if (a.isNil(indS) || a.isNil(X_ind)) {
       this.tooltip?.remove()
       return
     }
 
-    const series = plot.series[indS]
-    const valX = plot.data[0][indX]
-    const valY = plot.data[indS][indX]
-    const posX = plot.valToPos(valX, `x`, false)
-    const posY = plot.valToPos(valY, `y`, false)
+    const X_val = plot.data[0][X_ind]
+    const Y_val = plot.data[indS][X_ind]
+    const posX = plot.valToPos(X_val, `x`, false)
+    const posY = plot.valToPos(Y_val, `y`, false)
 
-    if (!a.isFin(valX) || !a.isFin(valY) || !a.isFin(posX) || !a.isFin(posY)) {
+    if (!a.isFin(X_val) || !a.isFin(Y_val) || !a.isFin(posX) || !a.isFin(posY)) {
       this.tooltip?.remove()
       return
     }
 
     const {opt} = this
-    const formatX = a.optFun(opt?.formatX) ?? formatVal
-    const formatY = a.optFun(opt?.formatY) ?? formatVal
-    const preX = a.laxStr(opt?.preX)
-    const preY = a.laxStr(opt?.preY)
-    const axisNameX = preX + (plot.axes?.[0]?.secretName || `X`)
-    const axisNameY = preY + (plot.axes?.[1]?.secretName || `Y`)
-    const nameSuf = `: `
-    const nameLen = nameSuf.length + Math.max(axisNameX.length, axisNameY.length)
-    const label = a.vac(!opt.noLabel) && u.ellMid(a.render(series.label), LEGEND_LEN_MAX)
-    const elem = this.tooltip ??= this.makeTooltip()
-
-    elem.textContent = u.joinLines(
-      label,
-      (axisNameX + nameSuf).padEnd(nameLen, ` `) + formatX(valX),
-      (axisNameY + nameSuf).padEnd(nameLen, ` `) + formatY(valY),
-    )
-
+    const Z_ind = indS - 1
+    const Z_label = plot.series[indS].label
     const wid = this.overWid ??= plot.over.offsetWidth
     const hei = this.overHei ??= plot.over.offsetHeight
+    const elem = this.tooltip ??= this.makeTooltip()
+
+    E(elem, {chi: opt.draw({Z_label, X_val, Y_val, Z_ind, X_ind})})
     ui.tooltipOrient({elem, posX, posY, wid, hei})
-    plot.over.appendChild(elem)
+
+    const parent = plot.over
+    if (elem.parentNode !== parent) parent.appendChild(elem)
   }
 
   makeTooltip() {
@@ -1327,6 +1327,30 @@ export class TooltipPlugin extends a.Emp {
         borderRadius: `0.25rem`,
       },
     })
+  }
+}
+
+export class TooltipOpt extends a.Emp {
+  constructor(opt) {super().opt = a.reqRec(opt)}
+
+  draw({Z_label, X_val, Y_val, Z_ind, X_ind}) {
+    let {X_label, Y_label, formatX, formatY, Z_X_C} = this.opt
+    const C_val = Z_X_C?.[Z_ind]?.[X_ind]
+
+    formatX ??= formatVal
+    formatY ??= formatVal
+    Z_label = u.ellMid(a.render(Z_label), LEGEND_LEN_MAX)
+    X_label ||= `X`
+    Y_label ||= `Y`
+
+    return ui.LogLines(
+      Z_label,
+      ...u.alignRows([
+        [X_label + `: `, formatX(X_val)],
+        [Y_label + `: `, formatY(Y_val)],
+        a.vac(a.isSome(C_val)) && [`count: `, C_val],
+      ])
+    )
   }
 }
 

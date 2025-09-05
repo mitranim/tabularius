@@ -899,6 +899,7 @@ function showFilter(key, src) {
 
 export function plotAggStateInit(state) {
   state.Z_X_Y ??= a.Emp()
+  state.Z_X_C ??= a.Emp()
   state.X_set ??= new Set()
   state.totalSets ??= a.Emp()
 }
@@ -923,17 +924,18 @@ export function plotAggAddFact({fact, state, opt}) {
   a.reqDict(opt)
 
   plotAggStateInit(state)
-  const {Z_X_Y, X_set} = state
+  const {Z_X_Y, Z_X_C, X_set} = state
   const {Z: Z_key, X: X_key, aggFun} = opt
 
   const Z = fact[Z_key]
   if (!a.isKey(Z)) return
 
-  const X = fact[X_key]
-  if (!a.isKey(X)) return
+  const X = a.optFin(fact[X_key])
+  if (a.isNil(X)) return
   X_set.add(X)
 
-  const X_Y = Z_X_Y[Z] ??= a.Emp()
+  const X_Y = Z_X_Y[Z] ??= []
+  const X_C = Z_X_C[Z] ??= []
   const Y = fact.stat_val
 
   // SYNC[plot_agg_stats].
@@ -950,13 +952,9 @@ export function plotAggAddFact({fact, state, opt}) {
   */
   if (a.isNil(Y)) return
 
-  if (!X_Y[X]) {
-    X_Y[X] = [aggFun(undefined, Y, 0), 0]
-  }
-  else {
-    X_Y[X][1]++
-    X_Y[X][0] = aggFun(X_Y[X][0], Y, X_Y[X][1])
-  }
+  const count = a.laxFin(X_C[X])
+  X_Y[X] = aggFun(X_Y[X], Y, count)
+  X_C[X] = count + 1
 }
 
 function plotAggAddStats(fact, sets, opt) {
@@ -987,104 +985,130 @@ export function plotAggTotals(src) {
   return {counts, values}
 }
 
-export function plotAggStateToPlotAgg({Z_X_Y, X_set}) {
-  a.reqDict(Z_X_Y)
-  a.reqSet(X_set)
+/*
+Converts the top level from an index into an array (as required by Uplot)
+while also sorting it by the Z labels. We should probably drop this sort,
+as we later also sort by totals.
 
-  const Z_vals = a.keys(Z_X_Y).sort()
-  const X_vals = a.arr(X_set).sort(u.compareAsc)
+The resulting `Z_X_Y` and `Z_X_C` are something like:
 
-  /*
-  Produces something like:
+  [
+    [10, 20, 30], ← Z (plot series).
+    [40, 50, 60], ← Z (another plot series).
+     ↑ ․․․․․․․ Y_val for X_val at index 0 in X_vals.
+         ↑ ․․․ Y_val for X_val at index 1 in X_vals.
+             ↑ Y_val for X_val at index 2 in X_vals.
+  ]
 
-    [
-      [10, 20, 30], ← Z (plot series).
-      [40, 50, 60], ← Z (another plot series).
-       ↑ ․․․․․․․ Y_val for X_val at index 0 in X_vals.
-           ↑ ․․․ Y_val for X_val at index 1 in X_vals.
-               ↑ Y_val for X_val at index 2 in X_vals.
-    ]
+Each super-array index corresponds to an index in Z_rows (a serie).
+Each sub-array index corresponds to an index in X_vals.
+Each sub-array value is the Y for that Z and X.
+*/
+export function plotAggStateToPlotAgg({Z_X_Y: Z_X_Y_dict, Z_X_C: Z_X_C_dict, X_set}) {
+  a.reqDict(Z_X_Y_dict)
+  a.reqDict(Z_X_C_dict)
 
-  Each super-array index corresponds to an index in Z_rows (a serie).
-  Each sub-array index corresponds to an index in X_vals.
-  Each sub-array value is the Y for that Z and X.
+  const Z_vals = a.keys(Z_X_Y_dict).sort()
+  const X_vals = a.sort(X_set, u.compareAsc)
 
-  `a.head` is used here because `plotAggAddFact` makes Y points two-value
-  tuples of `[value, count]`, to support calculation of rolling averages.
-  Here we unwrap them.
-  */
-  Z_X_Y = a.map(Z_vals, Z => a.map(X_vals, X => a.head(Z_X_Y[Z][X])))
-
-  dropEmptySeries(Z_vals, Z_X_Y)
-  return {X_vals, Z_vals, Z_X_Y}
-}
-
-export function dropEmptySeries(Z, Z_X_Y) {
-  a.reqArr(Z)
-  a.reqArr(Z_X_Y)
-  if (Z.length !== Z_X_Y.length) {
-    throw Error(`internal: length mismatch between Z (${Z.length}) and Z_X_Y (${Z_X_Y.length})`)
+  const Z_X_Y = []
+  const Z_X_C = []
+  for (const Z of Z_vals) {
+    Z_X_Y.push(Z_X_Y_dict[Z])
+    Z_X_C.push(Z_X_C_dict[Z])
   }
 
-  let Z_ind = -1
-  while (++Z_ind < Z.length) {
+  dropEmptySeries({Z_vals, Z_X_Y, Z_X_C})
+  return {X_vals, Z_vals, Z_X_Y, Z_X_C}
+}
+
+export function dropEmptySeries({Z_vals, Z_X_Y, Z_X_C}) {
+  reqValidPlotAggArrs({Z_vals, Z_X_Y, Z_X_C})
+
+  let Z_ind = Z_vals.length
+  while (--Z_ind >= 0) {
     const X_Y = a.reqArr(Z_X_Y[Z_ind])
+    if (!a.every(X_Y, a.isVac)) continue
 
-    if (!X_Y.length) continue
-    if (a.some(X_Y, a.truthy)) continue
-
-    Z.splice(Z_ind, 1)
+    Z_vals.splice(Z_ind, 1)
     Z_X_Y.splice(Z_ind, 1)
-    Z_ind--
+    Z_X_C.splice(Z_ind, 1)
   }
 }
 
-export function plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, totalFun}) {
-  a.reqArr(X_vals)
+function reqValidPlotAggArrs({Z_vals, Z_X_Y, Z_X_C}) {
   a.reqArr(Z_vals)
   a.reqArr(Z_X_Y)
+  a.reqArr(Z_X_C)
+
+  const len = Z_vals.length
+  if (len !== Z_X_Y.length) {
+    throw Error(`internal: length mismatch between Z_vals (${len}) and Z_X_Y (${Z_X_Y.length}) in plot aggregate`)
+  }
+  if (len !== Z_X_C.length) {
+    throw Error(`internal: length mismatch between Z_vals (${len}) and Z_X_C (${Z_X_C.length}) in plot aggregate`)
+  }
+}
+
+export function plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, Z_X_C, totalFun}) {
+  reqValidPlotAggArrs({Z_vals, Z_X_Y, Z_X_C})
+  a.reqArr(X_vals)
   a.reqFun(totalFun)
 
-  if (Z_vals.length !== Z_X_Y.length) {
-    throw Error(`internal: different length between Z_vals (${Z_vals.length}) and ${Z_X_Y} (${Z_X_Y.length}) in plot aggregate`)
-  }
+  const {total_X_Y, total_X_C} = total_Y_C({Z_X_Y, Z_X_C, totalFun})
 
-  const Z_totals = a.map(Z_X_Y, val => u.foldSome(val, 0, totalFun))
   const sortedCombined = Z_vals
-    .map((Z, ind) => ({Z, X_Y: Z_X_Y[ind], total: Z_totals[ind]}))
+    .map((Z, ind) => ({Z, X_Y: Z_X_Y[ind], X_C: Z_X_C[ind], total: total_X_Y[ind]}))
     .sort(compareByTotal)
 
   Z_vals = []
   Z_X_Y = []
-  for (const {Z, X_Y} of sortedCombined) {
+  Z_X_C = []
+  for (const {Z, X_Y, X_C} of sortedCombined) {
     Z_vals.push(Z)
     Z_X_Y.push(X_Y)
+    Z_X_C.push(X_C)
   }
 
-  const X_total = Z_X_totals(Z_X_Y, totalFun)
-  Z_vals = a.prepend(Z_vals, `Total`)
-  Z_X_Y = a.prepend(Z_X_Y, X_total)
-  return {X_vals, Z_vals, Z_X_Y}
+  Z_vals.unshift(`Total`)
+  Z_X_Y.unshift(total_X_Y)
+  Z_X_C.unshift(total_X_C)
+  return {X_vals, Z_vals, Z_X_Y, Z_X_C}
 }
 
 function compareByTotal(one, two) {return two.total - one.total}
 
-export function Z_X_totals(Z_X_Y, totalFun) {
-  a.reqArrOf(Z_X_Y, a.isArr)
+export function total_Y_C({Z_X_Y, Z_X_C, totalFun}) {
+  a.reqArr(Z_X_Y)
+  a.reqArr(Z_X_C)
   a.reqFun(totalFun)
 
   const Z_len = Z_X_Y.length
   const X_len = Z_len ? Z_X_Y[0].length : 0
-  const Y_col = Array(Z_len)
-  const Z_X_totals = Array(X_len)
+  const total_X_Y = Array(X_len)
+  const total_X_C = Array(X_len)
   let X = -1
 
   while (++X < X_len) {
     let Z = -1
-    while (++Z < Z_len) Y_col[Z] = Z_X_Y[Z][X]
-    Z_X_totals[X] = u.foldSome(Y_col, 0, totalFun)
+    let Y = 0
+    let C = 0     // Per fact data point.
+    let count = 0 // Per aggregate data point.
+
+    // SYNC[fold_not_nil].
+    while (++Z < Z_len) {
+      const Y_val = Z_X_Y[Z][X]
+      if (a.isFin(Y_val)) Y = totalFun(Y, Y_val, count++)
+
+      const C_val = Z_X_C[Z][X]
+      if (a.isFin(C_val)) C += C_val
+    }
+
+    total_X_Y[X] = Y
+    total_X_C[X] = C
   }
-  return Z_X_totals
+
+  return {total_X_Y, total_X_C}
 }
 
 /*
