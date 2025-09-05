@@ -942,6 +942,12 @@ export const BUI_COSTS_1_47 = dict({
   ...BUI_COSTS_1_37,
   DBBAN01: {base: 200, upg: [[25, 50], [800, 800], [300, 800]]},
   DBBOOST01: {base: 200, upg: [[25, 200], [250, 30], [700, 0]]},
+  SB01A: {base: 0}, // Unconfirmed.
+  SB02A: {base: 0}, // Unconfirmed.
+  SB03A: {base: 0}, // Unconfirmed.
+  SB04A: {base: 0}, // Unconfirmed.
+  SB05A: {base: 0}, // Unconfirmed.
+  SB06A: {base: 0}, // Confirmed.
   SC01: {base: 1000},
   SC02: {base: 50},
   SC03: {base: 150},
