@@ -43,6 +43,10 @@
 !/client/*.md
 !/client/*.txt
 
+!/scripts
+/scripts/*
+!/scripts/*.mjs
+
 !/todo
 /todo/*
 !/todo/*.md

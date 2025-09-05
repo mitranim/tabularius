@@ -203,7 +203,9 @@ function ColToggle(cols, {key, props: {hidden}}) {
     invert: true,
     label: ui.withTooltip({
       elem: ui.Span(key),
-      chi: sr.STAT_GLOSSARY[key], under: true, help: false,
+      chi: sr.STAT_GLOSSARY[key],
+      under: true,
+      help: false,
     }),
     cls: a.spaced(`gap-x-4 px-3 py-2`, ui.CLS_BUSY_BG),
   })

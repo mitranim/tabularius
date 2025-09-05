@@ -2,6 +2,7 @@ import * as a from '@mitranim/js/all.mjs'
 import * as h from '@mitranim/js/http'
 import * as su from '../shared/util.mjs'
 
+// Only needed for Bun; see `https://github.com/oven-sh/bun/issues/1723`.
 globalThis.CompressionStream ??= h.CompressionStreamPolyfill
 globalThis.DecompressionStream ??= h.DecompressionStreamPolyfill
 

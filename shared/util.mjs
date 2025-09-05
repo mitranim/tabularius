@@ -145,17 +145,17 @@ export function accCount(_, __, ind) {
 }
 
 /*
-Hybrid of the JS `Array..reduce` behavior, and the SQL aggregation behavior,
-where nils / nulls are ignored.
+Similar to `a.fold` or `Array..reduce`, but with SQL aggregation semantics.
+Skips nil values without incrementing count.
 
 SYNC[fold_not_nil].
 */
 export function foldSome(src, acc, fun) {
   a.reqFun(fun)
   let count = 0
-  for (src of a.values(src)) {
-    if (a.isNil(src)) continue
-    acc = fun(acc, src, count++)
+  for (const val of a.values(src)) {
+    if (a.isNil(val)) continue
+    acc = fun(acc, val, count++)
   }
   return acc
 }
@@ -210,11 +210,14 @@ export function arrOfUniqValidStr(src) {
   return a.arr(out)
 }
 
-export function jsonDecodeOpt(src, fun) {
-  return isStrJsonLike(src) ? a.jsonDecode(src, fun) : undefined
+export function jsonDecodeOpt(src, dec) {
+  a.optFun(dec)
+  return isStrJsonLike(src) ? a.jsonDecode(src, dec) : undefined
 }
 
-export function jsonEncodeIndent(src, enc) {return a.jsonEncode(src, enc, 2)}
+export function jsonEncodeIndent(src, enc) {
+  return a.jsonEncode(src, a.optFun(enc), 2)
+}
 
 /*
 Should be used when there's a possibility of dictionary keys in JSON data
@@ -306,12 +309,12 @@ export async function textDataStream_to_ungzip_to_unjsonData(src) {
   return a.jsonDecode(await textDataStream_to_ungzip_to_str(src))
 }
 
-export async function textData_to_ungzip_to_unjsonData(src) {
-  return a.jsonDecode(await textData_to_ungzip_to_str(src))
-}
-
 export function textDataStream_to_ungzip_to_str(src) {
   return resOkText(new Response(textDataStream_to_ungzipStream(src)))
+}
+
+export async function textData_to_ungzip_to_unjsonData(src) {
+  return a.jsonDecode(await textData_to_ungzip_to_str(src))
 }
 
 export function textData_to_ungzip_to_str(src) {

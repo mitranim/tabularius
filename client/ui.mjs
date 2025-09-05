@@ -201,7 +201,9 @@ export function Version() {
       `.\n\n`,
       u.joinLines(
         `The site is now locally cached`,
-        `and can be accessed offline.`
+        `and can be accessed offline.`,
+        `On Windows, the first offline`,
+        `load may be delayed.`,
       ),
     ]],
     elem: E(`span`, {

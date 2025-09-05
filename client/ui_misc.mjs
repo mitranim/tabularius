@@ -49,8 +49,8 @@ export function LinkBtnInline({onclick, href, chi, trunc, width}) {
       trunc ? `trunc` : `inline`,
       width,
     ),
-    onkeydown: a.vac(onclick) && a.bind(u.btnOnKeydown, onclick),
-    onclick: a.vac(onclick) && function fakeBtnOnclick(eve) {
+    onkeydown: onclick && a.bind(u.btnOnKeydown, onclick),
+    onclick: onclick && function fakeBtnOnclick(eve) {
       if (a.isEventModified(eve)) return
       onclick(eve)
     },
@@ -128,8 +128,8 @@ export function withTooltip({
   a.reqElement(elem)
   if (!a.vac(chi)) return elem
 
-  if (under) ui.clsAdd(elem, ui.CLS_HELP_UNDER)
-  else if (help) ui.clsAdd(elem, `cursor-help`)
+  if (under) ui.clsAdd(elem, ui.CLS_UNDER)
+  if (help) ui.clsAdd(elem, `cursor-help`)
 
   elem.onpointermove = function reinit(eve) {
     tooltipOnPointerMove.call(this, chi, inheritSize, eve)
