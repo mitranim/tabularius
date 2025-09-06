@@ -143,7 +143,7 @@ Plot: when the cursor is near many near-overlapping data points (within a certai
 
 ---
 
-Plot: when grouping multiple sources, such as buildings or weapons, into one series, indicate the count of grouped entries in the label. Might be WONTFIX because the count _changes_ between rounds.
+<!-- Plot: when grouping multiple sources, such as buildings or weapons, into one series, indicate the count of grouped entries in the label. Might be WONTFIX because the count _changes_ between rounds. -->
 
 ---
 
@@ -710,7 +710,7 @@ Consider if the Web Authentication API and/or Web Credentials API could be relev
 
 ---
 
-`plot`: when `-a` is not `count`, count the data points anyway, and display the resulting counts in labels and tooltips.
+* [x] `plot`: when `-a` is not `count`, count the data points anyway, and display the resulting counts in labels and tooltips.
 
 ---
 

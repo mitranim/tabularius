@@ -304,7 +304,7 @@ export function plotOptsWith(inp) {
 
   const tooltipOpt = new TooltipOpt({
     X_label: X,
-    Y_label: Y,
+    Y_label: Y || (Z === `stat_type` ? agg : ``),
     formatY: format,
     Z_X_C: a.vac(!isCount) && Z_X_C,
   })
@@ -1348,7 +1348,7 @@ export class TooltipOpt extends a.Emp {
       ...u.alignRows([
         [X_label + `: `, formatX(X_val)],
         [Y_label + `: `, formatY(Y_val)],
-        a.vac(a.isSome(C_val)) && [`count: `, C_val],
+        a.vac(a.isSome(C_val)) && [`count: `, formatVal(C_val)],
       ])
     )
   }
