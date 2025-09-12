@@ -34,7 +34,7 @@ export async function plotAgg(ctx, req) {
   const queryFacts = u.sql`
     with
       ${runLatestCte}
-      _ as (select null)
+      _ as (select null) -- Avoid comma problems.
     select *
     from
       facts

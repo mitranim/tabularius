@@ -133,6 +133,12 @@ export function avg(src) {return a.values(src).reduce(accAvg, 0)}
 
 export function accSum(one, two) {return a.laxFin(one) + a.laxFin(two)}
 
+/*
+Unlike "sum" and "count" which don't care about nils, this function explicitly
+rejects nil values. That's because the caller is responsible for skipping nils
+and updating the count of non-nils when calculating a rolling average, and we
+can't handle here an incorrect count update for a nil value.
+*/
 export function accAvg(acc, val, ind) {
   acc = a.laxFin(acc)
   a.reqFin(val)

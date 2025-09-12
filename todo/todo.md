@@ -118,39 +118,6 @@ https://github.com/leeoniya/uPlot/issues?q=dark%20
 
 ---
 
-* [ ] Plot: when zoomed-in, totals should be calculated only for the currently _visible_ ranges in the chart. In addition, series without data points in the zoomed area should be excluded from the legend.
-
----
-
-Plot auto-updating. First from local data, then from cloud data. Demos:
-
-https://leeoniya.github.io/uPlot/demos/stream-data.html
-https://leeoniya.github.io/uPlot/demos/pixel-align.html
-https://leeoniya.github.io/uPlot/demos/sine-stream.html
-
-The file watcher needs to send new data to the plot.
-
-* [x] Local.
-* [ ] Cloud.
-
----
-
-Plot: button to toggle all series.
-
----
-
-Plot: when the cursor is near many near-overlapping data points (within a certain proximity threshold), we should group them up, and include all in a tooltip.
-
----
-
-<!-- Plot: when grouping multiple sources, such as buildings or weapons, into one series, indicate the count of grouped entries in the label. Might be WONTFIX because the count _changes_ between rounds. -->
-
----
-
-Plot: consider if even in damage per round charts, it's not useful to have a chart where values just go up as the rounds progress. Perhaps we should normalize the values per round in such a way that comparisons between rounds are meaningful.
-
----
-
 * [x] Consistently prefer lowercase msgs in log, errors, etc.
 
 Still questioning this. When logging large chunks of text, using proper sentences would make it easier to tell where sentences begin and end. Lowercase without trailing dot is only good for errors, to make error messages composable.
@@ -193,14 +160,6 @@ Consider logging even less by default.
 
 ---
 
-The `analyze` command (now `plot`) should support specifying multiple runs, run ranges, filters, or simply grabbing everything.
-
----
-
-When plotting over all cloud data, we should have an option to limit to only the latest game version, and an option to limit by date. It's useful to be able to prefer recent data over old data (outdata, if you will). When no other filter is provided, this should probably be the default. Limiting the data recency also prevents this from getting slower with time and data.
-
----
-
 More interactive logging, particularly for chains of operations. Examples:
 
 * [x] `help` -> every command name is a clickable button.
@@ -214,10 +173,6 @@ Top right: collapse text into icons: Steam (add TD link), Discord, Github.
 
 ---
 
-Make plot titles human-readable.
-
----
-
 Keyboard hotkeys for activating visible clickables in the log. For example, holding Alt might enumerate them and show numbers; pressing a number activates the corresponding clickable.
 
 ---
@@ -226,65 +181,7 @@ Have something clickable somewhere which is always displayed which runs `help`, 
 
 ---
 
-In `plot` help, unusable / useless parameters should be shown but disabled (greyed out). For example, when not logged in, current user filter; when cloud is unavailable, cloud-related stuff; when FS unavailable, local-only stuff.
-
----
-
 Make a YouTube video guide. Maybe get Claude Code to analyze the app and write a script for the video.
-
----
-
-Consider how to auto-update cloud-based plots.
-
----
-
-`plot`: more presets.
-
-TODO learn the lesson: we tried having defaults on various plot agg parameters, in the name of convenience and efficiency, and then we ended up with covariance between defaults and various options that disable various defaults, and the complexity blew up in our face. Not only was it hard to maintain across the codebase, since we have multiple querying implementations that had to support the defaults, but more importantly, it would be harder for the users to intuit how that stuff even works. Moral of the story: never use defaults, always use full presets; every feature is off by default, in every system, every time.
-
----
-
-`plot`: filters should support `< <= >= >` for numeric ranges, such as `roundNum`, `runNum`, maybe `statValue`.
-
----
-
-`plot`: support `latest` for rounds, like for runs.
-
----
-
-`plot`: support bar charts to allow non-numeric X or Y.
-
-* https://leeoniya.github.io/uPlot/demos/bars-grouped-stacked.html
-* https://leeoniya.github.io/uPlot/demos/multi-bars.html
-
----
-
-* [ ] `help plot`: collapse the listings of all known values for various options.
-* [ ] List known values from `game_const.mjs` for various filters, similar to `help edit`:
-  * `bui_type`
-  * `ent_type`
-  * `chi_type`
-  * `stat_type`
-  * `hero`
-  * `diff` (list inline)
-  * `frontier` (list inline)
-
----
-
-`plot`: when plotting child facts, include their types into labels.
-
----
-
-`plot`: when `run_id` or `round_id` is specified, disregard `user_id` instead of filtering by current user.
-
-Note: we're migrating to a new system where `run_id` and `round_id` are ephemeral, and only exist in client data. The server might end up with special cases for them, decomposing them into composite keys. It needs to observe the same rule.
-
----
-
-`plot`: when rendering a plot, show additional metadata such as:
-- Set of unique `user_id` in the facts.
-- Set of unique `run_id` in the facts.
-- Set of unique `round_id` in the facts.
 
 ---
 
@@ -300,61 +197,7 @@ Change the color scheme (both light and dark) to what I use in ST.
 
 ---
 
-`plot.mjs`: more diverse distribution of `FG_COLORS`.
-
----
-
 `watch`: not reliable enough, needs to retry local files harder.
-
----
-
-Various `plot` enhancements.
-
-* [x] When waiting for plot agg data (either cloud or local), indicate that in the media.
-  * [x] The sample plot placeholder has a method to increment or decrement the count of pending plots; when count > 0, it says "plot loading" or something like that. `cmdPlot` uses `try/finally` to modify the count.
-* [x] `plot_link` generates a link.
-  * [x] By default, orders multiple plots, with various presets, for the same filter, which is the current user's latest cloud run (but with fixed `run_num` or `run_id`).
-  * ~~[ ] Takes arbitrary plot options as overrides.~~
-  * ~~[ ] An override on `user_id` cancels the default `user_id=current`.~~
-  * ~~[ ] An override on `run_id` or `run_num` cancels the default `run_id=latest`.~~
-  * [x] Copy link to clipboard.
-  * [x] Print to log, something like: `plot URL <url> copied to clipboard` where the link is clickable (tarblan) with an indicator that it's external.
-* [ ] Cloud-based plots should have a shareable link somewhere.
-* [ ] `watch`:
-  * [ ] Print run plot link when run ends.
-    * [ ] Detection 1: when new run begins.
-    * [ ] Detection 2: when run reaches last wave for that difficulty.
-    * [ ] Avoid duplication.
-
----
-
-* [x] `plot`:
-  * [x] Show various info about the found data (only when data is found):
-    * Which `user_id`, `run_id`, `run_num` were found. Maybe more.
-    * [x] Print in terminal.
-    * [x] Consider making this optional (a toggle).
-    * [x] Server: support in `apiPlotAgg`. Make it optional.
-    * [x] Client: support in various places where we build and query `dat`.
-  * [x] Have an optional CLI flag to enable this.
-    * [x] When mentioned once with an empty value, it counts as a boolean.
-    * [x] When mentioned multiple times, it acts as a filter, requesting totals only on those keys.
-  * [x] Add the CLI flag either to all presets, or to `plot_link`.
-  * [x] Querying (only if enabled):
-    * [x] Server: just run an additional query on `facts`.
-    * [x] Client: build totals while aggregating from facts, see `plotAggAddFact`.
-  * [x] Client: print in log, one line per stat (count + values on the same line), stat shown only if count >= 1, values collapsed by default unless exactly 1.
-    * [x] `cmdPlotLocal`: totals must be live.
-  * Showing totals in terminal (only when enabled):
-    * [x] Multiple lines. Each line:
-      * [x] Stat name.
-      * [x] Count. Show only when non-0.
-      * [x] Sample values: collapsed by default, expandable `<details>`.
-  * [x] `chi_type`: only if `ent_type=run_round_bui_chi`.
-
-Additional:
-* [x] Make sure it works with `dropEmptySeries`. Tricky on both server and client.
-* [ ] Maybe show some totals in plot (under, or in title).
-  * Not the same as the totals of the Y values per X and Z, which we already have.
 
 ---
 
@@ -362,17 +205,7 @@ Find out where the game stores its "foes in current run" information.
 
 ---
 
-`plot`: consider removing the default `user_id=current` and `run_id=all` filters from all presets, and altering the warnings.
-
-Partially done: removed `user_id=current` from presets.
-
----
-
 Add `active:` indicators to all buttons and maybe some links.
-
----
-
-`plot`: add a search bar to each plot for filtering series.
 
 ---
 
@@ -399,10 +232,6 @@ On startup, when FS unavailable, instead of example run analysis, consider tryin
 
 * [ ] `show`: support cloud source.
   * Same as `ls -c`: all user dirs by default, `-c current` for current user, `-c current/latest` for latest run of current user, and so on.
-
----
-
-* [ ] Rename "plot totals" to something better. Maybe "plot summary".
 
 ---
 
@@ -495,37 +324,11 @@ Consider adding `run_name` to the schema.
 
 ---
 
-Consider switching to an SVG-based plotting library. Motive: responsive scaling should be much easier. There's plenty of bloated choices, but we want something about as tiny and fast as Uplot.
-
-If all SVG plotting libraries are slow, we're not interested.
-
----
-
-`plot`: make it possible to focus plot series by clicking lines or data points.
-
----
-
-Provide an ability to find a specific run that matches the provided filters. Maybe something like `run_id=one` or `run_limit=1`.
-
----
-
-Consolidate exclusion of empty plot series between plot agg and plot totals, or rather add it to plot totals.
-
----
-
-Plot totals: add `round_num`.
-
----
-
 * [ ] Add a `make` command or script for backing up cloud data by downloading, preferably the entire volume.
 
 ---
 
 * [ ] Add a command for downloading all of a user's cloud backups, either merging them into the history dir, or (as an option) placing into a sub-dir.
-
----
-
-* [ ] `plot`: add a flag acting as a shortcut for `user_id=all run_id=all`.
 
 ---
 
@@ -551,20 +354,6 @@ Low priority because file reads tend to take single digit milliseconds. (Unlike 
 
 ---
 
-* [x] `plot`: in help and plot titles, add tooltips which expand abbreviated terms to longer ones.
-* [x] Add missing glossary entries.
-* [x] Add dotted underlines to tooltipped terms which don't have them, like in plot titles (but no color indicator).
-* [x] Add glossary tooltips to more occurrences of abbreviated terms.
-* [ ] In multi-entry append/replace buttons, add tooltips to individual entries.
-
----
-
-* [ ] `plot`: add an option to show Y as `%` of total per X.
-* [ ] Implement by post-processing plot aggs, for any stat type. Does not require new stat types.
-* [ ] Plot tooltip: show both the value and the percentage, by default.
-
----
-
 * [ ] CLI parsing:
   * [ ] Support a set of operators: = < > ≤ ≥ ≠.
   * [ ] Consider supporting ASCII digraphs: = == < <= >= > != <>.
@@ -575,10 +364,6 @@ Low priority because file reads tend to take single digit milliseconds. (Unlike 
 ---
 
 * [ ] A reminder to provide feedback (with links to Discord and GitHub).
-
----
-
-`plot`: toggling a series should affect _all_ plots. Maybe even those which are added later.
 
 ---
 
@@ -710,10 +495,6 @@ Consider if the Web Authentication API and/or Web Credentials API could be relev
 
 ---
 
-* [x] `plot`: when `-a` is not `count`, count the data points anyway, and display the resulting counts in labels and tooltips.
-
----
-
 <!-- Support Ctrl+V for game files. Something like:
 - If a JSON file is pasted:
   - Rename to `.gd`. (No need to encode.)
@@ -735,33 +516,7 @@ Consider if the Web Authentication API and/or Web Credentials API could be relev
 
 ---
 
-* [ ] Schema and `plot`: HQ HP stat.
-
----
-
-* [ ] `plot`: when zoomed-in, make it possible to move the window by dragging the axis.
-  * The feature can be viewed in Plotly (flashbang): https://plotly.com/javascript/log-plot/.
-  * Check if Uplot has support.
-  * Consider if dragging Y should only move the maximum, instead of a window.
-
----
-
-* [ ] Schema / `plot`: more stat types:
-  * [ ] `hq_hp`
-  * [ ] `hq_hp_max`
-  * [ ] `supply`
-  * [ ] `recon`
-  * [ ] `tech`
-* [ ] A preset that plots all the stats above (with `-z=stat`).
-* [ ] Another possible stat: `uptime`?
-
----
-
 * [ ] Consider using a `SharedWorker` to deduplicate work between tabs. For example, the `DAT` cache and its querying could be moved there to reduce its RAM cost in cases where multiple tabs query the same data. Similarly, `watch` could be moved there; the backup messages would be broadcasted and seen in all tabs. This is probably silly overkill.
-
----
-
-`plot`: on Shift+click of legend labels, prevent text selection.
 
 ---
 
@@ -777,10 +532,6 @@ The downside is that actual updates would require 2 reloads.
 ---
 
 `edit`: it seems that locking a difficulty by editing can sometimes break its ingame UI tooltip on the commander + difficilty selection screen. Needs investigation.
-
----
-
-`plot`: it seems that sometimes totals in `plot -p=dmg -z=bui_type` don't match `dmg_done_acc` values, even when no rounds were skipped. Need a repro.
 
 ---
 

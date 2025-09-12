@@ -1050,6 +1050,7 @@ function reqValidPlotAggArrs({Z_vals, Z_X_Y, Z_X_C}) {
   }
 }
 
+// TODO: rename to mention sorting, since this implicitly sorts by totals.
 export function plotAggWithTotalSeries({X_vals, Z_vals, Z_X_Y, Z_X_C, totalFun}) {
   reqValidPlotAggArrs({Z_vals, Z_X_Y, Z_X_C})
   a.reqArr(X_vals)
