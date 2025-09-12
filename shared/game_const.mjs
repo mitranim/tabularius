@@ -981,4 +981,5 @@ export const GAME_RELEASES = [
   {ver: `1.37.0`, ms: a.reqFin(Date.parse(`2025-07-15T15:40:00Z`)), costs: BUI_COSTS_1_37},
   {ver: `1.39.0`, ms: a.reqFin(Date.parse(`2025-07-17T17:30:00Z`)), costs: BUI_COSTS_1_37},
   {ver: `1.47.0`, ms: a.reqFin(Date.parse(`2025-08-28T18:30:00Z`)), costs: BUI_COSTS_1_47},
+  {ver: `1.51.0`, ms: a.reqFin(Date.parse(`2025-09-11T14:05:00Z`)), costs: BUI_COSTS_1_47},
 ]
