@@ -131,7 +131,7 @@ export const NAV = E(`nav`, {
     E(`h1`, {
       class: a.spaced(`flex-1 trunc pl-4`, NAV_PAD),
       chi: [
-        E(`a`, {href: u.URL_CLEAN, class: ui.CLS_BTN_INLINE, chi: `Tabularius`}),
+        E(`a`, {href: u.URL_BASE, class: ui.CLS_BTN_INLINE, chi: `Tabularius`}),
         ` — book-keeper for `,
         E(`a`, {
           href: STEAM_LINK, ...ui.TARBLAN, class: ui.CLS_BTN_INLINE,

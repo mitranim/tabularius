@@ -11,16 +11,16 @@ a.patch(globalThis, namespace)
 // The version is set in `index.html`.
 export const VERSION = a.reqScalar(namespace.VERSION)
 
-export let URL_CLEAN = new URL(globalThis.location)
-URL_CLEAN.search = ``
-URL_CLEAN.hash = ``
-URL_CLEAN = URL_CLEAN.href
-
 export const QUERY = cleanUrlQuery(globalThis.location.search)
-export const ENV = queryEnv(QUERY)
+export const [ENV, ENV_QUERY] = queryEnv(QUERY)
 export const DEV = a.boolOpt(ENV.DEV)
 export const LOCAL = a.boolOpt(ENV.LOCAL)
 export const API_URL = LOCAL ? `/api/` : `https://tabularius.mitranim.com/api/`
+
+export let URL_BASE = new URL(globalThis.location)
+URL_BASE.search = ENV_QUERY
+URL_BASE.hash = ``
+URL_BASE = URL_BASE.href
 
 /*
 export function storageGetJson(store, key) {
@@ -574,12 +574,14 @@ export function cleanUrlQuery(src) {
 
 // UPPER_SNAKE query keys are considered env vars.
 function queryEnv(src) {
-  const out = a.Emp()
+  const dict = a.Emp()
+  const query = new URLSearchParams()
   for (const [key, val] of src) {
     if (!/^[A-Z][A-Z_\d]*$/.test(key)) continue
-    out[key] = val
+    dict[key] = val
+    query.append(key, val)
   }
-  return out
+  return [dict, query]
 }
 
 // Each row must begin with a string. We align on that string by padding it.
