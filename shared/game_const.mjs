@@ -967,6 +967,28 @@ export const BUI_COSTS_1_47 = dict({
   FB11: {base: 0, upg: [[200, 0], [300, 0], [200, 100]]},
 })
 
+export const BUI_COSTS_1_64 = dict({
+  ...BUI_COSTS_1_47,
+
+  //    {base: 700, upg: [[200, 150], [100, 150], [300, 600]]},
+  F301: {base: 650, upg: [[200, 150], [100, 150], [300, 600]]},
+
+  //    {base: 800, upg: [[0, 600], [75, 1200], [2700, 2000]]},
+  CB06: {base: 800, upg: [[0, 500], [75, 1200], [2700, 1500]]},
+
+  //    {base: COST_AIR_COM, upg: [[550, 100], [0, 300], [350, 1500]]},
+  CB12: {base: COST_AIR_COM, upg: [[350, 100], [0, 300], [350, 1500]]},
+
+  //    {base: 200, upg: [[150, 190], [140, 1100], [325, 350]]},
+  CB15: {base: 200, upg: [[150, 190], [140, 950], [325, 350]]},
+
+  //    {base: 1250, upg: [[35, 250], [350, 100], [1350, 750]]},
+  CB05: {base: 1500, upg: [[35, 250], [350, 100], [1350, 750]]},
+
+  //    {base: 270, upg: [[120, 450], [120, 350], [85, 600]]},
+  CB16: {base: 270, upg: [[120, 450], [120, 200], [85, 600]]},
+})
+
 // https://steamdb.info/app/3226530/patchnotes/
 export const GAME_RELEASES = [
   {ver: `1.9.0`, ms: a.reqFin(Date.parse(`2025-05-15T16:00:00Z`)), costs: BUI_COSTS_1_9},
@@ -983,4 +1005,5 @@ export const GAME_RELEASES = [
   {ver: `1.47.0`, ms: a.reqFin(Date.parse(`2025-08-28T18:30:00Z`)), costs: BUI_COSTS_1_47},
   {ver: `1.51.0`, ms: a.reqFin(Date.parse(`2025-09-11T14:05:00Z`)), costs: BUI_COSTS_1_47},
   {ver: `1.52.0`, ms: a.reqFin(Date.parse(`2025-09-12T15:00:00Z`)), costs: BUI_COSTS_1_47},
+  {ver: `1.64.0`, ms: a.reqFin(Date.parse(`2025-10-16T15:00:00Z`)), costs: BUI_COSTS_1_64},
 ]
