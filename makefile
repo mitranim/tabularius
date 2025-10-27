@@ -48,6 +48,8 @@ else
 	JS_WATCH_HOT ?= $(JS_RUN) --watch-hmr --quiet $(JS_WATCH_OPT)
 endif
 
+.SUFFIXES: # Clear out any built-in suffix rules.
+
 help: # Print help.
 	echo "Select one of the following commands."
 	echo "Run \`make -n <command_name>\` to see its definition."
