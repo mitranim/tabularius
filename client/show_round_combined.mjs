@@ -1309,7 +1309,6 @@ export function dpsEstimate({dmg, mag, rof, rel}) {
   one refire delay to each reload. This simple division matches that behavior.
   */
   const magTime = mag / rof
-
   const cycleTime = magTime + rel
   return cycleDmg / cycleTime
 }

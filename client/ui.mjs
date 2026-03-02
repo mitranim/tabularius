@@ -135,7 +135,7 @@ export const NAV = E(`nav`, {
         ` — book-keeper for `,
         E(`a`, {
           href: STEAM_LINK, ...ui.TARBLAN, class: ui.CLS_BTN_INLINE,
-          chi: [`Tower Dominion`, ` `, ui.External()],
+          chi: [`Tower Dominion `, ui.External()],
         }),
       ],
     }),

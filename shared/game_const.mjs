@@ -19,7 +19,7 @@ export const CODES_TO_HEROS_SHORT = dict({
   F2H06: `Beryt`,
   F2H07: `Liza`,
   F2H08: `Yevdoki`,
-  F2H09: `Girosky`,
+  F2H09: `Volkin`,
   F2H10: `Karia`,
   F3H01: `Droh`,
   F3H02: `Seculdi`,
@@ -54,7 +54,7 @@ export const CODES_TO_HEROS = dict({
   F2H06: `Tank commander Beryt`,
   F2H07: `Rotmistr Liza`,
   F2H08: `Konigmester Yevdoki`,
-  F2H09: `Legate Girosky`,
+  F2H09: `Legate Volkin`,
   F2H10: `Archeologist Karia`,
   F3H01: `Architectus Droh`,
   F3H02: `Captain Seculdi`,
@@ -947,7 +947,14 @@ export const BUI_COSTS_1_47 = dict({
   SB03A: {base: 0}, // Unconfirmed.
   SB04A: {base: 0}, // Unconfirmed.
   SB05A: {base: 0}, // Unconfirmed.
-  SB06A: {base: 0}, // Confirmed.
+
+  // SB06A: {base: 50}, // Tetris platform?
+  // SB06B: {base: 50}, // Tetris platform?
+  // SB06C: {base: 50}, // Tetris platform?
+  // SB06D: {base: 50}, // Tetris platform?
+  // SB06E: {base: 50}, // Tetris platform?
+  // SB06F: {base: 50}, // Tetris platform?
+
   SC01: {base: 1000},
   SC02: {base: 50},
   SC03: {base: 150},
